@@ -1,0 +1,1 @@
+import{aa as r}from"./DvlzeZYf.js";const s=e=>r({url:"user/aftersales/get_record",method:"get",params:e}),a=e=>r({url:"user/aftersales/detail",method:"get",params:e}),o=e=>r({url:"user/aftersales/feedback",method:"post",params:e}),c=e=>r({url:"user/aftersales/cancel",method:"post",params:e});export{a,c,s as g,o as u};

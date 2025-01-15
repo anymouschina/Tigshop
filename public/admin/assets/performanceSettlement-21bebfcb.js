@@ -1,0 +1,1 @@
+import{A as t}from"./index-7c2d2aef.js";const a=e=>t({url:"salesman/order/list",method:"get",params:e}),r=e=>t({url:"salesman/order/list",method:"get",responseType:"arraybuffer",params:e}),n=()=>t({url:"salesman/config/detail?code=salesman_settlement",method:"get"}),o=e=>t({url:"salesman/config/save?code=salesman_settlement",method:"post",data:e});export{a,r as b,n as g,o as s};

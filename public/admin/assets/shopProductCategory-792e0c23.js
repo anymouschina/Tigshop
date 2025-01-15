@@ -1,0 +1,1 @@
+import{N as e}from"./index-7c2d2aef.js";const r=e("shopProductCategory",{state:()=>({shopProductCategoryTree:null}),getters:{},actions:{clearShopProductCategory(){this.shopProductCategoryTree=null}},persist:{enabled:!0,strategies:[{storage:sessionStorage,paths:[]}]}});export{r as u};

@@ -1,0 +1,1 @@
+import{Z as a}from"./index-Do_Cb7fn.js";const t=t=>a({url:"merchant/merchant/apply",method:"post",data:t}),e=t=>a({url:"merchant/merchant/apply_detail",method:"get",params:{id:t}}),m=()=>a({url:"merchant/merchant/my_apply",method:"get"}),r=()=>a({url:"merchant/merchant/apply_shop_agreement",method:"get"});export{t as a,m as b,r as c,e as g};

@@ -1,0 +1,1 @@
+import{A as e}from"./index-7c2d2aef.js";const n=()=>e({url:"salesman/config/detail?code=salesman_config",method:"get"}),o=s=>e({url:"salesman/config/save?code=salesman_config",method:"post",data:s});export{n as g,o as s};

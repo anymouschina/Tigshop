@@ -1,0 +1,1 @@
+import{A as i}from"./index-7c2d2aef.js";const o=t=>i({url:"promotion/sign_in_setting/list",method:"get",params:t}),g=(t,n)=>i({url:"promotion/sign_in_setting/"+t,method:"get",params:n}),s=(t,n)=>i({url:"promotion/sign_in_setting/"+t,method:"post",data:n});export{g as a,o as g,s as u};

@@ -1,0 +1,1 @@
+import{u as r}from"./theme-cc18c5b2.js";import{d as t,x as n,r as m,o as s,k as a}from"./index-7c2d2aef.js";import"./config-e2aa16d1.js";const h=t({__name:"index",setup(c){const e=r();return n(()=>{e.changeThemeColor(e.themeInfo.primaryColor)}),(p,_)=>{const o=m("router-view");return s(),a(o)}}});export{h as default};

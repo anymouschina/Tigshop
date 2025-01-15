@@ -1,0 +1,1 @@
+import{af as o,aa as e}from"./DvlzeZYf.js";const c=t=>o({url:"user/collect_product/list",method:"get",params:t}),s=t=>e({url:"user/collect_product/cancel",method:"post",data:t}),u=t=>e({url:"user/collect_product/save",method:"post",data:t});export{s as d,c as g,u};

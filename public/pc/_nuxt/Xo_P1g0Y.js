@@ -1,0 +1,1 @@
+import{aa as s}from"./DvlzeZYf.js";const r=e=>s({url:"user/regist/regist_act",method:"post",data:e}),t=e=>s({url:"user/login/send_mobile_code",method:"post",data:e}),n=e=>s({url:"user/login/bind_mobile",method:"post",data:e});export{r as a,t as s,n as u};

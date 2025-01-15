@@ -1,0 +1,1 @@
+import{N as e}from"./index-7c2d2aef.js";const r=e("category",{state:()=>({categoryTree:null}),getters:{},actions:{clearCategory(){this.categoryTree=null}},persist:{enabled:!0,strategies:[{storage:sessionStorage,paths:[]}]}});export{r as u};
