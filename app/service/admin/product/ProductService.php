@@ -88,7 +88,7 @@ class ProductService extends BaseService
     public function getProductList(array $filter): array
     {
         $filter['page'] = !empty($filter['page']) ? intval($filter['page']) : 1;
-        $filter['size'] = !empty($filter['size'] && $filter['size'] < 999) ? intval($filter['size']) : 999;
+        $filter['size'] = !empty($filter['size']) && $filter['size'] < 999 ? intval($filter['size']) : 999;
         $filter['product_status'] = 1;
         $filter['is_delete'] = 0;
         $query = $this->filterQuery($filter)->with(['skuMinPrice', 'seckillMinPrice', "product_sku", "shopSimple"])

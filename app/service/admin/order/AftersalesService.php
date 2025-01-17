@@ -23,7 +23,6 @@ use app\model\user\User;
 use app\service\admin\finance\RefundApplyService;
 use app\service\admin\msg\AdminMsgService;
 use app\service\common\BaseService;
-use app\validate\order\AftersalesValidate;
 use exceptions\ApiException;
 use log\AdminLog;
 use think\facade\Db;
@@ -35,8 +34,6 @@ use utils\Util;
  */
 class AftersalesService extends BaseService
 {
-    protected AftersalesValidate $aftersalesValidate;
-
     public function __construct()
     {
     }
@@ -299,10 +296,10 @@ class AftersalesService extends BaseService
     public function agreeOrRefuse(int $aftersales_id, array $data): bool
     {
         $aftersales = Aftersales::find($aftersales_id);
-        if ($aftersales['status'] != Aftersales::STATUS_IN_REVIEW) {
-            throw new ApiException(/** LANG */'该售后状态不能操作');
-        }
-        if (in_array($aftersales['status'], [2, 3])) {
+
+        $originStatus = $data['status'];
+
+        if (!in_array($aftersales['status'], [1, 3])) {
             throw new ApiException(/** LANG */'售后状态错误');
         }
         if ($data['status'] == Aftersales::STATUS_REFUSE && empty($data['reply'])) {
@@ -314,6 +311,12 @@ class AftersalesService extends BaseService
         if ($data['status'] == Aftersales::STATUS_APPROVED_FOR_PROCESSING && $aftersales['aftersale_type'] == Aftersales::AFTERSALES_TYPE_RETURN) {
             //如果退货退款申请通过则跳到待用户寄回状态
             $data['status'] = Aftersales::STATUS_SEND_BACK;
+        }
+
+        $item_flag = 0;
+        // 审核通过 -- 判断订单内商品是否全部退款 -- 全退 => 订单状态已完成
+        if ($data['status'] == Aftersales::STATUS_APPROVED_FOR_PROCESSING) {
+            $item_flag = $this->checkAfterSaleProduct($aftersales_id,$aftersales->order_id);
         }
         try {
             Db::startTrans();
@@ -329,7 +332,15 @@ class AftersalesService extends BaseService
 
             $result = Aftersales::where('aftersale_id', $aftersales_id)->save($data);
 
-            if ($aftersales['aftersale_type'] == Aftersales::AFTERSALES_TYPE_PAYRETURN) {
+            // 全退 => 订单状态已完成
+            if ($item_flag) {
+                $order = Order::find($aftersales->order_id);
+                if (!empty($order)) {
+                    $order->save(['order_status' => Order::ORDER_COMPLETED]);
+                }
+            }
+
+            if ($aftersales['aftersale_type'] == Aftersales::AFTERSALES_TYPE_PAYRETURN && $originStatus == Aftersales::STATUS_APPROVED_FOR_PROCESSING) {
                 // 创建退款申请
                 $apply_data = [
                     "refund_type" => $aftersales->order_id ? 1 : 2,
@@ -354,6 +365,82 @@ class AftersalesService extends BaseService
         }
         return $result;
     }
+
+    /**
+     * 校验售后商品是否全部退
+     * @param int $aftersales_id
+     * @param int $order_id
+     * @return int
+     */
+    public function checkAfterSaleProduct(int $aftersales_id, int $order_id) :int
+    {
+        $item_flag = 0;
+        // 售后商品类
+        $aftersales_items = AftersalesItem::where('aftersale_id',$aftersales_id)->group('order_item_id')->column('number','order_item_id');
+        // 订单商品类
+        $order_items = OrderItem::where('order_id',$order_id)->column('quantity','item_id');
+
+        if (empty(array_diff_assoc($aftersales_items,$order_items))) {
+            // 订单商品全退
+            $item_flag = 1;
+        } else {
+            $item_flags = [];
+            // 查询订单申请售后完成的售后商品
+            foreach ($order_items as $i => $item) {
+                foreach ($aftersales_items as $k => $val) {
+                    // 获取已申请售后商品数量
+                    $sumValidNum = AftersalesItem::hasWhere(
+                        "aftersales", function ($query) {
+                        $query->whereIn('status', Aftersales::VALID_STATUS);
+                    }
+                    )->where('order_item_id',$i)->sum('number') ?? 0;
+
+                    if ($i == $k && $item == $sumValidNum) {
+                        array_push($item_flags,1);
+                    } else {
+                        array_push($item_flags,0);
+                    }
+                }
+            }
+            if (!in_array(0,array_unique($item_flags))) {
+                $item_flag = 1;
+            }
+        }
+        return $item_flag;
+    }
+
+    /**
+     * 完成售后
+     * @param int $aftersales_id
+     * @param int $admin_id
+     * @return bool
+     * @throws ApiException
+     */
+    public function complete(int $aftersales_id,int $admin_id = 0):bool
+    {
+        $aftersales = Aftersales::find($aftersales_id);
+        $admin_user = AdminUser::find($admin_id);
+        $adminname = !empty($admin_user) ? $admin_user->username : '';
+        if ($aftersales['status'] != Aftersales::STATUS_REFUSE) {
+            throw new ApiException(/** LANG */'该售后状态不能操作');
+        }
+        // 售后驳回，买卖双方协商一致，则售后状态为已取消，记录售后日志，关闭售后单
+        try {
+            $result = $aftersales->save(['status' => Aftersales::STATUS_CANCEL]);
+            $log = [
+                'aftersale_id' => $aftersales_id,
+                'log_info' => '售后驳回，关闭售后单',
+                'admin_name' => $adminname,
+                'refund_type' => $aftersales->aftersale_type,
+            ];
+            AftersalesLog::create($log);
+            return $result != false;
+        } catch (\Exception $exception) {
+            throw new ApiException($exception->getMessage());
+        }
+    }
+
+
 
     /**
      * 售后确认收到货接口

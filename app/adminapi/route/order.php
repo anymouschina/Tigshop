@@ -7,22 +7,26 @@ Route::group('order', function () {
     //售后管理
     Route::group('aftersales', function () {
         // 列表
-        Route::get('list', 'order.aftersales/list');
+        Route::get('list', 'list');
         // 详情接口
-        Route::get('detail', 'order.aftersales/detail');
+        Route::get('detail', 'detail');
         // 同意或拒接售后接口
-        Route::post('update', 'order.aftersales/update')->append([
+        Route::post('update', 'update')->append([
             "authorityCheckSubPermissionName" => 'aftersalesModifyManage'
         ]);
         // 售后确认收货接口
-        Route::post('receive', 'order.aftersales/receive')->append([
+        Route::post('receive', 'receive')->append([
             "authorityCheckSubPermissionName" => 'aftersalesModifyManage'
         ]);
         // 提交售后反馈记录
-        Route::post('record', 'order.aftersales/record')->append([
+        Route::post('record', 'record')->append([
             "authorityCheckSubPermissionName" => 'aftersalesModifyManage'
         ]);
-    });
+        // 售后完结
+        Route::post('complete', 'complete')->append([
+            "authorityCheckSubPermissionName" => 'aftersalesModifyManage'
+        ]);
+    })->prefix("order.aftersales/");
     //订单管理
     Route::group('order', function () {
         //订单列表

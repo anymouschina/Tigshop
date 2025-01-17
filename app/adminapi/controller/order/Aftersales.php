@@ -15,7 +15,7 @@ use app\adminapi\AdminBaseController;
 use app\service\admin\order\AftersalesService;
 use exceptions\ApiException;
 use think\App;
-use think\response\Json;
+use think\Response;
 
 /**
  * 退换货控制器
@@ -40,9 +40,9 @@ class Aftersales extends AdminBaseController
     /**
      * 列表页面
      *
-     * @return \think\Response
+     * @return Response
      */
-    public function list(): \think\Response
+    public function list(): Response
     {
         $filter = $this->request->only([
             'keyword' => '',
@@ -71,9 +71,9 @@ class Aftersales extends AdminBaseController
     /**
      * 详情接口
      *
-     * @return \think\Response
+     * @return Response
      */
-    public function detail(): \think\Response
+    public function detail():Response
     {
         $id = input('id/d', 0);
         $item = $this->aftersalesService->getDetail($id);
@@ -93,9 +93,9 @@ class Aftersales extends AdminBaseController
     /**
      *
      * 同意或拒接售后接口
-     * @return \think\Response
+     * @return Response
      */
-    public function update(): \think\Response
+    public function update(): Response
     {
         $id = input('id/d', 0);
         $data = $this->request->only([
@@ -115,11 +115,24 @@ class Aftersales extends AdminBaseController
     }
 
     /**
+     * 售后完结
+     * @return Response
+     * @throws ApiException
+     */
+    public function complete(): Response
+    {
+        $id = input('id/d', 0);
+        $admin_id = request()->adminUid;
+        $result = $this->aftersalesService->complete($id,$admin_id);
+        return $result ? $this->success('操作成功') : $this->error('操作失败');
+    }
+
+    /**
      *
      * 售后确认收货接口
-     * @return \think\Response
+     * @return Response
      */
-    public function receive(): \think\Response
+    public function receive(): Response
     {
         $id = input('id/d', 0);
         $result = $this->aftersalesService->receive($id);
@@ -130,47 +143,12 @@ class Aftersales extends AdminBaseController
         }
     }
 
-
-    /**
-     * 删除
-     *
-     * @return Json
-     */
-//    public function del(): Json
-//    {
-//        $id = input('id/d', 0);
-//        $this->aftersalesService->deleteAftersales($id);
-//        return $this->success('指定项目已删除');
-//    }
-
-//    /**
-//     * 批量操作
-//     *
-//     * @return Json
-//     */
-//    public function batch(): Json
-//    {
-//        if (empty(input('ids')) || !is_array(input('ids'))) {
-//            return $this->error('未选择项目');
-//        }
-//
-//        if (input('type') == 'del') {
-//            foreach (input('ids') as $key => $id) {
-//                $id = intval($id);
-//                $this->aftersalesService->deleteAftersales($id);
-//            }
-//            return $this->success('批量操作执行成功！');
-//        } else {
-//            return $this->error('#type 错误');
-//        }
-//    }
-
     /**
      * 提交售后反馈记录
-     * @return \think\Response
+     * @return Response
      * @throws ApiException
      */
-    public function record(): \think\Response
+    public function record(): Response
     {
         $input = $this->request->only([
             'aftersale_id/d' => 0,

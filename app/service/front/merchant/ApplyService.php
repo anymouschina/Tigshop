@@ -123,6 +123,22 @@ class ApplyService extends BaseService
             'bank_branch' => isset($data['merchant_data']['bank_branch']) ? $data['merchant_data']['bank_branch'] : '',
             'shop_id' => $shop->shop_id,
         ]);
+
+        // 创建商户用户
+        if ($data['type'] == 1) {
+            // 个人
+            app(AdminUserService::class)->updateMerchantUser([
+                'merchant_id' => $merchantDetail->merchant_id,
+                'is_admin' => 1,
+                'user_id' => $data['user_id']
+            ], $adminId);
+        } else {
+            // 企业
+            app(AdminUserService::class)->updateMerchantUser([
+                'merchant_id' => $merchantDetail->merchant_id,
+                'is_admin' => 1
+            ], $adminId);
+        }
     }
 
     /**

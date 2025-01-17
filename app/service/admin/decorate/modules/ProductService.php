@@ -74,12 +74,14 @@ class ProductService extends BaseService
                 $filter = [
                     'product_ids' => $products['product_ids'],
                     'page' => 1,
-                    'size' => 99
+                    'size' => count($products['product_ids'])
                 ];
                 if (!empty($decorate['shop_id'])) {
                     $filter['shop_id'] = $decorate['shop_id'];
                 }
-                $module['products']['product_list'] = app(ProductProductService::class)->getProductList($filter);
+                if ($page == 1) {
+                    $module['products']['product_list'] = app(ProductProductService::class)->getProductList($filter);
+                }
             }
         }
         return $module;

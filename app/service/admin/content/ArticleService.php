@@ -89,6 +89,9 @@ class ArticleService extends BaseService
         // 分类编码
         if (isset($filter["category_sn"]) && !empty($filter["category_sn"])) {
             $cate_id = ArticleCategory::where('category_sn', $filter['category_sn'])->value('article_category_id');
+            if(empty($cate_id)){
+                $cate_id = 0;
+            }
             $query->whereIn('article_category_id', app(ArticleCategoryService::class)->catAllChildIds($cate_id));
         }
 

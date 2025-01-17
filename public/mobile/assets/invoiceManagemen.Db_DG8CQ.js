@@ -1,1 +1,0 @@
-import{Z as e}from"./index-Do_Cb7fn.js";const o=o=>e({url:"user/order_invoice/create",method:"post",data:o}),r=o=>e({url:"user/order_invoice/update",method:"post",data:o}),t=()=>e({url:"user/invoice/detail",method:"get"}),a=o=>e({url:"user/invoice/update",method:"post",params:o});export{r as a,t as g,o,a as u};

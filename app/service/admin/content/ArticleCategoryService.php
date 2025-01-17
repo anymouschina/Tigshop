@@ -234,6 +234,9 @@ class ArticleCategoryService extends BaseService
      */
     public function catAllChildIds(int $parent_id = 0): array
     {
+        if($parent_id == 0){
+            return [];
+        }
         $cat_list = $this->catList($parent_id);
         $ids = [$parent_id];
 

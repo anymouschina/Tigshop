@@ -77,7 +77,7 @@ class OrderService extends BaseService
 
             foreach ($item->items as $val) {
                 $val->aftersales_item = AftersalesItem::where("order_item_id",
-                    $val->item_id)->order("aftersales_item_id", "desc")->limit(1)->find();
+                    $val->item_id)->order("aftersales_item_id", "desc")->find();
             }
         }
         return $result->toArray();

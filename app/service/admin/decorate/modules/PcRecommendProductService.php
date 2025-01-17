@@ -12,6 +12,7 @@
 namespace app\service\admin\decorate\modules;
 
 use app\service\admin\product\ProductService;
+use app\service\admin\product\ProductService as ProductProductService;
 use app\service\common\BaseService;
 use exceptions\ApiException;
 
@@ -59,10 +60,14 @@ class PcRecommendProductService extends BaseService
                     ]);
                 }
             } elseif ($products['product_select_type'] == 1) {
-                $module['products']['product_list'] = app(ProductService::class)->getProductList([
-                    'product_ids' => $products['product_ids'],
-                    'page' => 1,
-                ]);
+                if ($page == 1) {
+                    $module['products']['product_list'] = app(ProductService::class)->getProductList([
+                        'product_ids' => $products['product_ids'],
+                        'page' => 1,
+                    ]);
+                } else {
+                    $module['products']['product_list'] = [];
+                }
             }
         }
         return $module;
