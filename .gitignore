@@ -5,7 +5,7 @@ composer.phar
 Thumbs.db
 /.idea
 /.vscode
-/vendor
+
 /.settings
 /.buildpath
 /.project
