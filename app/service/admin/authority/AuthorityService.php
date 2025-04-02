@@ -221,11 +221,15 @@ class AuthorityService extends BaseService
                 ||
                 (config('app.IS_PRO') == 0 && $value['authority_sn'] == 'eCardManage')
                 ||
+                (config('app.IS_PRO') == 0 && $value['authority_sn'] == 'userLevelProManage')
+                ||
                 (config('app.IS_OVERSEAS') == 0 && $value['authority_sn'] == 'multilingual')
                 ||
                 (config('app.IS_B2B') == 0 && $value['authority_sn'] == 'userCertificationManage')
                 ||
                 (config('app.IS_B2B') == 0 && $value['authority_sn'] == 'enquiryManage')
+                ||
+                (config('app.IS_PRO') == 1 && $value['authority_sn'] == 'levelManageManage')
             ) {
 
             } else {

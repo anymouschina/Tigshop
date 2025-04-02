@@ -1,1 +1,0 @@
-import{aa as e}from"./DvlzeZYf.js";const d=s=>e({url:"user/address/list",method:"get",params:s}),a=s=>e({url:"user/address/del",method:"post",data:s}),u=(s,r)=>e({url:"user/address/"+s,method:"get",params:r}),o=(s,r)=>e({url:"user/address/"+s,method:"post",data:r});export{d as a,a as d,u as g,o as u};

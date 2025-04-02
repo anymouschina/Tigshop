@@ -15,6 +15,7 @@ use app\api\IndexBaseController;
 use app\Request;
 use app\service\admin\promotion\CouponService;
 use app\service\front\cart\CartService;
+use exceptions\ApiException;
 use think\App;
 use think\Response;
 use utils\Util;
@@ -63,7 +64,15 @@ class Cart extends IndexBaseController
      */
     public function getCount(): Response
     {
-        $count = app(CartService::class)->getCartCount();
+
+        $is_checked = input('is_checked', false);
+        $type = input('type', \app\model\order\Cart::TYPE_NORMAL);
+        $filter = [];
+        if (input('product_id')) {
+            $filter['product_id'] = input('product_id');
+        }
+
+        $count = app(CartService::class)->getCartCount($is_checked, $type, $filter);
         return $this->success([
             'count' => $count,
         ]);
@@ -165,6 +174,31 @@ class Cart extends IndexBaseController
             'product_price' => $checkedProductPriceSum,
             'quantity_count' => $quantity_count,
             'discount_money' => $discount_money,
+        ]);
+    }
+
+    /**
+     * 兼容后的购物车
+     * @return Response
+     * @throws ApiException
+     */
+    public function addToCart(): \think\Response
+    {
+        $id = input('id/d', 0);
+        $number = input('number/d', 0);
+        $sku_id = input('sku_id', 0);
+        $sku_item = input('sku_item/a', []);
+        $type = input('type/d', 1);
+        $salesman_id = input('salesman_id/d', 0);
+        $is_quick = input('is_quick/d', 0) == 1 ? true : false;
+        //添加商品多规格属性 多个id 用逗号分割
+        $extra_attr_ids = input('extra_attr_ids', '');
+        // 获取 type 值
+        $cart_type = app(CartService::class)->getCartTypeByProduct($id,$type);
+        $result = app(CartService::class)->addToCart($id,$number,$sku_id, $is_quick, $cart_type, $salesman_id, $extra_attr_ids,$sku_item);
+        return $this->success([
+            "item" => $result,
+            'flow_type' => $cart_type
         ]);
     }
 }

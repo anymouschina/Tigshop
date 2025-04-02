@@ -120,7 +120,7 @@ class Login extends IndexBaseController
             ->verification();
 
         try {
-            app(SmsService::class)->sendCode($mobile,$event);
+            app(SmsService::class)->sendCode($mobile, $event);
             return $this->success(Util::lang('发送成功！'));
         } catch (\Exception $e) {
             return $this->error(Util::lang('发送失败！') . $e->getMessage());
@@ -138,7 +138,7 @@ class Login extends IndexBaseController
         $code = input("code", "");
         $event = "forget_password";
         // 验证码判断
-        $result = app(UserService::class)->mobileValidate($mobile,$code,$event);
+        $result = app(UserService::class)->mobileValidate($mobile, $code, $event);
         return $this->success([
             'item' => $result,
         ]);
@@ -159,7 +159,7 @@ class Login extends IndexBaseController
         if (empty($password)) {
             throw new ApiException(/** LANG */ Util::lang('新密码不能为空'));
         }
-        $result = app(UserService::class)->modifyPassword(['mobile_key' => $key,'password' => $password]);
+        $result = app(UserService::class)->modifyPassword(['mobile_key' => $key, 'password' => $password]);
         return $result ? $this->success(/** LANG */ Util::lang("操作成功")) : $this->error(/** LANG */ Util::lang("操作失败"));
     }
 
@@ -370,7 +370,7 @@ class Login extends IndexBaseController
     {
         $code = input('code', '');
         $res = app(WechatOAuthService::class)->getMiniUserMobile($code);
-        if (empty($res['code'])) return $this->error(Util::lang('授权失败，请稍后再试~'));
+        if (empty($res['code'])) return $this->error(Util::lang($res['msg'] ?? '授权失败，请稍后再试~'));
         $user = app(UserRegistService::class)->registerUserByMobile($res['mobile']);
         app(UserService::class)->setLogin($user['user_id']);
         $token = app(UserService::class)->getLoginToken($user['user_id']);

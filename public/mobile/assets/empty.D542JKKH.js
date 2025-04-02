@@ -1,1 +1,0 @@
-import{_ as e}from"./empty.vue_vue_type_style_index_0_scoped_b2f6c60f_lang.DiLAYZG5.js";import{_}from"./_plugin-vue_export-helper.BCo6x5W8.js";const p=_(e,[["__scopeId","data-v-b2f6c60f"]]);export{p as e};

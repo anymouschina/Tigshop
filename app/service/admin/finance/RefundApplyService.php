@@ -25,6 +25,7 @@ use app\service\admin\pay\src\AliPayService;
 use app\service\admin\pay\src\PayPalService;
 use app\service\admin\pay\src\WechatPayService;
 use app\service\admin\pay\src\YaBanPayService;
+use app\service\admin\user\UserRankService;
 use app\service\admin\user\UserService;
 use app\service\common\BaseService;
 use exceptions\ApiException;
@@ -286,6 +287,8 @@ class RefundApplyService extends BaseService
         $apply->setOfflineSuccess();
         if ($apply->checkRefundSuccess()) {
             $apply->setRefundSuccess();
+            // 扣减成长值
+            app(UserRankService::class)->reduceGrowth($refund_id);
         }
         return $apply->save();
     }

@@ -19,6 +19,10 @@ Route::group('cart', function () {
         Route::post('clear', 'clear');
         // 购物车已选商品优惠计算
         Route::get('get_coupon_discount', 'getCouponDiscount');
+        //加入购物车
+        Route::post('add_to_cart', 'addToCart')->middleware([
+            \app\api\middleware\CheckLogin::class,
+        ]);
     });
 })->middleware([
     \app\api\middleware\CheckLogin::class,

@@ -1,1 +1,0 @@
-import{A as t}from"./index-7c2d2aef.js";const n=()=>t({url:"install/index?step=1",method:"get"}),r=()=>t({url:"install/index?step=2",method:"get"}),a=e=>t({url:"install/index?step=3",method:"post",data:e});export{r as a,n as g,a as u};

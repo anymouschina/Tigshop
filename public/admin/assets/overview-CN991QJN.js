@@ -1,0 +1,1 @@
+import{y as r}from"./index-CGYuOau0.js";const t=e=>r({url:"salesman/overview/core_summary",method:"get",params:e}),a=e=>r({url:"salesman/overview/core_trend",method:"get",params:e}),n=e=>r({url:"salesman/salesman/ranking",method:"get",params:e}),o=e=>r({url:"salesman/product/analysis",method:"get",params:e});export{n as a,o as b,a as c,t as g};

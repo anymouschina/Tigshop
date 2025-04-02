@@ -393,13 +393,13 @@ class User extends IndexBaseController
         $filter['user_id'] = $userId;
         $list = $service->getFilterList($filter, [
             'shop' => [
-                'hotProduct' => function ($query) {
+                'hot_product' => function ($query) {
                     $query->limit(10);
                 },
-                'newProduct' => function ($query) {
+                'new_product' => function ($query) {
                     $query->limit(10);
                 },
-                'bestProduct' => function ($query) {
+                'best_product' => function ($query) {
                     $query->limit(10);
                 }
             ]
@@ -422,8 +422,7 @@ class User extends IndexBaseController
         ], 'get');
         $item = app(UserRankService::class)->getFilterList($filter);
         $config = app(UserRankService::class)->getRankConfig();
-        $grow_config = Config::getConfig("base_shopping");
-        $grow_config = $grow_config['grow_up_setting'];
+        $grow_config = app(UserRankService::class)->getGrowConfig();
         return $this->success([
             'item' => $item,
             'rank_config' => $config,
@@ -431,4 +430,22 @@ class User extends IndexBaseController
         ]);
     }
 
+
+    /**
+     * 获取用户权益信息
+     * @return Response
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public function levelInfo():Response
+    {
+        $filter = $this->request->only([
+            'rank_id/d' => 0,
+        ], 'get');
+        $item = app(UserRankService::class)->getRankInfo($filter['rank_id']);
+        return $this->success([
+            'item' => $item,
+        ]);
+    }
 }

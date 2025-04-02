@@ -134,7 +134,7 @@ class TimeDiscount extends AdminBaseController
      */
     public function del(): Response
     {
-        $discountId = input('discount_id/d', 0);
+        $discountId = input('id/d', 0);
         $this->timeDiscountService->delTimeDiscount($discountId);
         return $this->success(/** LANG */'删除成功');
     }

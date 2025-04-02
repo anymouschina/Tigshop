@@ -88,7 +88,7 @@ class ShopService extends BaseService
     {
         $result = $this->model->with(['merchant' => function ($query) {
             $query->hidden(['base_data','shop_data']);
-        }])->where('shop_id', $id)->find();
+        }, 'adminUserShop'])->where('shop_id', $id)->find();
 
         if (!$result) {
             throw new ApiException(Util::lang('店铺不存在'));
@@ -160,6 +160,10 @@ class ShopService extends BaseService
     public function create(array $data): Shop|\think\Model
     {
         $result = $this->model->create($data);
+        //后台添加店铺更新绑定的商户里面的shop_data
+        if(isset($data['merchant_id'])){
+            app(MerchantService::class)->updateShopDataByCreateShop($data['merchant_id'], $result->shop_id);
+        }
         $this->initData($result->shop_id,$result->merchant_id);
         return $result;
     }
@@ -180,6 +184,7 @@ class ShopService extends BaseService
                 $max_shop = Config::get("max_shop_count",'merchant');
                 $use_merchant = Shop::where('merchant_id', $data['merchant_id'])->count();
                 if ($max_shop > 0 && $use_merchant >= $max_shop) {
+                    //todo 翻译：java包了语言： "商户店铺数已达上限,上限为%d个,如需修改,请前往配置"
                     throw new ApiException("商户店铺数已达上限,上限为{$max_shop}个,如需修改,请前往配置");
                 }
             }
@@ -318,8 +323,11 @@ class ShopService extends BaseService
     {
         $order_config = app(OrderConfigService::class)->getDetail("order_config",$data['shop_id']);
         if (!empty($order_config)) {
-            $job_day = $order_config['date_type'] ? $order_config['use_day'] : 0;
+            $job_day = $order_config['date_type'] > 0 ? $order_config['use_day'] : 0;
             app(TigQueue::class)->later(OrderSettlementJob::class, $job_day * 24 * 3600, $data);
+        } else {
+            //没有配置改完延时一秒后立即执行
+            app(TigQueue::class)->later(OrderSettlementJob::class, 0, $data);
         }
     }
 
@@ -333,7 +341,7 @@ class ShopService extends BaseService
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public function checkShopStatus(int $shop_id, string $product_name): bool
+        public function checkShopStatus(int $shop_id, string $product_name): bool
     {
         if(empty($shop_id)){
             return false;

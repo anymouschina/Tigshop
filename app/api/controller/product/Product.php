@@ -17,7 +17,6 @@ use app\service\admin\product\ProductService;
 use app\service\admin\promotion\PointsExchangeService;
 use app\service\admin\user\FeedbackService;
 use app\service\admin\user\UserCouponService;
-use app\service\front\cart\CartService;
 use app\service\front\promotion\CouponService;
 use app\service\front\promotion\PromotionService;
 use exceptions\ApiException;
@@ -178,32 +177,6 @@ class Product extends IndexBaseController
         ]);
     }
 
-    /**
-     * 兼容后的购物车
-     * @return Response
-     * @throws ApiException
-     */
-    public function addToCart(): \think\Response
-    {
-        $id = input('id/d', 0);
-        $number = input('number/d', 0);
-        $sku_id = input('sku_id', 0);
-        $sku_item = input('sku_item/a', []);
-        $type = input('type/d', 1);
-        $salesman_id = input('salesman_id/d', 0);
-        $is_quick = input('is_quick/d', 0) == 1 ? true : false;
-        //添加商品多规格属性 多个id 用逗号分割
-        $extra_attr_ids = input('extra_attr_ids', '');
-        // 获取 type 值
-        $cart_type = app(CartService::class)->getCartTypeByProduct($id,$type);
-        $result = app(CartService::class)->addToCart($id,$number,$sku_id, $is_quick, $cart_type, $salesman_id, $extra_attr_ids,$sku_item);
-        return $this->success([
-            "item" => $result,
-            'flow_type' => $cart_type
-        ]);
-    }
-
-
     public function getProductAmount()
     {
         $id = input('id/d', 0);
@@ -239,6 +212,7 @@ class Product extends IndexBaseController
             'is_delete/d' => -1,
             'category_id/d' => 0,
             'brand_id/d' => 0,
+            'product_group_id' => 0,
             'ids' => null,
             'shop_id/d' => -2, // 店铺id
             'intro_type' => '', // 商品类型

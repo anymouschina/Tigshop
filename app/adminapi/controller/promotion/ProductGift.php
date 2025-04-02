@@ -146,7 +146,7 @@ class ProductGift extends AdminBaseController
      */
     public function del(): Response
     {
-        $giftId= input('gift_id/d', 0);
+        $giftId= input('id/d', 0);
         $this->productGiftService->deleteProductGift($giftId);
         return $this->success(/** LANG */'指定项已删除');
     }

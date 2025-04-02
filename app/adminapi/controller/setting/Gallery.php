@@ -89,9 +89,7 @@ class Gallery extends AdminBaseController
             'parent_id' => '',
             'gallery_sort' => 50,
         ], 'post');
-        if ($this->shopId){
-            $data['shop_id'] = $this->shopId;
-        }
+        $data['shop_id'] = request()->shopId;
         try {
             validate(GalleryValidate::class)
                 ->scene('create')

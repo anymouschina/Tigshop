@@ -1,0 +1,1 @@
+import{y as e}from"./index-CGYuOau0.js";const n=()=>e({url:"salesman/config/detail?code=salesman_config",method:"get"}),o=s=>e({url:"salesman/config/save?code=salesman_config",method:"post",data:s});export{n as g,o as s};

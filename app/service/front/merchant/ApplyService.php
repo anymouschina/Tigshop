@@ -5,6 +5,7 @@ namespace app\service\front\merchant;
 use app\model\merchant\Apply;
 use app\model\merchant\MerchantAccount;
 use app\service\admin\authority\AdminUserService;
+use app\service\admin\common\sms\SmsService;
 use app\service\admin\merchant\AdminUserShopService;
 use app\service\admin\merchant\MerchantService;
 use app\service\admin\merchant\ShopService;
@@ -83,11 +84,13 @@ class ApplyService extends BaseService
         $userInfo = app(UserService::class)->getDetail($data['user_id']);
         $adminUser = app(AdminUserService::class)->getAdminByMobile($userInfo['mobile']);
         if (!$adminUser) {
+            $randomPassword = random_num(10);
             $adminId = app(AdminUserService::class)->createAdminUser([
-                'username' => $userInfo['mobile'],
+                'username' => $userInfo['username'],
                 'mobile' => $userInfo['mobile'],
                 'email' => $userInfo['email'],
-                'password' => '',
+                'password' => $randomPassword,
+                'initial_password' => $randomPassword,
                 'admin_type' => 'shop',
                 'role_id' => 1,
                 'avatar' => '',
@@ -95,9 +98,14 @@ class ApplyService extends BaseService
                 'merchant_id' => $merchantDetail->merchant_id,
                 'is_admin' => 1
             ]);
+            //发送短信
+            if(!empty($userInfo['mobile'])){
+                app(SmsService::class)->sendSms($userInfo['mobile'], 'merchant_apply_success', [$userInfo['mobile'], $randomPassword]);
+            }
         } else {
             $adminId = $adminUser->admin_id;
         }
+
         // 创建店铺
         $shop = app(ShopService::class)->create([
             'merchant_id' => $merchantDetail->merchant_id,

@@ -67,19 +67,29 @@ class Check extends IndexBaseController
                 }
             }
         }
-        $params = [
-            'address_id' => $orderCheckService->getSelectedAddressId(),
-            'shipping_type' => $orderCheckService->getSelectedShippingType(),
-            'pay_type_id' => $orderCheckService->getSelectedPayTypeId(),
+        $params = request()->only([
+            'address_id' => 0,
+            'shipping_type' => [],
+            'pay_type_id' => 1,
             'use_point' => 0,
             'use_balance' => 0,
+            'flow_type/d' => 1,
             'use_coupon_ids' => $use_coupon_ids,
             'select_user_coupon_ids' => $select_user_coupon_ids,
-            'flow_type' => $flow_type
-        ];
+            'product_extra' => []
+        ]);
+//        $params = [
+//            'address_id' => $orderCheckService->getSelectedAddressId(),
+//            'shipping_type' => $orderCheckService->getSelectedShippingType(),
+//            'pay_type_id' => $orderCheckService->getSelectedPayTypeId(),
+//            'use_point' => 0,
+//            'use_balance' => 0,
+//            'use_coupon_ids' => $use_coupon_ids,
+//            'select_user_coupon_ids' => $select_user_coupon_ids,
+//            'flow_type' => $flow_type
+//        ];
         $orderCheckService->initSet($params);
-
-        return $this->success([
+        $result = [
             'address_list' => app(UserAddressService::class)->getAddressList(request()->userId),
             'available_payment_type' => $orderCheckService->getAvailablePaymentType(),
             'store_shipping_type' => $orderCheckService->getStoreShippingType(),
@@ -94,6 +104,9 @@ class Check extends IndexBaseController
             'select_user_coupon_ids' => $select_user_coupon_ids,
             'tmpl_ids' => app(MessageTemplateService::class)->getMiniProgramTemplateIds(),
             'flow_type' => $flow_type
+        ];
+        return $this->success([
+            'item' => $result
         ]);
     }
 
@@ -126,14 +139,47 @@ class Check extends IndexBaseController
 
         $cart_list = app(CartService::class)->buildCartPromotion($cart_list, request()->userId, $params['flow_type'], 0,
             $params['use_coupon_ids']);
-        return $this->success([
+        $result = [
             'store_shipping_type' => $orderCheckService->getStoreShippingType(),
             'available_payment_type' => $orderCheckService->getAvailablePaymentType(),
             'cart_list' => $cart_list['carts'],
             'total' => $orderCheckService->getTotalFee($cart_list),
             'address_list' => app(UserAddressService::class)->getAddressList(request()->userId),
+        ];
+        return $this->success([
+            'item' => $result
         ]);
     }
+
+    /**
+     */
+    public function getAvailablePaymentType(): \think\Response
+    {
+        $orderCheckService = new OrderCheckService();
+        return $this->success([
+            'item' => $orderCheckService->getAvailablePaymentType()
+        ]);
+    }
+
+    public function getStoreShippingType(): \think\Response
+    {
+        $orderCheckService = new OrderCheckService();
+        $params = request()->only([
+            'address_id' => 0,
+            'shipping_type' => [],
+            'pay_type_id' => 1,
+            'use_point' => 0,
+            'use_balance' => 0,
+            'flow_type/d' => 1,
+            'use_coupon_ids' => [],
+            'select_user_coupon_ids' => [],
+        ]);
+        $orderCheckService->initSet($params);
+        return $this->success([
+            'item' => $orderCheckService->getStoreShippingType()
+        ]);
+    }
+
 
     // 更新优惠券
     public function updateCoupon(): \think\Response
@@ -174,12 +220,15 @@ class Check extends IndexBaseController
                 }
             }
         }
-        return $this->success([
+        $result = [
             'coupon_list' => $orderCheckService->getCouponListByPromotion($cart_list, $params['use_coupon_ids'], $params['select_user_coupon_ids']),
             'use_coupon_ids' => $params['use_coupon_ids'],
             'select_user_coupon_ids' => $params['select_user_coupon_ids'],
             'cart_list' => $cart_list['carts'],
             'total' => $orderCheckService->getTotalFee($cart_list),
+        ];
+        return $this->success([
+            'item' => $result
         ]);
     }
 

@@ -57,7 +57,7 @@ return [
     ],
     'version_type' => 'B2B2C-PRO',
 
-    'version' => '2.2.1',
+    'version' => '2.2.6',
 
     //是否是多商户版本
     'IS_MERCHANT' => env('IS_MERCHANT', 1),

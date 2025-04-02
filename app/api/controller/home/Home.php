@@ -46,12 +46,16 @@ class Home extends IndexBaseController
     public function index(): Response
     {
         $preview_id = input('preview_id/d', 0);
+        $decorate_id = input('decorate_id/d', 0);
         if (env("DEMO_DEFAULT_DECORATE_ID")) {
             $preview_id = env("DEMO_DEFAULT_DECORATE_ID");
         }
         if ($preview_id > 0) {
             // 预览
             $decorate = app(DecorateService::class)->getAppPreviewDecorate($preview_id);
+        } elseif ($decorate_id > 0) {
+            // 获取首页发布版
+            $decorate = app(DecorateService::class)->getDecorate(Decorate::TYPE_H5, $decorate_id);
         } else {
             // 获取首页发布版
             $decorate = app(DecorateService::class)->getAppHomeDecorate();
@@ -76,7 +80,7 @@ class Home extends IndexBaseController
             $decorate = app(DecorateService::class)->getPcPreviewDecorate($preview_id);
         } elseif ($decorate_id > 0) {
             // 获取首页发布版
-            $decorate = app(DecorateService::class)->getDecorate(Decorate::TYPE_H5, $decorate_id);
+            $decorate = app(DecorateService::class)->getDecorate(Decorate::TYPE_PC, $decorate_id);
         } else {
             // 获取首页发布版
             $decorate = app(DecorateService::class)->getPcHomeDecorate();

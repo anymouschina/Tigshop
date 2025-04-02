@@ -25,6 +25,7 @@ class ShopWithDraw extends Model
 
     protected $json = ['account_data'];
     protected $jsonAssoc = true;
+    protected $append = ['status_text'];
 
     // 字段处理
     public function getAddTimeAttr($value): string
@@ -35,12 +36,14 @@ class ShopWithDraw extends Model
     const STATUS_WAIT_AUDIT = 0;
     const STATUS_FAIL = 2;
     const STATUS_COMPLETE = 3;
+    const STATUS_WAIT_PAYMENT = 4;
     const STATUS_PROCESS = 1;
     const STATUS_LIST = [
         self::STATUS_WAIT_AUDIT => "待审核",
         self::STATUS_PROCESS => "正在处理",
         self::STATUS_FAIL => '审核不通过',
-        self::STATUS_COMPLETE => '完成'
+        self::STATUS_COMPLETE => '完成',
+        self::STATUS_WAIT_PAYMENT => '待打款',
     ];
 
     public function getStatusTextAttr($value, $data)
@@ -48,6 +51,11 @@ class ShopWithDraw extends Model
         if (isset($data['status']) && isset(self::STATUS_LIST[$data['status']])) {
             return self::STATUS_LIST[$data['status']];
         }
+    }
+
+    public function account()
+    {
+        return $this->hasOne(MerchantAccount::class, 'merchant_account_id', 'account_id');
     }
 
 

@@ -26,7 +26,13 @@ class User extends Model
     public function userRank()
     {
         return $this->hasOne(UserRank::class, 'rank_id', 'rank_id')
-            ->bind(["rank_name", "min_growth_points","rank_ico", "discount","rank_type","rank_bg","rank_point","free_shipping","rights","rank_level"]);
+            ->bind(["rank_name", "min_growth_points","rank_ico", "discount","rank_type","rank_bg","rank_point","free_shipping","rights","rank_level","rank_card_type",'rank_logo']);
+    }
+
+    // 会员等级成长日志
+    public function rankLog()
+    {
+        return $this->hasOne(UserRankLog::class, 'user_id', 'user_id')->field('user_id,rank_id,change_time')->limit(1)->order('id',"DESC");
     }
 
     public function getAvatarAttr($value)

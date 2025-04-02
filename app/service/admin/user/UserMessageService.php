@@ -36,7 +36,15 @@ class UserMessageService extends BaseService
     {
         $query = $this->filterQuery($filter)->append(["add_time_date", 'add_time_hms']);
         $result = $query->page($filter['page'], $filter['size'])->order('message_id desc')->select();
-        return $result->toArray();
+        $res = $result->toArray();
+        if(!empty($res)){
+            foreach ($res as &$item){
+               if(!empty($item['link']) && is_json($item['link'])){
+                   $item['link'] = json_decode($item['link'], true);
+               }
+            }
+        }
+        return $res;
     }
 
     /**

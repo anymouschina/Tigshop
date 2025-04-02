@@ -46,22 +46,52 @@ class UserRank extends AdminBaseController
             'page' => 1,
             'size' => 15,
             'sort_field' => 'rank_id',
-            'sort_order' => 'desc',
+            'sort_order' => 'asc',
         ], 'get');
 
         // 获取配置
-        $config = app(userRankService::class)->getRankConfig();
-        if (empty($config)) {
-            return $this->error(/** LANG */ '请先配置会员等级设置');
+        $config = [];
+        if(config('app.IS_PRO')){
+            $config = app(userRankService::class)->getRankConfig();
+            if(empty($config)) {
+                $data = app(userRankService::class)->defaultRankData();
+                $config = $data['rank_config'];
+            }
+            $filter['rank_type'] = $config['rank_type'];
         }
-        $filter['rank_type'] = $config['rank_type'];
         $filterResult = $this->userRankService->getFilterList($filter,[],['user_rights','user_count']);
         $total = $this->userRankService->getFilterCount($filter);
+        $filterResultArray = $filterResult->toArray();
+        $res = [];
+        if(!empty($filterResultArray)) {
+            if(!config("app.IS_PRO")){
+                foreach ($filterResultArray as $key => $item) {
+                    $tmp = [];
+                    $tmp['rank_id'] = $item['rank_id'];
+                    $tmp['user_count'] = $item['user_count'];
+                    $tmp['rank_name'] = $item['rank_name'];
+                    $tmp['rank_logo'] = $item['rank_logo'];
+                    $tmp['rank_level'] = $item['rank_level'];
+                    $res[] = $tmp;
+                }
+            } else {
+                $res = $filterResultArray;
+            }
+        } else {
+            $data = app(userRankService::class)->defaultRankData();
+            if(config("app.IS_PRO")){
+                $res = $data['user_rank_list'];
+                $total = count($res);
+            } else {
+                $res = $data['user_rank_list_not_pro'];
 
+            }
+        }
         return $this->success([
-            'filter_result' => $filterResult,
+            'filter_result' => $res,
             'filter' => $filter,
             'total' => $total,
+            'rank_config' => $config
         ]);
     }
 
@@ -72,7 +102,8 @@ class UserRank extends AdminBaseController
      */
     public function detail(): Response
     {
-        $item = $this->userRankService->getDetail();
+        $rank_type = input('rank_type/d', 1);
+        $item = $this->userRankService->getDetail($rank_type);
         return $this->success([
             'item' => $item,
         ]);
@@ -88,7 +119,8 @@ class UserRank extends AdminBaseController
         $data = $this->request->only([
             "rank_type/d" => 1,
             'data/a' => [],
-            'config' => []
+            'rank_config/a' => [],
+            'grow_up_setting/a' => []
         ], 'post');
 
         $result = $this->userRankService->updateUserRank($data);

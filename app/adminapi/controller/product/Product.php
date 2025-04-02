@@ -67,6 +67,7 @@ class Product extends AdminBaseController
             'category_id/d' => 0,
             'brand_id/d' => 0,
             'ids' => null,
+            'product_group_id' => 0,
             'shop_id/d' => -2, // 店铺id
             'intro_type' => '', // 商品类型
             'product_status/d' => -1, // 上下架状态
@@ -536,6 +537,15 @@ class Product extends AdminBaseController
             "check_reason" => ''
         ], 'post');
         $result = $this->productService->auditProduct($id, $data);
+        return $result ? $this->success('操作成功') : $this->error('操作失败');
+    }
+
+    public function auditAgain()
+    {
+        $data = $this->request->only([
+            'id' => 0,
+        ], 'post');
+        $result = $this->productService->auditAgain($data['id']);
         return $result ? $this->success('操作成功') : $this->error('操作失败');
     }
 }

@@ -1,1 +1,0 @@
-import{Z as e}from"./index-Ce4FtYLL.js";const t=t=>e({url:"category/category/parent_tree",method:"get",data:{id:t}}),r=t=>e({url:"search/search/get_filter",method:"get",params:t}),a=t=>e({url:"search/search/get_product",method:"get",params:t}),s=t=>e({url:`shop/category/parent_tree?id=${t}`,method:"get"});export{r as a,t as b,s as c,a as g};

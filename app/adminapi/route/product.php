@@ -156,6 +156,10 @@ Route::group('product', function () {
         Route::post('audit', 'audit')->append([
             "authorityCheckSubPermissionName" => 'productModifyManage'
         ]);
+        //审核不通过再次提交审核
+        Route::post('audit_again', 'auditAgain')->append([
+            "authorityCheckSubPermissionName" => 'productModifyManage'
+        ]);
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendGroupName' => 'productManage'

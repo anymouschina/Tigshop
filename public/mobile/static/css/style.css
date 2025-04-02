@@ -2,24 +2,16 @@
 @import "./modules.css";
 @import "../font/iconfont.css";
 page {
-    font-family: "PingFang SC", miui, system-ui, -apple-system, BlinkMacSystemFont, Helvetica Neue, Helvetica, sans-serif;
-}
-
-@keyframes gif {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(1turn);
-    }
-}
-@keyframes gif {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(1turn);
-    }
+    font-family:
+        PingFang SC,
+        Microsoft Yahei,
+        Avenir,
+        Segoe UI,
+        Hiragino Sans GB,
+        STHeiti,
+        "Microsoft Sans Serif",
+        WenQuanYi Micro Hei,
+        sans-serif;
 }
 
 /*通用暂无数据样式*/

@@ -391,6 +391,7 @@ class Order extends AdminBaseController
     {
         $data = input("ids/a", []);
 		$suppliers_id = request()->suppliersId;
+        $data = is_array($data) ? $data : explode(',', $data);
         $item = $this->orderService->getSeveralDetail($data,$suppliers_id);
         return $this->success([
             'item' => $item,

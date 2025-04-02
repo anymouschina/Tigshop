@@ -308,7 +308,7 @@ class OrderDetailService extends BaseService
         $order->save();
 
         // 订单完成 -- 发送后台消息
-        app(AdminMsgService::class)->createMessage([
+        $admin_msg = [
             'msg_type' => AdminMsg::MSG_TYPE_ORDER_FINISH,
             'shop_id' => $order->shop_id,
             'order_id' => $this->id,
@@ -317,8 +317,13 @@ class OrderDetailService extends BaseService
             'related_data' => [
                 "order_id" => $this->id
             ]
-        ]);
-
+        ];
+        app(AdminMsgService::class)->createMessage($admin_msg);
+        if ($admin_msg['shop_id'] > 0) {
+            //如果是店铺订单则给平台订单也发一条
+            $admin_msg['shop_id'] = 0;
+            app(AdminMsgService::class)->createMessage($admin_msg);
+        }
         // 触发订单结算
         app(ShopService::class)->triggerAutoOrderSettlement(['order_id' => $this->id,'shop_id' => $order->shop_id]);
     }

@@ -1,1 +1,0 @@
-import{aa as r,af as t}from"./DvlzeZYf.js";const o=e=>t({url:"order/pay/index",method:"get",params:e}),s=e=>r({url:"order/pay/create",method:"get",params:e}),c=e=>r({url:"order/pay/check_status",method:"get",params:e});export{c as a,s as c,o};

@@ -9,6 +9,7 @@ use app\service\admin\finance\UserRechargeOrderService;
 use app\service\admin\order\OrderDetailService;
 use app\service\admin\order\OrderService;
 use app\service\admin\product\ECardService;
+use app\service\admin\user\UserRankService;
 use app\service\common\BaseService;
 use exceptions\ApiException;
 use utils\Config;
@@ -105,6 +106,8 @@ class PaymentService extends BaseService
 
                     // 卡券分配
                     app(ECardService::class)->getCardByOrder($pay_log['order_id']);
+                    // 订单交易成功获取成长值
+                    app(UserRankService::class)->getRankGrowth($order->user_id);
                     break;
                 case 1:
                     //充值

@@ -215,7 +215,7 @@ class UserAddressService extends BaseService
             ->field("address_id,user_id,consignee,email,region_names,address,telephone,mobile,is_selected,is_default");
 
         $count = $query->count();
-        $list = $query->page($filter["page"], $filter["size"])->select();
+        $list = $query->order('is_selected', 'desc')->page($filter["page"], $filter["size"])->select();
         return [
             'count' => $count,
             'list' => $list,
@@ -230,12 +230,13 @@ class UserAddressService extends BaseService
      */
     public function addressSetSelected(int $user_id, int $address_id): bool
     {
-        $address = UserAddress::where(['user_id' => $user_id, "is_selected" => 1])->find();
-        if ($address) {
-            $address->is_selected = 0;
-            $address->save();
-        }
-        $is_selected = UserAddress::where(['user_id' => $user_id, "address_id" => $address_id])->save(["is_selected" => 1]);
+        UserAddress::where(['user_id' => $user_id, "is_selected" => 1])->update([
+            'is_selected' => 0,
+        ]);
+        $is_selected = UserAddress::where([
+            'user_id' => $user_id,
+            "address_id" => $address_id
+        ])->update(["is_selected" => 1]);
         return $is_selected !== false;
     }
 }

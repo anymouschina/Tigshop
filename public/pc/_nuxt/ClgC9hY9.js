@@ -1,1 +1,0 @@
-import{aa as t}from"./DvlzeZYf.js";const u=o=>t({url:"user/coupon/get_list",method:"get",params:o}),s=o=>t({url:"user/coupon/list",method:"get",params:o}),r=o=>t({url:"user/coupon/claim",method:"post",data:o}),n=o=>t({url:"user/coupon/del",method:"post",data:o}),a=o=>t({url:"user/coupon/detail",method:"get",params:{id:o}});export{u as a,r as b,s as c,n as d,a as g};

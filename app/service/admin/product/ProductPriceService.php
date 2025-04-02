@@ -41,9 +41,9 @@ class ProductPriceService extends BaseService
         }
         //4.会员等级价格
         foreach ($ranks_list as $key => $value) {
-            if ($value['rank_id'] == $user_rank_id) {
+            if ($value['rank_id'] == $user_rank_id && $value['discount'] > 0) {
                 $discount = floatval($value['discount']);
-                $price = round($price * $discount / 100, 2);
+                $price = round($price * $discount / 10, 2);
             }
         }
 

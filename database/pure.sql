@@ -1,17 +1,17 @@
 /*
- Navicat Premium Data Transfer
+ Navicat Premium Dump SQL
 
- Source Server         : 192.168.5.74
+ Source Server         : 73server
  Source Server Type    : MySQL
- Source Server Version : 50744
+ Source Server Version : 50744 (5.7.44-log)
  Source Host           : 192.168.5.74:3306
  Source Schema         : tigshop_pure
 
  Target Server Type    : MySQL
- Target Server Version : 50744
+ Target Server Version : 50744 (5.7.44-log)
  File Encoding         : 65001
 
- Date: 13/01/2025 18:02:48
+ Date: 27/03/2025 14:22:49
 */
 
 SET NAMES utf8mb4;
@@ -427,7 +427,7 @@ CREATE TABLE `authority`  (
   INDEX `parent_id`(`parent_id`) USING BTREE,
   INDEX `is_show`(`is_show`) USING BTREE,
   INDEX `sort_order`(`sort_order`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10000393 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '商城后台权限表' ROW_FORMAT = COMPACT;
+) ENGINE = InnoDB AUTO_INCREMENT = 10000397 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '商城后台权限表' ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of authority
@@ -612,7 +612,9 @@ INSERT INTO `authority` VALUES (10000385, 'areaCodeManage', '区号管理', 1000
 INSERT INTO `authority` VALUES (10000386, 'eCardManage', '电子卡券组', 5, 50, 1, '[]', 'promotion/e_card/list/', '', 0, 'admin');
 INSERT INTO `authority` VALUES (10000387, 'eCardManage', '电子卡券组', 10005, 50, 1, '[]', 'promotion/e_card/list/', '', 0, 'shop');
 INSERT INTO `authority` VALUES (10000390, 'userCertificationManage', '会员实名认证', 11, 50, 1, '[]', 'user/user_certification/list/', '', 0, 'admin');
+INSERT INTO `authority` VALUES (10000391, 'userLevelManage', '会员等级设置', 11, 50, 1, '[]', 'user/level_manage/list/', '', 0, 'admin');
 INSERT INTO `authority` VALUES (10000392, 'enquiryManage', '商品询价', 2, 50, 1, '[]', 'product/enquiry/list/', '', 0, 'admin');
+INSERT INTO `authority` VALUES (10000396, 'levelManageManage', '会员等级设置', 11, 50, 1, '[]', 'user/level_manage/list/', '', 0, 'admin');
 
 -- ----------------------------
 -- Table structure for bargain
@@ -8596,12 +8598,13 @@ CREATE TABLE `shop_withdraw`  (
   `shop_withdraw_log_id` int(11) NOT NULL AUTO_INCREMENT,
   `shop_id` mediumint(8) UNSIGNED NOT NULL DEFAULT 0 COMMENT '所属店铺',
   `amount` decimal(10, 2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '提现金额',
-  `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态0待审核2审核不通过3完成',
+  `status`          tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态0待审核2审核不通过3完成4待打款',
   `add_time` int(11) UNSIGNED NOT NULL COMMENT '提现时间',
   `remark` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '提现备注',
   `merchant_account_id` int(11) NULL DEFAULT NULL COMMENT '提现到',
   `account_data` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '提现时账户信息数据',
   `audit_remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '审核备注',
+  `payment_voucher` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '打款凭证',
   PRIMARY KEY (`shop_withdraw_log_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '店铺提现记录' ROW_FORMAT = COMPACT;
 
@@ -9139,15 +9142,12 @@ CREATE TABLE `user_rank`  (
   `rights` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '自定义权益【json】',
   `rank_level` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '会员等级',
   PRIMARY KEY (`rank_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '会员等级配置信息' ROW_FORMAT = COMPACT;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '会员等级配置信息' ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of user_rank
 -- ----------------------------
-INSERT INTO `user_rank` VALUES (1, '白银会员', 0, 100, 100.0, 1, 1, '', 'https://oss.tigshop.com/img/gallery/demo/1680253154TFkROyT82pgPDNHHNG!!pic.png', '', '0', 0, 1, NULL, '');
-INSERT INTO `user_rank` VALUES (2, '黄金会员', 100, 500, 100.0, 1, 1, '', 'https://oss.tigshop.com/img/gallery/demo/16802531582s9gOoXUnqtS0SdS99!!pic.png', '', '0', 0, 1, NULL, '');
-INSERT INTO `user_rank` VALUES (3, '铂金会员', 500, 1000, 100.0, 1, 1, '', 'https://oss.tigshop.com/img/gallery/demo/1680253166sewis1W6qEkGHo1Kla!!pic.png', '', '0', 0, 1, NULL, '');
-INSERT INTO `user_rank` VALUES (4, '钻石会员', 1000, 2000, 100.0, 1, 1, '', 'https://oss.tigshop.com/img/gallery/demo/1680253166sewis1W6qEkGHo1Kla!!pic.png', '', '0', 0, 1, NULL, '');
+INSERT INTO `user_rank` VALUES (1, '黄金会员', 0, 0, 0.0, 1, 1, 'https://oss.tigshop.com/img/gallery/202501/1737524324ro1DJxNm3aQowZKnPU.png', 'card8', 'https://oss.tigshop.com/img/gallery/202411/1731301941uaSjIShOBNL2VBSr0y.webp', '0', 0, 1, '[{\"name\":\"\\u9001\\u624b\\u673a\",\"show_name\":\"\\u9001\\u624b\\u673a\",\"icon\":\"https:\\/\\/oss.tigshop.com\\/img\\/gallery\\/202411\\/1732864315aJxPkmv5jJm9hUUZWM.jpg\",\"value\":\"1999\",\"describe\":\"\\u9001\\u624b\\u673a\",\"is_checked\":0}]', '1');
 
 -- ----------------------------
 -- Table structure for user_rank_config
@@ -9159,11 +9159,13 @@ CREATE TABLE `user_rank_config`  (
   `rank_type` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '等级类型：1 成长值 2 消费行为',
   `data` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '等级配置[json]',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '会员等级配置表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '会员等级配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of user_rank_config
 -- ----------------------------
+INSERT INTO `user_rank_config` VALUES (1, 'rank_config', 1, '{\"type\":2,\"rank_after_month\":12,\"use_month\":12}');
+INSERT INTO `user_rank_config` VALUES (2, 'grow_config', 1, '{\"buy_order\":1,\"buy_order_number\":1,\"buy_order_growth\":\"5\",\"evpi\":1,\"evpi_growth\":1,\"bind_phone\":1,\"bind_phone_growth\":1}');
 
 -- ----------------------------
 -- Table structure for user_rank_log
@@ -9174,9 +9176,9 @@ CREATE TABLE `user_rank_log`  (
   `user_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '用户id',
   `rank_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '等级id',
   `rank_type` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '等级类型',
-  `rank_name` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '等级名称',
+  `rank_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '等级名称',
   `change_time` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '变更时间',
-  `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '变更备注',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '变更备注',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '会员等级变更日志表' ROW_FORMAT = DYNAMIC;
 

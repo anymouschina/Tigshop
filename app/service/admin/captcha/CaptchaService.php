@@ -70,7 +70,7 @@ class CaptchaService extends BaseService
     // 验证可不需要验证的最多次数，大于则需要或app wechat不需要
     public function isNeedCheck(): bool
     {
-        if (in_array(Util::getClientType(), ['miniProgram', 'ios', 'android'])) {
+        if (in_array(Util::getClientType(), ['ios', 'android'])) {
             return true;
         }
         $times = Cache::get('accessTimes:' . $this->tag);

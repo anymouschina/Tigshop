@@ -84,6 +84,11 @@ class Shop extends Model
             1)->where('is_delete', 0);
     }
 
+    public function adminUserShop()
+    {
+        return $this->hasOne(AdminUserShop::class, 'shop_id', 'shop_id');
+    }
+
 	// 收藏店铺
 	public function collect()
 	{

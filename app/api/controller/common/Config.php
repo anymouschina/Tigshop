@@ -15,6 +15,7 @@ use app\api\IndexBaseController;
 use app\service\admin\decorate\DecorateService;
 use app\service\admin\image\Image;
 use app\service\admin\setting\AreaCodeService;
+use app\service\admin\user\UserRankService;
 use think\App;
 use think\Response;
 use utils\Config as UtilsConfig;
@@ -90,8 +91,8 @@ class Config extends IndexBaseController
             'company_data_tips' => UtilsConfig::get('tips','base_api_company_data',''),
             'is_identity' => UtilsConfig::get('is_identity', 'base', 0),
             'is_enquiry' => UtilsConfig::get('is_enquiry', 'base', 0),
-            'grow_up_setting' => UtilsConfig::get('grow_up_setting','base_shopping')
         ];
+        $data['grow_up_setting'] = app(UserRankService::class)->getGrowConfig();
         $data['shop_company'] = $data['de_copyright'] ? $data['shop_company'] : config('app.default_company');
         $preview_id = input('preview_id/d', 0);
         $data['decorate_page_config'] = app(DecorateService::class)->getPcIndexDecoratePageConfig($preview_id);

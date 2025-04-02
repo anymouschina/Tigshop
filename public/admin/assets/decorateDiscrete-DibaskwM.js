@@ -1,0 +1,1 @@
+import{y as t}from"./index-CGYuOau0.js";const a=e=>t({url:"decorate/decorate_discrete/detail",method:"get",params:e}),o=()=>t({url:"decorate/decorate_discrete/member_decorate_data",method:"get"}),c=e=>t({url:"decorate/decorate_discrete/update",method:"post",data:e});export{o as a,a as g,c as u};

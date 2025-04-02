@@ -20,6 +20,7 @@ use app\model\product\ProductSku;
 use app\model\promotion\Coupon;
 use app\service\admin\msg\AdminMsgService;
 use app\service\admin\participle\ParticipleService;
+use app\service\admin\setting\ShippingTplService;
 use app\service\common\BaseService;
 use app\validate\product\ProductValidate;
 use exceptions\ApiException;
@@ -59,7 +60,12 @@ class ProductService extends BaseService
             $query->order('sort_order', 'asc')->order('product_id', 'desc');
         }
         $result = $query->page($filter['page'], $filter['size'])->select();
-        $result->load(['productSku', 'shopSimple']);
+        $result->load([
+            'productSku',
+            'shop' => function ($query) {
+                $query->field(['shop_id', 'shop_title']);
+            }
+        ]);
 
         return $result->toArray();
     }
@@ -91,7 +97,14 @@ class ProductService extends BaseService
         $filter['size'] = !empty($filter['size']) && $filter['size'] < 999 ? intval($filter['size']) : 999;
         $filter['product_status'] = 1;
         $filter['is_delete'] = 0;
-        $query = $this->filterQuery($filter)->with(['skuMinPrice', 'seckillMinPrice', "product_sku", "shopSimple"])
+        $query = $this->filterQuery($filter)->with([
+            'skuMinPrice',
+            'seckillMinPrice',
+            "product_sku",
+            "shop" => function ($query) {
+                $query->field(['shop_id', 'shop_title']);
+            }
+        ])
             ->field('product_id,pic_thumb,pic_url,product_name,check_status,shop_id,suppliers_id,product_type,product_sn,product_price,market_price,product_status,is_best,is_new,is_hot,product_stock,sort_order,product_brief');
         if (isset($filter['sort_field']) && !empty($filter['sort_field'])) {
             $query->order($filter['sort_field'], $filter['sort_order'] ?? 'desc');
@@ -184,6 +197,8 @@ class ProductService extends BaseService
                 } elseif ($coupon['send_range'] == 4) {
                     $query->whereNotIn('product_id', $coupon['send_range_data']);
                 }
+                // 所属店铺商品
+                $query->where('shop_id', $coupon["shop_id"]);
             }
         }
 
@@ -211,7 +226,7 @@ class ProductService extends BaseService
         }
 
         if (isset($filter['ids']) && $filter['ids'] !== null) {
-            $query->whereIn('product_id', $filter['ids']);
+            $query->whereIn('product_id', is_array($filter['ids']) ? $filter['ids'] : explode(',', $filter['ids']));
         }
         if (isset($filter['max_price']) && $filter['max_price'] > 0) {
             $query->where('product_price', '<=', $filter['max_price']);
@@ -235,6 +250,15 @@ class ProductService extends BaseService
             $query->where('shop_category_id', $filter["shop_category_id"]);
         }
 
+        //分组id
+        if (!empty($filter['product_group_id'])) {
+            $product_group = ProductGroup::find($filter['product_group_id']);
+            if (!empty($product_group)) {
+                $query->whereIn('product_id', $product_group->product_ids);
+            } else {
+                $query->where('product_id', -1);
+            }
+        }
         // 商品类型
         if (isset($filter["intro_type"]) && !empty($filter["intro_type"])) {
             $query->introType($filter["intro_type"]);
@@ -380,6 +404,10 @@ class ProductService extends BaseService
                     $data['check_status'] = 1;
                     $data['product_status'] = 1;
                 }
+            }
+            //如果没有选择模板id，就选默认运费模板id
+            if(empty($data['shipping_tpl_id'])){
+                $data['shipping_tpl_id'] = app(ShippingTplService::class)->getDefaultShippingTplId($shop_id);
             }
             $data['add_time'] = Time::now();
             if (empty($data['product_sn'])) {
@@ -924,5 +952,28 @@ class ProductService extends BaseService
             }
         }
         return $result !== false;
+    }
+
+    /**
+     * 再次审核
+     * @param int $id
+     * @param
+     * @return bool
+     * @throws ApiException
+     */
+    public function auditAgain(int $id): bool
+    {
+        $product = Product::find($id);
+        if (empty($product)) {
+            throw new ApiException('商品不存在');
+        }
+        if ($product->check_status != 2) {
+            throw new ApiException('商品审核状态错误');
+        }
+
+        $data['check_status'] = 0;
+        $data['check_reason'] = "";
+
+        return $product->save($data);
     }
 }

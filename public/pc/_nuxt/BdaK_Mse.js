@@ -1,1 +1,0 @@
-import{aa as e}from"./DvlzeZYf.js";const s=()=>e({url:"user/invoice/detail",method:"get"}),o=t=>e({url:"user/invoice/update",method:"post",params:t}),n=t=>e({url:"user/invoice/create",method:"post",params:t}),u=()=>e({url:"user/invoice/get_status",method:"get"});export{s as a,u as g,n as i,o as u};

@@ -1,0 +1,1 @@
+import{y as o}from"./index-CGYuOau0.js";const i=e=>o({prefix:"/im",url:"config/config/detail",method:"get",params:e}),r=e=>o({prefix:"/im",url:"config/config/save",method:"post",data:e});export{i as g,r as s};

@@ -50,16 +50,21 @@ class UserRank extends Model
     // 会员权益
     public function getUserRightsAttr($value,$data)
     {
-        $user_rights = "享受";
+        $user_rights = [];
         // 拼接会员权益
         if (!empty($data['free_shipping'])) {
-            $user_rights .= "会员包邮";
+            array_push($user_rights,"会员包邮");
         }
         if (!empty($data['discount']) && $data['discount'] != "0.0") {
-            $user_rights .= "会员折扣" . $data['discount'] . "折";
+            array_push($user_rights,"会员折扣" . $data['discount'] . "折");
         }
         if (!empty($data['rank_point'])) {
-            $user_rights .= $data['rank_point'] . "倍积分回馈";
+            array_push($user_rights,$data['rank_point'] . "倍积分回馈");
+        }
+        if (!empty($user_rights)) {
+            $user_rights = "享受" . implode("",$user_rights);
+        } else {
+            $user_rights = "";
         }
         return $user_rights;
     }

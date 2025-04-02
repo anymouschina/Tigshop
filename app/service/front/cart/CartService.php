@@ -216,12 +216,14 @@ class CartService extends BaseService
         ];
         foreach ($cart_list as $key => $row) {
             //查询商品信息和查询店铺状态
-            $product_info = Product::where('product_id', $row['product_id'])->field('product_name,shop_id')->find();
+            $product_info = Product::where('product_id',
+                $row['product_id'])->field('product_name,shop_id,product_price')->find();
             app(ShopService::class)->checkShopStatus($product_info['shop_id'], $product_info['product_name']);
 
             $row['is_checked'] = $row['is_checked'] == 1 ? true : false;
             $row['price'] = app(ProductPriceService::class)->getProductFinalPrice($row['product_id'],
-                $row['original_price'], $row['sku_id'], app(UserService::class)->getUserRankId(request()->userId),
+                $row['sku'] ? $row['sku']['sku_price'] : $product_info['product_price'], $row['sku_id'],
+                app(UserService::class)->getUserRankId(request()->userId),
                 app(UserRankService::class)->getUserRankList());
             $row['stock'] = app(ProductStockService::class)->getProductStock($row['product_id'], $row['sku_id'], $type > 1 ? 1 : 0);
             $row['has_sku'] = !empty($row['sku']);
@@ -281,10 +283,43 @@ class CartService extends BaseService
     }
 
     // 获取购物车数量
-    public function getCartCount(): int
+    public function getCartCount($is_checked = false, $type = Cart::TYPE_NORMAL, $filter = []): int
     {
-        $quantity = Cart::where('user_id', request()->userId)->sum('quantity');
-        return $quantity > 0 ? $quantity : 0;
+//        $quantity = Cart::where('user_id', request()->userId)
+//            ->where('is_checked', 1)
+//            ->sum('quantity');
+//        return $quantity > 0 ? $quantity : 0;
+        $total_count = 0;
+        $cart_list = $this->getCartList($is_checked, $type, $filter = []);
+        foreach ($cart_list as $key => $row) {
+            //查询商品信息和查询店铺状态
+            $product_info = Product::where('product_id',
+                $row['product_id'])->field('product_name,shop_id,product_price')->find();
+            app(ShopService::class)->checkShopStatus($product_info['shop_id'], $product_info['product_name']);
+            $row['stock'] = app(ProductStockService::class)->getProductStock($row['product_id'], $row['sku_id'], $type > 1 ? 1 : 0);
+            $row['has_sku'] = !empty($row['sku']);
+            $row['is_checked'] = $row['is_checked'] == 1 ? true : false;
+            $row['is_disabled'] = false;
+            if ($row['stock'] == 0 || $row['product_status'] == 0) {
+                $row['is_disabled'] = true;
+                //重置购物车选中状态
+                if ($row['is_checked']) {
+                    $this->updateCartCheckStatus($row['cart_id']);
+                    $row['is_checked'] = false;
+                }
+            }
+            if ($row['has_sku'] && empty($row['sku_id'])) {
+                $row['is_disabled'] = true;
+                //重置购物车选中状态
+                if ($row['is_checked']) {
+                    $this->updateCartCheckStatus($row['cart_id']);
+                    $row['is_checked'] = false;
+                }
+                $row['stock'] = 0;
+            }
+            $total_count += $row['quantity'];
+        }
+        return $total_count;
     }
 
     /**
@@ -493,10 +528,6 @@ class CartService extends BaseService
             if (empty($shopCart['carts'])) {
                 continue;
             }
-            foreach ($shopCart['carts'] as $item) {
-                //检查商品购买限制
-                $this->checkProductLimitNumber($item['product_id'], $item['user_id'], $item['quantity'], $item['cart_id']);
-            }
         }
 
         if ($flow_type != 1) {
@@ -544,7 +575,6 @@ class CartService extends BaseService
                 if ($everyPromotionProduct['type'] == 2) {//只先计算优惠券的
                     if (!app(UserCouponService::class)->getUserCouponIdByCouponId($userId, $everyPromotionProduct['data']['coupon_id'])) {
                         $everyPromotionProduct['data']['is_receive'] = 0;
-
                     } else {
                         $everyPromotionProduct['data']['is_receive'] = 1;
                         if ($use_default_coupon == 1) {//如果是默认选中一个，则选最大的

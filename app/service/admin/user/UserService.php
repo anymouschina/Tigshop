@@ -209,8 +209,8 @@ class UserService extends BaseService
 
         if ($isAdd) {
             $arr['reg_time'] = Time::now();
-            $arr['email_validated'] = 1;
-            $arr['mobile_validated'] = 1;
+            $arr['email_validated'] = 0;
+            $arr['mobile_validated'] = 0;
             $result = User::create($arr);
             AdminLog::add('新增会员:' . $data['username']);
             return $result->getKey();
@@ -634,11 +634,13 @@ class UserService extends BaseService
      */
     public function updateUserRank(int $user_id)
     {
+        if(!config("app.IS_PRO")){
+            return true;
+        }
         $user = User::find($user_id);
         if (empty($user)) {
             throw new ApiException('用户不存在');
         }
-
         $user_rank_original = UserRank::findOrEmpty($user->rank_id);
         // 排除固定等级用户
         if ($user_rank_original->rank_type == 2) {

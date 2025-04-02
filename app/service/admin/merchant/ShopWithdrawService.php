@@ -140,4 +140,26 @@ class ShopWithdrawService extends BaseService
         $result = $this->model->destroy($id);
         return $result !== false;
     }
+
+    public function uploadPayVoucher(array $filter)
+    {
+        if (!$filter['id']) {
+            throw new ApiException('#id错误');
+        }
+        $detail = $this->getDetail($filter['id']);
+        if ($detail['status'] != ShopWithDraw::STATUS_WAIT_PAYMENT) {
+            throw new ApiException('状态错误');
+        }
+        if (empty($filter['payment_voucher'])) {
+            throw new ApiException('请上传打款凭证');
+        }
+        $detail->payment_voucher = $filter['payment_voucher'];
+        $detail->status = ShopWithDraw::STATUS_COMPLETE;
+        $detail->save();
+        app(ShopAccountLogService::class)->completeWithDrawLog([
+            'shop_id' => $detail['shop_id'],
+            'amount' => $detail['amount']
+        ]);
+        return true;
+    }
 }

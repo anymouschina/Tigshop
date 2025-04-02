@@ -148,7 +148,7 @@ class AccessTokenService extends BaseService
     public function getHeaderToken(): string
     {
         $token = Request::header('authorization');
-        $token = str_replace('Bearer null', '', $token);
+        $token = str_replace('Bearer null', '', $token ?? '');
         return !empty($token) ? trim(str_replace('Bearer', '', $token)) : '';
     }
 }

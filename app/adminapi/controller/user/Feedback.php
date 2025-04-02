@@ -47,7 +47,7 @@ class Feedback extends AdminBaseController
             'size/d' => 15,
             'sort_field' => 'id',
             'sort_order' => 'desc',
-            'type' => [],
+            'type' => -1,
 			'status/d' => -1
         ], 'get');
 		$filter['shop_id'] = $this->shopId;

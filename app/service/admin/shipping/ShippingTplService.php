@@ -186,9 +186,9 @@ class ShippingTplService extends BaseService
     {
         $query = $this->shippingTplModel->with(['shop'])
 			->field('shipping_tpl_id, shipping_tpl_name ,is_default,shop_id');
-		if ($shop_id) {
-			$query->where('shop_id',$shop_id);
-		}
+
+		$query->where('shop_id',$shop_id);
+
 		$result = $query->select()->toArray();
         return $result;
     }

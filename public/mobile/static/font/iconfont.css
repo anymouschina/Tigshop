@@ -1,6 +1,7 @@
 @font-face {
     font-family: "iconfont"; /* Project id 1476660 */
-    src: url("https://at.alicdn.com/t/c/font_1476660_hoyzhsf9trn.woff2?t=1682406663245") format("woff2"),
+    src:
+        url("https://at.alicdn.com/t/c/font_1476660_hoyzhsf9trn.woff2?t=1682406663245") format("woff2"),
         url("https://at.alicdn.com/t/c/font_1476660_hoyzhsf9trn.woff?t=1682406663245") format("woff"),
         url("https://at.alicdn.com/t/c/font_1476660_hoyzhsf9trn.ttf?t=1682406663245") format("truetype");
 }
@@ -383,7 +384,8 @@
 
 @font-face {
     font-family: "module_ico"; /* Project id 3395830 */
-    src: url("https://demo2.lyecs.com/static/common/decorate/font/module_ico/iconfont.woff2?t=1656309262530") format("woff2"),
+    src:
+        url("https://demo2.lyecs.com/static/common/decorate/font/module_ico/iconfont.woff2?t=1656309262530") format("woff2"),
         url("https://demo2.lyecs.com/static/common/decorate/font/module_ico/iconfont.woff?t=1656309262530") format("woff"),
         url("https://demo2.lyecs.com/static/common/decorate/font/module_ico/iconfont.svg?t=1657175464235#module_ico") format("svg");
 }
@@ -430,7 +432,8 @@
 
 @font-face {
     font-family: "iconfont-h5"; /* Project id 4483982 */
-    src: url("https://at.alicdn.com/t/c/font_4483982_nj3uqq9nrj.woff2?t=1735885728862") format("woff2"),
+    src:
+        url("https://at.alicdn.com/t/c/font_4483982_nj3uqq9nrj.woff2?t=1735885728862") format("woff2"),
         url("https://at.alicdn.com/t/c/font_4483982_nj3uqq9nrj.woff?t=1735885728862") format("woff"),
         url("https://at.alicdn.com/t/c/font_4483982_nj3uqq9nrj.ttf?t=1735885728862") format("truetype");
 }
@@ -611,7 +614,8 @@
 
 @font-face {
     font-family: "iconfont-pc"; /* Project id 4389188 */
-    src: url("https://at.alicdn.com/t/c/font_4389188_t1nzoqv2d5k.woff2?t=1716775600684") format("woff2"),
+    src:
+        url("https://at.alicdn.com/t/c/font_4389188_t1nzoqv2d5k.woff2?t=1716775600684") format("woff2"),
         url("https://at.alicdn.com/t/c/font_4389188_t1nzoqv2d5k.woff?t=1716775600684") format("woff"),
         url("https://at.alicdn.com/t/c/font_4389188_t1nzoqv2d5k.ttf?t=1716775600684") format("truetype");
 }

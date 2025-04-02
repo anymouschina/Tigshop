@@ -171,12 +171,22 @@ class MessageCenterService extends BaseService
 			$admin_msg['content'] = "您有新的订单【{$order->order_sn}】，请注意查看";
 			$admin_msg['related_data'] = ["order_id" => $order_id];
 			app(AdminMsgService::class)->createMessage($admin_msg);
+            if ($admin_msg['shop_id'] > 0) {
+                //如果是店铺订单则给平台订单也发一条
+                $admin_msg['shop_id'] = 0;
+                app(AdminMsgService::class)->createMessage($admin_msg);
+            }
 		} elseif ($type == self::ORDER_PAY) {
 			$admin_msg['msg_type'] = AdminMsg::MSG_TYPE_ORDER_PAY;
 			$admin_msg['title'] = "您的订单已支付完成：{$order->order_sn}，金额：{$order->total_amount}";
 			$admin_msg['content'] = "您有订单【{$order->order_sn}】已支付完成，请注意查看";
 			$admin_msg['related_data'] = ["order_id" => $order_id];
 			app(AdminMsgService::class)->createMessage($admin_msg);
+            if ($admin_msg['shop_id'] > 0) {
+                //如果是店铺订单则给平台订单也发一条
+                $admin_msg['shop_id'] = 0;
+                app(AdminMsgService::class)->createMessage($admin_msg);
+            }
 		}
 
         return true;

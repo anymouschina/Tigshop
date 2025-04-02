@@ -193,14 +193,6 @@ return [
             'return_consignee' => '',
             'return_mobile' => '',
             'return_address' => '',
-        ],
-        'grow_up_setting' => [
-            'buy_goods' => 1,
-            "buy_goods_money" => 1,
-            'buy_goods_growth' => 1,
-            "buy_order" => 1,
-            'buy_order_number' => 1,
-            'buy_order_growth' => 1
         ]
     ],
     // 短信设置

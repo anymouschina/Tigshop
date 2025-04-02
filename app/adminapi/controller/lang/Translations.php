@@ -266,7 +266,8 @@ class Translations extends AdminBaseController
 			'data_type/d' => 0,
             'size/d' => 100,
             'ids' => [],
-            'shop_id' => request()->shopId
+            'shop_id' => request()->shopId,
+            'page' => 1
 		], 'post');
 		$result = $this->translationsService->multipleTranslation($data);
         return $this->success(Util::lang('批量操作执行成功！'));

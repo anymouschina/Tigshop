@@ -1,0 +1,1 @@
+import{at as t,aq as a}from"./BLNaUqdG.js";const o=a=>t({url:"user/collect_product/list",method:"get",params:a}),s=t=>a({url:"user/collect_product/cancel",method:"post",data:t}),e=t=>a({url:"user/collect_product/save",method:"post",data:t});export{s as d,o as g,e as u};

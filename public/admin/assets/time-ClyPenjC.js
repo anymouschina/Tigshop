@@ -1,0 +1,1 @@
+import{R as r}from"./index-CGYuOau0.js";const n=(a,e)=>{const t=new Date(a);return t.setHours(0,0,0,0),t.setHours(t.getHours()+e),t.getTime()};function o(a){const e=new Date,t=new Date(e);return t.setDate(e.getDate()+a),t.setHours(23,59,59,999),t.getTime()}function D(a,e){return r(a).format(e||"YYYY-MM-DD HH:mm:ss")}export{n as a,D as f,o as g};

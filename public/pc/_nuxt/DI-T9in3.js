@@ -1,1 +1,0 @@
-import{aa as e}from"./DvlzeZYf.js";const s=()=>e({url:"user/comment/sub_num",method:"get"}),o=t=>e({url:"user/comment/showed_list?is_showed=0",method:"get",params:t}),r=t=>e({url:"user/comment/list",method:"get",params:t}),u=t=>e({url:"user/comment/evaluate",method:"post",data:t}),n=t=>e({url:"user/comment/detail",method:"get",params:t});export{o as a,r as b,s as c,n as g,u};

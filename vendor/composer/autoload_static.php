@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit9f12db5595ff624224d94b81c7751abd
+class ComposerStaticInit12763ad2af038445b2b1239630b78d2f
 {
     public static $files = array (
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
@@ -249,8 +249,8 @@ class ComposerStaticInit9f12db5595ff624224d94b81c7751abd
             0 => __DIR__ . '/..' . '/topthink/think-helper/src',
             1 => __DIR__ . '/..' . '/topthink/think-orm/src',
             2 => __DIR__ . '/..' . '/topthink/framework/src/think',
-            3 => __DIR__ . '/..' . '/topthink/think-queue/src',
-            4 => __DIR__ . '/..' . '/topthink/think-filesystem/src',
+            3 => __DIR__ . '/..' . '/topthink/think-filesystem/src',
+            4 => __DIR__ . '/..' . '/topthink/think-queue/src',
         ),
         'thans\\jwt\\' => 
         array (
@@ -916,11 +916,11 @@ class ComposerStaticInit9f12db5595ff624224d94b81c7751abd
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit9f12db5595ff624224d94b81c7751abd::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit9f12db5595ff624224d94b81c7751abd::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit9f12db5595ff624224d94b81c7751abd::$prefixesPsr0;
-            $loader->fallbackDirsPsr0 = ComposerStaticInit9f12db5595ff624224d94b81c7751abd::$fallbackDirsPsr0;
-            $loader->classMap = ComposerStaticInit9f12db5595ff624224d94b81c7751abd::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$prefixesPsr0;
+            $loader->fallbackDirsPsr0 = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$fallbackDirsPsr0;
+            $loader->classMap = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$classMap;
 
         }, null, ClassLoader::class);
     }

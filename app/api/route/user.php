@@ -274,6 +274,8 @@ Route::group('user', function () {
         Route::get('collection_shop', 'myCollectShop');
         // 会员等级列表
         Route::get('level_list', 'levelList');
+        //会员权益信息
+        Route::get('level_info', 'levelInfo');
     })->middleware([
         \app\api\middleware\CheckLogin::class,
     ])->prefix("user.user/");

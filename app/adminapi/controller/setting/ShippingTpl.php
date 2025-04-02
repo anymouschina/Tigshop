@@ -85,7 +85,7 @@ class ShippingTpl extends AdminBaseController
     public function detail(): Response
     {
         $id = input('id/d', 0);
-        $shipping_tpl_info = $this->shippingTplService->getShippingTplInfo($id, $this->shopId);
+        $shipping_tpl_info = $this->shippingTplService->getShippingTplInfo($id, request()->shopId ?? 0);
         $item = $this->shippingTplService->getDetail($id);
         $item['shipping_tpl_info'] = $shipping_tpl_info;
         return $this->success([

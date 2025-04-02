@@ -334,7 +334,7 @@ class DecorateService extends BaseService
     }
 
     /**
-     * 获取预览数据
+     * 获取数据
      * @param int $type
      * @param int $decorate_id
      * @return array
@@ -352,7 +352,7 @@ class DecorateService extends BaseService
         }
         return [
             'decorate_id' => $result['decorate_id'],
-            'module_list' => $result['draft_data']['moduleList'],
+            'module_list' => $result['data']['moduleList'],
         ];
     }
 

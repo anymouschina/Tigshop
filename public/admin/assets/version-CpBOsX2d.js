@@ -1,0 +1,1 @@
+const _={VITE_IS_B2B:"0",VITE_IS_MERCHANT:"0",VITE_IS_OVERSEAS:"1",VITE_IS_PRO:"0"},{VITE_IS_MERCHANT:n,VITE_IS_PRO:I,VITE_IS_OVERSEAS:t,VITE_IS_B2B:E}=_;function r(){return n==1}function s(){return I==1}function S(){return t==1}function e(){return E==1}export{r as a,e as b,S as c,s as i};

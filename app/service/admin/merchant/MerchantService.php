@@ -172,12 +172,51 @@ class MerchantService extends BaseService
     }
 
     /**
+     * 创建店铺时，如果商户表里的shop_data为空，需要将店铺信息更新到shop_data字段
+     * @param int $merchantId
+     * @param int $shopId
+     * @return void
+     * @throws ApiException
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public function updateShopDataByCreateShop(int $merchantId, int $shopId): bool
+    {
+        if (empty($merchantId)) {
+            return false;
+        }
+        $merchant = Merchant::find($merchantId);
+        if (empty($merchant)) {
+            throw new ApiException('商户不存在');
+        }
+        if (empty($merchant->shop_data)) {
+            $shop = Shop::find($shopId);
+            $shop_data = [
+                'shop_logo' => [
+                    [
+                        'pic_thumb' => '',
+                        'pic_url' => $shop->shop_logo,
+                        'pic_name' => ''
+                    ]
+                ],
+                'shop_title' => $shop->shop_title,
+                'contact_mobile' => $shop->contact_mobile,
+                'description' => $shop->description,
+            ];
+            $merchant->shop_data = json_encode($shop_data);
+            return $merchant->save();
+        }
+        return true;
+    }
+
+    /**
      * 判断当前登录用户是否为商户管理员
      * @param int $adminUserId
      * @return int
      * @throws ApiException
      */
-    public function isMerchantAdmin(int $adminUserId):int
+    public function isMerchantAdmin(int $adminUserId): int
     {
         $merchantUser = $this->getMerchantUser($adminUserId);
         if (empty($merchantUser)) {
@@ -198,7 +237,7 @@ class MerchantService extends BaseService
         if (empty($shop)) {
             throw new ApiException("店铺不存在");
         }
-        $merchant = Merchant::where("merchant_id",$shop->merchant_id)->hidden(['base_data',"shop_data","merchant_data"])->find();
+        $merchant = Merchant::where("merchant_id", $shop->merchant_id)->hidden(['base_data', "shop_data", "merchant_data"])->find();
         if (empty($merchant)) {
             throw new ApiException("商户不存在");
         }

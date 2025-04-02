@@ -11,7 +11,9 @@ Route::group('product', function () {
         // 详情
         Route::get('detail', 'detail');
         // 详情
-        Route::post('add_to_cart', 'addToCart');
+        Route::post('add_to_cart', 'addToCart')->middleware([
+            \app\api\middleware\CheckLogin::class,
+        ]);;
 
     })->prefix("product.exchange/");
 
@@ -29,17 +31,12 @@ Route::group('product', function () {
         Route::get('get_product_availability', 'getProductAvailability');
 
         Route::post('get_product_amount', 'getProductAmount');
-        Route::get('get_product_amount', 'getProductAmount');
         // 列表
         Route::get('list', 'list');
         // 优惠卷
         Route::get('get_coupon', 'getCouponList');
         // 是否收藏
         Route::get('is_collect', 'isCollect');
-        //加入购物车
-        Route::post('add_to_cart', 'addToCart')->middleware([
-            \app\api\middleware\CheckLogin::class,
-        ]);
         // 优惠信息
         Route::post('promotion', 'getProductsPromotion');
         // 是否收藏

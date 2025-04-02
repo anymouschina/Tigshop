@@ -250,7 +250,7 @@ class OrderCheckService extends BaseService
             foreach ($cart['carts'] as $key => $store) {
                 $product_ids = array_unique(array_column($store['carts'], 'product_id'));
                 $tpl_ids = $this->getShippingTplIds($store['shop_id'], $product_ids);
-                $shipping_type[] = $this->getAvailableShippingType($tpl_ids, $region_ids);
+                $shipping_type[$store['shop_id']] = $this->getAvailableShippingType($tpl_ids, $region_ids);
             }
             $this->shippingType = $shipping_type;
         }
@@ -913,6 +913,8 @@ class OrderCheckService extends BaseService
                 if ($value['stock'] < $value['quantity']) {
                     throw new ApiException(Util::lang('%s 商品库存不足~', '', [$value['product_name']]));
                 }
+                app(CartService::class)->checkProductLimitNumber($value['product_id'], request()->userId,
+                    $value['quantity'], $value['cart_id']);
 
                 $cart_ids[] = $value['cart_id'];
                 $item_data[] = [
@@ -1019,8 +1021,8 @@ class OrderCheckService extends BaseService
             $data['shop_id'] = $carts[0]['shop_id'];
             // 更新订单配送类型
             $shipping_type = $this->getSelectedShippingType();
-            $data['shipping_type_id'] = $shipping_type[0]['type_id'];
-            $data['shipping_type_name'] = $shipping_type[0]['type_name'];
+            $data['shipping_type_id'] = $shipping_type[$data['shop_id']]['type_id'];
+            $data['shipping_type_name'] = $shipping_type[$data['shop_id']]['type_name'];
         }
 
         $order = new Order();
@@ -1173,6 +1175,9 @@ class OrderCheckService extends BaseService
                 if (!empty($e_card)) {
                     (new ECard)->saveAll($e_card);
                 }
+
+                // 订单交易成功获取成长值
+                app(UserRankService::class)->getRankGrowth($userId);
             }
             if ($data['unpaid_amount'] > 0 && $data['pay_type_id'] != PaymentService::PAY_TYPE_OFFLINE) {
                 //加入队列

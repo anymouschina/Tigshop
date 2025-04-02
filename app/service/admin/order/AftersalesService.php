@@ -613,10 +613,24 @@ class AftersalesService extends BaseService
      */
     public function getAfterSalesDetail(int $order_id, int $item_id): object
     {
+        //判断是否支持售后
+        $order = Order::where('order_id', $order_id)->find();
+        //获取是否有店铺订单设置
+        $order_config = app(OrderConfigService::class)->getDetail('order_config', $order['shop_id']);
+        //确认收货订单多少天之后不可在申请售后
+        if($order->order_status == Order::ORDER_COMPLETED && !empty($order_config) &&
+            isset($order_config['date_type']) && $order_config['date_type'] == 1) {
+            //判断是否支持售后
+            $time = time() - $order['received_time'];
+            if($time > $order_config['use_day'] * 24 * 3600) {
+                throw new ApiException(/** LANG */Util::lang('已超过该订单支持的售后时间'));
+            }
+
+        }
         $model = OrderItem::where('order_id', $order_id)->field("item_id,pic_thumb,product_sn,product_name,price,quantity,(price * quantity) as subtotal,sku_data");
 
         $paylog = PayLog::where('order_id', $order_id)->where('pay_status', 1)->find();
-        if ($paylog && in_array($paylog->pay_codem, ['yunpay_wechat', 'yunpay_alipay', 'yunpay_yunshanfu'])) {
+        if ($paylog && in_array($paylog->pay_code, ['yunpay_wechat', 'yunpay_alipay', 'yunpay_yunshanfu'])) {
             if (!empty($item_id)) {
                 throw new ApiException(/** LANG */ Util::lang('该商品只支持整单退款'));
             }

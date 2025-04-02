@@ -1,1 +1,0 @@
-import{d as e}from"./index-7c2d2aef.js";const r=e({__name:"View",setup(n,{expose:o}){return o({defaultFrame:{background_color:"",inner_padding:0,box_radius:0,box_padding:10,box_padding_top:5,box_padding_bottom:5}}),(_,d)=>null}});export{r as default};

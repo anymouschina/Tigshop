@@ -113,9 +113,9 @@ class Product extends Model
         return $this->hasOne(ProductSku::class, 'product_id', 'product_id')->bind(['sku_price'])->order('sku_price', 'asc');
     }
 
-    public function shopSimple()
+    public function shop()
     {
-        return $this->hasOne(Shop::class, 'shop_id', 'shop_id')->field(['shop_id', 'shop_title']);
+        return $this->hasOne(Shop::class, 'shop_id', 'shop_id');
     }
 
     public function salesmanProduct()

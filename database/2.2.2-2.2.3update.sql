@@ -1,0 +1,1 @@
+INSERT INTO `authority` (`authority_id`, `authority_sn`, `authority_name`, `parent_id`, `sort_order`, `is_show`, `child_auth`, `route_link`, `authority_ico`, `is_system`, `admin_type`) VALUES (10000396, 'levelManageManage', '会员等级设置', 11, 50, 1, '[]', 'user/level_manage/list/', '', 0, 'admin');

@@ -1,1 +1,0 @@
-import{A as t}from"./index-7c2d2aef.js";const r=e=>t({url:"msg/admin_msg/list",method:"get",params:e}),m=e=>t({url:"msg/admin_msg/set_readed",method:"post",data:e}),a=()=>t({url:"msg/admin_msg/set_all_readed",method:"post"}),d=e=>t({url:"panel/panel/search_menu",method:"get",params:e});export{r as a,a as b,m as c,d as g};

@@ -1,0 +1,1 @@
+import{y as t}from"./index-CGYuOau0.js";const a=e=>t({url:"panel/sales_statistics/sales_detail",method:"get",params:e}),l=e=>t({url:"panel/sales_statistics/sales_product_detail",method:"get",params:e}),r=e=>t({url:"panel/sales_statistics/sales_product_detail",method:"get",responseType:"arraybuffer",data:e});export{l as a,r as e,a as g};

@@ -65,6 +65,11 @@ class UserBalanceLogService extends BaseService
         if (isset($filter['keyword']) && !empty($filter['keyword'])) {
             $query->where('change_desc', 'like', '%' . $filter['keyword'] . '%');
         }
+        if(isset($filter['username']) && !empty($filter['username'])){
+            $query->hasWhere('user',function ($query) use ($filter){
+                $query->where('username', 'like', '%' . $filter['username'] . '%');
+            });
+        }
         if (isset($filter['user_id']) && !empty($filter['user_id'])) {
             $query->where('user_id', $filter['user_id']);
         }

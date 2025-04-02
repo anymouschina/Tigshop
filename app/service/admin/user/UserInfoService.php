@@ -12,10 +12,14 @@
 namespace app\service\admin\user;
 
 use app\model\order\Order;
+use app\model\user\RankGrowthLog;
 use app\model\user\User;
+use app\model\user\UserRank;
+use app\model\user\UserRankLog;
 use app\service\admin\common\sms\SmsService;
 use app\service\common\BaseService;
 use exceptions\ApiException;
+use utils\Time;
 use utils\Util;
 
 /**
@@ -90,20 +94,82 @@ class UserInfoService extends BaseService
      */
     public function getBaseInfo(): array
     {
+        $rank_config = app(UserRankService::class)->getRankConfig();
+        $growth_info = $this->refreshRank();
+
         $result = User::with(['userRank'])->field('user_id,username,nickname,avatar,points,balance,frozen_balance,birthday,mobile,email,rank_id,wechat_img,is_company_auth')
             ->append(['dim_username'])->find($this->id);
 
         if (!$result) {
             throw new ApiException(Util::lang('会员不存在'));
         }
+
         $result->total_balance = Util::number_format_convert($result->balance + $result->frozen_balance);
         $result->avatar = app(UserService::class)->getUserAvatar($result->avatar);
         $result->coupon = app(UserCouponService::class)->getUserNormalCouponCount($this->id);
+        // 获取会员等级有效期
+        $result->rank_expire_time = $growth_info['rank_expire_time'] ?? 0;
+        $result->growth = $growth_info['growth'] ?? 0;
         // 会员等级配置规则
-        $result->rank_config = app(UserRankService::class)->getRankConfig();
-
+        $result->rank_config = $rank_config;
         return $result->toArray();
     }
+
+    /**
+     * 刷新会员等级及返回成长信息
+     * @return array
+     */
+    public function refreshRank(): array
+    {
+        $rank_config = app(UserRankService::class)->getRankConfig();
+        if (!empty($rank_config)) {
+            // 根据成长值判断等级
+            $growth = app(UserRankService::class)->getExpireRangeGrowth($this->id);
+            $user = User::find($this->id);
+            $user_rank = UserRank::find($user->rank_id);
+            if (empty($user_rank)) {
+                // 有等级配置且该用户未设置等级的设置为默认等级
+                $min_rank = UserRank::where('min_growth_points',0)->order('rank_id','asc')->find();
+                if (!empty($min_rank)) {
+                    $user->rank_id = $min_rank['rank_id'];
+                    if ($user->save()) {
+                        // 记录等级变更记录
+                        $rank_log = [
+                            'user_id' => $this->id,
+                            'rank_id' => $min_rank->rank_id,
+                            'rank_type' => $min_rank->rank_type,
+                            'rank_name' => $min_rank->rank_name,
+                        ];
+                        UserRankLog::create($rank_log);
+                    }
+                }
+            }
+            if (!empty($rank_config['data'])) {
+
+                $user_rank_log = UserRankLog::where('user_id',$this->id)->order("id","DESC")->find();
+                if (!empty($user_rank_log)) {
+                    // 有时效
+                    $rank_expire_time = Time::format(strtotime('+' . $rank_config['data']['rank_after_month'] . ' months',Time::toTime($user_rank_log['change_time'])));
+                    // 等级过期之后重新定义等级
+                    if (Time::now() >= Time::toTime($rank_expire_time)) {
+                        app(UserRankService::class)->getGrowthByRule($this->id);
+                        // 重新定义有效期
+                        $new_rank_log = UserRankLog::where('user_id',$this->id)->order("id","DESC")->find();
+                        $rank_expire_time = Time::format(strtotime('+' . $rank_config['data']['rank_after_month'] . ' months',Time::toTime($new_rank_log->change_time)));
+                    }
+                }
+                app(UserRankService::class)->modifyUserRank($this->id);
+            }
+
+
+        }
+
+        return [
+            'growth' => $growth ?? 0,
+            'rank_expire_time' => $rank_expire_time ?? 0
+        ];
+    }
+
 
     /**
      * 修改个人信息
@@ -117,6 +183,9 @@ class UserInfoService extends BaseService
         if (empty($user->toArray())) {
             throw new ApiException(/** LANG */Util::lang('会员不存在'));
         }
+
+        $this->getGrowthPoints(1);
+
         if ($user->save($data)) {
             return true;
         }
@@ -170,6 +239,8 @@ class UserInfoService extends BaseService
         }
 
         if ($type) {
+            // 第一次绑定手机号获得成长值
+            $this->getGrowthPoints(2, ['mobile' => $mobile]);
             User::find($this->id)->save(['mobile' => $mobile, 'mobile_validated' => 1]);
         }
 
@@ -233,4 +304,61 @@ class UserInfoService extends BaseService
 		}
 		return true;
 	}
+
+    /**
+     * 获取会员成长值
+     * @param int $type
+     * @param array $data
+     * @return bool
+     */
+    public function getGrowthPoints(int $type = 0, array $data = []):bool
+    {
+        $user = User::findOrEmpty($this->id);
+        if (empty($user->toArray())) {
+            throw new ApiException(/** LANG */Util::lang('会员不存在'));
+        }
+
+        $growth_points_config = app(UserRankService::class)->getGrowConfig();
+        $growth_points = 0;
+        if (!empty($growth_points_config)) {
+            switch ($type) {
+                case 1:
+                    // 第一次修改信息赠送成长值
+                    if ($growth_points_config['evpi']) {
+                        if(!empty($data)){
+                            if(empty($user->nickname) && !empty($data['nickname']) ||
+                                ($user->birthday == '0000-00-00' || empty($user->birthday))
+                                && !empty($data['birthday'])) {
+                                $growth_points = $growth_points_config['evpi_growth'];
+                            }
+                        }
+                    }
+                    break;
+                case 2:
+                    // 第一次绑定手机号
+                    if ($growth_points_config['bind_phone']) {
+                        if(!empty($data)) {
+                            if (empty($user->mobile) && !empty($data['mobile'])) {
+                                // 绑定手机号可以获得成长值
+                                $growth_points = $growth_points_config['bind_phone_growth'];
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        if ($growth_points) {
+            // 记录成长值日志
+            $growth_log = [
+                'user_id' => $this->id,
+                'type' => $type == 1 ? RankGrowthLog::GROWTH_TYPE_INFORMATION : RankGrowthLog::GROWTH_TYPE_BIND_PHONE,
+                'growth_points' => $growth_points,
+                'change_type' => 1
+            ];
+            RankGrowthLog::create($growth_log);
+        }
+        return true;
+    }
 }

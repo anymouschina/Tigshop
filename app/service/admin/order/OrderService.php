@@ -112,6 +112,9 @@ class OrderService extends BaseService
 
         //订单状态
         if (isset($filter["order_status"]) && $filter["order_status"] >= 0) {
+            if(is_string($filter['order_status'])) {
+                $filter["order_status"] = explode(',', $filter["order_status"]);
+            }
             $query->whereIn('order_status',
                 is_array($filter['order_status']) ? $filter['order_status'] : [$filter['order_status']]);
         }
@@ -986,7 +989,7 @@ class OrderService extends BaseService
                     $rankPoint = $value['rank_point'];
                 }
             }
-            $points = ceil($points * $rankPoint);
+            $points = ceil($points * intval($rankPoint));
             app(UserService::class)->incPoints($points, $userId, '下单送积分', 1, $orderId);
         }
     }

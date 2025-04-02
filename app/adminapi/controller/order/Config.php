@@ -32,7 +32,7 @@ class Config  extends AdminBaseController
     public function detail(): Response
     {
         $code = input('code', "");
-        $shop_id = request()->shopId;
+        $shop_id = input('shop_id', "");
         $config = $this->orderConfigService->getDetail($code, $shop_id);
         return $this->success([
             'item' => $config,
@@ -47,7 +47,7 @@ class Config  extends AdminBaseController
     {
         $code = input('code', "");
         $data = request()->all();
-        $shop_id = request()->shopId;
+        $shop_id = $data['shop_id'];
         $result = $this->orderConfigService->saveConfig($code, $data, $shop_id);
         return $result ? $this->success(/** LANG */ '设置项更新成功') : $this->error(/** LANG */ '设置项更新失败');
     }

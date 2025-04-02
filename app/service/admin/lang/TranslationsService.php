@@ -325,7 +325,7 @@ class TranslationsService extends BaseService
                 ->find();
 			if ($translations_count) {
 				// 已被翻译
-                Cache::set($translations_count['data_key'] . '_' . $locale_code,
+                Cache::set($translations_count['translation_key'] . '_' . $locale_code,
                     $translations_count['translation_value']);
 				unset($translations[$t]);
 			}
@@ -372,61 +372,54 @@ class TranslationsService extends BaseService
                 if (!empty($data['shop_id'])) {
                     $model = $model->where("shop_id", $data['shop_id']);
                 }
-                $model->when(!empty($data['ids']),
+                $translations = $model->when(!empty($data['ids']),
                     function ($query) use ($data) {
                         $query->whereIn('id', $data['ids']);
                     })
                     ->order('id', 'desc')
-                    ->chunk($data['size'], function ($translations) use ($data) {
-                        $translations = $translations->toArray();
-                        $this->getTranslateMissingLocales($translations, $data['locales_id']);
-                    });
+                    ->paginate($data['size'], $data['page']);
+                $translations = $translations->items();
+                $this->getTranslateMissingLocales($translations, $data['locales_id']);
             } elseif ($data['data_type'] == 2) {
                 $model = Product::where("is_delete", 0);
                 if (!empty($data['shop_id'])) {
                     $model = $model->where("shop_id", $data['shop_id']);
                 }
-                $model->when(!empty($data['ids']), function ($query) use ($data) {
+                $translations = $model->when(!empty($data['ids']), function ($query) use ($data) {
                     $query->whereIn('product_id', $data['ids']);
-                })->order('product_id', 'desc')
-                    ->chunk($data['size'], function ($translations) use ($data) {
-                        $translations = $translations->toArray();
-                        foreach ($translations as $key => &$item) {
-                            $item['id'] = $item['product_id'];
-                            $item['data_type'] = $data['data_type'];
-                            $item['translation_key'] = md5($item['product_name']);
-                            $item['translation_name'] = $item['product_name'];
-                        }
-                        $this->getTranslateMissingLocales($translations, $data['locales_id']);
-                    });
+                })->order('product_id', 'desc')->paginate($data['size'], $data['page']);
+                $translations = $translations->items();
+                foreach ($translations as $key => &$item) {
+                    $item['id'] = $item['product_id'];
+                    $item['data_type'] = $data['data_type'];
+                    $item['translation_key'] = md5($item['product_name']);
+                    $item['translation_name'] = $item['product_name'];
+                }
+                $this->getTranslateMissingLocales($translations, $data['locales_id']);
             } elseif ($data['data_type'] == 3) {
-                Category::when(!empty($data['ids']), function ($query) use ($data) {
+                $translations = Category::when(!empty($data['ids']), function ($query) use ($data) {
                     $query->whereIn('category_id', $data['ids']);
-                })->order('category_id', 'desc')
-                    ->chunk($data['size'], function ($translations) use ($data) {
-                        $translations = $translations->toArray();
-                        foreach ($translations as $key => &$item) {
-                            $item['id'] = $item['category_id'];
-                            $item['data_type'] = $data['data_type'];
-                            $item['translation_key'] = md5($item['category_name']);
-                            $item['translation_name'] = $item['category_name'];
-                        }
-                        $this->getTranslateMissingLocales($translations, $data['locales_id']);
-                    });
+                })->order('category_id', 'desc')->paginate($data['size'], $data['page']);
+                $translations = $translations->items();
+                foreach ($translations as $key => &$item) {
+                    $item['id'] = $item['category_id'];
+                    $item['data_type'] = $data['data_type'];
+                    $item['translation_key'] = md5($item['category_name']);
+                    $item['translation_name'] = $item['category_name'];
+                }
+                $this->getTranslateMissingLocales($translations, $data['locales_id']);
             } elseif ($data['data_type'] == 4) {
-                Brand::when(!empty($data['ids']), function ($query) use ($data) {
+                $translations = Brand::when(!empty($data['ids']), function ($query) use ($data) {
                     $query->whereIn('brand_id', $data['ids']);
-                })->order('brand_id', 'desc')
-                    ->chunk($data['size'], function ($translations) use ($data) {
-                        $translations = $translations->toArray();
-                        foreach ($translations as $key => &$item) {
-                            $item['id'] = $item['brand_id'];
-                            $item['data_type'] = $data['data_type'];
-                            $item['translation_key'] = md5($item['brand_name']);
-                            $item['translation_name'] = $item['brand_name'];
-                        }
-                        $this->getTranslateMissingLocales($translations, $data['locales_id']);
-                    });
+                })->order('brand_id', 'desc')->paginate($data['size'], $data['page']);
+                $translations = $translations->items();
+                foreach ($translations as $key => &$item) {
+                    $item['id'] = $item['brand_id'];
+                    $item['data_type'] = $data['data_type'];
+                    $item['translation_key'] = md5($item['brand_name']);
+                    $item['translation_name'] = $item['brand_name'];
+                }
+                $this->getTranslateMissingLocales($translations, $data['locales_id']);
             } elseif ($data['data_type'] == 5) {
                 $translations = [
                     [
@@ -455,12 +448,12 @@ class TranslationsService extends BaseService
                         'translation_name' => UtilsConfig::get('shop_desc'),
                     ],
                     [
-                        'id' => 5,
+                        'id' => 6,
                         'data_type' => $data['data_type'],
                         'translation_name' => UtilsConfig::get('kefu_address'),
                     ],
                     [
-                        'id' => 5,
+                        'id' => 7,
                         'data_type' => $data['data_type'],
                         'translation_name' => UtilsConfig::get('shop_icp_no'),
                     ]

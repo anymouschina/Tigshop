@@ -1,0 +1,1 @@
+import{aq as s}from"./BLNaUqdG.js";const o=o=>s({url:"user/regist/regist_act",method:"post",data:o}),t=o=>s({url:"user/login/send_mobile_code",method:"post",data:o}),a=o=>s({url:"user/login/bind_mobile",method:"post",data:o});export{a,t as s,o as u};

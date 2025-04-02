@@ -82,14 +82,22 @@ class UserBalanceLog extends Model
     // 变动前的余额
     public function getBeforeBalanceAttr($value, $data)
     {
-        $balance = $this->user->balance;
+
+        if(empty($this->user)){
+            return 0;
+        }
+        $balance =  $this->user->balance;
         return $data['change_type'] == self::CHANGE_TYPE_INCREASE ? Util::number_format_convert($balance - $data['balance']) : Util::number_format_convert($balance + $data['balance']);
     }
 
     // 变动前的冻结余额
     public function getBeforeFrozenBalanceAttr($value, $data)
     {
+        if(empty($this->user)){
+            return 0;
+        }
         $frozen_balance = $this->user->frozen_balance;
         return $data['change_type'] == self::CHANGE_TYPE_INCREASE ? Util::number_format_convert($frozen_balance - $data['frozen_balance']) : Util::number_format_convert($frozen_balance + $data['frozen_balance']);
     }
+
 }

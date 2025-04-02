@@ -13,7 +13,7 @@
 namespace think;
 
 // 安装操作跳转
-if(strpos($_REQUEST['s'],'/install') && file_exists(__DIR__ . '/install/index.php')){
+if(isset($_REQUEST['s']) && strpos($_REQUEST['s'],'/install') && file_exists(__DIR__ . '/install/index.php')){
     //Access-Control-Allow-Origin
     require __DIR__ . '/install/index.php';
     die();

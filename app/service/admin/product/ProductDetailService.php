@@ -273,9 +273,9 @@ class ProductDetailService extends BaseService
         $ranks_list = app(UserRankService::class)->getUserRankList();
         $user_rank_id = app(UserService::class)->getUserRankId(request()->userId);
         foreach ($ranks_list as $key => $value) {
-            if ($value['rank_id'] == $user_rank_id) {
+            if ($value['rank_id'] == $user_rank_id && $value['discount'] > 0) {
                 $discount = floatval($value['discount']);
-                $price = round($price * $discount / 100, 2);
+                $price = round($price * $discount / 10, 2);
             }
         }
         $attr_price = '0';

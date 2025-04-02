@@ -250,8 +250,8 @@ class ArticleService extends BaseService
         $result = $this->articleModel->where('article_id', $id)->save($data);
 
         // 关联商品
+        ProductArticle::where('article_id', $id)->delete();
         if (!empty($product_ids)) {
-            ProductArticle::where('article_id', $id)->delete();
             foreach ($product_ids as $k => $v) {
                 $product_article_list[$k] = [
                     "goods_id" => $v,

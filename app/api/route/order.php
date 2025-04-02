@@ -16,6 +16,10 @@ Route::group('order', function () {
         Route::post('submit', 'submit');
         // 获得上次订单发票信息
         Route::get('get_invoice', 'getInvoice');
+        //获取可用支付方式
+        Route::get('get_available_payment_type', 'getAvailablePaymentType');
+        //获得店铺配送方式
+        Route::get('get_store_shipping_type', 'getStoreShippingType');
 
     })->middleware([
         \app\api\middleware\CheckLogin::class,

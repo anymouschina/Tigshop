@@ -83,7 +83,8 @@ class ProductPromotionService extends BaseService
             if (is_array($filter["promotion_type"])) {
                 $query->whereIn('promotion_type', $filter["promotion_type"]);
             }else{
-                $query->where('promotion_type', $filter["promotion_type"]);
+                $filter["promotion_type"] = explode(",", $filter["promotion_type"]);
+                $query->whereIn('promotion_type', $filter["promotion_type"]);
             }
         }
 

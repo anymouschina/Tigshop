@@ -48,6 +48,7 @@ class Licensed extends AdminBaseController
             $item['powered_by_status'] = UtilsConfig::get('powered_by_status', 'base_licensed_data');
             $item['powered_by'] = UtilsConfig::get('powered_by', 'base_licensed_data'," - powered by tigshop");
             $item['admin_light_logo'] = UtilsConfig::get('admin_light_logo', 'base_licensed_data');
+            $item['version_info_hidden'] = UtilsConfig::get('version_info_hidden', 'base_licensed_data');
         }
         $item['version_type'] = config('app.version_type');
         $item['version'] = config('app.version');

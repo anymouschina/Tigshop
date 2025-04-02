@@ -33,7 +33,7 @@ class AdminMsgService extends BaseService
      */
     public function getFilterResult(array $filter): array
     {
-        $query = $this->filterQuery($filter)->with(['items', 'order']);
+        $query = $this->filterQuery($filter);
         $result = $query->page($filter['page'], $filter['size'])->select();
         return $result->toArray();
     }

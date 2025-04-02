@@ -47,6 +47,7 @@ class UserBalanceLog extends AdminBaseController
     {
         $filter = $this->request->only([
             'keyword' => '',
+            'username' => '',
             'page/d' => 1,
             'size/d' => 15,
             'sort_field' => 'log_id',

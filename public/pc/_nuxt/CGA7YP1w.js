@@ -1,1 +1,0 @@
-import{aa as t}from"./DvlzeZYf.js";const r=e=>t({url:"user/aftersales/list",method:"get",params:e}),a=()=>t({url:"user/aftersales/config",method:"get"}),u=e=>t({url:"user/aftersales/apply_data",method:"get",params:e}),l=e=>t({url:"user/aftersales/create",method:"post",data:e});export{a,r as b,u as g,l as u};

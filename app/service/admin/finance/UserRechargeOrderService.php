@@ -102,7 +102,8 @@ class UserRechargeOrderService extends BaseService
      */
     public function getDetail(int $id): UserRechargeOrder
     {
-        $result = UserRechargeOrder::where('order_id', $id)->append(["status_type"])->find();
+        $result = UserRechargeOrder::query()->with(["user"])->
+         where('order_id', $id)->append(["status_type"])->find();
 
         if (!$result) {
             throw new ApiException(/** LANG */ Util::lang('充值申请不存在'));

@@ -49,7 +49,7 @@ class ProductPromotion extends AdminBaseController
     {
         $filter = $this->request->only([
             'keyword' => '',
-            'promotion_type/a' => [],
+            'promotion_type' => '',
             'page/d' => 1,
             'size/d' => 15,
             'is_going' => '',
