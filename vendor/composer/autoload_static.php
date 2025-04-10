@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit12763ad2af038445b2b1239630b78d2f
+class ComposerStaticInit31d48e4919afd132f31fe0b6730baadb
 {
     public static $files = array (
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
@@ -221,8 +221,8 @@ class ComposerStaticInit12763ad2af038445b2b1239630b78d2f
         ),
         'voku\\' => 
         array (
-            0 => __DIR__ . '/..' . '/voku/portable-utf8/src/voku',
-            1 => __DIR__ . '/..' . '/voku/portable-ascii/src/voku',
+            0 => __DIR__ . '/..' . '/voku/portable-ascii/src/voku',
+            1 => __DIR__ . '/..' . '/voku/portable-utf8/src/voku',
         ),
         'think\\trace\\' => 
         array (
@@ -916,11 +916,11 @@ class ComposerStaticInit12763ad2af038445b2b1239630b78d2f
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$prefixesPsr0;
-            $loader->fallbackDirsPsr0 = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$fallbackDirsPsr0;
-            $loader->classMap = ComposerStaticInit12763ad2af038445b2b1239630b78d2f::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$prefixesPsr0;
+            $loader->fallbackDirsPsr0 = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$fallbackDirsPsr0;
+            $loader->classMap = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$classMap;
 
         }, null, ClassLoader::class);
     }

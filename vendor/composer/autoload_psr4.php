@@ -7,7 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'voku\\helper\\' => array($vendorDir . '/voku/anti-xss/src/voku/helper'),
-    'voku\\' => array($vendorDir . '/voku/portable-utf8/src/voku', $vendorDir . '/voku/portable-ascii/src/voku'),
+    'voku\\' => array($vendorDir . '/voku/portable-ascii/src/voku', $vendorDir . '/voku/portable-utf8/src/voku'),
     'think\\trace\\' => array($vendorDir . '/topthink/think-trace/src'),
     'think\\swoole\\' => array($vendorDir . '/topthink/think-swoole/src'),
     'think\\captcha\\' => array($vendorDir . '/topthink/think-captcha/src'),

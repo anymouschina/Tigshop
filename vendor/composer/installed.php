@@ -6,7 +6,7 @@
     'aliases' => 
     array (
     ),
-    'reference' => '023c9dd0d3e6438dec9eca447aab18c92c7de38d',
+    'reference' => 'dde79d743269338cfa7a772b4b97ce3726a53969',
     'name' => 'topthink/think',
   ),
   'versions' => 
@@ -2177,7 +2177,7 @@
       'aliases' => 
       array (
       ),
-      'reference' => '023c9dd0d3e6438dec9eca447aab18c92c7de38d',
+      'reference' => 'dde79d743269338cfa7a772b4b97ce3726a53969',
     ),
     'topthink/think-annotation' => 
     array (
