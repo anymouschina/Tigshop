@@ -38,12 +38,10 @@ class Region extends IndexBaseController
      */
     public function getRegion(): Response
     {
-        $region_ids = input('region_ids', '');
+        $region_ids = $this->request->all('region_ids', '');
         $region_ids = explode(',', $region_ids);
         $region_list = app(RegionService::class)->getRegionByIds($region_ids);
-        return $this->success([
-            'region_list' => $region_list,
-        ]);
+        return $this->success($region_list);
     }
 
     /**
@@ -56,9 +54,7 @@ class Region extends IndexBaseController
         foreach ($region_list as $key => $value) {
             $region_list[$key]['region_name'] = str_replace(['省', '市', '自治区'], '', $value['region_name']);
         }
-        return $this->success([
-            'region_list' => $region_list,
-        ]);
+        return $this->success($region_list);
     }
 
     /**
@@ -81,9 +77,7 @@ class Region extends IndexBaseController
         if (empty($user_region)) {
             $user_region = $region_list['0'];
         }
-        return $this->success([
-            'region' => $user_region,
-        ]);
+        return $this->success($user_region);
     }
 
 }

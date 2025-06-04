@@ -25,6 +25,53 @@ class OrderItem extends Model
     protected $jsonAssoc = true;
     protected $hidden = ['promotion_data'];
 
+    public function getPromotionDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setPromotionDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getSkuDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setSkuDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getExtraSkuDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setExtraSkuDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
 
     public function getProductNameAttr($value, $data)
     {

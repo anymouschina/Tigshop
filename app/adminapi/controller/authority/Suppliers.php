@@ -60,8 +60,7 @@ class Suppliers extends AdminBaseController
         $total = $this->suppliersService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -73,11 +72,11 @@ class Suppliers extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = $this->suppliersService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+             $item
+        );
     }
 
     /**
@@ -117,7 +116,7 @@ class Suppliers extends AdminBaseController
 
         $result = $this->suppliersService->createSuppliers($data);
         if ($result) {
-            return $this->success(/** LANG */'供应商添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'供应商添加失败');
         }
@@ -129,7 +128,7 @@ class Suppliers extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $data = $this->requestData();
         $data["suppliers_id"] = $id;
         try {
@@ -142,7 +141,7 @@ class Suppliers extends AdminBaseController
 
         $result = $this->suppliersService->updateSuppliers($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'供应商更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'供应商更新失败');
         }
@@ -155,8 +154,8 @@ class Suppliers extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id = $this->request->all('id/d', 0);
+        $field = $this->request->all('field', '');
 
         if (!in_array($field, ['suppliers_name', 'is_show', 'sort_order', 'is_check'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -164,12 +163,12 @@ class Suppliers extends AdminBaseController
 
         $data = [
             'suppliers_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->suppliersService->updateSuppliersField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -179,9 +178,9 @@ class Suppliers extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $this->suppliersService->deleteSuppliers($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -191,15 +190,15 @@ class Suppliers extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $id) {
+                foreach ($this->request->all('ids') as $id) {
                     $id = intval($id);
                     $this->suppliersService->deleteSuppliers($id);
                 }
@@ -209,7 +208,7 @@ class Suppliers extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

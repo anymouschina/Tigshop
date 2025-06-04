@@ -61,8 +61,7 @@ class ProductPromotion extends AdminBaseController
         $total = $this->productPromotionService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -89,8 +88,7 @@ class ProductPromotion extends AdminBaseController
         $filterResult = $this->productPromotionService->getConflictList($filter);
 
         return $this->success([
-            'filter_result' => $filterResult['list'],
-            'filter' => $filter,
+            'records' => $filterResult['list'],
             'total' => $filterResult['total'],
         ]);
     }
@@ -118,11 +116,11 @@ class ProductPromotion extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->productPromotionService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item->toArray()
+        );
     }
 
     /**
@@ -168,7 +166,7 @@ class ProductPromotion extends AdminBaseController
 
         $result = $this->productPromotionService->createProductPromotion($data);
         if ($result) {
-            return $this->success(/** LANG */'优惠活动添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'优惠活动更新失败');
         }
@@ -181,7 +179,7 @@ class ProductPromotion extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->requestData();
         $data["promotion_id"] = $id;
 
@@ -195,7 +193,7 @@ class ProductPromotion extends AdminBaseController
 
         $result = $this->productPromotionService->updateProductPromotion($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'优惠活动更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'优惠活动更新失败');
         }
@@ -207,8 +205,8 @@ class ProductPromotion extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['sort_order', 'is_available'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -216,12 +214,12 @@ class ProductPromotion extends AdminBaseController
 
         $data = [
             'promotion_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->productPromotionService->updateProductPromotionField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -230,9 +228,9 @@ class ProductPromotion extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->productPromotionService->deleteProductPromotion($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -241,15 +239,15 @@ class ProductPromotion extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->productPromotionService->deleteProductPromotion($id);
                 }
@@ -259,7 +257,7 @@ class ProductPromotion extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

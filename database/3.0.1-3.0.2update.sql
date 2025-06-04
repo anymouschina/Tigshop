@@ -1,0 +1,1 @@
+ALTER TABLE aftersales ADD COLUMN `return_goods_tip` VARCHAR(255)  NOT NULL DEFAULT '' COMMENT '售后退货提示';

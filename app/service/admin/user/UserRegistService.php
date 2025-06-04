@@ -39,7 +39,7 @@ class UserRegistService extends BaseService
      */
     public function regist($params = []): User
     {
-        if (!empty(Config::get('shop_reg_closed'))) {
+        if (!empty(Config::get('shopRegClosed'))) {
             throw new ApiException(Util::lang('商城暂不开放注册！'));
         }
         if (empty($params['username'])) {
@@ -120,7 +120,7 @@ class UserRegistService extends BaseService
     public function generateUsername(): string
     {
         while (true) {
-            $username = Config::get('username_prefix') . RandomUtils::getRandomCode(8, 3);
+            $username = Config::get('usernamePrefix') . RandomUtils::getRandomCode(8, 3);
             if (!User::where('username', $username)->count()) {
                 return $username;
             }
@@ -144,7 +144,7 @@ class UserRegistService extends BaseService
         $user = app(UserService::class)->getUserByMobile($mobile);
         if (empty($user)) {
             try {
-                $shop_reg_closed = Config::get('shop_reg_closed');
+                $shop_reg_closed = Config::get('shopRegClosed');
                 if ($shop_reg_closed == 1) {
                     throw new ApiException(Util::lang('商城已停止注册！'));
                 }

@@ -5,6 +5,7 @@ declare (strict_types = 1);
 namespace app;
 
 use think\App;
+use think\Collection;
 use think\exception\ValidateException;
 use think\Response;
 use think\Validate;
@@ -109,18 +110,22 @@ abstract class BaseController
         return $item;
     }
 
-    protected function success(string|array $message = '', $error_code = 0): Response
+    protected function success($data = '', $error_code = 0): Response
     {
-        return $this->output($message, $error_code);
+        if ($data instanceof Collection) {
+            $data = $data->toArray();
+        }
+
+        return $this->output($data, 'success', $error_code);
     }
 
     protected function error(string|array $message = '', $error_code = 1001): Response
     {
-        return $this->output($message, $error_code);
+        return $this->output('', $message, $error_code);
     }
 
-    protected function output(string|array $message = '', $error_code = 0): Response
+    protected function output($data = '', $message = '', $error_code = 0): Response
     {
-        return $this->defaultOutput($message, $error_code);
+        return $this->defaultOutput($data, $message, $error_code);
     }
 }

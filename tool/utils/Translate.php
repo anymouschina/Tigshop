@@ -65,11 +65,11 @@ class Translate extends V4Curl
 
     public function translateText(string $sourceLanguage, string $targetLanguage, array $textList): array
     {
-        if (UtilsConfig::get('lang_on', 'base_api_lang') != 1) {
+        if (UtilsConfig::get('langOn') != 1) {
             throw new ApiException('请开启多语言配置！');
         }
-        $key = UtilsConfig::get('lang_volcengine_access_key', 'base_api_lang', '');
-        $secret = UtilsConfig::get('lang_volcengine_secret', 'base_api_lang', '');
+        $key = UtilsConfig::get('langVolcengineAccessKey');
+        $secret = UtilsConfig::get('langVolcengineSecret');
         if (empty($key) || empty($secret)) {
             throw new ApiException('请配置火山密钥');
         }
@@ -82,8 +82,7 @@ class Translate extends V4Curl
             throw $e;
         }
         if ($resp->getStatusCode() != 200) {
-            throw new Exception("failed to translate: status_code=%d, resp=%s", $resp->getStatusCode(),
-                $resp->getBody());
+            throw new ApiException(sprintf("failed to translate: status_code=%d, resp=%s",  $resp->getStatusCode(),$resp->getBody()));
         }
         $return = json_decode($resp->getBody()->getContents(), true)["TranslationList"];
         if (is_array($return)) {

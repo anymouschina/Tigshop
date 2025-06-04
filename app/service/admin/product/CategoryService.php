@@ -464,7 +464,7 @@ class CategoryService extends BaseService
 
         $top_ids = $this->getChilderIds($category_id);
 
-        $query = Product::where("product_id", "<>", $filter["product_id"])
+        $query = Product::where("product_id", "<>", $filter["product_id"])->with('productSku')
             ->where("is_delete", 0)
             ->where("product_status", 1)
             ->limit($filter["rank_num"])
@@ -473,7 +473,27 @@ class CategoryService extends BaseService
         $price_product = $this->getProductInfo($query, $product_info, 1, $top_ids);
         $brand_product = $this->getProductInfo($query, $product_info, 2);
         $cate_product = $this->getProductInfo($query, $product_info, 3);
-
+        foreach ($price_product as &$item) {
+            $productDetailService = new ProductDetailService($item['product_id']);
+            $productAvailability = $productDetailService->getProductSkuDetail($item['product_sku']['0']['sku_id'] ?? 0,
+                0,
+                '');
+            $item['price'] = $productAvailability['price'];
+        }
+        foreach ($brand_product as &$item) {
+            $productDetailService = new ProductDetailService($item['product_id']);
+            $productAvailability = $productDetailService->getProductSkuDetail($item['product_sku']['0']['sku_id'] ?? 0,
+                0,
+                '');
+            $item['price'] = $productAvailability['price'];
+        }
+        foreach ($cate_product as &$item) {
+            $productDetailService = new ProductDetailService($item['product_id']);
+            $productAvailability = $productDetailService->getProductSkuDetail($item['product_sku']['0']['sku_id'] ?? 0,
+                0,
+                '');
+            $item['price'] = $productAvailability['price'];
+        }
         $result = [
             "price" => $price_product,
             "brand" => $brand_product,
@@ -490,28 +510,27 @@ class CategoryService extends BaseService
      * @param array $cate_ids
      * @param object $product
      * @param int $type
-     * @return array
      */
-    public function getProductInfo(object $query, object $product, int $type, array $cate_ids = []): array
+    public function getProductInfo(object $query, object $product, int $type, array $cate_ids = [])
     {
         switch ($type) {
             case 1: //同价位 -- 价格接近
                 $price_product = clone $query;
                 $result = $price_product->whereIn("category_id", $cate_ids)
                     ->orderRaw('ABS(market_price - ' . $product->market_price . ') asc')
-                    ->select()->toArray();
+                    ->select();
                 break;
             case 2: // 同品牌
                 $brand_product = clone $query;
                 $result = $brand_product->where("brand_id", $product->brand_id)
                     ->order("sort_order", "asc")
-                    ->select()->toArray();
+                    ->select();
                 break;
             case 3: // 同类别
                 $cate_product = clone $query;
                 $result = $cate_product->where("category_id", $product->category_id)
                     ->order("sort_order", "asc")
-                    ->select()->toArray();
+                    ->select();
                 break;
         }
         return $result;
@@ -548,16 +567,22 @@ class CategoryService extends BaseService
     public function getLookAlso(int $category_id, array $filter): array
     {
         $cate_ids = $this->catAllChildIds($category_id);
-        $result = Product::whereIn("category_id", $cate_ids)
+        $result = Product::whereIn("category_id", $cate_ids)->with(['productSku'])
             ->where("is_delete", 0)
             ->where("product_status", 1)
             ->introType($filter["intro"])
             ->limit($filter["size"])
             ->field("product_id,product_name,product_sn,market_price,pic_thumb")
             ->order("sort_order", "asc")
-            ->select()->toArray();
-
-        return $result;
+            ->select();
+        foreach ($result as &$item) {
+            $productDetailService = new ProductDetailService($item['product_id']);
+            $productAvailability = $productDetailService->getProductSkuDetail($item['product_sku']['0']['sku_id'] ?? 0,
+                0,
+                '');
+            $item['price'] = $productAvailability['price'];
+        }
+        return $result->toArray();
     }
 
     /**

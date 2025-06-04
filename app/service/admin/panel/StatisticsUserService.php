@@ -315,7 +315,11 @@ class StatisticsUserService extends BaseService
             case 1:
                 // 年  -- 显示月份
                 $start_date = $start_end_time . '-01-01';
-                $end_date = $start_end_time . '-12-31';
+                //$end_date = $start_end_time . '-12-31';
+                //默认显示到当前月末
+                $current_year_month = date("Y-m"); // 获取当前年月
+                $end_date = date("Y-m-t", strtotime($current_year_month)); // 本月的最后一天
+
                 break;
             case 2:
                 //月 -- 显示日期
@@ -348,7 +352,13 @@ class StatisticsUserService extends BaseService
         switch ($date_type) {
             case 1:
                 // 年  -- 显示月份
-                $horizontal_axis = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+                //$horizontal_axis = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+                // 年 -- 显示月份（从1月到当前月）
+                $current_month = (int)date('m', strtotime($end_date)); // 获取 end_date 的月份，如 5
+                $horizontal_axis = [];
+                for ($i = 1; $i <= $current_month; $i++) {
+                    $horizontal_axis[] = sprintf("%02d", $i); // 格式化为两位数，如 01, 02...
+                }
                 break;
             case 2:
                 // 月 -- 显示日期

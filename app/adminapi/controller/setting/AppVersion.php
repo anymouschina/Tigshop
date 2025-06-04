@@ -42,9 +42,9 @@ class AppVersion extends AdminBaseController
     public function detail(): Response
     {
         $item = $this->appVersionService->getDetail()["data"];
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -65,7 +65,7 @@ class AppVersion extends AdminBaseController
 
         $result = $this->appVersionService->createAppVersion($data);
         if ($result) {
-            return $this->success('APP版本管理添加成功');
+            return $this->success();
         } else {
             return $this->error('APP版本管理添加失败');
         }
@@ -77,7 +77,7 @@ class AppVersion extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'id' => $id,
             'ios_version' => '',
@@ -90,7 +90,7 @@ class AppVersion extends AdminBaseController
 
         $result = $this->appVersionService->updateAppVersion($id, $data);
         if ($result) {
-            return $this->success('APP版本管理更新成功');
+            return $this->success();
         } else {
             return $this->error('APP版本管理更新失败');
         }

@@ -23,7 +23,7 @@ class Seckill extends Model
     // 关联秒杀商品项
     public function seckillItem(): object
     {
-        return $this->hasMany(SeckillItem::class, 'seckill_id', 'seckill_id')->with('product_sku');
+        return $this->hasMany(SeckillItem::class, 'seckill_id', 'seckill_id')->with(['product_sku', 'product']);
     }
 
     // 关联商品

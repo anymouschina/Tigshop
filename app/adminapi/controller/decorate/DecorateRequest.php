@@ -61,9 +61,9 @@ class DecorateRequest extends AdminBaseController
         }
 
         $product_list = app(DecorateRequestService::class)->getProductList($params);
-        return $this->success([
-            'product_list' => $product_list,
-        ]);
+        return $this->success(
+             $product_list
+        );
     }
 
 	/**
@@ -81,9 +81,9 @@ class DecorateRequest extends AdminBaseController
 		], 'get');
 
 		$item = app(DecorateRequestService::class)->getDecorateByModule($params);
-		return $this->success([
-			'item' => $item,
-		]);
+		return $this->success(
+			 $item
+		);
 	}
 
 }

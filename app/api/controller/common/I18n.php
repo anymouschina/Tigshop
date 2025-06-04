@@ -43,9 +43,7 @@ class I18n extends IndexBaseController
         $code = request()->get('locale_code');
         $translations = app(TranslationsService::class)->getFrontData($code);
         $translations = $translations ? $translations->column('translation_value', 'translation_name') : [];
-        return $this->success([
-            'translations' => $translations,
-        ]);
+        return $this->success($translations);
     }
 
     /**
@@ -60,9 +58,7 @@ class I18n extends IndexBaseController
             'sort_field' => 'sort',
             'sort_order' => 'asc',
         ],['currency']);
-        return $this->success([
-            'items' => $locations
-        ]);
+        return $this->success($locations);
     }
 
 
@@ -74,9 +70,6 @@ class I18n extends IndexBaseController
     {
         $code = request()->get('code');
         $location = app(LocalesRelationService::class)->getDefaultLocale($code);
-        return $this->success(
-            [
-                'item' => $location
-            ]);
+        return $this->success($location);
     }
 }

@@ -37,7 +37,17 @@ class PcNavigationService extends BaseService
         if (config('app.IS_MERCHANT') == 0) {
             $query = $query->where('id', '<>', 42);
         }
-        $result = $query->page($filter['page'], $filter['size'])->select();
+        if($filter['type'] == PcNavigation::TYPE_TOP_BAR) {
+            $result = $query->field('c.*, COUNT(s.id) AS has_children')
+                ->leftJoin('pc_navigation s', 'c.id = s.parent_id')
+                ->group('c.id')->page($filter['page'], $filter['size'])->select();
+        } else {
+            $result = $query->page($filter['page'], $filter['size'])->select();
+        }
+
+
+
+        $result->toArray();
         return $result->toArray();
     }
 
@@ -62,19 +72,31 @@ class PcNavigationService extends BaseService
      */
     public function filterQuery(array $filter): object
     {
-        $query = PcNavigation::query();
+
+        $query = PcNavigation::query()->alias('c');
+
         // 处理筛选条件
 
         if (isset($filter['keyword']) && !empty($filter['keyword'])) {
-            $query->where('title', 'like', '%' . $filter['keyword'] . '%');
+            $query->where('c.title', 'like', '%' . $filter['keyword'] . '%');
         }
 
         if (isset($filter['type']) && $filter["type"] > 0) {
-            $query->where('type', $filter['type']);
+            $query->where('c.type', $filter['type']);
+
         }
 
         if (isset($filter['is_show']) && $filter['is_show'] > -1) {
-            $query->where('is_show', $filter['is_show']);
+            $query->where('c.is_show', $filter['is_show']);
+        }
+
+        if(isset($filter['parent_id'])) {
+            if($filter['parent_id'] == 0 && $filter['type'] == PcNavigation::TYPE_TOP_BAR) {
+                $query->where('c.parent_id', 0);
+            }
+            if($filter['parent_id'] > 0 && $filter['type'] == PcNavigation::TYPE_TOP_BAR) {
+                $query->where('c.parent_id', $filter['parent_id']);
+            }
         }
 
         if (isset($filter['sort_field'], $filter['sort_order']) && !empty($filter['sort_field']) && !empty($filter['sort_order'])) {

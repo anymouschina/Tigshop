@@ -46,8 +46,7 @@ class Address extends IndexBaseController
         ], 'get');
         $result = app(UserAddressService::class)->userAddressList($filter);
         return $this->success([
-            'filter_result' => $result["list"],
-            'filter' => $filter,
+            'records' => $result["list"],
             'total' => $result["count"],
         ]);
     }
@@ -58,11 +57,9 @@ class Address extends IndexBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = app(UserAddressService::class)->getAddressDetail($id, request()->userId);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -120,7 +117,7 @@ class Address extends IndexBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $data = $this->requestData();
 
         try {
@@ -148,9 +145,9 @@ class Address extends IndexBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $result = app(UserAddressService::class)->deleteUserAddress($id);
-        return $result ? $this->success(/** LANG */Util::lang('删除成功')) : $this->error(/** LANG */Util::lang('删除失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('删除失败'));
     }
 
     /**
@@ -159,9 +156,9 @@ class Address extends IndexBaseController
      */
     public function setSelected(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $result = app(UserAddressService::class)->addressSetSelected(request()->userId, $id);
-        return $result ? $this->success(/** LANG */Util::lang('设置成功')) : $this->error(/** LANG */Util::lang('设置失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('设置失败'));
     }
 
 }

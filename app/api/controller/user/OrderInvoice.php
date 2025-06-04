@@ -42,7 +42,7 @@ class OrderInvoice extends IndexBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $data = $this->request->only([
             "invoice_type/d" => 1,
             "status/d" => 0,
@@ -96,11 +96,9 @@ class OrderInvoice extends IndexBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = $this->orderInvoiceService->getOrderInvoiceDetail($id,request()->userId);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
 }

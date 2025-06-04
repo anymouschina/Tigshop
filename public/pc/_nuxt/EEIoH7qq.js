@@ -1,0 +1,1 @@
+import{at as s,aw as a}from"./vO8z_6wc.js";const e=a=>s({url:"user/address/list",method:"get",params:a}),d=a=>s({url:"user/address/del",method:"post",data:a}),r=(a,e)=>s({url:"user/address/"+a,method:"get",params:e}),t=(a,e)=>s({url:"user/address/"+a,method:"post",data:e}),o=s=>a({url:"user/address/setSelected",method:"post",data:{id:s}});export{e as a,d,r as g,o as s,t as u};

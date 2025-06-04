@@ -24,6 +24,7 @@ use think\App;
 use think\facade\Cache;
 use think\Response;
 use utils\Config;
+use utils\Config as UtilsConfig;
 use utils\Util;
 
 /**
@@ -51,7 +52,7 @@ class Login extends IndexBaseController
         switch (Util::getClientType()) {
             case 'pc':
             case 'wechat':
-                $wechat_login = Config::get("wechat_oauth", 'base_api_wechat');
+            $wechat_login = Config::get("wechatOauth");
                 break;
             case 'miniProgram':
                 $wechat_login = 1;
@@ -73,24 +74,24 @@ class Login extends IndexBaseController
      */
     public function signin(): Response
     {
-        $login_type = input('login_type', 'password');
+        $login_type = $this->request->all('login_type', 'password');
         if ($login_type == 'password') {
             // 密码登录
-            $username = input('username', '');
-            $password = input('password', '');
+            $username = $this->request->all('username', '');
+            $password = $this->request->all('password', '');
             if (empty($username)) {
                 return $this->error(Util::lang('用户名不能为空'));
             }
             // 行为验证码
             app(CaptchaService::class)->setTag('userSignin:' . $username)
-                ->setToken(input('verify_token', ''))
+                ->setToken($this->request->all('verify_token', ''))
                 ->setAllowNoCheckTimes(3) //3次内无需判断
                 ->verification();
             $user = app(UserService::class)->getUserByPassword($username, $password);
         } elseif ($login_type == 'mobile') {
             // 手机登录
-            $mobile = input('mobile', '');
-            $mobile_code = input('mobile_code', '');
+            $mobile = $this->request->all('mobile', '');
+            $mobile_code = $this->request->all('mobile_code', '');
             $user = app(UserService::class)->getUserByMobileCode($mobile, $mobile_code);
         }
         if (!$user) {
@@ -109,14 +110,14 @@ class Login extends IndexBaseController
      */
     public function sendMobileCode(): Response
     {
-        $mobile = input('mobile', '');
-        $event = input('event', 'login');
+        $mobile = $this->request->all('mobile', '');
+        $event = $this->request->all('event', 'login');
         if (!$mobile) {
             return $this->error(Util::lang('手机号不能为空'));
         }
         // 行为验证码
         app(CaptchaService::class)->setTag('mobileCode:' . $mobile)
-            ->setToken(input('verify_token', ''))
+            ->setToken($this->request->all('verify_token', ''))
             ->verification();
 
         try {
@@ -134,14 +135,12 @@ class Login extends IndexBaseController
      */
     public function checkMobile()
     {
-        $mobile = input('mobile', '');
-        $code = input("code", "");
+        $mobile = $this->request->all('mobile', '');
+        $code = $this->request->all("code", "");
         $event = "forget_password";
         // 验证码判断
         $result = app(UserService::class)->mobileValidate($mobile, $code, $event);
-        return $this->success([
-            'item' => $result,
-        ]);
+        return $this->success($result);
     }
 
     /**
@@ -154,13 +153,13 @@ class Login extends IndexBaseController
      */
     public function forgetPassword(): Response
     {
-        $key = input("mobile_key", "");
-        $password = input("password", "");
+        $key = $this->request->all("mobile_key", "");
+        $password = $this->request->all("password", "");
         if (empty($password)) {
             throw new ApiException(/** LANG */ Util::lang('新密码不能为空'));
         }
         $result = app(UserService::class)->modifyPassword(['mobile_key' => $key, 'password' => $password]);
-        return $result ? $this->success(/** LANG */ Util::lang("操作成功")) : $this->error(/** LANG */ Util::lang("操作失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("操作失败"));
     }
 
     /**
@@ -170,7 +169,7 @@ class Login extends IndexBaseController
      */
     public function getWechatLoginUrl(): Response
     {
-        $redirect_url = input('url', '');
+        $redirect_url = $this->request->all('url', '');
         $res = app(WechatOAuthService::class)->getOAuthUrl($redirect_url);
         return $this->success([
             'url' => $res['url'],
@@ -186,7 +185,7 @@ class Login extends IndexBaseController
      */
     public function getWechatLoginInfoByCode(): Response
     {
-        $code = input('code', '');
+        $code = $this->request->all('code', '');
         if (!$code) {
             return $this->error(Util::lang('code不能为空'));
         }
@@ -199,7 +198,17 @@ class Login extends IndexBaseController
         $unionid = '';
         $user_id = app(UserAuthorizeService::class)->getUserOAuthInfo($openid, $unionid);
         if (empty($user_id)) {
-            return $this->success(['type' => 2, 'open_data' => $open_data]);
+            if (UtilsConfig::get('openWechatRegister', 0) == 1) {
+                $user = app(UserRegistService::class)->regist([
+                    'username' => 'User_' . rand(100000000000, 900000000000),
+                    'password' => rand(100000000000, 900000000000),
+                ]);
+                $user_id = $user->user_id;
+                app(UserAuthorizeService::class)->addUserAuthorizeInfo($user['user_id'], $openid ?? '', $open_data,
+                    $open_data['unionid'] ?? '');
+            } else {
+                return $this->success(['type' => 2, 'open_data' => $open_data]);
+            }
         }
         app(UserService::class)->setLogin($user_id);
         $token = app(UserService::class)->getLoginToken($user_id);
@@ -221,7 +230,7 @@ class Login extends IndexBaseController
      */
     public function bindWechat(): Response
     {
-        $code = input('code', '');
+        $code = $this->request->all('code', '');
         if (!$code) {
             return $this->error(Util::lang('code不能为空'));
         }
@@ -240,7 +249,7 @@ class Login extends IndexBaseController
             $this->error(Util::lang('该微信号已绑定其他账号，请解绑后再重试'));
         }
         app(UserAuthorizeService::class)->addUserAuthorizeInfo(request()->userId, $openid);
-        return $this->success(Util::lang('绑定成功'));
+        return $this->success();
     }
 
     /**
@@ -252,7 +261,7 @@ class Login extends IndexBaseController
         $openid = app(UserAuthorizeService::class)->getUserAuthorizeOpenId(request()->userId);
         if (empty($openid)) $this->error(Util::lang('该账号未绑定微信公众号'));
         app(UserAuthorizeService::class)->delUSerAuthorizeInfo(request()->userId);
-        return $this->success(Util::lang('解除成功'));
+        return $this->success();
     }
 
     /**
@@ -281,9 +290,7 @@ class Login extends IndexBaseController
         }
         app(UserService::class)->setLogin($user['user_id']);
         $token = app(UserService::class)->getLoginToken($user['user_id']);
-        return $this->success([
-            'token' => $token,
-        ]);
+        return $this->success($token);
     }
 
     /**
@@ -334,7 +341,7 @@ class Login extends IndexBaseController
      */
     public function wechatEvent(): Response
     {
-        $key = input('key');
+        $key = $this->request->all('key');
         if (empty($key)) {
             return $this->success([
                 'type' => 0,
@@ -351,7 +358,17 @@ class Login extends IndexBaseController
         $user_id = app(UserAuthorizeService::class)->getUserOAuthInfo($openid);
         $open_data = ['openid' => $openid];
         if (empty($user_id)) {
-            return $this->success(['type' => 2, 'open_data' => $open_data]);
+            if (UtilsConfig::get('openWechatRegister', 0) == 1) {
+                $user = app(UserRegistService::class)->regist([
+                    'username' => 'User_' . rand(100000000000, 900000000000),
+                    'password' => rand(100000000000, 900000000000),
+                ]);
+                $user_id = $user->user_id;
+                app(UserAuthorizeService::class)->addUserAuthorizeInfo($user['user_id'], $openid ?? '', $open_data,
+                    $open_data['unionid'] ?? '');
+            } else {
+                return $this->success(['type' => 2, 'open_data' => $open_data]);
+            }
         }
         app(UserService::class)->setLogin($user_id);
         $token = app(UserService::class)->getLoginToken($user_id);
@@ -368,15 +385,13 @@ class Login extends IndexBaseController
      */
     public function getUserMobile(): Response
     {
-        $code = input('code', '');
+        $code = $this->request->all('code', '');
         $res = app(WechatOAuthService::class)->getMiniUserMobile($code);
         if (empty($res['code'])) return $this->error(Util::lang($res['msg'] ?? '授权失败，请稍后再试~'));
         $user = app(UserRegistService::class)->registerUserByMobile($res['mobile']);
         app(UserService::class)->setLogin($user['user_id']);
         $token = app(UserService::class)->getLoginToken($user['user_id']);
-        return $this->success([
-            'token' => $token,
-        ]);
+        return $this->success($token);
     }
 
     /**
@@ -387,7 +402,7 @@ class Login extends IndexBaseController
      */
     public function updateUserOpenId(): Response
     {
-        $code = input('code/s', '');
+        $code = $this->request->all('code/s', '');
         if (!$code) {
             return $this->error(Util::lang('code不能为空'));
         }
@@ -395,7 +410,7 @@ class Login extends IndexBaseController
         if (!empty($openid)) {
             app(UserAuthorizeService::class)->updateUserAuthorizeInfo(request()->userId, $openid, 2);
         }
-        return $this->success(Util::lang('更新成功！'));
+        return $this->success();
     }
 
     /**
@@ -410,9 +425,9 @@ class Login extends IndexBaseController
      */
     public function getJsSdkConfig(): Response
     {
-        $url = input('url');
+        $url = $this->request->all('url');
         $params = app(WechatOAuthService::class)->getJsSdkConfig($url);
 
-        return $this->success(['item' => $params]);
+        return $this->success($params);
     }
 }

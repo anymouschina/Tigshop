@@ -231,7 +231,7 @@ class RegionService extends BaseService
     {
         $res = array();
         $region_list = [];
-        $default_country = intval(Config::get('region_setting','base_display','','default_country'));
+        $default_country = intval(Config::get('regionSetting'));
         if (isset($region_ids[0])) {
             array_unshift($region_ids, Region::where('region_id', $region_ids[0])->value('parent_id'));
         } else {

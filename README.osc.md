@@ -1,6 +1,7 @@
-[![【重磅更新】Tigshop Pro版本 v2.0 发布](https://oss.tigshop.com/official/img/pc/202412/1733472373GU6TfOgzrTyvs1VDvE.png)](https://www.tigshop.com/forum/post/377334685414729423)
 
-[![Tigshop Pro版发布](https://oss.tigshop.com/official/img/pc/202410/1728384230dVvKNjIBdAOwDjyRFB.png)](https://www.tigshop.com/b2c-pro)
+[![Tigshop Java 2.0正式版发布](https://oss.tigshop.com/official/img/pc/202504/1744623739aBOh7EfSfCASvmzTEp.png)](https://www.tigshop.com/forum/post/387446236766675916)
+
+[![【重磅更新】Tigshop Pro版本 v2.0 发布](https://oss.tigshop.com/official/img/pc/202412/1733472373GU6TfOgzrTyvs1VDvE.png)](https://www.tigshop.com/forum/post/377334685414729423)
 
 [![Tigshop 跨境多语言版发布](https://oss.tigshop.com/official/img/pc/202410/1730098879nOhVPjktADzo8dHkv0.png)](https://www.tigshop.com/b2b2c-overseas)
 
@@ -54,7 +55,7 @@ Tigshop团队有着11年商城软件研发领域的技术积累，我们会秉�
 ### **Tigshop 是否有付费版本**
 
 <p>
-Tigshop除了完全开源的单商户标准版，还有额外购买授权才能下载的版本（价格 :hankey: 低，交个朋友 :smile: ），如多商户版、单/多商户Pro版、跨境（多语言多货币切换）版、积分商城版、多门店版，很快还会有基于SprintBoot的Java版（这些依然是100%开源代码下载）。
+Tigshop除了完全开源的单商户标准版，还有额外购买授权才能下载的版本（价格 :hankey: 低，交个朋友 :smile: ），如多商户版、单/多商户Pro版、跨境（多语言多货币切换）版、积分商城版、多门店版（这些依然是100%开源代码下载）。
 </p>
 <p>
 与其它类似商业模式不同，我们在设计之初就规划了TigShop所有版本均采用同一套核心业务逻辑和架构，可以认为其他版本是在当前这个开源的“单商户标准版”基础上进行扩展和延伸的。

@@ -1,0 +1,1 @@
+import{at as s}from"./vO8z_6wc.js";const t=t=>s({url:"user/regist/registAct",method:"post",data:t}),o=t=>s({url:"user/login/sendMobileCode",method:"post",data:t}),e=t=>s({url:"user/login/bindMobile",method:"post",data:t});export{e as a,o as s,t as u};

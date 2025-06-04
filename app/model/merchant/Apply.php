@@ -27,6 +27,55 @@ class Apply extends Model
 
     protected $append = ['status_text'];
 
+
+    public function getMerchantDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setMerchantDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getShopDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setShopDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getBaseDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setBaseDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
     public final function getStatusTextAttr($value, $data): string
     {
         return isset($data['status']) && self::STATUS_LIST[$data['status']] ? self::STATUS_LIST[$data['status']] : '';

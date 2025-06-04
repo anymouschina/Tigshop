@@ -94,7 +94,7 @@ class ApplyService extends BaseService
                 'admin_type' => 'shop',
                 'role_id' => 1,
                 'avatar' => '',
-                'pwd_confirm' => '',
+                'pwd_confirm' => $randomPassword,
                 'merchant_id' => $merchantDetail->merchant_id,
                 'is_admin' => 1
             ]);

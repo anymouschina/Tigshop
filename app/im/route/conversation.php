@@ -20,7 +20,7 @@ Route::group('conversation', function () {
         Route::post('create', 'create')->middleware([
             \app\im\middleware\CheckServantLogin::class,
         ]);
-        Route::get('wait_servant_list', 'WaitServantList')->middleware([
+        Route::get('waitServantList', 'WaitServantList')->middleware([
             \app\im\middleware\CheckServantLogin::class,
         ]);
         Route::post('del', 'del')->middleware([
@@ -28,9 +28,9 @@ Route::group('conversation', function () {
         ]);
 
         // 历史会话
-        Route::get('consult_history', 'consultHistory');
+        Route::get('consultHistory', 'consultHistory');
         // 保存会话备注/总结
-        Route::post('save_remark', 'saveRemark')->middleware([
+        Route::post('saveRemark', 'saveRemark')->middleware([
             \app\im\middleware\CheckServantLogin::class,
         ]);
 
@@ -45,6 +45,6 @@ Route::group('conversation', function () {
         // 发送消息
         Route::post('send', 'send');
         // 消息已读
-        Route::post('set_read', 'setRead');
+        Route::post('setRead', 'setRead');
     })->prefix("conversation.message/");
 });

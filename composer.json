@@ -48,7 +48,8 @@
         "ext-bcmath": "*",
         "topthink/think-swoole": "^4.0",
         "volcengine/volc-sdk-php": "^1.0",
-        "paypal/paypal-server-sdk": "0.6.0"
+      "paypal/paypal-server-sdk": "0.6.0",
+      "overtrue/socialite": "^4.11"
     },
     "repositories": [
         {

@@ -71,10 +71,12 @@ class OrderService extends BaseService
     {
         $result = $this->getFilterList($filter, ['items', 'user', 'shop'],
             ['order_status_name', "user_address", "shipping_status_name", "pay_status_name"]);
+        //获取售后天数
+        $autoDeliveryDays = Config::get('autoDeliveryDays');
         foreach ($result as $item) {
             $orderStatusService = new OrderStatusService();
             $item->available_actions = $orderStatusService->getAvailableActions($item);
-
+            $item->auto_delivery_days = $this->getAutoDeliveryDays($item, $autoDeliveryDays);
             foreach ($item->items as $val) {
                 $val->aftersales_item = AftersalesItem::where("order_item_id",
                     $val->item_id)->order("aftersales_item_id", "desc")->find();
@@ -248,7 +250,9 @@ class OrderService extends BaseService
         $order = app(OrderDetailService::class)->setId($id)->setUserId($user_id)->getOrder($suppliers_id);
         $order->available_actions = app(OrderStatusService::class)->getAvailableActions($order);
         $order->step_status = app(OrderStatusService::class)->getStepStatus($order);
-
+        //获取售后天数
+        $autoDeliveryDays = Config::get('autoDeliveryDays');
+        $order->auto_delivery_days = $this->getAutoDeliveryDays($order, $autoDeliveryDays);
         foreach ($order->items as $value) {
             $value->aftersales_item = AftersalesItem::hasWhere('aftersales', function ($query) {
                 $query->whereIn('status', Aftersales::VALID_STATUS);
@@ -280,8 +284,8 @@ class OrderService extends BaseService
      */
     public function getUseWayBillStatus(): bool
     {
-        $config = Config::getConfig('base_logistics');
-        if (empty($config) || (isset($config['logistics_type']) && empty($config['logistics_type']))) {
+        $config = Config::getConfig();
+        if (empty($config) || (isset($config['logisticsType']) && empty($config['logisticsType']))) {
             return false;
         }
         return true;
@@ -508,7 +512,7 @@ class OrderService extends BaseService
         $result = $this->getOrder($id);
         $result = !empty($result) ? $result->toArray() : [];
         unset($result["available_actions"]);
-        $result["shop_name"] = Config::get("shop_name");
+        $result["shop_name"] = Config::get("shopName");
 
         $url = isset($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME'] === 'http' ? "http://" : "https://";
         $url .= $_SERVER['HTTP_HOST'];
@@ -534,7 +538,7 @@ class OrderService extends BaseService
         if ($find) {
             return $find->toArray();
         } else {
-            return [];
+           throw new ApiException('未查询到该数据!');
         }
     }
 
@@ -649,7 +653,7 @@ class OrderService extends BaseService
                 $row['address'] = $data["user_address"];
             } elseif ($value == 'country') {
                 // 国家
-                $country = Config::get("region_setting", 'base_display', '', 'default_country');
+                $country = Config::get("regionSetting");
                 $row["country"] = Region::where("region_id", $country)->value("region_name") ?? "";
             } elseif ($value == 'product_weight') {
                 //总重量
@@ -977,19 +981,10 @@ class OrderService extends BaseService
      */
     public function orderSuccessPoint($orderMoney, $userId, $orderId)
     {
-        $points = $this->getOrderSendPoint($orderMoney);
+        $points = $this->getOrderSendPoint($orderMoney, $userId);
         if ($points) {
-            $points = ceil($points * $orderMoney);
+//            $points = ceil($points * $orderMoney);
 
-            $ranks_list = app(UserRankService::class)->getUserRankList();
-            $user_rank_id = app(UserService::class)->getUserRankId($userId);
-            $rankPoint = 1;
-            foreach ($ranks_list as $key => $value) {
-                if ($value['rank_id'] == $user_rank_id) {
-                    $rankPoint = $value['rank_point'];
-                }
-            }
-            $points = ceil($points * intval($rankPoint));
             app(UserService::class)->incPoints($points, $userId, '下单送积分', 1, $orderId);
         }
     }
@@ -998,17 +993,42 @@ class OrderService extends BaseService
      * 获得下单送积分数量
      * @return void
      */
-    public function getOrderSendPoint($orderMoney)
+    public function getOrderSendPoint($orderMoney, $userId)
     {
-        $order_send_point = Config::get('points_setting', 'base_shopping', '', 'order_send_point');
+        $order_send_point = Config::get('orderSendPoint');
         $points = 0;
         if ($order_send_point > 0) {
             $points = ceil($order_send_point * $orderMoney);
         }
+        $ranks_list = app(UserRankService::class)->getUserRankList();
+        $user_rank_id = app(UserService::class)->getUserRankId($userId);
+        $rankPoint = 1;
+        foreach ($ranks_list as $key => $value) {
+            if ($value['rank_id'] == $user_rank_id) {
+                $rankPoint = $value['rank_point'];
+            }
+        }
+        $points = ceil($points * intval($rankPoint));
         return $points;
     }
 
-
-
-
+    /**
+     * @param Order $order
+     * @param float|array|int|string|null $autoDeliveryDays
+     * @return
+     */
+    public function getAutoDeliveryDays(Order $order, float|array|int|string|null $autoDeliveryDays)
+    {
+        if ($order->order_status == Order::ORDER_PROCESSING && !empty($autoDeliveryDays)) {
+            //按shipping_time
+            $shipping_time = is_string($order->shipping_time) ? strtotime($order->shipping_time) : $order->shipping_time;
+            $last_time = $shipping_time + $autoDeliveryDays * 24 * 60 * 60;
+            //计算剩余天数
+            $day = ceil(($last_time - time()) / 86400);
+           $auto_delivery_days = $day > 0 ? $day : null;
+        } else {
+            $auto_delivery_days = null;
+        }
+        return $auto_delivery_days;
+    }
 }

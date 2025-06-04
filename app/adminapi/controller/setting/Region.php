@@ -60,8 +60,7 @@ class Region extends AdminBaseController
         $total = $this->regionService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -73,11 +72,11 @@ class Region extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->regionService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -86,12 +85,12 @@ class Region extends AdminBaseController
      */
     public function getRegionTree(): Response
     {
-        $region_ids = input('region_ids', []);
+        $region_ids =$this->request->all('region_ids', []);
         $region_tree = $this->regionService->getRegionTree($region_ids);
 
-        return $this->success([
-            'data' => $region_tree,
-        ]);
+        return $this->success(
+           $region_tree
+        );
     }
 
     /**
@@ -101,9 +100,9 @@ class Region extends AdminBaseController
     public function getAllRegionTree(): Response
     {
         $region_tree = $this->regionService->getAllRegionTree();
-        return $this->success([
-            'data' => $region_tree,
-        ]);
+        return $this->success(
+            $region_tree
+        );
     }
 
     /**
@@ -112,12 +111,12 @@ class Region extends AdminBaseController
      */
     public function getChildRegion(): Response
     {
-        $id = input('id');
+        $id =$this->request->all('id');
         $region_tree = $this->regionService->getChildRegion($id);
 
-        return $this->success([
-            'data' => $region_tree,
-        ]);
+        return $this->success(
+            $region_tree
+        );
     }
 
     /**
@@ -143,7 +142,7 @@ class Region extends AdminBaseController
 
         $result = $this->regionService->createRegion($data);
         if ($result) {
-            return $this->success(/** LANG */'地区管理添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'地区管理更新失败');
         }
@@ -155,7 +154,7 @@ class Region extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'region_id' => $id,
             'region_name' => '',
@@ -174,7 +173,7 @@ class Region extends AdminBaseController
 
         $result = $this->regionService->updateRegion($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'地区管理更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'地区管理更新失败');
         }
@@ -187,8 +186,8 @@ class Region extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['region_name', 'sort_order', 'is_hot', 'first_word'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -196,12 +195,12 @@ class Region extends AdminBaseController
 
         $data = [
             'region_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->regionService->updateRegionField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -211,9 +210,9 @@ class Region extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->regionService->deleteRegion($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -222,15 +221,15 @@ class Region extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->regionService->deleteRegion($id);
                 }
@@ -240,7 +239,7 @@ class Region extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

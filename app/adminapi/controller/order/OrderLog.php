@@ -55,8 +55,7 @@ class OrderLog extends AdminBaseController
         $total = $this->orderLogService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -76,7 +75,7 @@ class OrderLog extends AdminBaseController
 
         $result = $this->orderLogService->addOrderLog($data);
         if ($result) {
-            return $this->success('订单日志添加成功');
+            return $this->success();
         } else {
             return $this->error('订单日志添加失败');
         }

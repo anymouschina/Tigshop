@@ -80,21 +80,21 @@ EOF;
         '',
         0,
         ['text' => $text,],
-        true
+        false
     );
 
 } elseif ($step == 2) {
     //环境检测
     //服务环境检测
     if (function_exists('saeAutoLoader') || isset($_SERVER['HTTP_BAE_ENV_APPID'])) {
-        returnJson('对不起，当前环境不支持本系统，请使用独立服务或云主机！');
+        returnJson('对不起，当前环境不支持本系统，请使用独立服务或云主机！', 1);
     }
     //已安装过提示
     if (file_exists(APP_DIR . '/install.lock')) {
-        returnJson('你已经安装过该系统，如果想重新安装，请先删除public目录下的 install.lock 文件，然后再安装。');
+        returnJson('你已经安装过该系统，如果想重新安装，请先删除public目录下的 install.lock 文件，然后再安装。', 1);
     }
     if ('8.2.0' > phpversion()) {
-        returnJson('您的php版本过低，不能安装本软件，需要php版本8.2+');
+        returnJson('您的php版本过低，不能安装本软件，需要php版本8.2+', 1);
     }
     //页面显示数据
     $data = [
@@ -356,7 +356,7 @@ EOF;
         '',
         0,
         $data,
-        true
+        false
     );
 
 
@@ -367,7 +367,7 @@ EOF;
             '参数错误',
             1,
             [],
-            true,
+            false,
             1
         );
     }
@@ -778,7 +778,7 @@ function delFile($dir, $file_type = '')
 function returnJson($message = '', $code = 0, $data = [] , $need_errcode = false, $errcode = 0)
 {
     $res['message'] = $message;
-    $res['item'] = $data;
+    $res = $data;
     if($need_errcode) {
         $res['errcode'] = $errcode;
     }

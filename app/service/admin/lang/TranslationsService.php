@@ -425,37 +425,37 @@ class TranslationsService extends BaseService
                     [
                         'id' => 1,
                         'data_type' => $data['data_type'],
-                        'translation_name' => UtilsConfig::get('shop_name'),
+                        'translation_name' => UtilsConfig::get('shopName'),
                     ],
                     [
                         'id' => 2,
                         'data_type' => $data['data_type'],
-                        'translation_name' => UtilsConfig::get('shop_title_suffix'),
+                        'translation_name' => UtilsConfig::get('shopTitleSuffix'),
                     ],
                     [
                         'id' => 3,
                         'data_type' => $data['data_type'],
-                        'translation_name' => UtilsConfig::get('shop_title'),
+                        'translation_name' => UtilsConfig::get('shopTitle'),
                     ],
                     [
                         'id' => 4,
                         'data_type' => $data['data_type'],
-                        'translation_name' => UtilsConfig::get('shop_keywords'),
+                        'translation_name' => UtilsConfig::get('shopKeywords'),
                     ],
                     [
                         'id' => 5,
                         'data_type' => $data['data_type'],
-                        'translation_name' => UtilsConfig::get('shop_desc'),
+                        'translation_name' => UtilsConfig::get('shopDesc'),
                     ],
                     [
                         'id' => 6,
                         'data_type' => $data['data_type'],
-                        'translation_name' => UtilsConfig::get('kefu_address'),
+                        'translation_name' => UtilsConfig::get('kefuAddress'),
                     ],
                     [
                         'id' => 7,
                         'data_type' => $data['data_type'],
-                        'translation_name' => UtilsConfig::get('shop_icp_no'),
+                        'translation_name' => UtilsConfig::get('shopIcpNo'),
                     ]
                 ];
                 foreach ($translations as $key => &$item) {

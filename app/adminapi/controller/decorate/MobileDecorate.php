@@ -59,8 +59,7 @@ class MobileDecorate extends AdminBaseController
         $total = $this->mobileDecorateService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -72,11 +71,11 @@ class MobileDecorate extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->mobileDecorateService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+             $item
+        );
     }
 
     /**
@@ -100,7 +99,7 @@ class MobileDecorate extends AdminBaseController
 
         $result = $this->mobileDecorateService->createMobileDecorate($data);
         if ($result) {
-            return $this->success(/** LANG */'首页装修模板添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'首页装修模板添加失败');
         }
@@ -114,7 +113,7 @@ class MobileDecorate extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'decorate_id' => $id,
             'decorate_title' => '',
@@ -131,7 +130,7 @@ class MobileDecorate extends AdminBaseController
 
         $result = $this->mobileDecorateService->updateMobileDecorate($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'首页装修模板更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'首页装修模板更新失败');
         }
@@ -143,9 +142,9 @@ class MobileDecorate extends AdminBaseController
      */
     public function setHome(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $result = $this->mobileDecorateService->setHome($id);
-        return $this->success(/** LANG */'已设置为首页');
+        return $this->success();
     }
 
     /**
@@ -154,9 +153,9 @@ class MobileDecorate extends AdminBaseController
      */
     public function copy(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $result = $this->mobileDecorateService->copy($id);
-        return $this->success(/** LANG */'页面已复制');
+        return $this->success();
     }
 
     /**
@@ -166,8 +165,8 @@ class MobileDecorate extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['decorate_title'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -175,12 +174,12 @@ class MobileDecorate extends AdminBaseController
 
         $data = [
             'decorate_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->mobileDecorateService->updateMobileDecorateField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -190,9 +189,9 @@ class MobileDecorate extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->mobileDecorateService->deleteMobileDecorate($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -202,15 +201,15 @@ class MobileDecorate extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->mobileDecorateService->deleteMobileDecorate($id);
                 }
@@ -220,7 +219,7 @@ class MobileDecorate extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

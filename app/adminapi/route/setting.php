@@ -5,7 +5,7 @@ use think\facade\Route;
 // 配置组
 Route::group('setting', function () {
     // APP版本管理
-    Route::group('app_version', function () {
+    Route::group('appVersion', function () {
         // 详情
         Route::get('detail', 'detail');
         // 添加
@@ -19,7 +19,9 @@ Route::group('setting', function () {
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendName' => 'appVersionManage'
-    ])->prefix('setting.appVersion/');
+    ])->prefix('setting.appVersion/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 授权管理
     Route::group('licensed', function () {
@@ -30,53 +32,185 @@ Route::group('setting', function () {
             "authorityCheckSubPermissionName" => 'licensedModifyManage'
         ]);
 
+        Route::post('saveLicensed', 'saveLicensed');
+
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendName' => 'licensed'
     ])->prefix('setting.licensed/');
-
+// 前端后台设置项
+    Route::get('config/getAdmin', 'setting.config/getAdmin');
     // 设置项管理
     Route::group('config', function () {
         // 基础设置
-        Route::get('get_base', 'getBase');
+        Route::get('getBase', 'getBase');
         // 商城基础配置
-        Route::get('basic_config', 'basicConfig');
+        Route::get('basicConfig', 'basicConfig')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 商城基础配置
+        Route::get('basicSettings', 'basicSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 获取商品配置
+        Route::get('productSettings', 'productSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 获取购物配置
+        Route::get('shoppingSettings', 'shoppingSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 保存商品配置
+        Route::post('saveProduct', 'saveProduct')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 保存购物配置
+        Route::post('saveShopping', 'saveShopping')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 获取通知配置
+        Route::get('notifySettings', 'notifySettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 保存通知配置
+        Route::post('saveNotify', 'saveNotify')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 获取显示配置
+        Route::get('showSettings', 'showSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 保存显示配置
+        Route::post('saveShow', 'saveShow')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 获取客服配置
+        Route::get('kefuSettings', 'kefuSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 保存客服配置
+        Route::post('saveKefu', 'saveKefu')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 获取接口配置
+        Route::get('apiSettings', 'apiSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 保存接口配置
+        Route::post('saveApi', 'saveApi')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 获取会员认证配置
+        Route::get('authSettings', 'authSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 保存会员认证配置
+        Route::post('saveAuth', 'saveAuth')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 获取主题风格配置
+        Route::get('themeStyleSettings', 'themeStyleSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+        // 保存主题风格配置
+        Route::post('saveThemeStyle', 'saveThemeStyle')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 获取分类页装修配置
+        Route::get('categoryDecorateSettings', 'categoryDecorateSettings')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 保存分类页装修配置
+        Route::post('saveCategoryDecorate', 'saveCategoryDecorate')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+        // 获取邮箱配置
+        Route::get('mailSettings', 'mailSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+
+        // 获取物流配置
+        Route::get('shippingSettings', 'shippingSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+
+        // 获取支付配置
+        Route::get('afterSalesSettings', 'afterSalesSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+
+        // 获取售后配置
+        Route::get('paySettings', 'paySettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+
         // 保存商城基础配置
-        Route::post('save_basic', 'saveBasic')->append([
+        Route::post('saveBasic', 'saveBasic')->append([
             "authorityCheckSubPermissionName" => 'saveBasicManage'
         ]);
-        // 前端后台设置项
-        Route::get('get_admin', 'getAdmin');
-        // 基础设置更新
-        Route::post('save', 'save')->append([
-            "authorityCheckSubPermissionName" => 'settingSaveManage'
+
+        //保存售后设置
+        Route::post('saveAfterSales', 'saveAfterSales')->append([
+            "authorityCheckSubPermissionName" => 'settingSaveAfterSalesManage'
         ]);
-        // 编辑
-        Route::post('update', 'update')->append([
-            "authorityCheckSubPermissionName" => 'settingUpdateManage'
+        //保存支付设置
+        Route::post('savePay', 'savePay')->append([
+            "authorityCheckSubPermissionName" => 'settingSavePayManage'
+        ]);
+        //保存物流设置
+        Route::post('saveShipping', 'saveShipping')->append([
+            "authorityCheckSubPermissionName" => 'settingSaveShippingManage'
         ]);
         // 邮箱服务器设置
-        Route::post('save_mail', 'saveMail')->append([
+        Route::post('saveMail', 'saveMail')->append([
             "authorityCheckSubPermissionName" => 'settingSaveMailManage'
         ]);
         // 获取图标icon
-        Route::get('get_icon', 'getIcon');
+        Route::get('getIcon', 'getIcon');
         // 发送测试邮件
-        Route::post('send_test_email', 'sendTestEmail')->append([
+        Route::post('sendTestEmail', 'sendTestEmail')->append([
 			"authorityCheckSubPermissionName" => 'sendTestEmailModifyManage'
 		]);
         // 上传API文件
-        Route::post('upload_file', 'uploadFile')->append([
+        Route::post('uploadFile', 'uploadFile')->append([
 			"authorityCheckSubPermissionName" => 'uploadFileModifyManage'
 		]);
         // 生成平台证书
-        Route::post('create_platform_certificate', 'createPlatformCertificate')->append([
+        Route::post('createPlatformCertificate', 'createPlatformCertificate')->append([
 			"authorityCheckSubPermissionName" => 'platformCertificateModifyManage'
 		]);
+
+        // 获取主题切换配置
+        Route::get('layoutThemeSwitchSettings', 'layoutThemeSwitchSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+
+        //获取商户配置
+        Route::get('merchantSettings', 'merchantSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+
+        //保存商户配置
+        Route::post('saveMerchant', 'saveMerchant')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+
+        //获取店铺配置
+        Route::get('shopSettings', 'shopSettings')->append([
+            'authorityCheckSubPermissionName' => 'config'
+        ]);
+
+        //保存店铺配置
+        Route::post('saveShop', 'saveShop')->append([
+            'authorityCheckSubPermissionName' => 'saveBasicManage'
+        ]);
+
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendName' => 'config'
-    ])->prefix('setting.config/');
+    ])->prefix('setting.config/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 计划任务
 //    Route::group('crons', function () {
@@ -89,7 +223,7 @@ Route::group('setting', function () {
 //        // 编辑
 //        Route::post('update', 'update');
 //        // 更新单个字段
-//        Route::post('update_field', 'updateField');
+//        Route::post('updateField', 'updateField');
 //        // 删除
 //        Route::post('del', 'del');
 //        // 批量操作
@@ -100,7 +234,7 @@ Route::group('setting', function () {
 //    ])->prefix('setting.crons/');
 
     // 友情链接
-    Route::group('friend_links', function () {
+    Route::group('friendLinks', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -114,7 +248,7 @@ Route::group('setting', function () {
             "authorityCheckSubPermissionName" => 'friendLinksUpdateManage'
         ]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'friendLinksUpdateManage'
         ]);
         // 删除
@@ -128,7 +262,9 @@ Route::group('setting', function () {
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendName' => 'friendLinksManage'
-    ])->prefix('setting.friendLinks/');
+    ])->prefix('setting.friendLinks/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 相册
     Route::group('gallery', function () {
@@ -145,7 +281,7 @@ Route::group('setting', function () {
 			"authorityCheckSubPermissionName" => 'galleryModifyManage'
 		]);
 		// 更新单个字段
-		Route::post('update_field', 'updateField')->append([
+		Route::post('updateField', 'updateField')->append([
 			"authorityCheckSubPermissionName" => 'galleryModifyManage'
 		]);
         // 删除
@@ -159,10 +295,82 @@ Route::group('setting', function () {
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendName' => 'galleryManage'
-    ])->prefix('setting.gallery/');
+    ])->prefix('setting.gallery/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
+
+    //视频相册
+    Route::group('galleryVideo', function () {
+        // 列表
+        Route::get('list', 'list');
+        // 详情
+        Route::get('detail', 'detail');
+        // 添加
+        Route::post('create', 'create')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+        // 编辑
+        Route::post('update', 'update')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+        // 更新单个字段
+        Route::post('updateField', 'updateField')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+        // 删除
+        Route::post('del', 'del')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+        // 批量操作
+        Route::post('batch', 'batch')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+    })->append([
+        //用于权限校验的名称
+        'authorityCheckAppendName' => 'galleryVideoManage'
+    ])->prefix('setting.galleryVideo/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
+
+    //视频信息
+    Route::group('galleryVideoInfo', function () {
+        // 列表
+        Route::get('list', 'list');
+        // 详情
+        Route::get('detail', 'detail');
+        // 添加
+        Route::post('create', 'create')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+        // 编辑
+        Route::post('update', 'update')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+        // 更新单个字段
+        Route::post('updateField', 'updateField')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+        // 图片上传
+        Route::post('uploadVideo', 'uploadVideo')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+        // 删除
+        Route::post('del', 'del')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+        // 批量操作
+        Route::post('batch', 'batch')->append([
+            "authorityCheckSubPermissionName" => 'galleryVideoManage'
+        ]);
+    })->append([
+        //用于权限校验的名称
+        'authorityCheckAppendName' => 'galleryVideoManage'
+    ])->prefix('setting.galleryVideoInfo/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 相册图片
-    Route::group('gallery_pic', function () {
+    Route::group('galleryPic', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -176,11 +384,11 @@ Route::group('setting', function () {
 			"authorityCheckSubPermissionName" => 'galleryPicModifyManage'
 		]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
 			"authorityCheckSubPermissionName" => 'galleryPicModifyManage'
 		]);
         // 图片上传
-        Route::post('upload_img', 'uploadImg')->append([
+        Route::post('uploadImg', 'uploadImg')->append([
 			"authorityCheckSubPermissionName" => 'galleryPicModifyManage'
 		]);
         // 删除
@@ -194,14 +402,16 @@ Route::group('setting', function () {
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendName' => 'galleryPicManage'
-    ])->prefix('setting.galleryPic/');
+    ])->prefix('setting.galleryPic/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 物流公司
-    Route::group('logistics_company', function () {
+    Route::group('logisticsCompany', function () {
         // 分页列表
         Route::get('list', 'list');
         // 全部列表
-        Route::get('get_all', 'getAll');
+        Route::get('getAll', 'getAll');
         // 详情
         Route::get('detail', 'detail');
         // 添加
@@ -213,7 +423,7 @@ Route::group('setting', function () {
             "authorityCheckSubPermissionName" => 'logisticsCompanyUpdateManage'
         ]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'logisticsCompanyUpdateManage'
         ]);
         // 删除
@@ -227,10 +437,12 @@ Route::group('setting', function () {
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendName' => 'logisticsCompanyManage'
-    ])->prefix('setting.logisticsCompany/');
+    ])->prefix('setting.logisticsCompany/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 邮件模板设置
-    Route::group('mail_templates', function () {
+    Route::group('mailTemplates', function () {
         // 列表
         Route::get('list', 'list');
         // 编辑
@@ -238,14 +450,16 @@ Route::group('setting', function () {
             "authorityCheckSubPermissionName" => 'mailTemplatesUpdateManage'
         ]);
         // 获取所有的邮件模板
-        Route::get('get_all_mail_templates', 'getAllMailTemplates');
+        Route::get('getAllMailTemplates', 'getAllMailTemplates');
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendGroupName' => 'mailTemplateManage'
-    ])->prefix('setting.mailTemplates/');
+    ])->prefix('setting.mailTemplates/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 消息设置
-    Route::group('message_type', function () {
+    Route::group('messageType', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -259,7 +473,7 @@ Route::group('setting', function () {
             "authorityCheckSubPermissionName" => 'messageTypeUpdateManage'
         ]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'messageTypeUpdateManage'
         ]);
         // 删除
@@ -271,25 +485,27 @@ Route::group('setting', function () {
             "authorityCheckSubPermissionName" => 'messageTypeBatchManage'
         ]);
         // 生成小程序消息模板
-        Route::post('mini_program_message_template', 'miniProgramMessageTemplate')->append([
+        Route::post('miniProgramMessageTemplate', 'miniProgramMessageTemplate')->append([
             "authorityCheckSubPermissionName" => 'miniProgramMessageTemplateManage'
         ]);
         // 同步小程序消息模板
-        Route::post('mini_program_message_template_sync', 'miniProgramMessageTemplateSync')->append([
+        Route::post('miniProgramMessageTemplateSync', 'miniProgramMessageTemplateSync')->append([
             "authorityCheckSubPermissionName" => 'miniProgramMessageTemplateSyncManage'
         ]);
         // 生成公众号消息模板
-        Route::post('wechat_message_template', 'wechatMessageTemplate')->append([
+        Route::post('wechatMessageTemplate', 'wechatMessageTemplate')->append([
             "authorityCheckSubPermissionName" => 'wechatMessageTemplateManage'
         ]);
         // 同步公众号消息模板
-        Route::post('wechat_message_template_sync', 'wechatMessageTemplateSync')->append([
+        Route::post('wechatMessageTemplateSync', 'wechatMessageTemplateSync')->append([
             "authorityCheckSubPermissionName" => 'wechatMessageTemplateSyncManage'
         ]);
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendGroupName' => 'messageTypeManage'
-    ])->prefix('setting.messageType/');
+    ])->prefix('setting.messageType/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 地区管理
     Route::group('region', function () {
@@ -298,11 +514,11 @@ Route::group('setting', function () {
         // 详情
         Route::get('detail', 'detail');
         // 获取地区树
-        Route::get('get_region_tree', 'getRegionTree');
+        Route::get('getRegionTree', 'getRegionTree');
         // 获取所有地区树
-        Route::get('get_all_region_tree', 'getAllRegionTree');
+        Route::get('getAllRegionTree', 'getAllRegionTree');
         // 获取子地区
-        Route::get('get_child_region', 'getChildRegion');
+        Route::get('getChildRegion', 'getChildRegion');
         // 添加
         Route::post('create', 'create')->append([
             "authorityCheckSubPermissionName" => 'regionUpdateManage'
@@ -312,7 +528,7 @@ Route::group('setting', function () {
             "authorityCheckSubPermissionName" => 'regionUpdateManage'
         ]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'regionUpdateManage'
         ]);
         // 删除
@@ -326,10 +542,12 @@ Route::group('setting', function () {
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendGroupName' => 'regionManage'
-    ])->prefix('setting.region/');
+    ])->prefix('setting.region/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 运费模板管理
-    Route::group('shipping_tpl', function () {
+    Route::group('shippingTpl', function () {
         // 列表
         Route::get('list', 'list');
         // 配置型
@@ -345,7 +563,7 @@ Route::group('setting', function () {
             "authorityCheckSubPermissionName" => 'shippingTplUpdateManage'
         ]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'shippingTplUpdateManage'
         ]);
         // 删除
@@ -359,10 +577,12 @@ Route::group('setting', function () {
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendGroupName' => 'shippingTplManage'
-    ])->prefix('setting.shippingTpl/');
+    ])->prefix('setting.shippingTpl/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
     // 配送类型
-    Route::group('shipping_type', function () {
+    Route::group('shippingType', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -376,7 +596,7 @@ Route::group('setting', function () {
             "authorityCheckSubPermissionName" => 'shippingTypeUpdateManage'
         ]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'shippingTypeUpdateManage'
         ]);
         // 删除
@@ -390,14 +610,16 @@ Route::group('setting', function () {
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendGroupName' => 'shippingTypeManage'
-    ])->prefix('setting.shippingType/');
+    ])->prefix('setting.shippingType/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
 	// 内置相册
 	Route::group('album', function () {
 		// 列表
 		Route::get('list', 'list');
 		// 更新单个字段
-		Route::post('update_field', 'updateField')->append([
+		Route::post('updateField', 'updateField')->append([
 			"authorityCheckSubPermissionName" => 'albumModifyManage'
 		]);
 		// 删除
@@ -411,10 +633,12 @@ Route::group('setting', function () {
 	})->append([
 		//用于权限校验的名称
 		'authorityCheckAppendName' => 'albumManage'
-	])->prefix('setting.album/');
+    ])->prefix('setting.album/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
 	// 区号维护
-	Route::group('area_code', function () {
+	Route::group('areaCode', function () {
 		// 列表
 		Route::get('list', 'list');
 		// 详情
@@ -428,7 +652,7 @@ Route::group('setting', function () {
 			"authorityCheckSubPermissionName" => 'areaCodeModifyManage'
 		]);
 		// 更新单个字段
-		Route::post('update_field', 'updateField')->append([
+		Route::post('updateField', 'updateField')->append([
 			"authorityCheckSubPermissionName" => 'areaCodeModifyManage'
 		]);
 		// 删除
@@ -442,8 +666,8 @@ Route::group('setting', function () {
 	})->append([
 		//用于权限校验的名称
 		'authorityCheckAppendName' => 'areaCodeManage'
-	])->prefix('setting.areaCode/');
+    ])->prefix('setting.areaCode/')->middleware([
+        \app\adminapi\middleware\CheckAuthor::class
+    ]);
 
-})->middleware([
-    \app\adminapi\middleware\CheckAuthor::class
-]);
+});

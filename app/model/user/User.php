@@ -37,7 +37,7 @@ class User extends Model
 
     public function getAvatarAttr($value)
     {
-        return empty($value) ? Config::get('default_avatar') : $value;
+        return empty($value) ? Config::get('defaultAvatar') : $value;
     }
 
     // 关联收货信息

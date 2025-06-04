@@ -1,0 +1,1 @@
+import{y as r}from"./index-DrbzVNl6.js";const u=e=>r({url:"user/userRank/list",method:"get",params:e}),n=e=>r({url:"user/userRank/listByPro",method:"get",params:e}),a=e=>r({url:"user/userRank/"+e,method:"get"}),o=(e,s)=>r({url:"user/userRank/"+e,method:"post",data:s});export{a,n as b,u as g,o as u};

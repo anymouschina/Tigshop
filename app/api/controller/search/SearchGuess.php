@@ -40,7 +40,7 @@ class SearchGuess extends IndexBaseController
      */
     public function index(): Response
     {
-        $keyword = input('keyword',"");
+        $keyword = $this->request->all('keyword',"");
         // 去掉空格
         $keyword = htmlspecialchars(str_replace(' ', '', trim($keyword)));
         $keyword_list = [];
@@ -79,9 +79,7 @@ class SearchGuess extends IndexBaseController
                 ];
             }
         }
-        return $this->success([
-            'keyword_list' => $keyword_list,
-        ]);
+        return $this->success($keyword_list);
     }
 
 }

@@ -42,12 +42,12 @@ class KDNiaoService extends LogisticsService
 
     public function __construct()
     {
-        $config = Config::getConfig('base_logistics');
-        if (isset($config['kdniao_api_key'])) {
-            $this->apiKey = $config['kdniao_api_key'];
+        $config = Config::getConfig();
+        if (isset($config['kdniaoApiKey'])) {
+            $this->apiKey = $config['kdniaoApiKey'];
         }
-        if (isset($configx['kdniao_business_id'])) {
-            $this->eBusinessId = $config['kdniao_business_id'];
+        if (isset($configx['kdniaoBusinessId'])) {
+            $this->eBusinessId = $config['kdniaoBusinessId'];
         }
         $this->config = $config;
     }

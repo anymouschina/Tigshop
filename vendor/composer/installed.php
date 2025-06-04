@@ -6,7 +6,7 @@
     'aliases' => 
     array (
     ),
-    'reference' => 'dde79d743269338cfa7a772b4b97ce3726a53969',
+    'reference' => '4a2b7dda567204fb62251871c04949ab7f37fbc9',
     'name' => 'topthink/think',
   ),
   'versions' => 
@@ -1685,12 +1685,12 @@
     ),
     'overtrue/socialite' => 
     array (
-      'pretty_version' => '4.11.0',
-      'version' => '4.11.0.0',
+      'pretty_version' => '4.11.2',
+      'version' => '4.11.2.0',
       'aliases' => 
       array (
       ),
-      'reference' => '4929bbb9241818783c5954151ebbbef36d4953f4',
+      'reference' => '83dd537a88b30cd9204ee2c46a5b2e181bc1fa66',
     ),
     'paypal/paypal-server-sdk' => 
     array (
@@ -2177,7 +2177,7 @@
       'aliases' => 
       array (
       ),
-      'reference' => 'dde79d743269338cfa7a772b4b97ce3726a53969',
+      'reference' => '4a2b7dda567204fb62251871c04949ab7f37fbc9',
     ),
     'topthink/think-annotation' => 
     array (

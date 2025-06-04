@@ -68,10 +68,10 @@ class ExceptionHandle extends Handle
         $message = $app_debug == false ? '请求错误，请稍后再试！' : $e->getMessage();
         // 参数验证错误
         if ($e instanceof ValidateException) {
-            return $this->defaultOutput($message,1001);
+            return $this->defaultOutput('', $message, 1001);
         }
         if ($e instanceof ApiException) {
-            return $this->defaultOutput($message,$e->getCode());
+            return $this->defaultOutput('', $message, $e->getCode());
         }
         return $this->fatalOutput($e);
     }

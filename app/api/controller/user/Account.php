@@ -35,8 +35,7 @@ class Account extends IndexBaseController
         $filterResult = app(UserBalanceLogService::class)->getFilterResult($filter);
         $total = app(UserBalanceLogService::class)->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }

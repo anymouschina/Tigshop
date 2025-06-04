@@ -47,14 +47,14 @@ class Aftersales extends IndexBaseController
             'sort_order' => 'desc',
             'user_id' => request()->userId
         ];
-        $filter["page"] = input("page/d", 1);
+        $filter["page"] = $this->request->all("page/d", 1);
 
         $result = $this->aftersalesService->afterSalesOrderList($filter);
         $total = $this->aftersalesService->afterSalesOrderFilter($filter['user_id'])->count();
+        //查看该数据的类型
         return $this->success([
-            'filter_result' => $result,
+            'records' => $result,
             'total' => $total,
-            'filter' => $filter,
         ]);
     }
 
@@ -86,8 +86,8 @@ class Aftersales extends IndexBaseController
      */
     public function applyData(): Response
     {
-        $item_id = input('item_id/d', 0);
-        $order_id = input('order_id/d', 0);
+        $item_id = $this->request->all('item_id/d', 0);
+        $order_id = $this->request->all('order_id/d', 0);
         $list = $this->aftersalesService->getAfterSalesDetail($order_id, $item_id);
         return $this->success([
             'list' => $list,
@@ -114,7 +114,7 @@ class Aftersales extends IndexBaseController
             ],
         ], 'post');
         $result = $this->aftersalesService->afterSalesApply($data);
-        return $result ? $this->success(/** LANG */Util::lang("售后申请成功,请耐心等待我们的审核")) : $this->error(/** LANG */Util::lang('售后申请失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('售后申请失败'));
     }
 
     /**
@@ -141,7 +141,7 @@ class Aftersales extends IndexBaseController
             return $this->error(Util::lang('该状态下不能修改'));
         }
         $result = $this->aftersalesService->afterSalesUpdate($data);
-        return $result ? $this->success(/** LANG */ Util::lang("售后申请成功,请耐心等待我们的审核")) : $this->error(/** LANG */ Util::lang('售后申请失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('售后申请失败'));
     }
 
     /**
@@ -158,8 +158,7 @@ class Aftersales extends IndexBaseController
         ], 'get');
         $result = $this->aftersalesService->afterSalesRecord($filter, request()->userId);
         return $this->success([
-            'filter_result' => $result["list"],
-            'filter' => $filter,
+            'records' => $result["list"],
             'total' => $result["count"],
         ]);
     }
@@ -171,11 +170,9 @@ class Aftersales extends IndexBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = $this->aftersalesService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -185,11 +182,9 @@ class Aftersales extends IndexBaseController
      */
     public function detailLog(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = $this->aftersalesService->getDetailLog($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -199,7 +194,7 @@ class Aftersales extends IndexBaseController
      */
     public function feedback(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $data = $this->request->only([
             'id' => $id,
             "log_info" => "",
@@ -208,7 +203,7 @@ class Aftersales extends IndexBaseController
             "tracking_no" => "",
         ], 'post');
         $result = $this->aftersalesService->submitFeedbackRecord($id, $data, request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang("已更新您的退换货信息")) : $this->error(/** LANG */Util::lang('未知错误，提交失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('未知错误，提交失败'));
     }
 
     /**
@@ -217,8 +212,8 @@ class Aftersales extends IndexBaseController
      */
     public function cancel(): Response
     {
-        $id = input('aftersale_id/d', 0);
+        $id = $this->request->all('aftersale_id/d', 0);
         $result = $this->aftersalesService->cancel($id);
-        return $result ? $this->success(/** LANG */Util::lang("撤销成功")) : $this->error(/** LANG */Util::lang('撤销失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('撤销失败'));
     }
 }

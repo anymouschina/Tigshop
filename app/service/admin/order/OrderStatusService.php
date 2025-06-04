@@ -14,6 +14,7 @@ namespace app\service\admin\order;
 use app\model\order\Order;
 use app\service\common\BaseService;
 use app\validate\order\OrderValidate;
+use utils\Config;
 use utils\Util;
 
 /**
@@ -91,6 +92,11 @@ class OrderStatusService extends BaseService
             case Order::ORDER_COMPLETED:
                 $actions['rebuy'] = true;
                 $actions['to_aftersales'] = !app(AftersalesService::class)->getAfterSalesCount($order->order_id);
+                if ( $actions['to_aftersales']) {
+                    $actions['to_aftersales'] = $this->showAfterSale($order);
+                }
+
+
                 if ($order->comment_status == Order::COMMENT_PENDING) {
                     $actions['to_comment'] = true;
                 }
@@ -146,6 +152,36 @@ class OrderStatusService extends BaseService
             }
         }
         return $actions;
+    }
+
+    //超过确认收货时限后不显示收货申请按钮
+    public function showAfterSale($order)
+    {
+        //获取是否有店铺订单设置
+        if($order->shop_id > 0) {
+            $order_config = app(OrderConfigService::class)->getDetail('order_config', $order->shop_id);
+        } else {
+            $order_config = [];
+        }
+
+        //确认收货订单多少天之后不可在申请售后
+        if(!empty($order_config) &&
+            isset($order_config['date_type']) && $order_config['date_type'] == 1) {
+            //判断是否支持售后
+            return false;
+        } else {
+            //普通单
+            $autoDeliveryDays = Config::get('afterSalesLimitDays');
+            if(!empty($autoDeliveryDays)) {
+                //判断是否支持售后
+                $received_time = is_string($order['received_time']) ? strtotime($order['received_time']) : $order['received_time'];
+                $time = time() - $received_time;
+                if($time > $autoDeliveryDays * 24 * 3600) {
+                    return  false;
+                }
+            }
+        }
+        return true;
     }
 
     /**

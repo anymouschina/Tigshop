@@ -43,8 +43,7 @@ class WechatLive extends AdminBaseController
 		$total = $this->wechatLiveService->getFilterCount($filter);
 
 		return $this->success([
-			'filter_result' => $filterResult,
-			'filter' => $filter,
+			'records' => $filterResult,
 			'total' => $total,
 		]);
 	}
@@ -55,14 +54,14 @@ class WechatLive extends AdminBaseController
 	 */
 	public function detail(): Response
 	{
-		$id = input('id/d', 0);
+		$id =$this->request->all('id/d', 0);
 		$item = $this->wechatLiveService->getDetail($id);
 		if ($item->shop_id != request()->shopId) {
 			throw new ApiException(/** LANG */'直播间不存在');
 		}
-		return $this->success([
-			'item' => $item,
-		]);
+		return $this->success(
+			$item
+		);
 	}
 
 	/**
@@ -72,7 +71,7 @@ class WechatLive extends AdminBaseController
 	 */
 	public function update(): Response
 	{
-		$id = input('id/d', 0);
+		$id =$this->request->all('id/d', 0);
 
 		$item = $this->wechatLiveService->getDetail($id);
 		if ($item->shop_id != request()->shopId) {
@@ -87,7 +86,7 @@ class WechatLive extends AdminBaseController
 		],"post");
 
 		$result = $this->wechatLiveService->updateWechatLive($id,$data);
-		return $result ? $this->success(/** LANG */'直播修改成功') : $this->error(/** LANG */'直播修改失败');
+		return $result ? $this->success() : $this->error(/** LANG */'直播修改失败');
 	}
 
 	/**
@@ -98,6 +97,6 @@ class WechatLive extends AdminBaseController
 	{
 		$shop_id = request()->shopId;
 		$result = $this->wechatLiveService->refreshByApi($shop_id);
-		return $result ? $this->success(/** LANG */'直播更新成功') : $this->error(/** LANG */'直播更新失败');
+		return $result ? $this->success() : $this->error(/** LANG */'直播更新失败');
 	}
 }

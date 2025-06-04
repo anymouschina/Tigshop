@@ -73,8 +73,8 @@ class WechatLiveService extends BaseService
 	 */
 	public function refreshByApi(int $shop_id):bool
 	{
-		$appid = Config::get('wechat_miniProgram_appId','base_api_mini_program');
-		$secret = Config::get('wechat_miniProgram_secret','base_api_mini_program');
+        $appid = Config::get('wechatMiniProgramAppId');
+        $secret = Config::get('wechatMiniProgramSecret');
 
 		$url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=" . $appid . "&secret=" . $secret;
 

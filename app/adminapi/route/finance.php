@@ -5,12 +5,12 @@ use think\facade\Route;
 // 财务组
 Route::group('finance', function () {
     // 账户资金面板
-    Route::group('account_panel', function () {
+    Route::group('accountPanel', function () {
         // 面板
         Route::get('list', 'finance.accountPanel/list');
     });
     // 发票申请
-    Route::group('order_invoice', function () {
+    Route::group('orderInvoice', function () {
         // 发票申请列表
         Route::get('list', 'finance.orderInvoice/list');
         // 发票申请详情
@@ -29,7 +29,7 @@ Route::group('finance', function () {
         ]);
     });
     // 交易日志
-    Route::group('pay_log', function () {
+    Route::group('payLog', function () {
         // 交易日志列表
         Route::get('list', 'finance.payLog/list');
         // 交易日志删除
@@ -42,7 +42,7 @@ Route::group('finance', function () {
         ]);
     });
     // 退款申请
-    Route::group('refund_apply', function () {
+    Route::group('refundApply', function () {
         // 退款申请列表
         Route::get('list', 'finance.refundApply/list');
         // 退款申请详情
@@ -54,17 +54,17 @@ Route::group('finance', function () {
             "authorityCheckSubPermissionName" => 'refundApplyUpdateManage'
         ]);
         // 确认线下转账
-        Route::post('offline_audit', 'finance.refundApply/offlineAudit')->append([
+        Route::post('offlineAudit', 'finance.refundApply/offlineAudit')->append([
 			"authorityCheckSubPermissionName" => 'refundApplyUpdateManage'
 		]);
     });
     // 退款记录
-    Route::group('refund_log', function () {
+    Route::group('refundLog', function () {
         // 退款记录
         Route::get('list', 'finance.refundLog/list');
     });
     // 余额日志
-    Route::group('user_balance_log', function () {
+    Route::group('userBalanceLog', function () {
         // 余额日志列表
         Route::get('list', 'finance.userBalanceLog/list');
         // 删除
@@ -77,7 +77,7 @@ Route::group('finance', function () {
         ]);
     });
     // 增票资质申请
-    Route::group('user_invoice', function () {
+    Route::group('userInvoice', function () {
         // 增票资质申请列表
         Route::get('list', 'finance.userInvoice/list');
         // 配置型
@@ -98,7 +98,7 @@ Route::group('finance', function () {
         ]);
     });
     // 充值申请管理
-    Route::group('user_recharge_order', function () {
+    Route::group('userRechargeOrder', function () {
         // 充值申请列表
         Route::get('list', 'finance.userRechargeOrder/list');
         // 充值申请详情
@@ -121,7 +121,7 @@ Route::group('finance', function () {
         ]);
     });
     // 提现申请
-    Route::group('user_withdraw_apply', function () {
+    Route::group('userWithdrawApply', function () {
         // 提现申请列表
         Route::get('list', 'finance.userWithdrawApply/list');
         // 提现申请详情

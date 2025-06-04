@@ -51,8 +51,8 @@ class StatisticsAccess extends AdminBaseController
 
         $filterResult = $this->statisticsAccessService->getAccessStatistics($filter);
 
-        return $this->success([
-            'filter_result' => $filterResult,
-        ]);
+        return $this->success(
+           $filterResult
+        );
     }
 }

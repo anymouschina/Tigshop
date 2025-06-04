@@ -39,8 +39,68 @@ class UserRank extends AdminBaseController
      * 列表
      * @return Response
      */
-    public function list(): Response
+//    public function listOld(): Response
+//    {
+//        $filter = $this->request->only([
+//            'rank_name' => '',
+//            'page' => 1,
+//            'size' => 15,
+//            'sort_field' => 'rank_id',
+//            'sort_order' => 'asc',
+//        ], 'get');
+//
+//        // 获取配置
+//        $config = [];
+//        if (config('app.IS_PRO')) {
+//            $config = app(userRankService::class)->getRankConfig();
+//            if (empty($config)) {
+//                $data = app(userRankService::class)->defaultRankData();
+//                $config = $data['rank_config'];
+//            }
+//            $filter['rank_type'] = $config['rank_type'];
+//        }
+//        $filterResult = $this->userRankService->getFilterList($filter, [], ['user_rights', 'user_count']);
+//        $total = $this->userRankService->getFilterCount($filter);
+//        $filterResultArray = $filterResult->toArray();
+//        $res = [];
+//        if (!empty($filterResultArray)) {
+//            if (!config("app.IS_PRO")) {
+//                foreach ($filterResultArray as $key => $item) {
+//                    $tmp = [];
+//                    $tmp['rank_id'] = $item['rank_id'];
+//                    $tmp['user_count'] = $item['user_count'];
+//                    $tmp['rank_name'] = $item['rank_name'];
+//                    $tmp['rank_logo'] = $item['rank_logo'];
+//                    $tmp['rank_level'] = $item['rank_level'];
+//                    $res[] = $tmp;
+//                }
+//            } else {
+//                $res = $filterResultArray;
+//            }
+//        } else {
+//            $data = app(userRankService::class)->defaultRankData();
+//            if (config("app.IS_PRO")) {
+//                $res = $data['user_rank_list'];
+//                $total = count($res);
+//            } else {
+//                $res = $data['user_rank_list_not_pro'];
+//
+//            }
+//        }
+//        return $this->success([
+//            'records' => $res,
+//            'total' => $total,
+//            'rank_config' => $config
+//        ]);
+//    }
+
+    /**
+     * 非pro会员会员列表
+     * @return Response
+     */
+    public function list()
     {
+        $config = [];
         $filter = $this->request->only([
             'rank_name' => '',
             'page' => 1,
@@ -49,51 +109,77 @@ class UserRank extends AdminBaseController
             'sort_order' => 'asc',
         ], 'get');
 
-        // 获取配置
-        $config = [];
-        if(config('app.IS_PRO')){
-            $config = app(userRankService::class)->getRankConfig();
-            if(empty($config)) {
-                $data = app(userRankService::class)->defaultRankData();
-                $config = $data['rank_config'];
-            }
-            $filter['rank_type'] = $config['rank_type'];
-        }
-        $filterResult = $this->userRankService->getFilterList($filter,[],['user_rights','user_count']);
+        $filterResult = $this->userRankService->getFilterList($filter, [], ['user_rights', 'user_count']);
         $total = $this->userRankService->getFilterCount($filter);
-        $filterResultArray = $filterResult->toArray();
         $res = [];
-        if(!empty($filterResultArray)) {
-            if(!config("app.IS_PRO")){
-                foreach ($filterResultArray as $key => $item) {
-                    $tmp = [];
-                    $tmp['rank_id'] = $item['rank_id'];
-                    $tmp['user_count'] = $item['user_count'];
-                    $tmp['rank_name'] = $item['rank_name'];
-                    $tmp['rank_logo'] = $item['rank_logo'];
-                    $tmp['rank_level'] = $item['rank_level'];
-                    $res[] = $tmp;
-                }
-            } else {
-                $res = $filterResultArray;
+        if (!empty($filterResultArray)) {
+            foreach ($filterResultArray as $key => $item) {
+                $tmp = [];
+                $tmp['rank_id'] = $item['rank_id'];
+                $tmp['user_count'] = $item['user_count'];
+                $tmp['rank_name'] = $item['rank_name'];
+                $tmp['rank_logo'] = $item['rank_logo'];
+                $tmp['rank_level'] = $item['rank_level'];
+                $res[] = $tmp;
             }
         } else {
             $data = app(userRankService::class)->defaultRankData();
-            if(config("app.IS_PRO")){
-                $res = $data['user_rank_list'];
-                $total = count($res);
-            } else {
-                $res = $data['user_rank_list_not_pro'];
-
-            }
+            $res = $data['user_rank_list_not_pro'];
+            $total = count($res);
         }
         return $this->success([
-            'filter_result' => $res,
-            'filter' => $filter,
-            'total' => $total,
+            'user_rank' => [
+                'records' => $res,
+                'total' => $total,
+            ],
             'rank_config' => $config
         ]);
     }
+
+    /**
+     * pro会员等级列表
+     * @return Response
+     */
+    public function listByPro()
+    {
+        if(config("app.IS_PRO") != 1) {
+            return $this->success([
+                'records' => [],
+                'total' => 0,
+                'rank_config' => []
+            ]);
+        }
+        $filter = $this->request->only([
+            'rank_name' => '',
+            'page' => 1,
+            'size' => 15,
+            'sort_field' => 'rank_id',
+            'sort_order' => 'asc',
+        ], 'get');
+
+        $config = app(userRankService::class)->getRankConfig();
+        if (empty($config)) {
+            $data = app(userRankService::class)->defaultRankData();
+            $config = $data['rank_config'];
+        }
+        $filter['rank_type'] = $config['rank_type'];
+
+        $res = $this->userRankService->getFilterList($filter, [], ['user_rights', 'user_count']);
+        $total = $this->userRankService->getFilterCount($filter);
+        if (empty($res)) {
+            $data = app(userRankService::class)->defaultRankData();
+            $res = $data['user_rank_list'];
+            $total = count($res);
+        }
+        return $this->success([
+            'user_rank' => [
+                'records' => $res,
+                'total' => $total,
+            ],
+            'rank_config' => $config
+        ]);
+    }
+
 
     /**
      * 详情
@@ -102,11 +188,11 @@ class UserRank extends AdminBaseController
      */
     public function detail(): Response
     {
-        $rank_type = input('rank_type/d', 1);
+        $rank_type = $this->request->all('rank_type/d', 1);
         $item = $this->userRankService->getDetail($rank_type);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -125,7 +211,7 @@ class UserRank extends AdminBaseController
 
         $result = $this->userRankService->updateUserRank($data);
         if ($result) {
-            return $this->success('会员等级更新成功');
+            return $this->success();
         } else {
             return $this->error('会员等级更新失败');
         }

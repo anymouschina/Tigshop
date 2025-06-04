@@ -50,9 +50,8 @@ class CollectProduct extends IndexBaseController
         ], 'get');
         $filterResult = $this->collectProductService->getFilterResult($filter);
         return $this->success([
-            'filter_result' => $filterResult["list"],
-            'total' => $filterResult["count"],
-            'filter' => $filter,
+            'records' => $filterResult,
+            'total' => $this->collectProductService->getFilterCount($filter),
         ]);
     }
 
@@ -62,9 +61,9 @@ class CollectProduct extends IndexBaseController
      */
     public function save(): Response
     {
-        $product_id = input("product_id/d", 0);
+        $product_id = $this->request->all("product_id/d", 0);
         $result = $this->collectProductService->updateCollect($product_id, request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang('收藏成功')) : $this->error(/** LANG */Util::lang('收藏失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('收藏失败'));
     }
 
     /**
@@ -74,8 +73,8 @@ class CollectProduct extends IndexBaseController
      */
     public function cancel(): Response
     {
-        $id = input("id/d", 0);
+        $id = $this->request->all("id/d", 0);
         $result = $this->collectProductService->deleteCollect($id);
-        return $result ? $this->success(/** LANG */Util::lang('取消收藏成功')) : $this->error(/** LANG */Util::lang('取消收藏失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('取消收藏失败'));
     }
 }

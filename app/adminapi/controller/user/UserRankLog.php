@@ -34,8 +34,7 @@ class UserRankLog extends AdminBaseController
         $filterResult = $this->userRankLogService->getFilterList($filter,['user']);
         $total = $this->userRankLogService->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }

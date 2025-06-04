@@ -59,8 +59,7 @@ class ProductInventoryLog extends AdminBaseController
         $total = $this->productInventoryLogService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -72,7 +71,7 @@ class ProductInventoryLog extends AdminBaseController
 //     */
 //    public function del(): \think\Response
 //    {
-//        $id = input('id/d', 0);
+//        $id =$this->request->all('id/d', 0);
 //        $this->productInventoryLogService->deleteProductInventoryLog($id);
 //        return $this->success('指定项目已删除');
 //    }
@@ -84,12 +83,12 @@ class ProductInventoryLog extends AdminBaseController
 //     */
 //    public function batch(): \think\Response
 //    {
-//        if (empty(input('ids')) || !is_array(input('ids'))) {
+//        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
 //            return $this->error('未选择项目');
 //        }
 //
-//        if (input('type') == 'del') {
-//            foreach (input('ids') as $key => $id) {
+//        if ($this->request->all('type') == 'del') {
+//            foreach ($this->request->all('ids') as $key => $id) {
 //                $id = intval($id);
 //                $this->productInventoryLogService->deleteProductInventoryLog($id);
 //            }

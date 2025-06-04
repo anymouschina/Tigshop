@@ -56,7 +56,7 @@ class SalesmanProduct extends BaseModel
     {
         $commission_info = [];
         $product_commission = $sub_commission = "";
-        $salesman_config = app(ConfigService::class)->getDetail('salesman_config', $data['shop_id']);
+        $salesman_config = app(ConfigService::class)->getDetail('salesmanConfig', $data['shop_id']);
         if ($data['is_join'] == 1 && $data['commission_type'] == 1 && empty($data['commission_data'])) {
             if (!empty($salesman_config)) {
                 foreach ($salesman_config['level'] as  $v) {
@@ -65,20 +65,21 @@ class SalesmanProduct extends BaseModel
             }
         } else {
             if ($data['is_join'] == 1 && !empty($data['commission_data']) && !empty($data['commission_type'])) {
-                $commission_data = is_array($data['commission_data']) ? $data['commission_data'] : json_decode($data['commission_data'], true);
+                $commission_data = is_array($data['commission_data']) ? $data['commission_data'] : json_decode($data['commission_data'],
+                    true);
                 if (!empty($salesman_config) && !empty($commission_data)) {
                     foreach ($commission_data as $item) {
-                        if (isset($item['level_arr']) && !empty($item['level_arr'])) {
-                            foreach ($item['level_arr'] as $k => $val) {
+                        if (!empty($item['levelArr'])) {
+                            foreach ($item['levelArr'] as $k => $val) {
                                 if (in_array($data['commission_type'], [self::COMMISSION_TYPE_DEFAULT, self::COMMISSION_TYPE_CUSTOM_SCALE])) {
                                     $product_commission .= $salesman_config['level'][$k]['name'] . "佣金:{$val['rate']}%;";
-                                    if ($salesman_config['sale_type'] != 1) {
-                                        $sub_commission .= $salesman_config['level'][$k]['name'] . "佣金: {$val['down_salesman_rate']}%;";
+                                    if ($salesman_config['saleType'] != 1) {
+                                        $sub_commission .= $salesman_config['level'][$k]['name'] . "佣金: {$val['downSalesmanRate']}%;";
                                     }
                                 } else {
                                     $product_commission .= $salesman_config['level'][$k]['name'] . "佣金: {$val['rate']};";
-                                    if ($salesman_config['sale_type'] != 1) {
-                                        $sub_commission .= $salesman_config['level'][$k]['name'] . "佣金: {$val['down_salesman_rate']};";
+                                    if ($salesman_config['saleType'] != 1) {
+                                        $sub_commission .= $salesman_config['level'][$k]['name'] . "佣金: {$val['downSalesmanRate']};";
                                     }
                                 }
                             }

@@ -34,7 +34,7 @@ class PcCatWideService extends BaseService
      */
     public function formatData(array $module): array
     {
-        $cat_ids = $module['cat_ids'];
+        $cat_ids = $module['catIds'];
         $filterResult = Category::whereIn('category_id', $cat_ids)->where('is_show', 1)->field([
             'category_id',
             'category_name',

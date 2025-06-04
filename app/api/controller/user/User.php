@@ -57,10 +57,10 @@ class User extends IndexBaseController
         $data['is_bind_wechat'] = app(UserAuthorizeService::class)->checkUserIsAuthorize(request()->userId);
         $data['salesman'] = app(SalesmanService::class)->getDetailByUserId(request()->userId);
         //查询是否开启签到
-        $show_sign = Config::get('points_setting', 'base_shopping','','use_qiandao_point');
+        $show_sign = Config::get('pointsSetting', '');
         $data['show_sign'] = $show_sign;
         $data['has_shop'] = app(AdminUserShopService::class)->hasShop(request()->userId);
-        return $this->success(['item' => $data]);
+        return $this->success($data);
     }
 
     /**
@@ -79,7 +79,7 @@ class User extends IndexBaseController
         ], 'post');
         $userInfoService = new UserInfoService(request()->userId);
         $result = $userInfoService->updateInformation($data);
-        return $result ? $this->success(/** LANG */ Util::lang("修改成功")) : $this->error(/** LANG */ Util::lang("修改失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("修改失败"));
     }
 
     /**
@@ -92,7 +92,7 @@ class User extends IndexBaseController
         $userInfoService = new UserInfoService(request()->userId);
         $data = $userInfoService->getUserIndex();
 
-        return $this->success(['item' => $data]);
+        return $this->success($data);
     }
 
     /**
@@ -101,8 +101,8 @@ class User extends IndexBaseController
      */
     public function oAuth(): \think\Response
     {
-        $code = input('code');
-        $type = input('type');
+        $code = $this->request->all('code');
+        $type = $this->request->all('type');
         if (empty($type) || empty($code)) {
             return $this->error(Util::lang('参数缺失！'));
         }
@@ -115,7 +115,7 @@ class User extends IndexBaseController
                 return $this->error(Util::lang('未找到授权类型！'));
         }
 
-        return $this->success(['data' => $data]);
+        return $this->success($data);
     }
 
     /**
@@ -130,7 +130,7 @@ class User extends IndexBaseController
         $event = 'modify_password';
         // 行为验证码
         app(CaptchaService::class)->setTag($event . 'mobileCode:' . $mobile)
-            ->setToken(input('verify_token', ''))
+            ->setToken($this->request->all('verify_token', ''))
             ->verification();
 
         try {
@@ -151,15 +151,15 @@ class User extends IndexBaseController
         $userInfoService = new UserInfoService(request()->userId);
         $userInfo = $userInfoService->getSimpleBaseInfo();
         $mobile = $userInfo['mobile'];
-        $code = input("code", "");
-        $password = input("password", "");
+        $code = $this->request->all("code", "");
+        $password = $this->request->all("password", "");
         if (empty($password)) {
             throw new ApiException(/** LANG */ Util::lang('新密码不能为空'));
         }
         $userInfoService = new UserInfoService(request()->userId);
         $userInfoService->mobileValidate($mobile, $code, 0, 'modify_password');
         $result = $userInfoService->modifyPassword(['password' => $password]);
-        return $result ? $this->success(/** LANG */ Util::lang("操作成功")) : $this->error(/** LANG */ Util::lang("操作失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("操作失败"));
     }
 
     /**
@@ -179,7 +179,7 @@ class User extends IndexBaseController
         ], 'post');
         $userInfoService = new UserInfoService(request()->userId);
         $result = $userInfoService->modifyPassword($data);
-        return $result ? $this->success(/** LANG */ Util::lang("操作成功")) : $this->error(/** LANG */ Util::lang("操作失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("操作失败"));
     }
 
     /**
@@ -194,12 +194,12 @@ class User extends IndexBaseController
         $event = 'mobile_validate';
         // 行为验证码
         app(CaptchaService::class)->setTag($event . 'mobileCode:' . $mobile)
-            ->setToken(input('verify_token', ''))
+            ->setToken($this->request->all('verify_token', ''))
             ->verification();
 
         try {
             app(SmsService::class)->sendCode($mobile, $event);
-            return $this->success(Util::lang('发送成功！'));
+            return $this->success();
         } catch (\Exception $e) {
             return $this->error(Util::lang('发送失败！') . $e->getMessage());
         }
@@ -211,19 +211,19 @@ class User extends IndexBaseController
      */
     public function sendMobileCodeByModifyMobile(): \think\Response
     {
-        $mobile = input('mobile', '');
+        $mobile = $this->request->all('mobile', '');
         if (!$mobile) {
             return $this->error(Util::lang('手机号不能为空'));
         }
         $event = 'modify_mobile';
         // 行为验证码
         app(CaptchaService::class)->setTag($event . 'mobileCode:' . $mobile)
-            ->setToken(input('verify_token', ''))
+            ->setToken($this->request->all('verify_token', ''))
             ->verification();
 
         try {
             app(SmsService::class)->sendCode($mobile, $event);
-            return $this->success(Util::lang('发送成功！'));
+            return $this->success();
         } catch (\Exception $e) {
             return $this->error(Util::lang('发送失败！') . $e->getMessage());
         }
@@ -239,14 +239,14 @@ class User extends IndexBaseController
         $userInfoService = new UserInfoService(request()->userId);
         $userInfo = $userInfoService->getSimpleBaseInfo();
         $mobile = $userInfo['mobile'];
-        $code = input("code", "");
+        $code = $this->request->all("code", "");
         $userInfoService = new UserInfoService(request()->userId);
         // 判断code数据类型
         if (!is_numeric($code)) {
             return $this->error(/** LANG */ Util::lang("验证码错误"));
         }
         $result = $userInfoService->mobileValidate($mobile, $code, 0, 'mobile_validate');
-        return $result ? $this->success(/** LANG */ Util::lang("操作成功")) : $this->error(/** LANG */ Util::lang("操作失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("操作失败"));
     }
 
     /**
@@ -256,15 +256,15 @@ class User extends IndexBaseController
      */
     public function modifyMobile(): \think\Response
     {
-        $mobile = input("mobile", "");
-        $code = input("code", "");
+        $mobile = $this->request->all("mobile", "");
+        $code = $this->request->all("code", "");
         $userInfoService = new UserInfoService(request()->userId);
         // 判断code数据类型
         if (!is_numeric($code)) {
             return $this->error(/** LANG */ Util::lang("验证码错误"));
         }
         $result = $userInfoService->mobileValidate($mobile, $code, 1, 'modify_mobile');
-        return $result ? $this->success(/** LANG */ Util::lang("操作成功")) : $this->error(/** LANG */ Util::lang("操作失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("操作失败"));
     }
 
     /**
@@ -274,11 +274,11 @@ class User extends IndexBaseController
      */
     public function emailValidate(): \think\Response
     {
-        $email = input("email", "");
-        $type = input("type/d", 0);
+        $email = $this->request->all("email", "");
+        $type = $this->request->all("type/d", 0);
         $userInfoService = new UserInfoService(request()->userId);
         $result = $userInfoService->emailValidate($email, $type);
-        return $result ? $this->success(/** LANG */ Util::lang("操作成功")) : $this->error(/** LANG */ Util::lang("操作失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("操作失败"));
     }
 
     /**
@@ -298,7 +298,7 @@ class User extends IndexBaseController
                 'sort_field_raw' => "field(product_id," . implode(',', $history_product_ids) . ")",
             ]);
         }
-        return $this->success(['list' => $list]);
+        return $this->success($list);
     }
 
     /**
@@ -324,7 +324,7 @@ class User extends IndexBaseController
                 'history_product_ids' => $history_product_ids
             ]);
         }
-        return $this->success(/** LANG */ Util::lang("操作成功"));
+        return $this->success();
     }
 
     /**
@@ -405,7 +405,7 @@ class User extends IndexBaseController
             ]
         ], [], ['product', 'collect']);
         $count = $service->getFilterCount($filter);
-        return $this->success(['list' => $list, 'total' => $count]);
+        return $this->success(['records' => $list, 'total' => $count]);
     }
 
     /**
@@ -444,8 +444,6 @@ class User extends IndexBaseController
             'rank_id/d' => 0,
         ], 'get');
         $item = app(UserRankService::class)->getRankInfo($filter['rank_id']);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 }

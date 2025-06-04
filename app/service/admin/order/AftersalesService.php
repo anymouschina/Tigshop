@@ -11,6 +11,7 @@
 
 namespace app\service\admin\order;
 
+use app\job\order\autoAgreeReturnGoodsJob;
 use app\model\authority\AdminUser;
 use app\model\msg\AdminMsg;
 use app\model\order\Aftersales;
@@ -26,6 +27,8 @@ use app\service\common\BaseService;
 use exceptions\ApiException;
 use log\AdminLog;
 use think\facade\Db;
+use utils\Config;
+use utils\TigQueue;
 use utils\Time;
 use utils\Util;
 
@@ -329,6 +332,9 @@ class AftersalesService extends BaseService
                     $data['final_time'] = Time::now();
                 }
             }
+            if ($data['refund_amount'] < 0) {
+                throw new \Exception(/** LANG */ '退款金额不能小于0');
+            }
 
             $result = Aftersales::where('aftersale_id', $aftersales_id)->save($data);
 
@@ -570,6 +576,14 @@ class AftersalesService extends BaseService
         // 获取订单商品当前的售后信息
         $list = $list->each(function ($order) {
             foreach ($order->items as $item) {
+
+                $order_model = app(OrderService::class)->getOrder($order->order_id);
+                if($order_model->order_status == Order::ORDER_COMPLETED) {
+                    $item->to_aftersalses = app(OrderStatusService::class)->showAfterSale($order_model);
+                } else {
+                    $item->to_aftersalses = false;
+                }
+
                 // 获取可申请的数量
                 $sumValidNum = AftersalesItem::hasWhere(
                     "aftersales", function ($query) {
@@ -613,20 +627,6 @@ class AftersalesService extends BaseService
      */
     public function getAfterSalesDetail(int $order_id, int $item_id): object
     {
-        //判断是否支持售后
-        $order = Order::where('order_id', $order_id)->find();
-        //获取是否有店铺订单设置
-        $order_config = app(OrderConfigService::class)->getDetail('order_config', $order['shop_id']);
-        //确认收货订单多少天之后不可在申请售后
-        if($order->order_status == Order::ORDER_COMPLETED && !empty($order_config) &&
-            isset($order_config['date_type']) && $order_config['date_type'] == 1) {
-            //判断是否支持售后
-            $time = time() - $order['received_time'];
-            if($time > $order_config['use_day'] * 24 * 3600) {
-                throw new ApiException(/** LANG */Util::lang('已超过该订单支持的售后时间'));
-            }
-
-        }
         $model = OrderItem::where('order_id', $order_id)->field("item_id,pic_thumb,product_sn,product_name,price,quantity,(price * quantity) as subtotal,sku_data");
 
         $paylog = PayLog::where('order_id', $order_id)->where('pay_status', 1)->find();
@@ -738,6 +738,17 @@ class AftersalesService extends BaseService
 					'aftersales_sn' => $data['aftersales_sn']
 				]
 			]);
+        }
+        //添加自动退货提示
+        if($data['aftersale_type'] == Aftersales::AFTERSALES_TYPE_RETURN) {
+            $auto_return_goods = Config::get('autoReturnGoods');
+            $auto_return_goods_days = Config::get('autoReturnGoodsDays');
+            if($auto_return_goods == 1 && $auto_return_goods_days > 0) {
+                $days = ceil($auto_return_goods_days * 24 * 3600);
+                app(TigQueue::class)->later(autoAgreeReturnGoodsJob::class, $days,
+                    ['aftersale_id' =>  $aftersale_id]
+                );
+            }
         }
         return $aftersale_id;
     }

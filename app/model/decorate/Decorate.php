@@ -35,4 +35,36 @@ class Decorate extends Model
     {
         return isset($data['decorate_type']) && self::TYPE_MAP[$data['decorate_type']] ?? '';
     }
+
+    public function getDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value, true);
+    }
+
+    public function setDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getDraftDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setDraftDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
 }

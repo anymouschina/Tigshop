@@ -63,6 +63,38 @@ class ProductPromotion extends Model
         self::PROMOTION_RANGE_EXCLUDE_PRODUCT => '指定商品不参与',
     ];
 
+    public function getPromotionTypeDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setPromotionTypeDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getRangeDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setRangeDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
     // 优惠活动描述
     public function getPromotionDescAttr($value, $data)
     {
@@ -70,17 +102,18 @@ class ProductPromotion extends Model
             $prefix = ($data['rules_type']) ? '' : '每';
             $unit = $data["unit"] == 1 ? "元" : "件";
             if (is_array($data['promotion_type_data'])) {
+                $data['promotion_type_data'] = camelCase($data['promotion_type_data']);
                 foreach ($data['promotion_type_data'] as $k => $item) {
                     $desc[$k] = $item;
                     switch ($data['promotion_type']) {
                         case self::PROMOTION_TYPE_FULL_REDUCE:
-                            $desc[$k]['desc'] = "{$prefix}满" . floatval($item['min_amount']) . $unit ."减" . floatval($item['reduce']) . "元";
+                            $desc[$k]['desc'] = "{$prefix}满" . floatval($item['minAmount']) . $unit ."减" . floatval($item['reduce']) . "元";
                             break;
                         case self::PROMOTION_TYPE_FULL_DISCOUNT:
-                            $desc[$k]['desc'] = "{$prefix}满{}" . floatval($item['min_amount']) . $unit ."打{$item['reduce']}折";
+                            $desc[$k]['desc'] = "{$prefix}满{}" . floatval($item['minAmount']) . $unit ."打{$item['reduce']}折";
                             break;
                         case self::PROMOTION_TYPE_FULL_REDUCE_NAME:
-                            $desc[$k]['desc'] = "{$prefix}满" . floatval($item['min_amount']) . "送赠品：{$item['gift_name']}--数量{$item['num']}";
+                            $desc[$k]['desc'] = "{$prefix}满" . floatval($item['minAmount']) . "送赠品：{$item['giftName']}--数量{$item['num']}";
                             break;
                     }
                 }

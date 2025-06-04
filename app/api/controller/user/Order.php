@@ -58,8 +58,7 @@ class Order extends IndexBaseController
         $filterResult = $this->orderService->getFilterResult($filter);
         $total = $this->orderService->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -70,11 +69,9 @@ class Order extends IndexBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = $this->orderService->getDetail($id, request()->userId);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -84,7 +81,7 @@ class Order extends IndexBaseController
     public function orderNum(): \think\Response
     {
         $item = $this->orderService->getOrderQuantity(request()->userId);
-        return $this->success(['item' => $item]);
+        return $this->success($item);
     }
 
     /**
@@ -93,9 +90,9 @@ class Order extends IndexBaseController
      */
     public function cancelOrder(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $this->orderService->cancelOrder($id, request()->userId);
-        return $this->success(Util::lang('订单已取消'));
+        return $this->success();
     }
 
     /**
@@ -104,9 +101,9 @@ class Order extends IndexBaseController
      */
     public function delOrder(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $this->orderService->delOrder($id, request()->userId);
-        return $this->success(Util::lang('订单已删除'));
+        return $this->success();
     }
 
     /**
@@ -116,9 +113,9 @@ class Order extends IndexBaseController
      */
     public function confirmReceipt(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $this->orderService->confirmReceipt($id, request()->userId);
-        return $this->success(Util::lang('订单已确认收货'));
+        return $this->success();
     }
 
     /**
@@ -127,11 +124,9 @@ class Order extends IndexBaseController
      */
     public function shippingInfo(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $list = $this->orderService->getOrderShipping($id);
-        return $this->success([
-            'list' => $list,
-        ]);
+        return $this->success($list);
     }
 
     /**
@@ -141,10 +136,10 @@ class Order extends IndexBaseController
      */
     public function buyAgain(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $return = $this->orderService->buyAgain($id, request()->userId);
         if ($return) {
-            return $this->success(Util::lang('正在跳转中,请稍后~'));
+            return $this->success();
         } else {
             return $this->error();
         }

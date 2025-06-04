@@ -12,6 +12,7 @@
 namespace app\api\controller\common;
 
 use app\api\IndexBaseController;
+use app\service\admin\product\ProductDetailService;
 use app\service\admin\product\ProductService;
 use think\App;
 use think\Response;
@@ -43,9 +44,14 @@ class Recommend extends IndexBaseController
             'size' => 30,
             'sort_order' => 'rand',
         ]);
-        return $this->success([
-            'product_list' => $product_list,
-        ]);
+        foreach ($product_list as &$item) {
+            $productDetailService = new ProductDetailService($item['product_id']);
+            $productAvailability = $productDetailService->getProductSkuDetail($item['product_sku']['0']['sku_id'] ?? 0,
+                0,
+                '');
+            $item['price'] = $productAvailability['price'];
+        }
+        return $this->success($product_list);
     }
 
 }

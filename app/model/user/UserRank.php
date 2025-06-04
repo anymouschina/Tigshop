@@ -21,6 +21,23 @@ class UserRank extends Model
     protected $json = ['rights'];
     protected $jsonAssoc = true;
 
+
+    public function getRightsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setRightsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
     //等级类型名称
     const RANK_TYPE_SPECIAL = 1;
     const RANK_TYPE_NORMAL = 2;

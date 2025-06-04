@@ -41,9 +41,9 @@ class YunPayService extends PayService
 
     public function __construct()
     {
-        $config = Config::getConfig('payment');
-        $this->uid = $config['yunpay_uid'];
-        $this->secret_key = $config['yunpay_secret_key'];
+        $config = Config::getConfig();
+        $this->uid = $config['yunpayUid'];
+        $this->secret_key = $config['yunpaySecretKey'];
     }
 
     /**
@@ -66,16 +66,16 @@ class YunPayService extends PayService
 
                 case self::MINI_PROGRAM_PAY:
                     $this->fxsubtype = 1;
-                    $this->appid = Config::get('wechat_miniProgram_appId', 'base_api_mini_program');
+                    $this->appid = Config::get('wechatMiniProgramAppId');
                     return $this->MiniPay($order);
 
                 case self::APP_PAY:
-                    $this->appid = Config::get('wechat_pay_app_id', 'base_api_app_pay');
+                    $this->appid = Config::get('wechatPayAppId');
                     return $this->AppPay($order);
 
                 case self::JSAPI_PAY:
                     $this->fxsubtype = 2;
-                    $this->appid = Config::get('wechat_appId', 'base_api_wechat');
+                    $this->appid = Config::get('wechatAppId');
                     $order['openid'] = app(UserAuthorizeService::class)->getUserAuthorizeOpenId($order['user_id'], 1);
                     return $this->JsApiPay($order);
 
@@ -185,7 +185,7 @@ class YunPayService extends PayService
 
     public function getReturnUrl(int $order_id = 0): string
     {
-        $domain = Config::get('pc_domain');
+        $domain = Config::get('pcDomain');
         if (empty($domain)) {
             $domain = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
         }

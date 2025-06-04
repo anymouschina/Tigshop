@@ -17,15 +17,15 @@ class ConfigService extends BaseService
 {
     protected Config $configModel;
     protected array $fuzzyFields = [
-        'sms_key_secret',
-        'wechat_miniProgram_secret',
-        'wechat_appSecret',
-        'wechat_pay_key',
-        'wechat_pay_app_secret',
-        'storage_oss_access_key_secret',
-        'storage_cos_secret_key',
-        'lang_volcengine_access_key',
-        'lang_volcengine_secret'
+        'smsKeySecret',
+        'wechatMiniProgramSecret',
+        'wechatAppSecret',
+        'wechatPayKey',
+        'wechatPayAppSecret',
+        'storageOssAccessKeySecret',
+        'storageCosSecretKey',
+        'langVolcengineAccessKey',
+        'langVolcengineSecret'
     ];
 
     public array $base_code = [
@@ -44,6 +44,72 @@ class ConfigService extends BaseService
     }
 
     /**
+     * 设置类型
+     * @var array|string[]
+     */
+    public array $type_config = [
+        'personApplyEnabled' => 'int',
+        'merchantApplyNeedCheck' => 'int',
+        'shopProductNeedCheck' => 'int',
+        'childAreaNeedRegion' => 'int',
+        'integralScale' => 'int',
+        'invoiceAdded' => 'int',
+        'useQiandaoPoint' => 'int',
+        'showSendPoint' => 'int',
+        'canInvoice' => 'int',
+        'closeOrder' => 'int',
+        'shopRegClosed' => 'int',
+        'autoRedirect' => 'int',
+        'isOpenMobileAreaCode' => 'int',
+        'type' => 'int',
+        'isIdentity' => 'int',
+        'isEnquiry' => 'int',
+        'smsNote' => 'int',
+        'isOpenPscws' => 'int',
+        'showCatLevel' => 'int',
+        'wechatOauth' => 'int',
+        'storageType' => 'int',
+        'storageSaveFullPath' => 'int',
+        'langOn' => 'int',
+        'langType' => 'int',
+        'orderPayEmail' => 'int',
+        'sendServiceEmail' => 'int',
+        'sendShipEmail' => 'int',
+        'showSelledCount' => 'int',
+        'showMarketprice' => 'int',
+        'kefuType' => 'int',
+        'kefuYzfType' => 'int',
+        'kefuCodeBlank' => 'int',
+        'deCopyright' => 'int',
+        'poweredByStatus' => 'int',
+        'versionInfoHidden' => 'int',
+        'useSurplus' => 'int',
+        'usePoints' => 'int',
+        'useCoupon' => 'int',
+        'useWechat' => 'int',
+        'wechatMchidType' => 'int',
+        'useAlipay' => 'int',
+        'useYabanpay' => 'int',
+        'useYabanpayWechat' => 'int',
+        'useYabanpayAlipay' => 'int',
+        'useOffline' => 'int',
+        'usePaypal' => 'int',
+        'paypalCurrency' => 'int',
+        'useYunpay' => 'int',
+        'openWechatRegister' => 'int',
+        'wechatRegisterBindPhone' => 'int',
+        'openWechatOauth' => 'int',
+        'autoReturnGoods' => 'int',
+        'mailService' => 'int',
+        'smtpSsl' => 'int',
+        'isEnterprise' => 'int',
+        'facebookLoginOn' => 'int',
+        'googleLoginOn' => 'int',
+        'productCategoryDecorateType' => 'int',
+        'sendConfirmEmail' => 'int',
+    ];
+
+    /**
      * 获取后台相关的设置项
      *
      * @return array
@@ -51,16 +117,68 @@ class ConfigService extends BaseService
      */
     public function getAdminConfig(): array
     {
-        $config = UtilsConfig::getConfig('base');
         return [
-            'ico_defined_css' => UtilsConfig::get('ico_defined_css','base_api_icon'),
-            'dollar_sign' => UtilsConfig::get('basic_product','base_product','','dollar_sign'),
-            'storage_type' =>  UtilsConfig::get('storage_type','base_api_storage'),
+            'ico_defined_css' => UtilsConfig::get('icoDefinedCss'),
+            'dollar_sign' => UtilsConfig::get('dollarSign'),
+            'storage_type' => UtilsConfig::get('storageType'),
             'storage_url' => UtilsConfig::getStorageUrl(),
-            'pc_domain' => $config['pc_domain'],
-            'h5_domain' => $config['h5_domain'],
-            'version_type' => env('VERSION_TYPE',config('app.version_type'))
+            'pc_domain' => UtilsConfig::get('pcDomain'),
+            'h5_domain' => UtilsConfig::get('h5Domain'),
+            'version_type' => env('VERSION_TYPE',config('app.version_type')),
+            'upload_max_size' =>  UtilsConfig::get('uploadMaxSize'),
         ];
+    }
+
+    /**
+     * 获取指定的的设置项
+     * @param string $code
+     * @return array|null
+     * @throws ApiException
+     */
+    public function getAllConfig(): ?array
+    {
+        $data = Config::column('biz_val', 'biz_code');
+        return $this->dealConfigData($data);
+    }
+
+    /**
+     * 处理配置项
+     * @param array $data
+     * @return array
+     */
+    public function dealConfigData(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if (isset($this->type_config[$key])) {
+                switch ($this->type_config[$key]) {
+                    case 'int':
+                        $data[$key] = (int)$value;
+                        break;
+                    case 'float':
+                        $data[$key] = (float)$value;
+                        break;
+                    case 'bool':
+                        $data[$key] = (bool)$value;
+                        break;
+                    case 'string':
+                        $data[$key] = (string)$value;
+                        break;
+                }
+            }
+        }
+        return $data;
+    }
+
+
+    /**
+     * 获取指定的的设置项
+     * @param array $bizCodes
+     * @return array
+     */
+    public function getConfigByBizCode(array $bizCodes)
+    {
+        $data =  Config::whereIn('biz_code', $bizCodes)->column('biz_val', 'biz_code');
+        return $this->dealConfigData($data);
     }
 
     /**
@@ -75,55 +193,6 @@ class ConfigService extends BaseService
         return $data;
     }
 
-    /**
-     * 执行设置添加
-     * @param string $code
-     * @param array $data
-     * @return int
-     * @throws ApiException
-     */
-    public function createConfig(string $code, array $data): int
-    {
-        if (empty($code)) {
-            throw new ApiException(/** LANG */ '#code数据错误');
-        }
-        if (empty($data)) {
-            throw new ApiException(/** LANG */ '#data数据错误');
-        }
-        $config = Config::where('code', $code)->find();
-        if (!empty($config)) {
-            throw new ApiException(/** LANG */ '配置已存在，请勿重复添加！');
-        } else {
-            $result = Config::create(['code' => $code, 'data' => $data]);
-            return $result->getKey();
-        }
-    }
-
-    /**
-     * 执行设置编辑
-     * @param string $code
-     * @param array $data
-     * @return int
-     * @throws ApiException
-     */
-    public function updateConfig(string $code, array $data): bool
-    {
-        if (empty($code)) {
-            throw new ApiException(/** LANG */ '#code数据错误');
-        }
-        if (empty($data)) {
-            throw new ApiException(/** LANG */ '#data数据错误');
-        }
-        $config = Config::where('code', $code)->find();
-
-        if (empty($config)) {
-            throw new ApiException(/** LANG */ '该配置不存在，请先添加配置！');
-        } else {
-            $config->data = $data;
-            $config->save();
-            return true;
-        }
-    }
 
     /**
      * 执行设置添加或更新
@@ -136,23 +205,25 @@ class ConfigService extends BaseService
      */
     public function saveConfig(string $code, array $data): bool
     {
-        if (empty($code)) {
-            throw new ApiException(/** LANG */ '#code数据错误');
-        }
+        $data = $this->dealFuzzyConfigData($data);
+
+//        if (empty($code)) {
+//            throw new ApiException(/** LANG */ '#code数据错误');
+//        }
         if (!$data) {
             throw new ApiException(/** LANG */ '#data数据错误');
         }
-
-        $config = Config::where('code', $code)->find();
-        if (!$config) {
-            // 设置项不存在则新增
-            Config::create(['code' => $code, 'data' => $data]);
-        } else {
-            // 更新
-            $config->data = $data;
-            $config->save();
+        foreach ($data as $itemKey => $itemVal) {
+            $config = Config::where('biz_code', $itemKey)->find();
+            if (!$config) {
+                // 设置项不存在则新增
+                Config::create(['biz_code' => $itemKey, 'biz_val' => $itemVal, 'create_time' => time()]);
+            } else {
+                // 更新
+                $config->biz_val = $itemVal;
+                $config->save();
+            }
         }
-
         AdminLog::add('更新设置:' . $code);
         return true;
     }
@@ -204,14 +275,15 @@ class ConfigService extends BaseService
      * @return array
      * @throws ApiException
      */
-    public function dealFuzzyConfigData(array $data, string $code = 'base'): array
+    public function dealFuzzyConfigData(array $data): array
     {
-        $config = self::getConfig($code);
+        $config = self::getAllConfig();
         $fuzzyConfig = self::fuzzyConfig($config);
         foreach ($this->fuzzyFields as $value) {
             if (isset($data[$value])) {
                 if (isset($fuzzyConfig[$value]) && $data[$value] == $fuzzyConfig[$value]) {
-                    $data[$value] = $config[$value] ?? '';
+                    $val = UtilsConfig::get($value);
+                    $data[$value] = $val ?? '';
                 }
             }
         }
@@ -251,24 +323,10 @@ class ConfigService extends BaseService
      * @param array $data
      * @return bool
      */
-    public function saveBasic(array $data): bool
+    public function save( array $data): bool
     {
         // 获取所有基础配置
-        $basic_info = Config::where('code', "like",'base%')
-            ->chunk(5,function ($basic) use ($data) {
-                foreach ($basic as $value) {
-                    //基础设置项模糊处理
-                    if (isset($data[$value['code']]) && in_array($value['code'], $this->base_code)) {
-                        $data[$value['code']] = $this->dealFuzzyConfigData($data[$value['code']],$value['code']);
-                    }
-
-                    if (isset($data[$value['code']])) {
-                        $value['data'] = $data[$value['code']];
-                        $value->save();
-                    }
-                }
-                return $basic;
-            });
-        return $basic_info;
+        $this->saveConfig('', $data);
+        return true;
     }
 }

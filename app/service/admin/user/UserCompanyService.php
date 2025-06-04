@@ -120,9 +120,9 @@ class UserCompanyService extends BaseService
 			}
 
             // 发送短信通知
-            if (Config::get('sms_note','base_api_company_data')) {
+            if (Config::get('smsNote')) {
                 $type = $data['type'] == 1 ? '个人' : '企业';
-                $day = Config::get('tips','base_api_company_data');
+                $day = Config::get('tips');
                 $content = [$type, $day];
                 app(SmsService::class)->sendSms($data['contact_mobile'],"user_certification", $content);
             }

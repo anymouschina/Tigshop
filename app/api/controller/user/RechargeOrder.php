@@ -59,8 +59,7 @@ class RechargeOrder extends IndexBaseController
         $filterResult = $this->userRechargeOrderService->getAccountDetails($filter, request()->userId);
 
         return $this->success([
-            'filter_result' => $filterResult["list"],
-            'filter' => $filter,
+            'records' => $filterResult["list"],
             'total' => $filterResult["count"],
         ]);
     }
@@ -71,8 +70,8 @@ class RechargeOrder extends IndexBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
-        $amount = input('amount/f', 0);
+        $id = $this->request->all('id/d', 0);
+        $amount = $this->request->all('amount/f', 0);
         $order_id = $this->userRechargeOrderService->rechargeOperation($id, $amount, request()->userId);
         return $order_id ? $this->success(['order_id' => $order_id]) : $this->error(/** LANG */Util::lang("充值申请失败"));
     }
@@ -90,11 +89,7 @@ class RechargeOrder extends IndexBaseController
 
         $filterResult = $this->userRechargeOrderService->getSettingList($filter);
 
-        return $this->success([
-            'filter_result' => $filterResult["list"],
-            'filter' => $filter,
-            'total' => $filterResult["count"],
-        ]);
+        return $this->success($filterResult["list"]);
     }
 
     /**
@@ -104,9 +99,7 @@ class RechargeOrder extends IndexBaseController
     public function paymentList(): Response
     {
         $payment_list = app(PaymentService::class)->getAvailablePayment('recharge');
-        return $this->success([
-            'payment_list' => $payment_list,
-        ]);
+        return $this->success($payment_list);
     }
 
     /**
@@ -116,7 +109,7 @@ class RechargeOrder extends IndexBaseController
      */
     public function pay(): Response
     {
-        $order_id = input('order_id/d', 0);
+        $order_id = $this->request->all('order_id/d', 0);
         $order = app(UserRechargeOrderService::class)->getDetail($order_id);
         //已支付订单跳转
         if ($order['status'] == 1){
@@ -140,12 +133,12 @@ class RechargeOrder extends IndexBaseController
      */
     public function create(): Response
     {
-        $order_id = input('id/d', 0);
-        $pay_type = input('type', '');
+        $order_id = $this->request->all('id/d', 0);
+        $pay_type = $this->request->all('type', '');
         if (empty($pay_type)) {
             return $this->error(Util::lang('未选择支付方式'));
         }
-        $code = input('code', '');
+        $code = $this->request->all('code', '');
         $openid = '';
         if (!empty($code)) {
             $openid = app(WechatOAuthService::class)->getMiniOpenid($code);
@@ -203,13 +196,11 @@ class RechargeOrder extends IndexBaseController
      */
     public function checkStatus(): Response
     {
-        $order_id = input('id/d', 0);
+        $order_id = $this->request->all('id/d', 0);
         if (empty($order_id)) {
             return $this->error(Util::lang('参数缺失'));
         }
         $order = app(UserRechargeOrderService::class)->getDetail($order_id);
-        return $this->success([
-            'pay_status' => $order['status'],
-        ]);
+        return $this->success($order['status']);
     }
 }

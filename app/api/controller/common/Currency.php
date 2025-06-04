@@ -27,8 +27,6 @@ class Currency extends IndexBaseController
         $currency_list = app(CurrencyService::class)->getFilterList([
             "size" => -1
         ]);
-        return $this->success([
-            'item' => $currency_list,
-        ]);
+        return $this->success($currency_list);
     }
 }

@@ -60,8 +60,7 @@ class Coupon extends AdminBaseController
         $total = $this->couponService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -74,9 +73,9 @@ class Coupon extends AdminBaseController
     {
         // 会员等级
         $rank_list = app(UserRankService::class)->getUserRankList();
-        return $this->success([
-            'rank_list' => $rank_list,
-        ]);
+        return $this->success(
+           $rank_list
+        );
     }
 
     /**
@@ -85,15 +84,15 @@ class Coupon extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->couponService->getDetail($id);
         if ($item->shop_id != request()->shopId) {
             throw new ApiException(/** LANG */'优惠券不存在');
         }
 
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+          $item
+        );
     }
 
     /**
@@ -154,7 +153,7 @@ class Coupon extends AdminBaseController
 
         $result = $this->couponService->createCoupon($data);
         if ($result) {
-            return $this->success(/** LANG */'优惠券添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'优惠券添加失败');
         }
@@ -167,7 +166,7 @@ class Coupon extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('coupon_id/d', 0);
+        $id =$this->request->all('coupon_id/d', 0);
 
         $item = $this->couponService->getDetail($id);
         if ($item->shop_id != request()->shopId) {
@@ -187,7 +186,7 @@ class Coupon extends AdminBaseController
 
         $result = $this->couponService->updateCoupon($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'优惠券更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'优惠券更新失败');
         }
@@ -200,8 +199,8 @@ class Coupon extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         $item = $this->couponService->getDetail($id);
         if ($item->shop_id != request()->shopId) {
@@ -214,12 +213,12 @@ class Coupon extends AdminBaseController
 
         $data = [
             'coupon_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->couponService->updateCouponField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -229,13 +228,13 @@ class Coupon extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->couponService->getDetail($id);
         if (!$item) {
             throw new ApiException(/** LANG */'优惠券不存在');
         }
         $this->couponService->deleteCoupon($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -245,15 +244,15 @@ class Coupon extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->couponService->deleteCoupon($id);
                 }
@@ -263,7 +262,7 @@ class Coupon extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

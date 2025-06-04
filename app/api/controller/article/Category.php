@@ -39,11 +39,9 @@ class Category extends IndexBaseController
      */
     public function list(): \think\Response
     {
-        $category_sn = input('category_sn', '');
+        $category_sn = $this->request->all('category_sn', '');
         $list = app(ArticleCategoryService::class)->getChildrenByCategorySn($category_sn);
-        return $this->success([
-            'filter_result' => $list,
-        ]);
+        return $this->success($list);
     }
 
     /**
@@ -52,8 +50,8 @@ class Category extends IndexBaseController
      */
     public function indexBzzxList(): \think\Response
     {
-        $category_size = input('category_size', 5);
-        $article_size = input('article_size', 4);
+        $category_size = $this->request->all('category_size', 5);
+        $article_size = $this->request->all('article_size', 4);
         $list = app(ArticleCategoryService::class)->getChildrenByCategorySn('bzzx');
         $top5 = array_slice(isset($list['children']) ? $list['children'] : [], 0, $category_size);
         foreach ($top5 as $k => &$v) {
@@ -64,9 +62,7 @@ class Category extends IndexBaseController
                 'article_category_id' => [$v['article_category_id']],
             ]);
         }
-        return $this->success([
-            'filter_result' => $top5,
-        ]);
+        return $this->success($top5);
     }
 
 }

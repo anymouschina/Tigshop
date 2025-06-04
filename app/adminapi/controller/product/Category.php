@@ -56,18 +56,29 @@ class Category extends AdminBaseController
         $filterResult = $this->categoryService->getFilterResult($filter);
         $total = $this->categoryService->getFilterCount($filter);
 
+        return $this->success([
+            'records' => $filterResult,
+            'total' => $total,
+        ]);
+    }
+
+    /**
+     * @return \think\Response
+     */
+    public function getParentName(): \think\Response
+    {
+        $filter = $this->request->only([
+            'parent_id' => 0,
+        ], 'get');
+
         if ($filter['parent_id'] > 0) {
             $parent_name = $this->categoryService->getName($filter['parent_id']);
         } else {
             $parent_name = null;
         }
-
-        return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
-            'total' => $total,
-            'parent_name' => $parent_name,
-        ]);
+        return $this->success(
+            $parent_name
+        );
     }
 
     /**
@@ -77,14 +88,14 @@ class Category extends AdminBaseController
      */
     public function moveCat(): \think\Response
     {
-        $id = input('id/d', 0);
-        $target_cat_id = input('target_cat_id/d', 0);
+        $id =$this->request->all('id/d', 0);
+        $target_cat_id =$this->request->all('target_cat_id/d', 0);
 
         $this->categoryService->moveCat($id, $target_cat_id);
         /* 清除分类缓存 */
         app(CacheManager::class)->clearCacheByTag('cat');
 
-        return $this->success('商品转移成功！');
+        return $this->success();
     }
 
     /**
@@ -95,12 +106,12 @@ class Category extends AdminBaseController
     public function detail(): \think\Response
     {
 
-        $id = input('id/d');
+        $id =$this->request->all('id/d');
         $item = $this->categoryService->getDetail($id);
 
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+           $item
+        );
     }
 
     /**
@@ -136,7 +147,7 @@ class Category extends AdminBaseController
      */
     public function update(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->requestData();
         $data['category_id'] = $id;
 
@@ -154,7 +165,7 @@ class Category extends AdminBaseController
         $result = $this->categoryService->updateCategory($id, $data);
         if ($result) {
             AdminLog::add('编辑分类：' . $data['category_name']);
-            return $this->success('分类更新成功');
+            return $this->success();
         } else {
             return $this->error('分类更新失败');
         }
@@ -168,9 +179,9 @@ class Category extends AdminBaseController
     public function getAllCategory()
     {
         $cat_list = $this->categoryService->catList();
-        return $this->success([
-            'filter_result' => $cat_list,
-        ]);
+        return $this->success(
+            $cat_list
+        );
     }
 
     /**
@@ -180,8 +191,8 @@ class Category extends AdminBaseController
      */
     public function updateField(): \think\Response
     {
-        $id = input('id/d');
-        $field = input('field');
+        $id =$this->request->all('id/d');
+        $field =$this->request->all('field');
 
         if (!in_array($field, ['category_name', 'measure_unit', 'is_hot', 'is_show', 'sort_order'])) {
             return $this->error('#field 错误');
@@ -189,12 +200,12 @@ class Category extends AdminBaseController
 
         $data = [
             'category_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->categoryService->updateCategoryField($id, $data);
 
-        return $this->success('更新成功');
+        return $this->success();
     }
 
 
@@ -218,7 +229,7 @@ class Category extends AdminBaseController
         $result = $this->categoryService->createCategory($data);
         if ($result) {
             AdminLog::add('新增分类：' . $data['category_name']);
-            return $this->success('分类添加成功');
+            return $this->success();
         } else {
             return $this->error('分类更新失败');
         }
@@ -231,11 +242,11 @@ class Category extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('id/d');
+        $id =$this->request->all('id/d');
 
         if ($id) {
             $this->categoryService->deleteCategory($id);
-            return $this->success('指定项目已删除');
+            return $this->success();
         } else {
             return $this->error('#id 错误');
         }
@@ -248,17 +259,17 @@ class Category extends AdminBaseController
      */
     public function batch(): \think\Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error('未选择项目');
         }
 
-        if (input('type') == 'del') {
-            foreach (input('ids') as $key => $id) {
+        if ($this->request->all('type') == 'del') {
+            foreach ($this->request->all('ids') as $key => $id) {
                 $id = intval($id);
                 $this->categoryService->deleteCategory($id);
             }
 
-            return $this->success('批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error('#type 错误');
         }

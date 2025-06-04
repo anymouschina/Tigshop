@@ -2,10 +2,10 @@
 
 namespace app\service\admin\pay;
 
+use app\service\admin\setting\ConfigService;
 use app\service\common\BaseService;
 use app\service\pay\RuntimeException;
 use exceptions\ApiException;
-use utils\Config;
 
 class CertificatesService extends BaseService
 {
@@ -26,10 +26,10 @@ class CertificatesService extends BaseService
      */
     public function getCertificates(): void
     {
-        $config = Config::getConfig('payment');
-        $merchant_id = $config['wechat_pay_mchid'];//商户号
-        $serial_no = $config['wechat_pay_serial_no'];//API证书序列号
-        $apiV3Key = $config['wechat_pay_key'];
+        $config = app(ConfigService::class)->getAllConfig();
+        $merchant_id = $config['wechatPayMchid'];//商户号
+        $serial_no = $config['wechatPaySerialNo'];//API证书序列号
+        $apiV3Key = $config['wechatPayKey'];
         $sign = $this->getSign("https://api.mch.weixin.qq.com/v3/certificates", "GET", "", $this->getPrivateKey(), $merchant_id, $serial_no);
         $header[] = 'User-Agent:https://zh.wikipedia.org/wiki/User_agent';
         $header[] = 'Accept:application/json';

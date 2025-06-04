@@ -42,11 +42,11 @@ class Cart extends IndexBaseController
      */
     public function list(): Response
     {
-        $is_checked = input('is_checked', false);
-        $type = input('type', \app\model\order\Cart::TYPE_NORMAL);
+        $is_checked = $this->request->all('is_checked', false);
+        $type = $this->request->all('type', \app\model\order\Cart::TYPE_NORMAL);
         $filter = [];
-        if (input('product_id')) {
-            $filter['product_id'] = input('product_id');
+        if ($this->request->all('product_id')) {
+            $filter['product_id'] = $this->request->all('product_id');
         }
         $cart = app(CartService::class)->getCartListByStore($is_checked, $type, $filter);
         $userId = request()->userId;
@@ -65,17 +65,14 @@ class Cart extends IndexBaseController
     public function getCount(): Response
     {
 
-        $is_checked = input('is_checked', false);
-        $type = input('type', \app\model\order\Cart::TYPE_NORMAL);
+        $is_checked = $this->request->all('is_checked', false);
+        $type = $this->request->all('type', \app\model\order\Cart::TYPE_NORMAL);
         $filter = [];
-        if (input('product_id')) {
-            $filter['product_id'] = input('product_id');
+        if ($this->request->all('product_id')) {
+            $filter['product_id'] = $this->request->all('product_id');
         }
-
         $count = app(CartService::class)->getCartCount($is_checked, $type, $filter);
-        return $this->success([
-            'count' => $count,
-        ]);
+        return $this->success($count);
     }
 
     /**
@@ -87,7 +84,7 @@ class Cart extends IndexBaseController
     {
         $data = input('data/a', []);
         app(CartService::class)->updateCheckStatus($data);
-        return $this->success(/** LANG */Util::lang('购物车更新成功'));
+        return $this->success();
     }
 
     /**
@@ -97,14 +94,14 @@ class Cart extends IndexBaseController
      */
     public function updateItem(): Response
     {
-        $cart_id = input('cart_id/d', 0);
-        $data = input('data/a', []);
+        $cart_id = $this->request->all('cart_id/d', 0);
+        $data = $this->request->all('data/a', []);
         try {
             app(CartService::class)->updateCartItem($cart_id, $data);
         } catch (\Exception $exception) {
             return $this->error(['quantity' => app(CartService::class)->getProductCartNum($cart_id), 'message' => $exception->getMessage()]);
         }
-        return $this->success(/** LANG */Util::lang('购物车更新成功'));
+        return $this->success();
     }
 
     /**
@@ -114,9 +111,9 @@ class Cart extends IndexBaseController
      */
     public function removeItem(): Response
     {
-        $cart_ids = input('cart_ids/a', []);
+        $cart_ids = $this->request->all('cart_ids/a', []);
         app(CartService::class)->removeCartItem($cart_ids);
-        return $this->success(/** LANG */ Util::lang('购物车商品已移除'));
+        return $this->success();
     }
 
     /**
@@ -127,7 +124,7 @@ class Cart extends IndexBaseController
     public function clear(): Response
     {
         app(CartService::class)->clearCart();
-        return $this->success(/** LANG */ Util::lang('购物车已清空'));
+        return $this->success();
     }
 
     /**
@@ -136,7 +133,7 @@ class Cart extends IndexBaseController
      */
     public function getCouponDiscount(): Response
     {
-        $coupon_id = input('coupon_id/d', 0);
+        $coupon_id = $this->request->all('coupon_id/d', 0);
         $carts = app(CartService::class)->getCartList(true);
         $coupon = app(CouponService::class)->getDetail($coupon_id);
         $checkedProductPriceSum = 0;
@@ -184,15 +181,15 @@ class Cart extends IndexBaseController
      */
     public function addToCart(): \think\Response
     {
-        $id = input('id/d', 0);
-        $number = input('number/d', 0);
-        $sku_id = input('sku_id', 0);
-        $sku_item = input('sku_item/a', []);
-        $type = input('type/d', 1);
-        $salesman_id = input('salesman_id/d', 0);
-        $is_quick = input('is_quick/d', 0) == 1 ? true : false;
+        $id = $this->request->all('id/d', 0);
+        $number =$this->request->all('number/d', 1);
+        $sku_id = $this->request->all('sku_id', 0);
+        $sku_item = $this->request->all('sku_item/a', []);
+        $type = $this->request->all('type/d', 1);
+        $salesman_id = $this->request->all('salesman_id/d', 0);
+        $is_quick = $this->request->all('is_quick/d', 0) == 1 ? true : false;
         //添加商品多规格属性 多个id 用逗号分割
-        $extra_attr_ids = input('extra_attr_ids', '');
+        $extra_attr_ids = $this->request->all('extra_attr_ids', '');
         // 获取 type 值
         $cart_type = app(CartService::class)->getCartTypeByProduct($id,$type);
         $result = app(CartService::class)->addToCart($id,$number,$sku_id, $is_quick, $cart_type, $salesman_id, $extra_attr_ids,$sku_item);

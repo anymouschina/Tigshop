@@ -51,8 +51,7 @@ class PointsLog extends IndexBaseController
         $userPoints = \app\model\user\User::findOrEmpty(request()->userId)->points;
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
             "user_points" => $userPoints,
         ]);

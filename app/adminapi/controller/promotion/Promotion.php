@@ -57,31 +57,36 @@ class Promotion extends AdminBaseController
         $total = $this->promotionService->getFilterCount($filter);
 
         return $this->success([
-            'time_type_count' => [
-                'time_type1_count' => $this->promotionService->getFilterCount([
-                    'is_available' => 1,
-                    'is_delete' => 0,
-                    'time_type' => 1,
-                    'shop_id' => request()->shopId
-                ]),
-                'time_type2_count' => $this->promotionService->getFilterCount([
-                    'is_delete' => 0,
-                    'is_available' => 1,
-                    'time_type' => 2,
-                    'shop_id' => request()->shopId
-                ]),
-                'time_type3_count' => $this->promotionService->getFilterCount([
-                    'is_available' => 1,
-                    'is_delete' => 0,
-                    'time_type' => 3,
-                    'shop_id' => request()->shopId
-                ]),
-            ],
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
 
-
+    /**
+     * 获取活动数量
+     * @return Response
+     */
+    public function getPromotionCount()
+    {
+        return $this->success([
+            'timeType1Count' => $this->promotionService->getFilterCount([
+                'is_available' => 1,
+                'is_delete' => 0,
+                'time_type' => 1,
+                'shop_id' => request()->shopId
+            ]),
+            'timeType2Count' => $this->promotionService->getFilterCount([
+                'is_delete' => 0,
+                'is_available' => 1,
+                'time_type' => 2,
+                'shop_id' => request()->shopId
+            ]),
+            'timeType3Count' => $this->promotionService->getFilterCount([
+                'is_available' => 1,
+                'is_delete' => 0,
+                'time_type' => 3,
+                'shop_id' => request()->shopId
+            ]),
+        ]);
+    }
 }

@@ -26,13 +26,10 @@ class Share extends IndexBaseController
     public function import(): Response
     {
         //根据链接和参数获取参数配置
-        $sn = input('sn/s', '');
-        $token = input('token/s', '');
+        $sn = $this->request->all('sn/s', '');
+        $token = $this->request->all('token/s', '');
         $res = app(DecorateShareService::class)->getInfoBySn($sn, $token);
-        return $this->success(
-            [
-                'info' => $res
-            ]
+        return $this->success($res
         );
     }
 }

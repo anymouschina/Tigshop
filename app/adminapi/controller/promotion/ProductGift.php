@@ -58,8 +58,7 @@ class ProductGift extends AdminBaseController
         $total = $this->productGiftService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -70,11 +69,11 @@ class ProductGift extends AdminBaseController
      */
     public function detail(): Response
     {
-        $giftId = input('gift_id/d', 0);
+        $giftId =$this->request->all('gift_id/d', 0);
         $item = ProductGiftModel::query()->where(['gift_id'=>$giftId,'shop_id'=>request()->shopId])->find();
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -112,7 +111,7 @@ class ProductGift extends AdminBaseController
         $result = $this->productGiftService->createProductGift($data);
 
         if ($result) {
-            return $this->success(/** LANG */'添加赠品成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'添加赠品失败');
         }
@@ -134,7 +133,7 @@ class ProductGift extends AdminBaseController
 
         $result = $this->productGiftService->updateProductGift($data);
         if ($result) {
-            return $this->success(/** LANG */'更新赠品成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'更新赠品失败');
         }
@@ -146,9 +145,9 @@ class ProductGift extends AdminBaseController
      */
     public function del(): Response
     {
-        $giftId= input('id/d', 0);
+        $giftId=$this->request->all('id/d', 0);
         $this->productGiftService->deleteProductGift($giftId);
-        return $this->success(/** LANG */'指定项已删除');
+        return $this->success();
     }
 
 }

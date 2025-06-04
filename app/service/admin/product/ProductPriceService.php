@@ -22,7 +22,7 @@ class ProductPriceService extends BaseService
         //1.促销价格优先级最高，促销价格存在时属性价格，阶梯价格，商品会员价格，会员等级价格无效
         $seckill = app(SeckillService::class)->getProductActivityInfo($product_id, $sku_id);
         if ($seckill) {
-            if ($seckill['seckill_sales'] < $seckill['seckill_stock'] && !empty($seckill['seckill_stock']))
+            if ($seckill['seckill_stock'] > 0)
                 return $seckill['seckill_price'];
         }
 

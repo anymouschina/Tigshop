@@ -62,12 +62,12 @@ class Panel extends AdminBaseController
      */
     public function searchMenu(): Response
     {
-        $keyword = input('keyword', '');
+        $keyword =$this->request->all('keyword', '');
         $keyword = trim($keyword);
 		$admin_type = request()->adminType;
         $item = app(AuthorityService::class)->getAuthorityList($keyword,$admin_type);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 }

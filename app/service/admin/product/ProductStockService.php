@@ -35,7 +35,7 @@ class ProductStockService extends BaseService
      */
     public function getProductStock(int $product_id, int $sku_id, int $exclude_activity = 0): int
     {
-        if ($exclude_activity) {
+        if (!$exclude_activity) {
             //秒杀库存
             $seckill = app(SeckillService::class)->getProductActivityInfo($product_id, $sku_id);
             if ($seckill) {

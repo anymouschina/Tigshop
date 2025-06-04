@@ -19,10 +19,10 @@ class Cos
 
     public function __construct()
     {
-        $secretId = Config::get('storage_cos_secret_id', 'base_api_storage');
-        $secretKey = Config::get('storage_cos_secret_key', 'base_api_storage');
-        $bucket = Config::get('storage_cos_bucket', 'base_api_storage');
-        $region = Config::get('storage_cos_region', 'base_api_storage');
+        $secretId = Config::get('storageCosSecretId');
+        $secretKey = Config::get('storageCosSecretKey');
+        $bucket = Config::get('storageCosBucket');
+        $region = Config::get('storageCosRegion');
         if (empty($secretId) || empty($secretKey) || empty($region) || empty($bucket)) {
             throw new Exception("Cos参数设置错误！");
         }
@@ -77,7 +77,7 @@ class Cos
         try {
             if (is_string($this->image)) {
                 $object = $this->image;
-                $storage_url = Config::get('storage_cos_url', 'base_api_storage');
+                $storage_url = Config::get('storageCosUrl');
                 if (!str_contains($this->image, $storage_url)) {
                     $object = $storage_url . $object;
                 }
@@ -124,9 +124,9 @@ class Cos
      */
     public function changeFilePath(): string
     {
-        $upload_save_full_domain = Config::get('storage_save_full_path', 'base_api_storage');
+        $upload_save_full_domain = Config::get('storage_save_full_path');
         if ($upload_save_full_domain) {
-            $storage_url = Config::get('storage_cos_url', 'base_api_storage');
+            $storage_url = Config::get('storage_cos_url');
             return $storage_url . $this->filePath;
         }
 

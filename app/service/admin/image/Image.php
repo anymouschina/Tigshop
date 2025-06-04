@@ -22,11 +22,14 @@ class Image
     protected object|string $image;
     public string $orgName;
     //限制类型
-    protected array $limit_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif'];
+    protected array $limit_ext;
+
+    protected $image_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'tif'];
+    protected $video_ext = ['mp4'];
 
     public function __construct(UploadedFile|string $image = '', $nodePathName = 'upload', $rootPathName = 'img')
     {
-        $storage_type = Config::get('storage_type','base_api_storage');
+        $storage_type = Config::get('storageType');
         //检测后台是否有配置对应域名
         $this->checkStorageUrlByType();
         switch ($storage_type) {
@@ -43,7 +46,13 @@ class Image
                 $this->storageClass = app(Cos::class);
                 break;
         }
-        // 从请求中获取上传的图片
+        if($rootPathName == 'video') {
+            $this->limit_ext = $this->video_ext;
+        } else {
+            $this->limit_ext = $this->image_ext;
+        }
+
+        // 从请求中获取上传的图片或视频
         if ($image instanceof UploadedFile) {
             $extension = $image->getOriginalExtension();
             if (!in_array($extension, $this->limit_ext)) {
@@ -128,18 +137,18 @@ class Image
 
     public function getStorageUrl(): string|null
     {
-        $storage_type = Config::get('storage_type','base_api_storage');
+        $storage_type = Config::get('storageType');
         $url = '';
         switch ($storage_type) {
             case 0:
-                $url = Config::get('storage_local_url', "base_api_storage");
+                $url = Config::get('storageLocalUrl');
                 $url = $url ?? $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] . "/";
                 break;
             case 1:
-                $url = Config::get('storage_oss_url','base_api_storage');
+                $url = Config::get('storageOssUrl');
                 break;
             case 2:
-                $url = Config::get('storage_cos_url',"base_api_storage");
+                $url = Config::get('storageCosUrl');
         }
         return $url;
     }
@@ -151,11 +160,11 @@ class Image
      */
     public function checkStorageUrlByType(): bool
     {
-        $storage = Config::getConfig('base_api_storage');
+        $storage = Config::getConfig();
         $msg = '请先在后台【设置>系统设置>商城设置>接口设置>存储设置】选择';
-        switch ($storage['storage_type']) {
+        switch ($storage['storageType']) {
             case 0:
-                if(empty($storage['storage_local_url'])){
+                if (empty($storage['storageLocalUrl'])) {
                     throw new ApiException($msg.'【本地存储】，然后按照【参考格式】填写【图片访问域名】');
                 }
             break;

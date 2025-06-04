@@ -68,9 +68,6 @@ class MerchantService extends BaseService
     {
         $result = $this->merchantCoreService->getDetail($id);
 
-        if (!$result) {
-            throw new ApiException('店铺不存在');
-        }
         return $result;
     }
 
@@ -193,15 +190,15 @@ class MerchantService extends BaseService
         if (empty($merchant->shop_data)) {
             $shop = Shop::find($shopId);
             $shop_data = [
-                'shop_logo' => [
+                'shopLogo' => [
                     [
-                        'pic_thumb' => '',
-                        'pic_url' => $shop->shop_logo,
-                        'pic_name' => ''
+                        'picThumb' => '',
+                        'picUrl' => $shop->shop_logo,
+                        'picName' => ''
                     ]
                 ],
-                'shop_title' => $shop->shop_title,
-                'contact_mobile' => $shop->contact_mobile,
+                'shopTitle' => $shop->shop_title,
+                'contactMobile' => $shop->contact_mobile,
                 'description' => $shop->description,
             ];
             $merchant->shop_data = json_encode($shop_data);

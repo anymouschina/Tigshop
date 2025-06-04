@@ -11,15 +11,15 @@ Route::group('order', function () {
         // 订单
         Route::post('update', 'update');
         // 订单
-        Route::post('update_coupon', 'updateCoupon');
+        Route::post('updateCoupon', 'updateCoupon');
         // 订单提交
         Route::post('submit', 'submit');
         // 获得上次订单发票信息
-        Route::get('get_invoice', 'getInvoice');
+        Route::get('getInvoice', 'getInvoice');
         //获取可用支付方式
-        Route::get('get_available_payment_type', 'getAvailablePaymentType');
+        Route::get('getAvailablePaymentType', 'getAvailablePaymentType');
         //获得店铺配送方式
-        Route::get('get_store_shipping_type', 'getStoreShippingType');
+        Route::get('getStoreShippingType', 'getStoreShippingType');
 
     })->middleware([
         \app\api\middleware\CheckLogin::class,
@@ -30,12 +30,12 @@ Route::group('order', function () {
         // 支付页信息
         Route::get('index', 'index');
         // 订单状态
-        Route::get('check_status', 'checkStatus');
+        Route::get('checkStatus', 'checkStatus');
         // 支付
         Route::get('create', 'create');
         // 支付回调
         Route::post('notify', 'notify');
         // 退款回调
-        Route::post('refund_notify', 'refundNotify');
+        Route::post('refundNotify', 'refundNotify');
     })->prefix("order.pay/");
 });

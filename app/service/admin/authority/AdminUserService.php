@@ -186,7 +186,7 @@ class AdminUserService extends BaseService
             $arr["password"] = password_hash($data["password"], PASSWORD_DEFAULT);
         }
 
-        if (isset($data['password'],$data['pwd_confirm']) && $data["password"] != $data["pwd_confirm"]) {
+        if (isset($data['password']) && isset($data['pwd_confirm']) && $data["password"] != $data["pwd_confirm"]) {
             throw new ApiException(/** LANG */'密码不一致');
         }
 
@@ -450,12 +450,15 @@ class AdminUserService extends BaseService
                 if (!empty($data["password"])) {
                     $arr["password"] = password_hash($data["password"], PASSWORD_DEFAULT);
                 }
+                if (app(SmsService::class)->checkCode($data["mobile"], $data["code"]) == false) {
+                    throw new ApiException(/** LANG */ '短信验证码错误或已过期，请重试');
+                }
 
                 if ($data["password"] != $data["pwd_confirm"]) {
                     throw new ApiException(/** LANG */'密码不一致');
                 }
                 $arr = [
-                    "password" => $data["password"],
+                    "password" => $arr["password"],
                 ];
                 break;
             case 3:

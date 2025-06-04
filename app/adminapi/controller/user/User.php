@@ -65,8 +65,7 @@ class User extends AdminBaseController
         $total = $this->userService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -78,15 +77,12 @@ class User extends AdminBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->userService->getDetail($id);
         $item["password"] = '';
         // 会员等级
         $rank_list = app(UserRankService::class)->getUserRankList();
-        return $this->success([
-            'item' => $item,
-            'rank_list' => $rank_list,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -96,7 +92,7 @@ class User extends AdminBaseController
      */
     public function create(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'user_id' => $id,
             'username' => '',
@@ -111,7 +107,7 @@ class User extends AdminBaseController
 
         $result = $this->userService->updateUser($id, $data, true);
         if ($result) {
-            return $this->success('会员添加成功');
+            return $this->success();
         } else {
             return $this->error('会员更新失败');
         }
@@ -124,7 +120,7 @@ class User extends AdminBaseController
      */
     public function update(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'user_id' => $id,
             'mobile' => '',
@@ -137,7 +133,7 @@ class User extends AdminBaseController
 
         $result = $this->userService->updateUser($id, $data, false);
         if ($result) {
-            return $this->success('会员更新成功');
+            return $this->success();
         } else {
             return $this->error('会员更新失败');
         }
@@ -150,8 +146,8 @@ class User extends AdminBaseController
      */
     public function updateField(): \think\Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['username', 'nickname'])) {
             return $this->error('#field 错误');
@@ -159,12 +155,12 @@ class User extends AdminBaseController
 
         $data = [
             'user_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->userService->updateUserField($id, $data);
 
-        return $this->success('更新成功');
+        return $this->success();
     }
 
     /**
@@ -174,9 +170,9 @@ class User extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->userService->deleteUser($id);
-        return $this->success('指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -186,18 +182,18 @@ class User extends AdminBaseController
      */
     public function batch(): \think\Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error('未选择项目');
         }
 
-		$rank_id = input('rank_id/d', 0);
-		if (in_array(input('type'),['del','set_rank'])) {
+		$rank_id =$this->request->all('rank_id/d', 0);
+		if (in_array($this->request->all('type'),['del','set_rank'])) {
 			try {
 				//批量操作一定要事务
 				Db::startTrans();
-				foreach (input('ids') as $id) {
+				foreach ($this->request->all('ids') as $id) {
 					$id = intval($id);
-					$this->userService->batchOperation($id, input('type'),$rank_id);
+					$this->userService->batchOperation($id,$this->request->all('type'),$rank_id);
 				}
 				Db::commit();
 			} catch (\Exception $exception) {
@@ -205,7 +201,7 @@ class User extends AdminBaseController
 				throw new ApiException($exception->getMessage());
 			}
 
-			return $this->success(/** LANG */'批量操作执行成功！');
+			return $this->success();
 		} else {
 			return $this->error(/** LANG */'#type 错误');
 		}
@@ -218,14 +214,14 @@ class User extends AdminBaseController
      */
     public function searchByMobile(): \think\Response
     {
-        $search = input('mobile', '');
+        $search =$this->request->all('mobile', '');
         $item = \app\model\user\User::query()
             ->where('mobile',$search)
             ->whereOr('username',$search)
             ->find();
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -234,7 +230,7 @@ class User extends AdminBaseController
      */
     public function userFundDetail(): \think\Response
     {
-        $user_id = input('id/d', 0);
+        $user_id =$this->request->all('id/d', 0);
         $filter = $this->request->only([
             'page/d' => 1,
             'size/d' => 15,
@@ -269,8 +265,7 @@ class User extends AdminBaseController
                 break;
         }
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -282,7 +277,7 @@ class User extends AdminBaseController
      */
     public function fundManagement(): \think\Response
     {
-        $user_id = input('id/d', 0);
+        $user_id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             "change_desc" => "",
             "type_balance/d" => 1,
@@ -295,6 +290,6 @@ class User extends AdminBaseController
             "growth_points" => 0,
         ], 'post');
         $result = $this->userService->fundManagement($user_id, $data);
-        return $result ? $this->success(/** LANG */'会员帐户变动明细更新成功') : $this->error(/** LANG */'操作失败');
+        return $result ? $this->success() : $this->error(/** LANG */'操作失败');
     }
 }

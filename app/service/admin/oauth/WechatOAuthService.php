@@ -263,20 +263,20 @@ class WechatOAuthService extends BaseService
         $callback = '';
         switch ($this->getPlatformType()) {
             case 'pc':
-                $app_id = Config::get('wechat_open_appId');
-                $secret = Config::get('wechat_open_appSecret');
+                $app_id = Config::get('wechatOpenAppId');
+                $secret = Config::get('wechatOpenAppSecret');
                 break;
             case 'wechat':
-                $app_id = Config::get('wechat_appId', 'base_api_wechat');
-                $secret = Config::get('wechat_appSecret', 'base_api_wechat');
+                $app_id = Config::get('wechatAppId');
+                $secret = Config::get('wechatAppSecret');
                 break;
             case 'miniProgram':
-                $app_id = Config::get('wechat_miniProgram_appId', 'base_api_mini_program');
-                $secret = Config::get('wechat_miniProgram_secret', 'base_api_mini_program');
+                $app_id = Config::get('wechatMiniProgramAppId');
+                $secret = Config::get('wechatMiniProgramSecret');
                 break;
             case 'app':
-                $app_id = Config::get('wechat_app_appId');
-                $secret = Config::get('wechat_app_secret');
+                $app_id = Config::get('wechatAppAppId');
+                $secret = Config::get('wechatAppSecret');
                 break;
         }
         $config = [

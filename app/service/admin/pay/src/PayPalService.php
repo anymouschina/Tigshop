@@ -37,10 +37,10 @@ class PayPalService extends PayService
 
     public function __construct()
     {
-        $config = Config::getConfig('payment');
-        $this->client_id = $config['paypal_client_id'];
-        $this->secret = $config['paypal_secret'];
-        $this->currency = $config['paypal_currency'];
+        $config = Config::getConfig();
+        $this->client_id = $config['paypalClientId'];
+        $this->secret = $config['paypalSecret'];
+        $this->currency = $config['paypalCurrency'];
     }
 
     /**

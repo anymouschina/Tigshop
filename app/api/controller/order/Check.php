@@ -46,7 +46,7 @@ class Check extends IndexBaseController
     {
         // b2b模式下，判断用户是否实名
         app(CartService::class)->checkUserCompanyAuth(request()->userId);
-        $flow_type = input('flow_type/d', 1);
+        $flow_type = $this->request->all('flow_type/d', 1);
         $orderCheckService = new OrderCheckService();
         $cart_list = $orderCheckService->getStoreCarts('', $flow_type);
         if (empty($cart_list['carts'])) {
@@ -99,15 +99,14 @@ class Check extends IndexBaseController
             'points' => $orderCheckService->getUserPoints(),
             'available_points' => $orderCheckService->getOrderAvailablePoints(),
             'coupon_list' => $orderCheckService->getCouponListByPromotion($cart_list, $use_coupon_ids, $select_user_coupon_ids),
-            'item' => $params,
             'use_coupon_ids' => $use_coupon_ids,
             'select_user_coupon_ids' => $select_user_coupon_ids,
             'tmpl_ids' => app(MessageTemplateService::class)->getMiniProgramTemplateIds(),
             'flow_type' => $flow_type
         ];
-        return $this->success([
-            'item' => $result
-        ]);
+        $params['use_point'] = $orderCheckService->getUsePoint();
+        $result['item'] = $params;
+        return $this->success($result);
     }
 
     public function update(): \think\Response
@@ -146,9 +145,7 @@ class Check extends IndexBaseController
             'total' => $orderCheckService->getTotalFee($cart_list),
             'address_list' => app(UserAddressService::class)->getAddressList(request()->userId),
         ];
-        return $this->success([
-            'item' => $result
-        ]);
+        return $this->success($result);
     }
 
     /**
@@ -156,9 +153,7 @@ class Check extends IndexBaseController
     public function getAvailablePaymentType(): \think\Response
     {
         $orderCheckService = new OrderCheckService();
-        return $this->success([
-            'item' => $orderCheckService->getAvailablePaymentType()
-        ]);
+        return $this->success($orderCheckService->getAvailablePaymentType());
     }
 
     public function getStoreShippingType(): \think\Response
@@ -175,9 +170,7 @@ class Check extends IndexBaseController
             'select_user_coupon_ids' => [],
         ]);
         $orderCheckService->initSet($params);
-        return $this->success([
-            'item' => $orderCheckService->getStoreShippingType()
-        ]);
+        return $this->success($orderCheckService->getStoreShippingType());
     }
 
 
@@ -196,7 +189,7 @@ class Check extends IndexBaseController
             'select_user_coupon_ids' => [],
         ]);
 
-        if (input('use_default_coupon_ids/d') == 1 && empty($params['use_coupon_ids'])) {
+        if ($this->request->all('use_default_coupon_ids/d') == 1 && empty($params['use_coupon_ids'])) {
             // 当需要获取默认最优优惠券组合时
             $use_default_coupon = 1;
         } else {
@@ -208,6 +201,7 @@ class Check extends IndexBaseController
         if (empty($cart_list['carts'])) {
             return $this->error(Util::lang('您还未选择商品！'));
         }
+        $select_user_coupon_ids = [];
         $cart_list = app(CartService::class)->buildCartPromotion($cart_list, request()->userId, $params['flow_type'], $use_default_coupon,
             $params['use_coupon_ids']);
         if ($use_default_coupon == 1) {
@@ -216,20 +210,25 @@ class Check extends IndexBaseController
                 foreach ($shopCart['used_promotions'] as $used_promotion) {
                     if ($used_promotion['type'] == 2) {
                         $params['use_coupon_ids'][] = $used_promotion['coupon_id'];
+                        $user_coupon_id = app(UserCouponService::class)->getUserCouponIdByCouponId(request()->userId,
+                            $used_promotion['coupon_id']);
+                        // 已选择的优惠券id
+                        if ($user_coupon_id > 0) {
+                            $select_user_coupon_ids[] = $user_coupon_id;
+                        }
                     }
                 }
             }
         }
         $result = [
-            'coupon_list' => $orderCheckService->getCouponListByPromotion($cart_list, $params['use_coupon_ids'], $params['select_user_coupon_ids']),
+            'coupon_list' => $orderCheckService->getCouponListByPromotion($cart_list, $params['use_coupon_ids'],
+                $select_user_coupon_ids),
             'use_coupon_ids' => $params['use_coupon_ids'],
-            'select_user_coupon_ids' => $params['select_user_coupon_ids'],
+            'select_user_coupon_ids' => $select_user_coupon_ids,
             'cart_list' => $cart_list['carts'],
             'total' => $orderCheckService->getTotalFee($cart_list),
         ];
-        return $this->success([
-            'item' => $result
-        ]);
+        return $this->success($result);
     }
 
     // 提交订单
@@ -247,7 +246,7 @@ class Check extends IndexBaseController
             'invoice_data/a' => [],
             'flow_type/d' => 1,
         ]);
-        $close_order = Config::get('close_order');
+        $close_order = Config::get('closeOrder');
         if ($close_order == 1) {
             $this->error(Util::lang('商城正在维护已停止下单！'));
         }
@@ -273,9 +272,7 @@ class Check extends IndexBaseController
         ]);
         $params["user_id"] = request()->userId;
         $item = $orderCheckService->checkInvoice($params);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
 }

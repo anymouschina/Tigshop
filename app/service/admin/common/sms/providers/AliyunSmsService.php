@@ -22,9 +22,9 @@ class AliyunSmsService
 
     public function __construct()
     {
-        $this->accessKeyId = Config::get('sms_key_id', 'base_sms');
-        $this->accessKeySecret = Config::get("sms_key_secret",'base_sms');
-        $this->signName = Config::get("sms_sign_name","base_sms");
+        $this->accessKeyId = Config::get('smsKeyId');
+        $this->accessKeySecret = Config::get("smsKeySecret");
+        $this->signName = Config::get("smsSignName");
         if (empty($this->accessKeyId)) {
             throw new ApiException('短信配置错误，缺少#keyId');
         }

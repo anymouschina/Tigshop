@@ -67,6 +67,14 @@ class ProductService extends BaseService
             }
         ]);
 
+        foreach ($result as &$item) {
+            $productDetailService = new ProductDetailService($item['product_id']);
+            $productAvailability = $productDetailService->getProductSkuDetail($item['product_sku']['0']['sku_id'] ?? 0,
+                0,
+                '');
+            $item['price'] = $productAvailability['price'];
+        }
+
         return $result->toArray();
     }
 
@@ -172,6 +180,7 @@ class ProductService extends BaseService
             } else {
                 $query->whereOr(function ($query) use ($filter) {
                     $query->where('product_name', 'like', '%' . $filter['keyword'] . '%')
+                        ->whereOr('keywords', 'like', '%' . $filter['keyword'] . '%')
                         ->whereOr('product_sn', 'like', '%' . $filter['keyword'] . '%');
                 });
             }
@@ -334,7 +343,7 @@ class ProductService extends BaseService
         $item['product_service_ids'] = $item['product_service_ids'] ?? [];
         $item['product_desc_arr'] = $this->getProductDescArr($item['product_desc']);
         $item['img_list'] = app(ProductGalleryService::class)->getProductGalleryList($id);
-
+        $item['product_video_info'] = app(ProductVideoService::class)->getProductVideoList($id);
         return $item;
     }
 
@@ -397,7 +406,7 @@ class ProductService extends BaseService
         unset($data['product_desc_arr']);
         if ($isAdd) {
             if ($data['shop_id'] > 0) {
-                if (Config::get('shop_product_need_check', 'shop') == 1) {
+                if (Config::get('shopProductNeedCheck') == 1) {
                     $data['check_status'] = 0;
                     $data['product_status'] = 0;
                 } else {
@@ -406,7 +415,7 @@ class ProductService extends BaseService
                 }
             }
             //如果没有选择模板id，就选默认运费模板id
-            if(empty($data['shipping_tpl_id'])){
+            if (empty($data['shipping_tpl_id']) && isset($data['no_shipping']) && $data['no_shipping'] == 0) {
                 $data['shipping_tpl_id'] = app(ShippingTplService::class)->getDefaultShippingTplId($shop_id);
             }
             $data['add_time'] = Time::now();
@@ -817,7 +826,7 @@ class ProductService extends BaseService
             $num = Product::max('product_id');
             $num = $num ? $num + 1 : 1;
         }
-        $goods_sn = Config::get('basic_product', 'base_product', '', 'sn_prefix') . str_repeat('0', 7 - strlen($num)) . $num;
+        $goods_sn = Config::get('snPrefix', '') . str_repeat('0', 7 - strlen($num)) . $num;
         return $goods_sn;
     }
 

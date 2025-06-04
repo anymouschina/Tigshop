@@ -27,6 +27,13 @@ class ShopWithDraw extends Model
     protected $jsonAssoc = true;
     protected $append = ['status_text'];
 
+    public function getAccountDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
     // 字段处理
     public function getAddTimeAttr($value): string
     {

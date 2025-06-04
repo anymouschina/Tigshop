@@ -70,7 +70,7 @@ class ProductBatchService extends BaseService
         // 标题
         $expore_title = ["商品名称", "商品编号", "分类", "商品售价", "市场价", "是否上架", "品牌", "商品相册", "关键词", "商品描述", "详细描述", "商品重量(KG)", "库存"];
         // 文件名
-        $file_name = Config::get("shop_name") . "商城批量导出商品" . Time::getCurrentDatetime("Ymd") . rand(1000, 9999);
+        $file_name = Config::get("shopName") . "商城批量导出商品" . Time::getCurrentDatetime("Ymd") . rand(1000, 9999);
         Excel::export($expore_title, $file_name, $result);
         return true;
     }
@@ -195,7 +195,7 @@ class ProductBatchService extends BaseService
                     "product_sn" => $row[1],
                     "category_id" => $cat_id,
                     "product_price" => $product_price,
-                    "market_price" => $row[4] ?? Config::get('market_price_rate','base_product') * $product_price,
+                    "market_price" => $row[4] ?? Config::get('marketPriceRate') * $product_price,
                     "product_status" => !empty($row[5]) ? 1 : 0,
                     "brand_id" => $brand_id ?? 0,
                     "pic_url" => $row[7] ?? "",
@@ -282,7 +282,7 @@ class ProductBatchService extends BaseService
      */
     public function downloadTemplate(): bool
     {
-        $file_name = Config::get("shop_name") . "商城商品导入模板文件";
+        $file_name = Config::get("shopName") . "商城商品导入模板文件";
         $title = [
             '商品名称（必须）',
             '商品编号（为空则自动生成）',

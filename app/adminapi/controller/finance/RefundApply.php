@@ -56,8 +56,7 @@ class RefundApply extends AdminBaseController
         $total = $this->refundApplyService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -69,9 +68,9 @@ class RefundApply extends AdminBaseController
     public function config(): Response
     {
         $refund_status_list = \app\model\finance\RefundApply::REFUND_STATUS_NAME;
-        return $this->success([
-            'refund_status_list' => $refund_status_list,
-        ]);
+        return $this->success(
+            $refund_status_list
+        );
     }
 
     /**
@@ -81,11 +80,11 @@ class RefundApply extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->refundApplyService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item,
+        );
     }
 
     /**
@@ -102,11 +101,12 @@ class RefundApply extends AdminBaseController
             "online_balance" => "",
             "offline_balance" => "",
             "refund_balance" => "",
+            "payment_voucher" => '',
         ], 'post');
 
         $result = $this->refundApplyService->auditRefundApply($data['refund_id'], $data);
         if ($result) {
-            return $this->success(/** LANG */"退款申请更新成功");
+            return $this->success();
         } else {
             return $this->error(/** LANG */'退款申请更新失败');
         }
@@ -124,7 +124,7 @@ class RefundApply extends AdminBaseController
 
         $result = $this->refundApplyService->offlineAudit($data['refund_id']);
         if ($result) {
-            return $this->success(/** LANG */"更新成功");
+            return $this->success();
         } else {
             return $this->error(/** LANG */'更新失败');
         }

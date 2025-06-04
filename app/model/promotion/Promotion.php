@@ -41,6 +41,23 @@ class Promotion extends Model
 		self::PROMOTION_RANGE_EXCLUDE_PRODUCT => '指定商品不参与',
 	];
 
+
+    public function setRangeDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getRangeDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
     public function getTimeTextAttr($value, $data)
     {
         if (empty($data['start_time']) && empty($data['end_time'])) {

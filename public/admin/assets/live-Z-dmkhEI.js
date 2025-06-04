@@ -1,1 +1,0 @@
-import{y as t}from"./index-CGYuOau0.js";const i=e=>t({url:"promotion/wechat_live/list",method:"get",params:e}),s=(e,o)=>t({url:"promotion/wechat_live/"+e,method:"get",params:o}),n=(e,o)=>t({url:"promotion/wechat_live/"+e,method:"post",data:o}),a=()=>t({url:"promotion/wechat_live/refresh",method:"get"});export{a,s as b,i as g,n as u};

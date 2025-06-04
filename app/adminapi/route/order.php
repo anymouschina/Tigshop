@@ -8,6 +8,11 @@ Route::group('order', function () {
     Route::group('aftersales', function () {
         // 列表
         Route::get('list', 'list');
+        //申请类型
+        Route::get('applyType', 'applyType');
+        //退换货状态
+        Route::get('returnGoodsStatus', 'returnGoodsStatus');
+
         // 详情接口
         Route::get('detail', 'detail');
         // 同意或拒接售后接口
@@ -34,82 +39,82 @@ Route::group('order', function () {
         //订单详情
         Route::get('detail', 'detail');
         //获取电子面单接口
-        Route::get('order_way_bill', 'printOrderWaybill');
+        Route::get('orderWayBill', 'printOrderWaybill');
         //父订单详情
-        Route::get('parent_detail', 'parentOrderDetail');
+        Route::get('parentDetail', 'parentOrderDetail');
         //订单发货
         Route::post('deliver', 'deliver')->append([
             "authorityCheckSubPermissionName" => 'orderDeliverManage'
         ]);
         //订单收货
-        Route::post('confirm_receipt', 'confirmReceipt')->append([
+        Route::post('confirmReceipt', 'confirmReceipt')->append([
             "authorityCheckSubPermissionName" => 'orderConfirmReceiptManage'
         ]);
         //订单修改收货人信息
-        Route::post('modify_consignee', 'modifyConsignee')->append([
+        Route::post('modifyConsignee', 'modifyConsignee')->append([
             "authorityCheckSubPermissionName" => 'orderModifyConsigneeManage'
         ]);
         //修改配送信息
-        Route::post('modify_shipping', 'modifyShipping')->append([
+        Route::post('modifyShipping', 'modifyShipping')->append([
             "authorityCheckSubPermissionName" => 'orderModifyShippingManage'
         ]);
         //修改订单金额
-        Route::post('modify_money', 'modifyMoney')->append([
+        Route::post('modifyMoney', 'modifyMoney')->append([
             "authorityCheckSubPermissionName" => 'orderModifyMoneyManage'
         ]);
         //取消订单
-        Route::post('cancel_order', 'cancelOrder')->append([
+        Route::post('cancelOrder', 'cancelOrder')->append([
             "authorityCheckSubPermissionName" => 'cancelOrderManage'
         ]);
         //订单设置为已确认
-        Route::post('set_confirm', 'setConfirm')->append([
+        Route::post('setConfirm', 'setConfirm')->append([
             "authorityCheckSubPermissionName" => 'setConfirmManage'
         ]);
         //订单软删除
-        Route::post('del_order', 'delOrder')->append([
+        Route::post('delOrder', 'delOrder')->append([
             "authorityCheckSubPermissionName" => 'delOrderManage'
         ]);
         //订单拆分
-        Route::post('split_store_order', 'splitStoreOrder')->append([
+        Route::post('splitStoreOrder', 'splitStoreOrder')->append([
             "authorityCheckSubPermissionName" => 'splitStoreOrderManage'
         ]);
         //订单设置为已支付
-        Route::post('set_paid', 'setPaid')->append([
+        Route::post('setPaid', 'setPaid')->append([
             "authorityCheckSubPermissionName" => 'setPaidManage'
         ]);
         //修改商品信息
-        Route::post('modify_product', 'modifyProduct')->append([
+        Route::post('modifyProduct', 'modifyProduct')->append([
             "authorityCheckSubPermissionName" => 'modifyProductManage'
         ]);
         //添加商品时获取商品信息
-        Route::post('get_add_product_info', 'getAddProductInfo');
+        Route::post('getAddProductInfo', 'getAddProductInfo');
         //设置商家备注
-        Route::post('set_admin_note', 'setAdminNote')->append([
+        Route::post('setAdminNote', 'setAdminNote')->append([
             "authorityCheckSubPermissionName" => 'setAdminNoteManage'
         ]);
         //打印订单
-        Route::get('order_print', 'orderPrint');
+        Route::get('orderPrint', 'orderPrint');
         //打印订单
-        Route::get('order_print_bill', 'orderPrintWaybill');
+        Route::get('orderPrintBill', 'orderPrintWaybill');
         //订单导出标签列表
-        Route::get('get_export_item_list', 'getExportItemList');
+        Route::get('getExportItemList', 'getExportItemList');
         //订单导出存的标签
-        Route::post('save_export_item', 'saveExportItem');
+        Route::post('saveExportItem', 'saveExportItem');
         //标签详情
-        Route::get('export_item_info', 'exportItemInfo');
+        Route::get('exportItemInfo', 'exportItemInfo');
         //订单导出
-        Route::get('order_export', 'orderExport');
+        Route::get('orderExport', 'orderExport');
 		// 批量操作
 		Route::post('batch', 'batch')->append([
 			"authorityCheckSubPermissionName" => 'splitStoreOrderManage'
 		]);
 		// 批量详情
-		Route::get('several_detail', 'severalDetail');
+		Route::get('severalDetail', 'severalDetail');
 		// 批量打印
-		Route::get('print_several', 'printSeveral');
+		Route::get('printSeveral', 'printSeveral');
     })->prefix("order.order/");
     //日志管理
-    Route::group('order_log', function () {
+    Route::group('orderLog', function () {
         // 列表
         Route::get('list', 'order.orderLog/list');
         // 添加日志

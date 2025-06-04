@@ -44,7 +44,7 @@ class Shop extends IndexBaseController
     public function decorate(): Response
     {
         // 获取首页发布版
-        $shopId = input('shop_id/d', 0);
+        $shopId = $this->request->all('shop_id/d', 0);
         $decorate = app(DecorateService::class)->getShopDecorateModule($shopId);
         return $this->success([
             'decorate_id' => $decorate['decorate_id'],
@@ -60,7 +60,7 @@ class Shop extends IndexBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('shop_id/d', 0);
+        $id = $this->request->all('shop_id/d', 0);
         $item = app(ShopService::class)->getDetail($id);
         $item['product_count'] = app(ProductService::class)->getFilterCount([
             'shop_id' => $id,
@@ -76,9 +76,7 @@ class Shop extends IndexBaseController
                 'user_id' => request()->userId,
             ]);
         }
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -87,16 +85,14 @@ class Shop extends IndexBaseController
      */
     public function shopHead(): Response
     {
-        $id = input('shop_id/d', 0);
+        $id = $this->request->all('shop_id/d', 0);
         try {
             $item = app(DecorateDiscreteService::class)->getDetail('shop_head', $id);
         } catch (\Exception $e) {
             $item = null;
         }
         if (empty($item)) $item = [];
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -105,7 +101,7 @@ class Shop extends IndexBaseController
      */
     public function collect(): \think\Response
     {
-        $id = input('shop_id/d', 0);
+        $id = $this->request->all('shop_id/d', 0);
         $userId = request()->userId;
         $service = app(CollectShopService::class);
         $item = $service->getDetail([
@@ -129,14 +125,14 @@ class Shop extends IndexBaseController
 	 */
 	public function list(): \think\Response
 	{
-        $data['keyword'] = input('keyword', '');
-		$data['page'] = input('page/d', 1);
-        $data['size'] = input('size/d', 10);
+        $data['keyword'] = $this->request->all('keyword', '');
+		$data['page'] = $this->request->all('page/d', 1);
+        $data['size'] = $this->request->all('size/d', 10);
 		$data['status'] = 1;
 		$item = app(ShopService::class)->getFilterList($data,["listing_product"],[],['collect','listing']);
 		$total = app(ShopService::class)->getFilterCount($data);
 		return $this->success([
-			'item' => $item,
+            'records' => $item,
 			'total' => $total
 		]);
 	}

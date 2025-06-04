@@ -54,8 +54,7 @@ class RefundLog extends AdminBaseController
         $total = $this->refundLogService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }

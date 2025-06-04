@@ -12,6 +12,7 @@
 namespace app\adminapi\controller\setting;
 
 use app\adminapi\AdminBaseController;
+use app\service\admin\setting\ConfigService;
 use app\service\admin\setting\LicensedService;
 use think\App;
 use think\Response;
@@ -23,16 +24,29 @@ use utils\Config as UtilsConfig;
 class Licensed extends AdminBaseController
 {
     protected LicensedService $licensedService;
+    protected ConfigService $configService;
 
     /**
      * 构造函数
      *
      * @param App $app
      */
-    public function __construct(App $app, LicensedService $licensedService)
+    public function __construct(App $app, LicensedService $licensedService, ConfigService $configService)
     {
         parent::__construct($app);
         $this->licensedService = $licensedService;
+        $this->configService = $configService;
+    }
+
+    public function saveLicensed()
+    {
+        $data = $this->request->all();
+        $result = $this->configService->save($data);
+        if ($result) {
+            return $this->success();
+        } else {
+            return $this->error(/** LANG */ '设置项更新失败');
+        }
     }
 
     /**
@@ -41,22 +55,32 @@ class Licensed extends AdminBaseController
      */
     public function index(): Response
     {
-        $item = $this->licensedService->getDetail();
-        $item = $item ? $item['data'] : [];
+        $item = app(ConfigService::class)->getConfigByBizCode([
+            "orderId",
+            "licensedType",
+            "licensedTypeName",
+            "deCopyright",
+            "isEnterprise",
+            "authorizedDomain",
+            "holder",
+            "licensedId",
+            "releaseTime",
+            "expirationTime",
+            "license",
+        ]);
         if ($item) {
-            $item['admin_dark_logo'] = UtilsConfig::get('admin_dark_logo', 'base_licensed_data');
-            $item['powered_by_status'] = UtilsConfig::get('powered_by_status', 'base_licensed_data');
-            $item['powered_by'] = UtilsConfig::get('powered_by', 'base_licensed_data'," - powered by tigshop");
-            $item['admin_light_logo'] = UtilsConfig::get('admin_light_logo', 'base_licensed_data');
-            $item['version_info_hidden'] = UtilsConfig::get('version_info_hidden', 'base_licensed_data');
+            $item['admin_dark_logo'] = UtilsConfig::get('adminDarkLogo');
+            $item['powered_by_status'] = UtilsConfig::get('poweredByStatus');
+            $item['powered_by'] = UtilsConfig::get('poweredBy', " - powered by tigshop");
+            $item['admin_light_logo'] = UtilsConfig::get('adminLightLogo');
+            $item['version_info_hidden'] = UtilsConfig::get('versionInfoHidden');
         }
         $item['version_type'] = config('app.version_type');
         $item['version'] = config('app.version');
-        $item['shop_company'] = !empty($item['deCopyright']) ? UtilsConfig::get('shop_company',
-            'base_licensed_data') : config('app.default_company');
-        return $this->success([
-            'item' => $item,
-        ]);
+        $item['shop_company'] = !empty($item['deCopyright']) ? UtilsConfig::get('shopCompany') : config('app.default_company');
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -71,7 +95,7 @@ class Licensed extends AdminBaseController
 
         $result = $this->licensedService->update($data['license']);
         if ($result) {
-            return $this->success('更新成功');
+            return $this->success();
         } else {
             return $this->error('更新失败');
         }

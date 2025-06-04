@@ -93,7 +93,7 @@ class UserRankService extends BaseService
         return [
             'rank_type' => $type,
             'user_rank_list' => $user_rank,
-            'rank_config' => $rank_config,
+            'user_rank_config' => $rank_config,
             'grow_up_setting' => $grow_config
         ];
     }
@@ -281,7 +281,7 @@ class UserRankService extends BaseService
     public function getRankGrowth(int $user_id):bool
     {
         $config = $this->getGrowConfig();
-        if (!empty($config) && $config['buy_order']) {
+        if (!empty($config) && $config['buyOrder']) {
             $growth_points = 0;
             // 获取最新插入的新增的成长日志
             $growth_log = RankGrowthLog::where(['user_id' => $user_id,'type' => 1,"change_type" => 1])->order('id', 'desc')->find();
@@ -299,8 +299,8 @@ class UserRankService extends BaseService
             // 获取时间范围内用户已支付的订单数
             $order_num = $order_num_query->count();
 
-            if ($order_num >= $config['buy_order_number']) {
-                $growth_points = intval(($order_num / $config['buy_order_number']) * $config['buy_order_growth']);
+            if ($order_num >= $config['buyOrderNumber']) {
+                $growth_points = intval(($order_num / $config['buyOrderNumber']) * $config['buyOrderGrowth']);
             }
             if (!empty($growth_points)) {
                 $record_log = [
@@ -373,7 +373,7 @@ class UserRankService extends BaseService
             $user_rank_log = UserRankLog::where('user_id', $user_id)->order("id", "DESC")->find();
             if (!empty($user_rank_log)) {
                 // 有时效
-                $rank_expire_time = Time::format(strtotime('+' . $rank_config['data']['rank_after_month'] . ' months',
+                $rank_expire_time = Time::format(strtotime('+' . $rank_config['data']['rankAfterMonth'] . ' months',
                     Time::toTime($user_rank_log['change_time'])));
                 // 等级过期之后重新定义等级
                 if (Time::now() >= Time::toTime($rank_expire_time)) {
@@ -425,7 +425,7 @@ class UserRankService extends BaseService
 
         // 以下单时间判断该笔订单是否已计算入成长值表
         $config = $this->getGrowConfig();
-        if (!empty($config) && $config['buy_order']) {
+        if (!empty($config) && $config['buyOrder']) {
             $order_time = Order::find($refund_apply->order_id)->add_time;
             $growth_user = RankGrowthLog::where(['type' => RankGrowthLog::GROWTH_TYPE_ORDER,'user_id' => $refund_apply->user_id,'change_type' => 1])->order('id', 'desc')->find();
             $growth_time = 0;
@@ -434,7 +434,7 @@ class UserRankService extends BaseService
             }
             if ($order_time <= $growth_time) {
                 // 订单已计入成长值计算 -- 按配置比例扣减成长值
-                $change_growth = bcdiv($config['buy_order_growth'],$config['buy_order_number'],2);
+                $change_growth = bcdiv($config['buyOrderGrowth'], $config['buyOrderNumber'], 2);
 
                 $growth_log = [
                     'user_id' => $refund_apply->user_id,

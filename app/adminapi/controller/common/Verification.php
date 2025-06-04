@@ -64,7 +64,7 @@ class Verification extends AdminBaseController
         } catch (\Exception $e) {
             return $this->error($e->getMessage());
         }
-        return $this->success([]);
+        return $this->success();
     }
 
     protected function getCaptchaService()

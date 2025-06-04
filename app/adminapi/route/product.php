@@ -24,7 +24,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'brandModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'brandModifyManage'
         ]);
         // batch批量操作
@@ -32,7 +32,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'brandModifyManage'
         ]);
         // 批量更新首字母
-        Route::post('update_first_word', 'updateFirstWord')->append([
+        Route::post('updateFirstWord', 'updateFirstWord')->append([
             "authorityCheckSubPermissionName" => 'brandModifyManage'
         ]);
     })->append([
@@ -44,8 +44,10 @@ Route::group('product', function () {
     Route::group('category', function () {
         // 列表
         Route::get('list', 'list');
+        //获取父类名称
+        Route::get('getParentName', 'getParentName');
         // 商品转移
-        Route::post('move_cat', 'moveCat')->append([
+        Route::post('moveCat', 'moveCat')->append([
             "authorityCheckSubPermissionName" => 'productCategoryModifyManage'
         ]);
         // 添加
@@ -57,13 +59,13 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'productCategoryModifyManage'
         ]);
         // 选择分类
-        Route::get('get_all_category', 'getAllCategory');
+        Route::get('getAllCategory', 'getAllCategory');
         // 删除
         Route::post('del', 'del')->append([
             "authorityCheckSubPermissionName" => 'productCategoryModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'productCategoryModifyManage'
         ]);
         // batch批量操作
@@ -90,7 +92,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'commentModifyManage'
         ]);
         // 回复评论
-        Route::post('reply_comment', 'replyComment')->append([
+        Route::post('replyComment', 'replyComment')->append([
             "authorityCheckSubPermissionName" => 'commentModifyManage'
         ]);
         // 删除
@@ -98,7 +100,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'commentModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'commentModifyManage'
         ]);
         // batch批量操作
@@ -116,48 +118,48 @@ Route::group('product', function () {
     Route::group('product', function () {
         // 商品列表
         Route::get('list', 'list');
+        //待审核商品数量
+        Route::get('getWaitingCheckedCount', 'getWaitingCheckedCount');
         // 商品详情
         Route::get('detail', 'detail');
         // 商品新增
         Route::post('create', 'create')->append([
             "authorityCheckSubPermissionName" => 'productModifyManage'
-        ]);
+        ]);;
         // 商品复制
         Route::post('copy', 'copy')->append([
             "authorityCheckSubPermissionName" => 'productModifyManage'
-        ]);
+        ]);;
         // 商品配置型词典
         Route::get('config', 'config');
         // 商品编辑
         Route::post('update', 'update')->append([
             "authorityCheckSubPermissionName" => 'productModifyManage'
-        ]);
+        ]);;
         // 商品删除
         Route::post('del', 'del')->append([
             "authorityCheckSubPermissionName" => 'productModifyManage'
-        ]);
+        ]);;
         // 商品分词
-        Route::post('get_participle', 'getParticiple');
+        Route::post('getParticiple', 'getParticiple');
         // 运费模板列表
-        Route::get('shipping_tpl_list', 'shippingTplList');
+        Route::get('shippingTplList', 'shippingTplList');
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
-            "authorityCheckSubPermissionName" => 'productModifyManage'
-        ]);
+        Route::post('updateField', 'updateField');
         // 回收站
         Route::post('recycle', 'recycle')->append([
             "authorityCheckSubPermissionName" => 'productModifyManage'
-        ]);
+        ]);;
         // 批量操作
         Route::post('batch', 'batch')->append([
             "authorityCheckSubPermissionName" => 'productModifyManage'
-        ]);
+        ]);;
         // 商品审核
         Route::post('audit', 'audit')->append([
             "authorityCheckSubPermissionName" => 'productModifyManage'
-        ]);
+        ]);;
         //审核不通过再次提交审核
-        Route::post('audit_again', 'auditAgain')->append([
+        Route::post('auditAgain', 'auditAgain')->append([
             "authorityCheckSubPermissionName" => 'productModifyManage'
         ]);
     })->append([
@@ -166,7 +168,7 @@ Route::group('product', function () {
     ])->prefix('product.product/');
 
     // 商品分组
-    Route::group('product_group', function () {
+    Route::group('productGroup', function () {
         // 列表
         Route::get('list', 'list');
         // 编辑
@@ -193,7 +195,7 @@ Route::group('product', function () {
     ]);
 
     // 商品属性
-    Route::group('product_attributes', function () {
+    Route::group('productAttributes', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -211,7 +213,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'productAttributesGroupModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'productAttributesGroupModifyManage'
         ]);
         // batch批量操作
@@ -224,7 +226,7 @@ Route::group('product', function () {
     ])->prefix('product.productAttributes/');
 
     // 商品属性模板
-    Route::group('product_attributes_tpl', function () {
+    Route::group('productAttributesTpl', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -242,7 +244,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'productAttributesTplModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'productAttributesTplModifyManage'
         ]);
         // batch批量操作
@@ -255,7 +257,7 @@ Route::group('product', function () {
     ])->prefix('product.productAttributesTpl/');
 
     // 商品库存日志
-    Route::group('product_inventory_log', function () {
+    Route::group('productInventoryLog', function () {
         // 列表
         Route::get('list', 'list');
         // 删除
@@ -272,26 +274,26 @@ Route::group('product', function () {
     ])->prefix('product.productInventoryLog/');
 
     // 商品批量处理
-    Route::group('product_batch', function () {
+    Route::group('productBatch', function () {
         // 商品批量导出
-        Route::get('product_batch_deal', 'productBatchDeal');
+        Route::get('productBatchDeal', 'productBatchDeal');
         // 商品批量上传
-        Route::post('product_batch_modify', 'productBatchModify')->append([
+        Route::post('productBatchModify', 'productBatchModify')->append([
             "authorityCheckSubPermissionName" => 'productBatchModifyManage'
         ]);
         // 批量修改商品
-        Route::post('product_batch_edit', 'productBatchEdit')->append([
+        Route::post('productBatchEdit', 'productBatchEdit')->append([
             "authorityCheckSubPermissionName" => 'productBatchEditManage'
         ]);
         // 下载模版文件
-        Route::get('download_template', 'downloadTemplate');
+        Route::get('downloadTemplate', 'downloadTemplate');
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendGroupName' => 'productBatch'
     ])->prefix('product.productBatch/');
 
     // 商品服务
-    Route::group('product_services', function () {
+    Route::group('productServices', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -309,7 +311,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'productServicesModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'productServicesModifyManage'
         ]);
         // batch批量操作
@@ -321,7 +323,7 @@ Route::group('product', function () {
         'authorityCheckAppendGroupName' => 'productServicesManage'
     ])->prefix('product.productServices/');
     //电子卡券组
-    Route::group('e_card_group', function (){
+    Route::group('eCardGroup', function (){
         //列表
         Route::get('list', 'list');
         //添加
@@ -335,7 +337,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'eCardManage'
         ]);
         //更新
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'eCardManage'
         ]);
         //删除
@@ -343,7 +345,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'eCardManage'
         ]);
         //
-        Route::get('card_list', 'cardList');
+        Route::get('cardList', 'cardList');
         //导入电子卡券
         Route::post('import', 'import')->append([
             "authorityCheckSubPermissionName" => 'eCardManage'
@@ -352,7 +354,7 @@ Route::group('product', function () {
 
     ])->prefix('product.eCardGroup/');
     //电子卡券
-    Route::group('e_card', function (){
+    Route::group('eCard', function (){
         //列表
         Route::get('list', 'list');
         //添加
@@ -366,7 +368,7 @@ Route::group('product', function () {
             "authorityCheckSubPermissionName" => 'eCardManage'
         ]);
         //更新
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'eCardManage'
         ]);
         //删除
@@ -376,7 +378,7 @@ Route::group('product', function () {
     })->prefix('product.eCard/');
 
     // 商品询价
-    Route::group('price_inquiry', function () {
+    Route::group('priceInquiry', function () {
         // 列表
         Route::get('list', 'list');
         // 详情

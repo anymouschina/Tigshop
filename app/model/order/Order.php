@@ -22,7 +22,14 @@ class Order extends Model
 {
     protected $pk = 'order_id';
     protected $table = 'order';
-    protected $json = ['order_extension', 'shipping_type', 'region_ids', 'region_names', "address_data", "invoice_data"];
+    protected $json = [
+        'order_extension',
+        'shipping_type',
+        'region_ids',
+        'region_names',
+        "address_data",
+        "invoice_data"
+    ];
     protected $jsonAssoc = true;
     // 订单状态
     const ORDER_PENDING = 0; //待确认，待支付
@@ -63,6 +70,7 @@ class Order extends Model
     const ORDER_TYPE_PAID = 7;
     const ORDER_TYPE_CARD = 8;
 
+
     const ORDER_TYPE_MAP = [
         self::ORDER_TYPE_NORMAL => '普通商品订单',
         self::ORDER_TYPE_PIN => '拼团商品订单',
@@ -102,6 +110,70 @@ class Order extends Model
         self::SHIPPING_SHIPPED => '已收货',
         self::SHIPPING_FAILED => '配送失败',
     ];
+
+    public function getOrderExtensionAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setOrderExtensionAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getAddressDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setAddressDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getInvoiceDataAttr($value)
+    {
+        if (empty($value)) {
+            return '';
+        }
+        return camelCase($value);
+    }
+
+    public function setInvoiceDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getShippingTypeAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setShippingTypeAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
 
     // 支付状态映射
     public const PAY_STATUS_MAP = [

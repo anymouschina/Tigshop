@@ -54,8 +54,7 @@ class ProductGroup extends AdminBaseController
         $total = $this->productGroupService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -67,12 +66,12 @@ class ProductGroup extends AdminBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('id/d');
+        $id =$this->request->all('id/d');
         $item = $this->productGroupService->getDetail($id);
 
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+           $item
+        );
     }
 
     /**
@@ -84,7 +83,7 @@ class ProductGroup extends AdminBaseController
     {
         $data = $this->requestData();
         $this->productGroupService->create($data);
-        return $this->success('商品分组添加成功');
+        return $this->success();
     }
 
     /**
@@ -94,10 +93,10 @@ class ProductGroup extends AdminBaseController
      */
     public function update(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->requestData();
         $this->productGroupService->edit($id, $data);
-        return $this->success('商品分组更新成功');
+        return $this->success();
     }
 
     /**
@@ -125,11 +124,11 @@ class ProductGroup extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('id/d');
+        $id =$this->request->all('id/d');
 
         if ($id) {
             $this->productGroupService->delete($id);
-            return $this->success('指定项目已删除');
+            return $this->success();
         } else {
             return $this->error('#id 错误');
         }
@@ -142,16 +141,16 @@ class ProductGroup extends AdminBaseController
      */
     public function batch(): \think\Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error('未选择项目');
         }
 
-        if (input('type') == 'del') {
-            foreach (input('ids') as $key => $id) {
+        if ($this->request->all('type') == 'del') {
+            foreach ($this->request->all('ids') as $key => $id) {
                 $id = intval($id);
                 $this->productGroupService->delete($id);
             }
-            return $this->success('批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error('#type 错误');
         }

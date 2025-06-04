@@ -99,8 +99,7 @@ class SalesStatistics extends AdminBaseController
         $filterResult = $this->salesStatisticsService->getSaleProductDetail($filter);
 
         return $this->success([
-            'filter_result' => $filterResult["list"],
-            'filter' => $filter,
+            'records' => $filterResult["list"],
             'total' => $filterResult["count"],
         ]);
     }
@@ -113,9 +112,9 @@ class SalesStatistics extends AdminBaseController
     public function salesIndicators(): Response
     {
         $filterResult = $this->salesStatisticsService->getSaleIndicators($this->shopId);
-        return $this->success([
-            'filter_result' => $filterResult,
-        ]);
+        return $this->success(
+           $filterResult
+        );
     }
 
     /**
@@ -139,8 +138,7 @@ class SalesStatistics extends AdminBaseController
         $filterResult = $this->salesStatisticsService->getSalesRanking($filter);
 
         return $this->success([
-            'filter_result' => $filterResult["list"],
-            'filter' => $filter,
+            'records' => $filterResult["list"],
             'total' => $filterResult["count"],
         ]);
     }

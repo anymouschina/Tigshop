@@ -57,14 +57,21 @@ class AdminMsg extends AdminBaseController
 		$filter['suppliers_id'] = request()->suppliersId;
         $filterResult = $this->AdminMsgService->getFilterResult($filter);
         $total = $this->AdminMsgService->getFilterCount($filter);
-        $msg_type_arr = $this->AdminMsgService->getMsgType($this->shopId);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'msg_type_arr' => $msg_type_arr,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
+    }
+
+    /**
+     * 获得消息类型
+     * @return Response
+     */
+    public function msgTypeArr(): Response
+    {
+        $msg_type_arr = $this->AdminMsgService->getMsgType($this->shopId);
+        return $this->success($msg_type_arr);
     }
 
 	/**
@@ -88,9 +95,9 @@ class AdminMsg extends AdminBaseController
      */
     public function setReaded(): Response
     {
-        $id = input('msg_id/d', 0);
+        $id =$this->request->all('msg_id/d', 0);
         $this->AdminMsgService->setReaded($id);
-        return $this->success('已设置为已读');
+        return $this->success();
     }
 
     /**
@@ -100,7 +107,7 @@ class AdminMsg extends AdminBaseController
     public function setAllReaded(): Response
     {
         $this->AdminMsgService->setAllReaded();
-        return $this->success('已设置为已读');
+        return $this->success();
     }
 
     /**
@@ -109,7 +116,7 @@ class AdminMsg extends AdminBaseController
      */
     public function getMsgCount(): Response
     {
-        $startTime = input('start_time', 0);
+        $startTime =$this->request->all('start_time', 0);
         $orderCount = app(OrderService::class)->getFilterCount([
 			'shop_id' => $this->shopId,
             'add_start_time' => Time::format($startTime),

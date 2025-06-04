@@ -26,16 +26,6 @@ class LicensedService extends BaseService
     {
     }
 
-    /**
-     * 获取详情
-     * @return Config|null
-     * @throws ApiException
-     */
-    public function getDetail(): Config|null
-    {
-        $result = Config::where('code', "auto_generate_licensed_data")->find();
-        return $result;
-    }
 
     /**
      * 更新授权
@@ -65,17 +55,21 @@ class LicensedService extends BaseService
             throw new ApiException('未获取到有用的授权信息');
         }
         $license = $res_arr['data']['licensed'];
-        $result = Config::where('code', "auto_generate_licensed_data")->find();
-        $license['license'] = $licensed;
-        if ($result) {
-            $result->data = $license;
-            $result->save();
-        } else {
-            Config::create([
-                'code' => "auto_generate_licensed_data",
-                'data' => $license,
-            ]);
-        }
+        $insert = [];
+        $insert['orderId'] = $license['order_id'];
+        $insert['licensedType'] = $license['licensedType'];
+        $insert['licensedTypeName'] = $license['licensedTypeName'];
+        $insert['deCopyright'] = $license['deCopyright'];
+        $insert['isEnterprise'] = $license['isEnterprise'];
+        $insert['authorizedDomain'] = $license['authorizedDomain'];
+        $insert['license'] = $license['license']?? $licensed;
+        $insert['holder'] = $license['holder'];
+        $insert['releaseTime'] = $license['releaseTime'] ?? 0;
+        $insert['licensedId'] = json_encode($license['licensedId']);
+        $insert['expirationTime'] = $license['expirationTime'] ?? 0;
+
+        app(ConfigService::class)->saveConfig("auto_generate_licensed_data", $insert);
+
         return true;
     }
 

@@ -78,7 +78,7 @@ class Invoice extends IndexBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $data = $this->requestData();
         $data["invoice_id"] = $id;
 
@@ -98,9 +98,7 @@ class Invoice extends IndexBaseController
     public function detail(): Response
     {
         $item = $this->userInvoiceService->getUserInvoiceDetail();
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -110,8 +108,6 @@ class Invoice extends IndexBaseController
     public function getStatus(): Response
     {
         $item = $this->userInvoiceService->getInvoiceStatus(request()->userId);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 }

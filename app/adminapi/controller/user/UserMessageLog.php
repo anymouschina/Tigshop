@@ -53,8 +53,7 @@ class UserMessageLog extends AdminBaseController
         $total = $this->userMessageLogService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -67,11 +66,11 @@ class UserMessageLog extends AdminBaseController
     public function detail(): \think\Response
     {
 
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->userMessageLogService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -81,7 +80,7 @@ class UserMessageLog extends AdminBaseController
      */
     public function create(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'send_user_type/d' => 0,
             'message_title' => '',
@@ -95,7 +94,7 @@ class UserMessageLog extends AdminBaseController
 
         $result = $this->userMessageLogService->updateMessageLog($id, $data, true);
         if ($result) {
-            return $this->success('站内信添加成功');
+            return $this->success();
         } else {
             return $this->error('站内信更新失败');
         }
@@ -108,7 +107,7 @@ class UserMessageLog extends AdminBaseController
      */
     public function update(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'send_user_type/d' => 0,
             'message_title' => '',
@@ -121,7 +120,7 @@ class UserMessageLog extends AdminBaseController
 
         $result = $this->userMessageLogService->updateMessageLog($id, $data, false);
         if ($result) {
-            return $this->success('站内信更新成功');
+            return $this->success();
         } else {
             return $this->error('站内信更新失败');
         }
@@ -134,9 +133,9 @@ class UserMessageLog extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->userMessageLogService->deleteMessageLog($id);
-        return $this->success('站内信已删除');
+        return $this->success();
     }
 
     /**
@@ -146,9 +145,9 @@ class UserMessageLog extends AdminBaseController
      */
     public function recall(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->userMessageLogService->recallMessageLog($id);
-        return $this->success('站内信已撤回');
+        return $this->success();
     }
 
 	/**
@@ -158,24 +157,24 @@ class UserMessageLog extends AdminBaseController
 	 */
 	public function batch(): \think\Response
 	{
-		if (empty(input('ids')) || !is_array(input('ids'))) {
+		if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
 			return $this->error(/** LANG */'未选择项目');
 		}
 
-		if (in_array(input('type'),['del','recall'])) {
+		if (in_array($this->request->all('type'),['del','recall'])) {
 			try {
 				//批量操作一定要事务
 				Db::startTrans();
-				foreach (input('ids') as $id) {
+				foreach ($this->request->all('ids') as $id) {
 					$id = intval($id);
-					$this->userMessageLogService->batchOperation($id, input('type'));
+					$this->userMessageLogService->batchOperation($id,$this->request->all('type'));
 				}
 				Db::commit();
 			} catch (\Exception $exception) {
 				Db::rollback();
 				throw new ApiException($exception->getMessage());
 			}
-			return $this->success(/** LANG */'批量操作执行成功！');
+			return $this->success(/** LANG */);
 		} else {
 			return $this->error(/** LANG */'#type 错误');
 		}

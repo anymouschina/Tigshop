@@ -30,9 +30,11 @@ class JWT
             [
                 // 排除无需登录项
                 'login/signin',
-                'login/send_mobile_code',
+                'login/sendMobileCode',
                 'common/verification/captcha',
                 'common/verification/check',
+                'setting/licensed/index',
+                'setting/config/getAdmin'
             ]
         )) {
             $result = app(AccessTokenService::class)->setApp('admin')->checkToken();
@@ -43,7 +45,7 @@ class JWT
                     throw new Exception('token数据验证失败', ResponseCode::NOT_TOKEN);
                 }
                 app(AdminUserService::class)->setLogin($admin_id,false);
-                if (request()->adminType == 'shop' && Request::pathinfo() != 'merchant/shop/my_shop' && !in_array(request()->shopId,
+                if (request()->adminType == 'shop' && Request::pathinfo() != 'merchant/shop/myShop' && !in_array(request()->shopId,
                         request()->shopIds)) {
                     throw new ApiException('非法请求');
                 }

@@ -25,6 +25,9 @@ use app\service\admin\pay\src\AliPayService;
 use app\service\admin\pay\src\PayPalService;
 use app\service\admin\pay\src\WechatPayService;
 use app\service\admin\pay\src\YaBanPayService;
+use app\service\admin\product\ProductService;
+use app\service\admin\product\ProductSkuService;
+use app\service\admin\promotion\SeckillService;
 use app\service\admin\user\UserRankService;
 use app\service\admin\user\UserService;
 use app\service\common\BaseService;
@@ -172,9 +175,15 @@ class RefundApplyService extends BaseService
         $apply = $this->getDetail($id);
         // 可退款总金额
         $refund_amount = $apply->aftersales->refund_amount;
+        //打款凭证
+        $apply->payment_voucher = $data['payment_voucher'] ?? '';
+        if($refund_amount <= 0) {
+            throw new ApiException(/** LANG */'售后申请退款金额为0,无法退款');
+        }
         if (!$apply) {
             throw new ApiException(/** LANG */'该申请不存在');
         }
+
 
         if ($apply->refund_status != RefundApply::REFUND_STATUS_WAIT) {
             throw new ApiException(/** LANG */'申请状态值错误');
@@ -256,10 +265,16 @@ class RefundApplyService extends BaseService
                     $apply->offline_balance = $data["offline_balance"];
                 }
             }
+
+            //退回订单涉及到的库存
+            $this->refundStock($apply->items);
+
             if ($apply->checkRefundSuccess()) {
                 $apply->setRefundSuccess();
             }
             $result = $apply->save();
+
+
 
             Db::commit();
         } catch (\Exception $exception) {
@@ -267,6 +282,33 @@ class RefundApplyService extends BaseService
             throw new ApiException($exception->getMessage());
         }
         return $result;
+    }
+
+    /**
+     * @param $after_items
+     * @return bool
+     * @throws ApiException
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public function refundStock($after_items) : bool
+    {
+        foreach ($after_items as $item) {
+            //增加库存
+            if ($item->sku_id > 0) {
+                app(ProductSkuService::class)->incStock($item->sku_id, $item->number);
+            } else {
+                app(ProductService::class)->incStock($item->product_id, $item->number);
+            }
+            //减少销量
+            app(ProductService::class)->decSales($item->product_id, $item->number);
+            //秒杀品减少销量
+            app(SeckillService::class)->decSales($item->product_id, $item->sku_id, $item->number);
+            //秒杀返回库存
+            app(SeckillService::class)->incStock($item->product_id, $item->sku_id, $item->number);
+        }
+        return true;
     }
 
     /**

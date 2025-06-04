@@ -13,7 +13,6 @@ namespace app\adminapi\controller\order;
 
 use app\adminapi\AdminBaseController;
 use app\model\order\OrderSplitLog;
-use app\service\admin\logistics\src\KDNiaoService;
 use app\service\admin\order\OrderDetailService;
 use app\service\admin\order\OrderLogService;
 use app\service\admin\order\OrderService;
@@ -77,8 +76,7 @@ class Order extends AdminBaseController
         $filterResult = $this->orderService->getFilterResult($filter);
         $total = $this->orderService->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -90,13 +88,13 @@ class Order extends AdminBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
 		$suppliers_id = request()->suppliersId;
         $item = $this->orderService->getDetail($id,null,$suppliers_id);
         $item['way_bill'] = $this->orderService->getUseWayBillStatus(); //发货和已发货是否显示电子面单
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -105,11 +103,11 @@ class Order extends AdminBaseController
      */
     public function parentOrderDetail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = app(OrderSplitLog::class)->where('order_id', $id)->findOrEmpty();
-        return $this->success([
-            'item' => $item['parent_order_data'] ?? [],
-        ]);
+        return $this->success(
+            $item['parent_order_data'] ?? [],
+        );
     }
 
     /**
@@ -118,9 +116,9 @@ class Order extends AdminBaseController
      */
     public function setConfirm(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->orderService->setOrderConfirm($id);
-        return $this->success('订单状态已更新');
+        return $this->success();
     }
 
     /**
@@ -129,9 +127,9 @@ class Order extends AdminBaseController
      */
     public function splitStoreOrder(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->orderService->splitStoreOrder($id);
-        return $this->success('订单已拆分');
+        return $this->success();
     }
 
     /**
@@ -144,10 +142,10 @@ class Order extends AdminBaseController
      */
     public function setPaid(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $orderDetail = app(OrderDetailService::class)->setOrderId($id);
         $orderDetail->setOfflinePaySuccess();
-        return $this->success('订单状态已更新');
+        return $this->success();
     }
 
     /**
@@ -156,9 +154,9 @@ class Order extends AdminBaseController
      */
     public function cancelOrder(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->orderService->cancelOrder($id);
-        return $this->success('订单已取消');
+        return $this->success();
     }
 
     /**
@@ -167,9 +165,9 @@ class Order extends AdminBaseController
      */
     public function delOrder(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->orderService->delOrder($id);
-        return $this->success('订单已删除');
+        return $this->success();
     }
 
     /**
@@ -178,7 +176,7 @@ class Order extends AdminBaseController
      */
     public function modifyMoney(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'shipping_fee/f' => 0.00,
             'invoice_fee/f' => 0.00,
@@ -186,7 +184,7 @@ class Order extends AdminBaseController
             'discount_amount/f' => 0.00,
         ], 'post');
         $this->orderService->modifyOrderMoney($id, $data);
-        return $this->success('订单金额已修改');
+        return $this->success();
     }
 
     /**
@@ -195,7 +193,7 @@ class Order extends AdminBaseController
      */
     public function modifyConsignee(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'consignee' => '',
             'mobile' => '',
@@ -206,7 +204,7 @@ class Order extends AdminBaseController
             'address' => '',
         ], 'post');
         $this->orderService->modifyOrderConsignee($id, $data);
-        return $this->success('订单收货人信息已修改');
+        return $this->success();
     }
 
     /**
@@ -216,9 +214,9 @@ class Order extends AdminBaseController
      */
     public function confirmReceipt(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->orderService->confirmReceipt($id, null);
-        return $this->success('订单已确认收货');
+        return $this->success();
     }
 
     /**
@@ -227,14 +225,14 @@ class Order extends AdminBaseController
      */
     public function modifyShipping(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'shipping_method/d' => 0,
             'logistics_id/d' => 0,
             'tracking_no' => '',
         ], 'post');
         $this->orderService->modifyOrderShipping($id, $data);
-        return $this->success('订单配送信息已修改');
+        return $this->success();
     }
 
     /**
@@ -243,10 +241,10 @@ class Order extends AdminBaseController
      */
     public function modifyProduct(): \think\Response
     {
-        $id = input('id/d', 0);
-        $data = input('items', []);
+        $id =$this->request->all('id/d', 0);
+        $data =$this->request->all('items', []);
         $this->orderService->modifyOrderProduct($id, $data);
-        return $this->success('订单商品信息已更新');
+        return $this->success();
     }
 
     /**
@@ -255,11 +253,11 @@ class Order extends AdminBaseController
      */
     public function getAddProductInfo(): \think\Response
     {
-        $ids = input('ids', []);
+        $ids =$this->request->all('ids', []);
         $product_items = $this->orderService->getAddProductInfoByIds($ids);
-        return $this->success([
-            'item' => $product_items,
-        ]);
+        return $this->success(
+           $product_items
+        );
     }
 
     /**
@@ -268,10 +266,10 @@ class Order extends AdminBaseController
      */
     public function setAdminNote(): \think\Response
     {
-        $id = input('id/d', 0);
-        $admin_note = input('admin_note', '');
+        $id =$this->request->all('id/d', 0);
+        $admin_note =$this->request->all('admin_note', '');
         $this->orderService->setAdminNote($id, $admin_note);
-        return $this->success('订单商家备注已更新');
+        return $this->success();
     }
 
     /**
@@ -280,14 +278,14 @@ class Order extends AdminBaseController
      */
     public function deliver(): \think\Response
     {
-        $id = input('id/d', 0);
-        $deliver_data = input('deliver_data/a', []);
-        $shipping_method = input('shipping_method/d', 1);
-        $logistics_id = input('logistics_id/d', 0);
-        $tracking_no = input('tracking_no', '');
-        $bill_remark = input('bill_remark', '');
+        $id =$this->request->all('id/d', 0);
+        $deliver_data =$this->request->all('deliver_data/a', []);
+        $shipping_method =$this->request->all('shipping_method/d', 1);
+        $logistics_id =$this->request->all('logistics_id/d', 0);
+        $tracking_no =$this->request->all('tracking_no', '');
+        $bill_remark =$this->request->all('bill_remark', '');
         $this->orderService->deliverOrder($id, $deliver_data, $shipping_method, $logistics_id, $tracking_no, $bill_remark);
-        return $this->success('订单商品发货成功');
+        return $this->success();
     }
 
     /**
@@ -296,11 +294,11 @@ class Order extends AdminBaseController
      */
     public function orderPrint(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $order_print = $this->orderService->getOrderPrintInfo($id);
-        return $this->success([
-            'order_print' => $order_print,
-        ]);
+        return $this->success(
+            $order_print
+        );
     }
 
     /**
@@ -309,11 +307,11 @@ class Order extends AdminBaseController
      */
     public function orderPrintWaybill(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $way_bill_print = $this->orderService->getOrderPrintWaybillInfo($id);
-        return $this->success([
-            'item' => $way_bill_print,
-        ]);
+        return $this->success(
+           $way_bill_print
+        );
     }
 
     /**
@@ -323,9 +321,9 @@ class Order extends AdminBaseController
     public function getExportItemList(): \think\Response
     {
         $export_item_list = $this->orderService->getExportItemList();
-        return $this->success([
-            'item' => $export_item_list,
-        ]);
+        return $this->success(
+           $export_item_list
+        );
     }
 
     /**
@@ -334,18 +332,18 @@ class Order extends AdminBaseController
      */
     public function saveExportItem(): \think\Response
     {
-        $order_export = input('export_item', []);
+        $order_export =$this->request->all('export_item', []);
         $result = $this->orderService->saveExportItem($order_export);
-        return $result ? $this->success('保存成功') : $this->error('保存失败');
+        return $result ? $this->success() : $this->error('保存失败');
     }
 
     // 标签详情
     public function exportItemInfo(): \think\Response
     {
         $item = $this->orderService->getExportItemInfo();
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     //订单导出
@@ -372,14 +370,14 @@ class Order extends AdminBaseController
         $filter['shop_id'] = $this->shopId;
 
         //导出栏目
-        $exportItem = input('export_item', []);
+        $exportItem =$this->request->all('export_item', []);
         if (empty($exportItem)) {
             return $this->error('导出栏目不能为空！');
         }
 
         $filterResult = $this->orderService->getFilterResult($filter);
         $result = $this->orderService->orderExport($filterResult, $exportItem);
-        return $result ? $this->success("导出成功") : $this->error('导出失败');
+        return $result ? $this->success() : $this->error('导出失败');
     }
 
     /**
@@ -389,13 +387,13 @@ class Order extends AdminBaseController
      */
     public function severalDetail(): \think\Response
     {
-        $data = input("ids/a", []);
+        $data =$this->request->all("ids/a", []);
 		$suppliers_id = request()->suppliersId;
         $data = is_array($data) ? $data : explode(',', $data);
         $item = $this->orderService->getSeveralDetail($data,$suppliers_id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+           $item
+        );
     }
 
     /**
@@ -405,18 +403,18 @@ class Order extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */ '未选择项目');
         }
 
-        $data = input('data', []);
-        if (in_array(input('type'), ['deliver'])) {
+        $data =$this->request->all('data', []);
+        if (in_array($this->request->all('type'), ['deliver'])) {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
-                    $this->orderService->batchOperation($id, input('type'), $data);
+                    $this->orderService->batchOperation($id,$this->request->all('type'), $data);
                 }
                 Db::commit();
             } catch (\Exception $exception) {
@@ -424,7 +422,7 @@ class Order extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */ '批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */ '#type 错误');
         }
@@ -437,10 +435,11 @@ class Order extends AdminBaseController
      */
     public function printSeveral(): Response
     {
-        $ids = input('ids/a', []);
+        $ids =$this->request->all('ids', '');
+        $ids = is_array($ids) ? $ids : explode(',', $ids);
         $order_print = $this->orderService->printSeveral($ids);
-        return $this->success([
-            'item' => $order_print,
-        ]);
+        return $this->success(
+            $order_print
+        );
     }
 }

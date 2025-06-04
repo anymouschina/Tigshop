@@ -35,7 +35,8 @@ class MailTemplatesService extends BaseService
     public function getFilterResult(array $filter): array
     {
         $query = $this->filterQuery($filter)->append(["template_name"]);
-        $result = $query->page($filter['page'], $filter['size'])->select();
+        $result = $query->select();
+        //$result = $query->page($filter['page'], $filter['size'])->select();
         return $result->toArray();
     }
 

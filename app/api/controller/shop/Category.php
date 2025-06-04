@@ -39,14 +39,12 @@ class Category extends IndexBaseController
      */
     public function tree(): Response
     {
-        $id = input('shop_id/d', 0);
+        $id = $this->request->all('shop_id/d', 0);
         if (empty($id)) {
             return $this->error(Util::lang("请选择店铺"));
         }
         $catList = app(ShopProductCategoryService::class)->catList(0, $id);
-        return $this->success([
-            'list' => $catList,
-        ]);
+        return $this->success($catList);
     }
 
     /**
@@ -55,10 +53,8 @@ class Category extends IndexBaseController
      */
     public function parentTree(): Response
     {
-        $id = input('id/d', 0);
-        return $this->success([
-            'category_tree' => app(ShopProductCategoryService::class)->getParentCategoryTree($id),
-        ]);
+        $id = $this->request->all('id/d', 0);
+        return $this->success(app(ShopProductCategoryService::class)->getParentCategoryTree($id));
     }
 
 

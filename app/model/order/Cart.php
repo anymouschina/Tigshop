@@ -31,6 +31,39 @@ class Cart extends Model
     const TYPE_PAID = 7;
     const TYPE_CARD = 8;
 
+
+    public function getSkuDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+    public function setSkuDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getExtraSkuDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setExtraSkuDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+
     const TYPE_MAP = [
         self::TYPE_NORMAL => '普通商品',
         self::TYPE_PIN => '拼团商品',

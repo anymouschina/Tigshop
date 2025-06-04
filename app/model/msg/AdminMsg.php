@@ -23,7 +23,7 @@ class AdminMsg extends Model
     protected $table = 'admin_msg';
 	protected $createTime = "send_time";
 	protected $autoWriteTimestamp = true;
-	protected $json = ['related_data'];
+    protected $json = ['related_data'];
 	protected $jsonAssoc = true;
 
 	// 消息类型
@@ -107,6 +107,23 @@ class AdminMsg extends Model
     public function getSendTimeAttr($value): string
     {
         return Time::format($value);
+    }
+
+
+    public function getRelatedDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setRelatedDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
     }
 
     public function items()

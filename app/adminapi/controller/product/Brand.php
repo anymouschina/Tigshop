@@ -57,8 +57,7 @@ class Brand extends AdminBaseController
         $total = $this->brandService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -70,12 +69,12 @@ class Brand extends AdminBaseController
      */
     public function search(): \think\Response
     {
-        $word = input('word', '');
+        $word =$this->request->all('word', '');
         $res = $this->brandService->getBrandWordList($word);
 
         return $this->success([
             'brand_list' => $res['brand_list'],
-            'firstword_list' => $res['firstword_list'],
+            'firstWord_list' => $res['firstword_list'],
         ]);
     }
 
@@ -86,12 +85,12 @@ class Brand extends AdminBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('id/d');
+        $id =$this->request->all('id/d');
         $item = $this->brandService->getDetail($id);
 
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+           $item
+        );
     }
     /**
      * 添加
@@ -109,7 +108,7 @@ class Brand extends AdminBaseController
             return $this->error($e->getError());
         }
         $result = $this->brandService->add($data);
-        return $this->success('品牌添加成功');
+        return $this->success();
     }
 
     /**
@@ -119,7 +118,7 @@ class Brand extends AdminBaseController
      */
     public function update(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->requestData();
         $data['brand_id'] = $id;
         try {
@@ -131,7 +130,7 @@ class Brand extends AdminBaseController
         }
 
         $result = $this->brandService->edit($id, $data);
-        return $this->success('品牌更新成功');
+        return $this->success();
     }
 
     /**
@@ -161,8 +160,8 @@ class Brand extends AdminBaseController
      */
     public function updateField(): \think\Response
     {
-        $id = input('id/d');
-        $field = input('field');
+        $id = $this->request->all('id/d');
+        $field =$this->request->all('field');
 
         if (!in_array($field, ['brand_name', 'first_word', 'brand_is_hot', 'is_show', 'sort_order'])) {
             return $this->error('#field 错误');
@@ -170,7 +169,7 @@ class Brand extends AdminBaseController
 
         $data = [
             'brand_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
         try {
             validate(BrandValidate::class)
@@ -182,7 +181,7 @@ class Brand extends AdminBaseController
 
         $this->brandService->updateBrandField($id, $data);
 
-        return $this->success('更新成功');
+        return $this->success();
     }
 
     /**
@@ -192,11 +191,11 @@ class Brand extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('id/d');
+        $id = $this->request->all('id/d');
 
         if ($id) {
             $this->brandService->deleteBrand($id);
-            return $this->success('指定项目已删除');
+            return $this->success();
         } else {
             return $this->error('#id 错误');
         }
@@ -209,16 +208,16 @@ class Brand extends AdminBaseController
      */
     public function batch(): \think\Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error('未选择项目');
         }
 
-        if (input('type') == 'del') {
-            foreach (input('ids') as $key => $id) {
+        if ($this->request->all('type') == 'del') {
+            foreach ($this->request->all('ids') as $key => $id) {
                 $id = intval($id);
                 $this->brandService->deleteBrand($id);
             }
-            return $this->success('批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error('#type 错误');
         }
@@ -228,6 +227,6 @@ class Brand extends AdminBaseController
     public function updateFirstWord()
     {
         $this->brandService->batchUpdateFisrtWord();
-        return $this->success('批量更新成功！');
+        return $this->success();
     }
 }

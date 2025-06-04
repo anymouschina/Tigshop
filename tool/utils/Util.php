@@ -234,9 +234,9 @@ class Util
     public static function sendEmail(array $data)
     {
         /* 如果邮件编码不是UTF8，创建字符集转换对象，转换编码 */
-        $charset = Config::get("mail_charset", "mail_server");
-        $smtp_mail = Config::get("smtp_mail", "mail_server");
-        $shop_name = Config::get("shop_name");
+        $charset = Config::get("mailCharset");
+        $smtp_mail = Config::get("smtpMail");
+        $shop_name = Config::get("shopName");
         if ($charset != "UTF8") {
             $data["name"] = mb_convert_encoding($data["name"], "UTF-8", $charset);
             $data["subject"] = mb_convert_encoding($data["subject"], "UTF-8", $charset);
@@ -244,7 +244,7 @@ class Util
             $shop_name = mb_convert_encoding($shop_name, "UTF-8", $charset) ?? "";
         }
 
-        $mail_service = Config::get("mail_service", "mail_server");
+        $mail_service = Config::get("mailService");
         $notification = (isset($data['notification']) && !empty($data['notification'])) ? $data['notification'] : false;
         if ($mail_service == 0) {
             // 使用mail函数发送邮件
@@ -259,8 +259,8 @@ class Util
 
         } else {
             // 使用smtp服务发送邮件
-            $host = Config::get("smtp_host", "mail_server");
-            $port = Config::get("smtp_port", "mail_server");
+            $host = Config::get("smtpHost");
+            $port = Config::get("smtpPort");
             if (empty($host) || empty($port)) {
                 throw new ApiException('邮件服务器设置信息不完整');
             }

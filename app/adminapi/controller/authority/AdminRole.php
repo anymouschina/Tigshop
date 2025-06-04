@@ -60,8 +60,7 @@ class AdminRole extends AdminBaseController
         $total = $this->adminRoleService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -73,11 +72,9 @@ class AdminRole extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->adminRoleService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -106,7 +103,7 @@ class AdminRole extends AdminBaseController
 
         $result = $this->adminRoleService->createAdminRole($data);
         if ($result) {
-            return $this->success(/** LANG */'角色管理添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'角色管理添加失败');
         }
@@ -119,7 +116,7 @@ class AdminRole extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'role_id' => $id,
             'role_name' => '',
@@ -139,7 +136,7 @@ class AdminRole extends AdminBaseController
 
         $result = $this->adminRoleService->updateAdminRole($data, $id);
         if ($result) {
-            return $this->success(/** LANG */'角色管理更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'角色管理更新失败');
         }
@@ -152,8 +149,8 @@ class AdminRole extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id = $this->request->all('id/d', 0);
+        $field = $this->request->all('field', '');
 
         if (!in_array($field, ['role_name', 'sort_order', 'is_show'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -161,7 +158,7 @@ class AdminRole extends AdminBaseController
 
         $data = [
             'role_id' => $id,
-            $field => input('val'),
+            $field => $this->request->all('val'),
         ];
 
         $this->adminRoleService->updateAdminRoleField($id, $data);
@@ -176,9 +173,9 @@ class AdminRole extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $this->adminRoleService->deleteAdminRole($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -188,15 +185,15 @@ class AdminRole extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->adminRoleService->deleteAdminRole($id);
                 }
@@ -206,7 +203,7 @@ class AdminRole extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

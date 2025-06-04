@@ -53,9 +53,9 @@ class PromotionService extends BaseService
                         $gitData = $promotion['data']['promotion_type_data'];
                         foreach ($gitData as $index => $gift) {
                             $gitData[$index]['gift'] = ProductGift::where('gift_id',
-                                $gift['gift_id'])->find();
-                            if (isset($gitData[$index]['gift']['sku_info']['sku_price'])) {
-                                $gitData[$index]['gift']['product_info']['product_price'] = $gitData[$index]['gift']['sku_info']['sku_price'];
+                                $gift['giftId'])->find();
+                            if (isset($gitData[$index]['gift']['skuInfo']['skuPrice'])) {
+                                $gitData[$index]['gift']['product_info']['product_price'] = $gitData[$index]['gift']['skuInfo']['skuPrice'];
                             }
                         }
                         $promotion['data']['promotion_type_data'] = $gitData;

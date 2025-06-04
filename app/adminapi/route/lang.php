@@ -22,7 +22,7 @@ Route::group('lang', function () {
             "authorityCheckSubPermissionName" => 'localesModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'localesModifyManage'
         ]);
         // batch批量操作
@@ -30,7 +30,7 @@ Route::group('lang', function () {
     })->prefix('lang.locales/');
 
     // 默认语言匹配
-    Route::group('locales_relation', function () {
+    Route::group('localesRelation', function () {
         // 列表
         Route::get('list', 'list');
         // 新增
@@ -59,12 +59,14 @@ Route::group('lang', function () {
     Route::group('translations', function () {
         // 列表
         Route::get('list', 'list');
+        //列表
+        Route::get('getLocalesLimit3', 'getLocalesLimit3');
         // 新增
         Route::post('create', 'create')->append([
 			"authorityCheckSubPermissionName" => 'translationsModifyManage'
 		]);
         // 新增
-        Route::post('batch_create', 'batchCreate')->append([
+        Route::post('batchCreate', 'batchCreate')->append([
             "authorityCheckSubPermissionName" => 'translationsModifyManage'
         ]);
         // 翻译
@@ -72,11 +74,11 @@ Route::group('lang', function () {
 			"authorityCheckSubPermissionName" => 'translationsModifyManage'
 		]);
         // 翻译
-        Route::post('create_translations', 'createTranslations')->append([
+        Route::post('createTranslations', 'createTranslations')->append([
 			"authorityCheckSubPermissionName" => 'translationsModifyManage'
 		]);
         // 获得翻译
-        Route::get('get_translations', 'getTranslations');
+        Route::get('getTranslations', 'getTranslations');
         // config
         Route::get('config', 'config');
         // 编辑
@@ -120,7 +122,7 @@ Route::group('lang', function () {
 			"authorityCheckSubPermissionName" => 'currencyModifyManage'
 		]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
 			"authorityCheckSubPermissionName" => 'currencyModifyManage'
 		]);
         // batch批量操作

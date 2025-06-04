@@ -50,9 +50,9 @@ class StatisticsUser extends AdminBaseController
 
         $filterResult = $this->statisticsUserService->getAddUserTrends($filter);
 
-        return $this->success([
-            'filter_result' => $filterResult,
-        ]);
+        return $this->success(
+           $filterResult
+        );
     }
 
     /**
@@ -77,8 +77,7 @@ class StatisticsUser extends AdminBaseController
         $total = $this->statisticsUserService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -98,9 +97,9 @@ class StatisticsUser extends AdminBaseController
 
         $filterResult = $this->statisticsUserService->getUserStatisticsPanel($filter);
 
-        return $this->success([
-            'filter_result' => $filterResult,
-        ]);
+        return $this->success(
+           $filterResult
+        );
     }
 
 }

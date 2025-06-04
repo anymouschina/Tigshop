@@ -44,7 +44,7 @@ class Comment extends IndexBaseController
     public function subNum(): Response
     {
         $item = $this->commentService->getSubNum(request()->userId);
-        return $this->success(['item' => $item]);
+        return $this->success($item);
     }
 
     /**
@@ -63,8 +63,7 @@ class Comment extends IndexBaseController
 
         $filterResult = $this->commentService->getShowPics($filter, request()->userId);
         return $this->success([
-            'filter_result' => $filterResult["list"],
-            'filter' => $filter,
+            'records' => $filterResult["list"],
             'total' => $filterResult["count"],
         ]);
     }
@@ -87,8 +86,7 @@ class Comment extends IndexBaseController
         $total = $this->commentService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -110,7 +108,7 @@ class Comment extends IndexBaseController
             "shop_id/d" => 0,
         ], 'post');
         $result = $this->commentService->updateEvaluate($data, request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang('评论成功')) : $this->error(/** LANG */Util::lang('评论失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('评论失败'));
     }
 
     /**
@@ -123,11 +121,9 @@ class Comment extends IndexBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = $this->commentService->getCommentDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
 }

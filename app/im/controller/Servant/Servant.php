@@ -27,7 +27,7 @@ class Servant extends BaseController
         $list = $this->service->getFilterList($filter, ['user']);
         $total = $this->service->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $list,
+            'records' => $list,
             'filter' => $filter,
             'total' => $total,
         ]);
@@ -50,7 +50,7 @@ class Servant extends BaseController
         $total = $this->service->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $list,
+            'records' => $list,
             'filter' => $filter,
             'total' => $total,
         ]);

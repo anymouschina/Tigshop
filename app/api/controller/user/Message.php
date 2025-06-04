@@ -48,8 +48,7 @@ class Message extends IndexBaseController
         $filterResult = $this->userMessageService->getFilterResult($filter);
         $total = $this->userMessageService->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -62,7 +61,7 @@ class Message extends IndexBaseController
     public function updateAllRead(): Response
     {
         $result = $this->userMessageService->updateUserMessageToAllRead(request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang("添加成功")) : $this->error(/** LANG */Util::lang("添加失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("添加失败"));
     }
 
     /**
@@ -72,9 +71,9 @@ class Message extends IndexBaseController
      */
     public function updateMessageRead(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $result = $this->userMessageService->updateUserMessageToRead($id, request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang("添加成功")) : $this->error(/** LANG */Util::lang("添加失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("添加失败"));
     }
 
     /**
@@ -84,9 +83,9 @@ class Message extends IndexBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $result = $this->userMessageService->deleteUserMessage($id, request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang('删除成功')) : $this->error(/** LANG */Util::lang('删除失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('删除失败'));
     }
 
 }

@@ -1,1 +1,0 @@
-import{e as s,r as a,g as e,c as o,as as r,o as n,_ as t}from"./index-BKXBH4vI.js";const c=t(s({__name:"index",setup(s){const t=a("");e((s=>{s&&s.url&&(t.value=decodeURIComponent(s.url))}));const c=s=>{},d=s=>{};return(s,a)=>{const e=r;return n(),o(e,{class:"service",src:t.value,onError:c,onLoad:d},null,8,["src"])}}}),[["__scopeId","data-v-06db358a"]]);export{c as default};

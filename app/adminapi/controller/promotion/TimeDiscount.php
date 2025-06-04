@@ -60,8 +60,7 @@ class TimeDiscount extends AdminBaseController
         $total = $this->timeDiscountService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -72,12 +71,12 @@ class TimeDiscount extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('discount_id/d', 0);
+        $id =$this->request->all('discount_id/d', 0);
         $shopId = request()->shopId;
         $item = $this->timeDiscountService->detailTimeDiscount($id,$shopId);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -110,7 +109,7 @@ class TimeDiscount extends AdminBaseController
         param_validate($data,TimeDiscountValidate::class,'create');
         $data['shop_id'] = request()->shopId;
         $this->timeDiscountService->createTimeDiscount($data);
-        return $this->success('创建成功');
+        return $this->success();
     }
 
     /**
@@ -125,7 +124,7 @@ class TimeDiscount extends AdminBaseController
         $data['shop_id'] = request()->shopId;
         $discountId = Arr::pull($data,'discount_id');
         $this->timeDiscountService->updateTimeDiscount($discountId,$data);
-        return $this->success('更新成功');
+        return $this->success();
     }
 
     /**
@@ -134,9 +133,9 @@ class TimeDiscount extends AdminBaseController
      */
     public function del(): Response
     {
-        $discountId = input('id/d', 0);
+        $discountId =$this->request->all('id/d', 0);
         $this->timeDiscountService->delTimeDiscount($discountId);
-        return $this->success(/** LANG */'删除成功');
+        return $this->success();
     }
 
 	/**
@@ -146,15 +145,15 @@ class TimeDiscount extends AdminBaseController
 	 */
 	public function batch(): Response
 	{
-		if (empty(input('ids')) || !is_array(input('ids'))) {
+		if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
 			return $this->error(/** LANG */'未选择项目');
 		}
 
-		if (input('type') == 'del') {
+		if ($this->request->all('type') == 'del') {
 			try {
 				//批量操作一定要事务
 				Db::startTrans();
-				foreach (input('ids') as $key => $id) {
+				foreach ($this->request->all('ids') as $key => $id) {
 					$id = intval($id);
 					$this->timeDiscountService->delTimeDiscount($id);
 				}
@@ -164,7 +163,7 @@ class TimeDiscount extends AdminBaseController
 				throw new ApiException($exception->getMessage());
 			}
 
-			return $this->success(/** LANG */'批量操作执行成功！');
+			return $this->success();
 		} else {
 			return $this->error(/** LANG */'#type 错误');
 		}

@@ -37,8 +37,7 @@ class UserCompany extends AdminBaseController
 		$total = $this->userCompanyService->getFilterCount($filter);
 
 		return $this->success([
-			'filter_result' => $filterResult,
-			'filter' => $filter,
+			'records' => $filterResult,
 			'total' => $total,
 		]);
 	}
@@ -50,11 +49,11 @@ class UserCompany extends AdminBaseController
 	 */
 	public function detail():Response
 	{
-		$id = input('id/d',0);
+		$id =$this->request->all('id/d',0);
 		$item = $this->userCompanyService->getDetail($id);
-		return $this->success([
-			'item' => $item,
-		]);
+		return $this->success(
+			$item
+		);
 	}
 
 	/**
@@ -63,7 +62,7 @@ class UserCompany extends AdminBaseController
 	 */
 	public function audit():Response
 	{
-		$id = input('id/d',0);
+		$id =$this->request->all('id/d',0);
 		$data = $this->request->only([
 			'id/d' => $id,
 			'status/d' => 1,
@@ -72,7 +71,7 @@ class UserCompany extends AdminBaseController
 
 		$result = $this->userCompanyService->audit($id,$data);
 
-		return $result ? $this->success("会员企业认证审核成功") : $this->error("会员企业认证审核失败");
+		return $result ? $this->success() : $this->error("会员企业认证审核失败");
 	}
 
 	/**
@@ -82,8 +81,8 @@ class UserCompany extends AdminBaseController
 	 */
 	public function del():Response
 	{
-		$id = input('id/d',0);
+		$id =$this->request->all('id/d',0);
 		$result = $this->userCompanyService->del($id);
-		return $result ? $this->success("删除成功") : $this->error("删除失败");
+		return $result ? $this->success() : $this->error("删除失败");
 	}
 }

@@ -27,6 +27,21 @@ class Feedback extends Model
     protected $createTime = "add_time";
     protected $autoWriteTimestamp = true;
 
+    public function getFeedbackPicsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setFeedbackPicsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
     // 关联商品
     public function product()
     {

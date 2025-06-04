@@ -1,1 +1,0 @@
-import{y as t}from"./index-CGYuOau0.js";const o=()=>t({url:"merchant/shop_account/index",method:"get"}),r=()=>t({url:"merchant/shop_account/log_list",method:"get"}),n=()=>t({url:"merchant/shop_account/apply_shop_agreement",method:"get"}),c=()=>t({url:"merchant/shop/staff_show",method:"get"});export{r as a,c as b,n as c,o as g};

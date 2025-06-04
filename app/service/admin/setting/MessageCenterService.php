@@ -80,7 +80,7 @@ class MessageCenterService extends BaseService
                 $content['code'] = $order->tracking_no;
             }
             if (in_array($type, [self::ORDER_PAY_SHOP, self::NEW_ORDER_SHOP])) {
-                $mobile = Config::get('sms_shop_mobile','base_sms');
+                $mobile = Config::get('smsShopMobile');
             }
             app(TigQueue::class)->push(SmsJob::class,
                 ['mobile' => $mobile, 'template_code' => $template_code, 'content' => $content]);
@@ -90,9 +90,9 @@ class MessageCenterService extends BaseService
             $openid = app(UserAuthorizeService::class)->getUserAuthorizeOpenId($user_id, 1);
             $template_id = $template_info['wechat']['info']['template_id'];
             if (!empty($openid) && !empty($template_id)) {
-                $h5_domain = Config::get('h5_domain');
+                $h5_domain = Config::get('h5Domain');
                 if (empty($h5_domain)) {
-                    $h5_domain = Config::get('pc_domain');
+                    $h5_domain = Config::get('pcDomain');
                 }
                 $url = $h5_domain . '/pages/user/order/info?id=' . $order_id;;
                 $message = [

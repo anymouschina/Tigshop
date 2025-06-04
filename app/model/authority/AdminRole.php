@@ -19,4 +19,21 @@ class AdminRole extends Model
     protected $table = 'admin_role';
     protected $json = ["authority_list"];
     protected $jsonAssoc = true;
+
+
+    public function getAuthorityListAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setAuthorityListAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
 }

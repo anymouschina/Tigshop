@@ -28,22 +28,22 @@ class AliPayService extends PayService
      */
     public function __construct()
     {
-        $cfg = Config::getConfig('payment');
-        if (empty($cfg['alipay_appid'])) {
+        $cfg = Config::getConfig();
+        if (empty($cfg['alipayAppid'])) {
             throw new ApiException('支付宝APPID不能为空');
         }
 
-        if (empty($cfg['alipay_rsa_private_key'])) {
+        if (empty($cfg['alipayRsaPrivateKey'])) {
             throw new ApiException('应用私钥不能为空');
         }
 
-        if (empty($cfg['alipay_rsa_public_key'])) {
+        if (empty($cfg['alipayRsaPublicKey'])) {
             throw new ApiException('支付宝公钥不能为空');
         }
 
-        $this->appId = $cfg['alipay_appid'];
-        $this->rsaPrivateKey = $cfg['alipay_rsa_private_key'];
-        $this->alipayRsaPublicKey = $cfg['alipay_rsa_public_key'];
+        $this->appId = $cfg['alipayAppid'];
+        $this->rsaPrivateKey = $cfg['alipayRsaPrivateKey'];
+        $this->alipayRsaPublicKey = $cfg['alipayRsaPublicKey'];
         Factory::setOptions($this->getOptions());
     }
 

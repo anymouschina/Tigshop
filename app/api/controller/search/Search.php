@@ -94,7 +94,7 @@ class Search extends IndexBaseController
         $product_list = $product_search->getProductList();
         $total = $product_search->getProductCount();
         return $this->success([
-            'product_list' => $product_list,
+            'records' => $product_list,
             'total' => $total,
         ]);
     }

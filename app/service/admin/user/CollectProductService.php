@@ -27,20 +27,14 @@ class CollectProductService extends BaseService
      * @param array $filter
      * @return array
      */
-    public function getFilterResult(array $filter): array
+    public function getFilterResult(array $filter)
     {
         $query = $this->filterQuery($filter)->with(['product', "user", "product_sku", 'skuMinPrice']);
-        $count_query = clone $query;
-        $count = $count_query->count();
-        $select_query = clone $query;
-        $result = $select_query->page($filter['page'], $filter['size'])->select();
+        $result = $query->page($filter['page'], $filter['size'])->select();
         foreach ($result as $value) {
             if ($value->sku_price > 0) $value->product_price = $value->sku_price;
         }
-        return [
-            'count' => $count,
-            'list' => $result,
-        ];
+        return $result;
     }
 
     /**

@@ -28,7 +28,7 @@ class ECard extends AdminBaseController
      */
     public function list(): Response
     {
-        $group_id = input('group_id/d', 0);
+        $group_id =$this->request->all('group_id/d', 0);
         $filter = $this->request->only([
             'is_use/d' => -1,
             'keyword' => '',
@@ -41,8 +41,7 @@ class ECard extends AdminBaseController
         $filterResult = $this->eCardService->getFilterResult($filter);
         $total = $this->eCardService->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -57,7 +56,7 @@ class ECard extends AdminBaseController
      */
     public function create(): Response
     {
-        $group_id = input('group_id/d', 0);
+        $group_id =$this->request->all('group_id/d', 0);
         if (empty($group_id)) {
             throw new ApiException('请选择要操作的分组');
         }
@@ -68,7 +67,7 @@ class ECard extends AdminBaseController
         ], 'post');
         $filter['group_id'] = $group_id;
         $this->eCardService->create($filter);
-        return $this->success('电子卡券添加成功');
+        return $this->success();
     }
 
     /**
@@ -81,11 +80,11 @@ class ECard extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d');
+        $id =$this->request->all('id/d');
         $item = $this->eCardService->detail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+           $item
+        );
     }
     /**
      * 更新
@@ -97,7 +96,7 @@ class ECard extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $filter = $this->request->only([
             'card_number' => '',
             'card_pwd' => '',
@@ -105,7 +104,7 @@ class ECard extends AdminBaseController
         ], 'post');
         $filter['card_id'] = $id;
         $this->eCardService->update($id, $filter);
-        return $this->success('更新成功');
+        return $this->success();
     }
 
     /**
@@ -118,17 +117,17 @@ class ECard extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d');
-        $field = input('field');
+        $id =$this->request->all('id/d');
+        $field =$this->request->all('field');
         if (!in_array($field, ['card_number', 'is_use', 'card_pwd'])) {
             return $this->error('#field 错误');
         }
         $filter = [
             'card_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
         $this->eCardService->updateField($id, $filter);
-        return $this->success('更新成功');
+        return $this->success();
     }
 
     /**
@@ -141,10 +140,10 @@ class ECard extends AdminBaseController
      */
     public function del()
     {
-        $id = input('id/d');
+        $id =$this->request->all('id/d');
         if($id) {
             $this->eCardService->del($id);
-            return $this->success('指定项目已删除');
+            return $this->success();
         } else {
             return $this->error('#id 错误');
         }

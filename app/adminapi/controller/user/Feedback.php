@@ -56,8 +56,7 @@ class Feedback extends AdminBaseController
         $total = $this->feedbackService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -69,11 +68,11 @@ class Feedback extends AdminBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->feedbackService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -83,7 +82,7 @@ class Feedback extends AdminBaseController
      */
     public function create(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'id' => $id,
             'title' => '',
@@ -100,7 +99,7 @@ class Feedback extends AdminBaseController
 
         $result = $this->feedbackService->updateFeedback($id, $data, true);
         if ($result) {
-            return $this->success('会员留言添加成功');
+            return $this->success();
         } else {
             return $this->error('会员留言更新失败');
         }
@@ -113,7 +112,7 @@ class Feedback extends AdminBaseController
      */
     public function update(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'id' => $id,
             'title' => '',
@@ -130,7 +129,7 @@ class Feedback extends AdminBaseController
 
         $result = $this->feedbackService->updateFeedback($id, $data, false);
         if ($result) {
-            return $this->success('会员留言更新成功');
+            return $this->success();
         } else {
             return $this->error('会员留言更新失败');
         }
@@ -143,9 +142,9 @@ class Feedback extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->feedbackService->deleteFeedback($id);
-        return $this->success('指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -155,16 +154,16 @@ class Feedback extends AdminBaseController
      */
     public function batch(): \think\Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error('未选择项目');
         }
 
-        if (input('type') == 'del') {
-            foreach (input('ids') as $key => $id) {
+        if ($this->request->all('type') == 'del') {
+            foreach ($this->request->all('ids') as $key => $id) {
                 $id = intval($id);
                 $this->feedbackService->deleteFeedback($id);
             }
-            return $this->success('批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error('#type 错误');
         }

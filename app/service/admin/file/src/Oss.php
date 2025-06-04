@@ -21,10 +21,10 @@ class Oss
      */
     public function __construct()
     {
-        $accessKeyId = Config::get('storage_access_key_id');
-        $accessKeySecret = Config::get('storage_access_key_secret');
-        $bucket = Config::get('storage_bucket');
-        $endpoint = Config::get('storage_region');
+        $accessKeyId = Config::get('storageAccessKeyId');
+        $accessKeySecret = Config::get('storageAccessKeySecret');
+        $bucket = Config::get('storageBucket');
+        $endpoint = Config::get('storageRegion');
         if (empty($accessKeyId) || empty($accessKeySecret) || empty($endpoint) || empty($bucket)) {
             throw new ApiException("OSS参数设置错误！");
         }

@@ -39,7 +39,7 @@ class SalesmanService extends BaseService
             foreach ($salesman as $item) {
                 // 获取分销等级
                 $item->level_text = "";
-                $levelConfig = app(ConfigService::class)->getDetail('salesman_config',$shop_id);
+                $levelConfig = app(ConfigService::class)->getDetail('salesmanConfig', $shop_id);
                 if (!empty($levelConfig)) {
                     $level_name = array_column($levelConfig['level'],'name','id');
                     $item->level_text = $level_name[$item['level']] ?? 0;
@@ -61,7 +61,7 @@ class SalesmanService extends BaseService
         if (!empty($salesman->toArray())) {
             $refund_amount = $refund_count = 0;
             // 获取分销等级
-            $levelConfig = app(ConfigService::class)->getDetail('salesman_config',$shop_id);
+            $levelConfig = app(ConfigService::class)->getDetail('salesmanConfig',$shop_id);
             $level_name = array_column($levelConfig['level'],'name','id');
             foreach ($salesman as $k => $item) {
                 $item['level_text'] = $level_name[$item['level']] ?? 0;

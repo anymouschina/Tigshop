@@ -14,9 +14,9 @@ Route::group('decorate', function () {
         // 装修详情
         Route::get('detail', 'decorate.decorate/detail');
         // 草稿数据
-        Route::get('load_draft_data', 'decorate.decorate/loadDraftData');
+        Route::get('loadDraftData', 'decorate.decorate/loadDraftData');
         // 存入草稿
-        Route::post('save_draft', 'decorate.decorate/saveDraft');
+        Route::post('saveDraft', 'decorate.decorate/saveDraft');
         // 发布
         Route::post('publish', 'decorate.decorate/publish')->append([
             "authorityCheckSubPermissionName" => 'decoratePublishManage'
@@ -24,7 +24,7 @@ Route::group('decorate', function () {
         // 复制
         Route::post('copy', 'decorate.decorate/copy');
         // 设置为首页
-        Route::post('set_home', 'decorate.decorate/setHome')->append([
+        Route::post('setHome', 'decorate.decorate/setHome')->append([
             "authorityCheckSubPermissionName" => 'decorateSetHomeManage'
         ]);
         // 装修添加
@@ -32,7 +32,7 @@ Route::group('decorate', function () {
         // 装修编辑
         Route::post('update', 'decorate.decorate/update');
         // 更新字段
-        Route::post('update_field', 'decorate.decorate/updateField')->append([
+        Route::post('updateField', 'decorate.decorate/updateField')->append([
             "authorityCheckSubPermissionName" => 'decorateModifyManage'
         ]);
         // 装修删除
@@ -46,7 +46,7 @@ Route::group('decorate', function () {
     });
 
     //装修导入导出模块
-    Route::group('decorate_share', function (){
+    Route::group('decorateShare', function () {
         //装修分享
         Route::get('share', 'decorate.decorateShare/share');
         //装修导入
@@ -54,11 +54,11 @@ Route::group('decorate', function () {
     });
 
     // 装修模块管理
-    Route::group('decorate_discrete', function () {
+    Route::group('decorateDiscrete', function () {
         // 装修模块详情
         Route::get('detail', 'decorate.decorateDiscrete/detail');
         // 个人中心装修栏目列表
-        Route::get('member_decorate_data', 'decorate.decorateDiscrete/memberDecorateData');
+        Route::get('memberDecorateData', 'decorate.decorateDiscrete/memberDecorateData');
         // 装修模块编辑
         Route::post('update', 'decorate.decorateDiscrete/update')->append([
             "authorityCheckSubPermissionName" => 'decorateDiscreteModifyManage'
@@ -68,14 +68,14 @@ Route::group('decorate', function () {
         'authorityCheckAppendName' => 'pcDecorateOtherManage'
     ]);
     // 装修异步请求
-    Route::group('decorate_request', function () {
+    Route::group('decorateRequest', function () {
         // 获取商品列表
-        Route::get('product_list', 'decorate.decorateRequest/productList');
-		// 模块标识获取数据
-		Route::get('decorate_by_module', 'decorate.decorateRequest/decorateByModule');
+        Route::get('productList', 'decorate.decorateRequest/productList');
+        // 模块标识获取数据
+        Route::get('decorateByModule', 'decorate.decorateRequest/decorateByModule');
     });
     // 首页分类栏
-    Route::group('mobile_cat_nav', function () {
+    Route::group('mobileCatNav', function () {
         // 首页分类栏列表
         Route::get('list', 'decorate.mobileCatNav/list');
         // 首页分类栏详情
@@ -89,7 +89,7 @@ Route::group('decorate', function () {
             "authorityCheckSubPermissionName" => 'mobileCatNavModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'decorate.mobileCatNav/updateField')->append([
+        Route::post('updateField', 'decorate.mobileCatNav/updateField')->append([
             "authorityCheckSubPermissionName" => 'mobileCatNavModifyManage'
         ]);
         // 首页分类栏删除
@@ -102,7 +102,7 @@ Route::group('decorate', function () {
         ]);
     });
     // 首页装修模板
-    Route::group('mobile_decorate', function () {
+    Route::group('mobileDecorate', function () {
         // 首页装修模板列表
         Route::get('list', 'decorate.mobileDecorate/list');
         // 首页装修模板详情
@@ -114,13 +114,13 @@ Route::group('decorate', function () {
             "authorityCheckSubPermissionName" => 'mobileDecorateModifyManage'
         ]);
         // 设置为首页
-        Route::post('set_home', 'decorate.mobileDecorate/setHome')->append([
+        Route::post('setHome', 'decorate.mobileDecorate/setHome')->append([
             "authorityCheckSubPermissionName" => 'mobileDecorateModifyManage'
         ]);
         // 复制
         Route::post('copy', 'decorate.mobileDecorate/copy');
         // 更新字段
-        Route::post('update_field', 'decorate.mobileDecorate/updateField')->append([
+        Route::post('updateField', 'decorate.mobileDecorate/updateField')->append([
             "authorityCheckSubPermissionName" => 'mobileDecorateModifyManage'
         ]);
         // 删除
@@ -133,49 +133,49 @@ Route::group('decorate', function () {
         ]);
     });
     // PC分类抽屉
-    Route::group('pc_cat_floor', function () {
+    Route::group('pcCatFloor', function () {
         // PC分类抽屉列表
         Route::get('list', 'decorate.pcCatFloor/list');
         // PC分类抽屉详情
         Route::get('detail', 'decorate.pcCatFloor/detail');
         // PC分类抽屉添加
         Route::post('create', 'decorate.pcCatFloor/create')->append([
-			"authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
-		]);
+            "authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
+        ]);
         // PC分类抽屉编辑
         Route::post('update', 'decorate.pcCatFloor/update')->append([
-			"authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
-		]);
+            "authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
+        ]);
         // 更新字段
-        Route::post('update_field', 'decorate.pcCatFloor/updateField')->append([
-			"authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
-		]);
+        Route::post('updateField', 'decorate.pcCatFloor/updateField')->append([
+            "authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
+        ]);
         // PC分类抽屉删除
         Route::post('del', 'decorate.pcCatFloor/del')->append([
-			"authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
-		]);
+            "authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
+        ]);
         // 更新缓存
-        Route::post('clear_cache', 'decorate.pcCatFloor/clearCache')->append([
-			"authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
-		]);
+        Route::post('clearCache', 'decorate.pcCatFloor/clearCache')->append([
+            "authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
+        ]);
         // 批量操作
         Route::post('batch', 'decorate.pcCatFloor/batch')->append([
-			"authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
-		]);
+            "authorityCheckSubPermissionName" => 'pcCatFloorModifyManage'
+        ]);
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendName' => 'pcCatFloorManage'
     ]);
     // PC导航栏
-    Route::group('pc_navigation', function () {
+    Route::group('pcNavigation', function () {
         // PC导航栏列表
         Route::get('list', 'decorate.pcNavigation/list');
         // PC导航栏详情
         Route::get('detail', 'decorate.pcNavigation/detail');
         // 获取上级导航
-        Route::get('get_parent_nav', 'decorate.pcNavigation/getParentNav');
+        Route::get('getParentNav', 'decorate.pcNavigation/getParentNav');
         // 选择链接地址
-        Route::get('select_link', 'decorate.pcNavigation/selectLink');
+        Route::get('selectLink', 'decorate.pcNavigation/selectLink');
         // PC导航栏添加
         Route::post('create', 'decorate.pcNavigation/create')->append([
             "authorityCheckSubPermissionName" => 'pcNavigationModifyManage'
@@ -185,7 +185,7 @@ Route::group('decorate', function () {
             "authorityCheckSubPermissionName" => 'pcNavigationModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'decorate.pcNavigation/updateField')->append([
+        Route::post('updateField', 'decorate.pcNavigation/updateField')->append([
             "authorityCheckSubPermissionName" => 'pcNavigationModifyManage'
         ]);
         // PC导航栏删除

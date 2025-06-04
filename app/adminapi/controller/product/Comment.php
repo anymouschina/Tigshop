@@ -60,8 +60,7 @@ class Comment extends AdminBaseController
         $total = $this->commentService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -74,11 +73,11 @@ class Comment extends AdminBaseController
     public function detail(): \think\Response
     {
 
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->commentService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -126,7 +125,7 @@ class Comment extends AdminBaseController
         }
         $result = $this->commentService->createComment($data);
         if ($result) {
-            return $this->success('评论晒单添加成功');
+            return $this->success();
         } else {
             return $this->error('评论晒单添加失败');
         }
@@ -139,7 +138,7 @@ class Comment extends AdminBaseController
      */
     public function update(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->requestData();
         $data['comment_id'] = $id;
         try {
@@ -152,7 +151,7 @@ class Comment extends AdminBaseController
 
         $result = $this->commentService->updateComment($id, $data);
         if ($result) {
-            return $this->success('评论晒单更新成功');
+            return $this->success();
         } else {
             return $this->error('评论晒单更新失败');
         }
@@ -165,8 +164,8 @@ class Comment extends AdminBaseController
      */
     public function updateField(): \think\Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field,['is_recommend', 'sort_order', 'is_top', 'comment_rank'])) {
             return $this->error('#field 错误');
@@ -174,12 +173,12 @@ class Comment extends AdminBaseController
 
         $data = [
             'comment_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->commentService->updateCommentField($id, $data);
 
-        return $this->success('更新成功');
+        return $this->success();
     }
 
     /**
@@ -189,9 +188,9 @@ class Comment extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->commentService->deleteComment($id);
-        return $this->success('指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -201,16 +200,16 @@ class Comment extends AdminBaseController
      */
     public function batch(): \think\Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error('未选择项目');
         }
 
-        if (input('type') == 'del') {
-            foreach (input('ids') as $key => $id) {
+        if ($this->request->all('type') == 'del') {
+            foreach ($this->request->all('ids') as $key => $id) {
                 $id = intval($id);
                 $this->commentService->deleteComment($id);
             }
-            return $this->success('批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error('#type 错误');
         }
@@ -228,7 +227,7 @@ class Comment extends AdminBaseController
         ], 'post');
         $result = $this->commentService->replyComment($data);
         if ($result) {
-            return $this->success("评论回复成功");
+            return $this->success();
         } else {
             return $this->error('评论回复失败');
         }

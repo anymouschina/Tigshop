@@ -29,6 +29,22 @@ class PayLog extends BaseModel
         self::PAY_STATUS_FAIL => '支付失败',
     ];
 
+    public function getNotifyDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setNotifyDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
     public function getPayStatusNameAttr($value, $data)
     {
         return self::PAY_STATUS_NAME[$data['pay_status']] ?? '';

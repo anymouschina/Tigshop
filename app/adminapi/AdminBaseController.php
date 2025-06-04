@@ -19,7 +19,7 @@ abstract class AdminBaseController extends BaseController
         parent::__construct($app);
         if (empty(request()->shopId))
         {
-            $this->shopId = input('shop_id',-1);
+            $this->shopId =$this->request->all('shop_id',-1);
         }else{
             $this->shopId = request()->shopId;
         }

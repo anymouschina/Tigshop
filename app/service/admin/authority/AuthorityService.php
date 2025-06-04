@@ -204,11 +204,18 @@ class AuthorityService extends BaseService
         if ($adminType == "shop") {
             $auth_sn = AdminUserShop::where(['admin_id' => $admin_id,'shop_id' => $shop_id])->value('auth_list');
             if (!empty($auth_sn)) {
-                $cat_list = Authority::alias('c')->where('admin_type',
-                    $adminType)
-                    ->whereIn('authority_sn',$auth_sn)
-                    ->field('c.authority_id, c.is_show,c.authority_sn,c.authority_name, c.parent_id, c.parent_id,c.authority_ico,c.route_link,c.child_auth')
-                    ->order('c.parent_id, c.sort_order ASC, c.authority_id ASC')->select()->toArray();
+                if(in_array('all', $auth_sn)) {
+                    $cat_list = Authority::alias('c')->where('admin_type',
+                        $adminType)->field('c.authority_id, c.is_show,c.authority_sn,c.authority_name, c.parent_id, c.parent_id,c.authority_ico,c.route_link,c.child_auth')
+                        ->order('c.parent_id, c.sort_order ASC, c.authority_id ASC')->select()->toArray();
+                } else {
+                    $cat_list = Authority::alias('c')->where('admin_type',
+                        $adminType)
+                        ->whereIn('authority_sn',$auth_sn)
+                        ->field('c.authority_id, c.is_show,c.authority_sn,c.authority_name, c.parent_id, c.parent_id,c.authority_ico,c.route_link,c.child_auth')
+                        ->order('c.parent_id, c.sort_order ASC, c.authority_id ASC')->select()->toArray();
+                }
+
             }
         }
 

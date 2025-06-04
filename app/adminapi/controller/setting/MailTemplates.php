@@ -53,13 +53,16 @@ class MailTemplates extends AdminBaseController
         ], 'get');
 
         $filterResult = $this->mailTemplatesService->getFilterResult($filter);
-        $total = $this->mailTemplatesService->getFilterCount($filter);
+        //$total = $this->mailTemplatesService->getFilterCount($filter);
+        return $this->success(
+            $filterResult
 
-        return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
-            'total' => $total,
-        ]);
+        );
+
+//        return $this->success([
+//            'records' => $filterResult,
+//            'total' => $total,
+//        ]);
     }
 
     /**
@@ -68,7 +71,7 @@ class MailTemplates extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'template_id' => $id,
             'template_subject' => '',
@@ -86,7 +89,7 @@ class MailTemplates extends AdminBaseController
 
         $result = $this->mailTemplatesService->updateMailTemplates($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'邮件模板设置更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'邮件模板设置更新失败');
         }
@@ -99,8 +102,8 @@ class MailTemplates extends AdminBaseController
     public function getAllMailTemplates(): Response
     {
         $item =  $this->mailTemplatesService->getAllMailTemplates();
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 }

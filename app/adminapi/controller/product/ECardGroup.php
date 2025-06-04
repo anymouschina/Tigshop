@@ -41,8 +41,7 @@ class ECardGroup extends AdminBaseController
         $filterResult = $this->eCardGroupService->getFilterResult($filter);
         $total = $this->eCardGroupService->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -66,7 +65,7 @@ class ECardGroup extends AdminBaseController
             throw new ApiException('请输入分组名称');
         }
         $this->eCardGroupService->create($filter);
-        return $this->success('电子卡券分组添加成功');
+        return $this->success();
     }
 
     /**
@@ -79,11 +78,11 @@ class ECardGroup extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d');
+        $id =$this->request->all('id/d');
         $item = $this->eCardGroupService->detail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
 
@@ -97,7 +96,7 @@ class ECardGroup extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $filter = $this->request->only([
             'group_name' => '',
             'shop_id' => request()->shopId,
@@ -108,7 +107,7 @@ class ECardGroup extends AdminBaseController
             throw new ApiException('请输入分组名称');
         }
         $this->eCardGroupService->update($id, $filter);
-        return $this->success('更新成功');
+        return $this->success();
     }
 
     /**
@@ -121,17 +120,17 @@ class ECardGroup extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d');
-        $field = input('field');
+        $id =$this->request->all('id/d');
+        $field =$this->request->all('field');
         if (!in_array($field, ['group_name', 'is_use','remark'])) {
             return $this->error('#field 错误');
         }
         $filter = [
             'group_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
         $this->eCardGroupService->updateField($id, $filter);
-        return $this->success('更新成功');
+        return $this->success();
     }
 
     /**
@@ -144,10 +143,10 @@ class ECardGroup extends AdminBaseController
      */
     public function del()
     {
-        $id = input('id/d');
+        $id =$this->request->all('id/d');
         if($id) {
             $this->eCardGroupService->del($id);
-            return $this->success('指定项目已删除');
+            return $this->success();
         } else {
             return $this->error('#id 错误');
         }
@@ -164,9 +163,7 @@ class ECardGroup extends AdminBaseController
     {
         $shop_id = request()->shopId;
         return $this->success(
-            [
-                'item' => $this->eCardGroupService->cardList($shop_id)
-            ]
+                $this->eCardGroupService->cardList($shop_id)
         );
     }
 
@@ -180,7 +177,7 @@ class ECardGroup extends AdminBaseController
      */
     public function import(): Response
     {
-        $group_id = input('group_id/d');
+        $group_id =$this->request->all('group_id/d');
         if(empty($group_id)) {
             throw new ApiException('缺少group_id参数');
         }

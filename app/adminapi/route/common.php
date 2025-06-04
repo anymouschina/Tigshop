@@ -4,7 +4,7 @@ use think\facade\Route;
 
 // 公共方法组
 Route::group('common', function () {
-    Route::group('cache_manage', function () {
+    Route::group('cacheManage', function () {
         // 清除缓存
         Route::post('cleanup', 'common.cacheManage/cleanup');
     });

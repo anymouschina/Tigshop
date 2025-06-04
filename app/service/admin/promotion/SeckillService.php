@@ -297,6 +297,10 @@ class SeckillService extends BaseService
             throw new ApiException(/** LANG */ '#id错误');
         }
         $result = Seckill::where('seckill_id', $id)->save($seckill_data);
+        SeckillItem::where('seckill_id', $id)->update([
+            'seckill_start_time' => Time::toTime($data['seckill_start_time']),
+            'seckill_end_time' => Time::toTime($data['seckill_end_time']),
+        ]);
         AdminLog::add('更新秒杀活动:' . $this->getName($id));
         Promotion::where([
             'type' => Promotion::TYPE_SECKILL,

@@ -50,10 +50,8 @@ class Category extends IndexBaseController
      */
     public function parentTree(): Response
     {
-        $id = input('id/d', 0);
-        return $this->success([
-            'category_tree' => app(CategoryService::class)->getParentCategoryTree($id),
-        ]);
+        $id = $this->request->all('id/d', 0);
+        return $this->success(app(CategoryService::class)->getParentCategoryTree($id));
     }
 
     /**
@@ -62,11 +60,9 @@ class Category extends IndexBaseController
      */
     public function list(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $list = app(CategoryService::class)->catList($id);
-        return $this->success([
-            'category_tree' => isset($list['category_id']) ? [] : $list,
-        ]);
+        return $this->success(isset($list['category_id']) ? [] : $list);
     }
 
     /**
@@ -76,9 +72,7 @@ class Category extends IndexBaseController
     public function all(): Response
     {
         $list = app(CategoryService::class)->catList();
-        return $this->success([
-            'category_tree' => $list,
-        ]);
+        return $this->success($list);
     }
 
     /**
@@ -162,9 +156,7 @@ class Category extends IndexBaseController
         $cate_id = app(ProductService::class)->getDetail($filter["product_id"])["category_id"];
         // 同类其他品牌
         $related_brand = app(CategoryService::class)->getOtherBrand($cate_id, $filter);
-        return $this->success([
-            'brand_info' => $related_brand,
-        ]);
+        return $this->success($related_brand);
     }
 
     /**
@@ -183,9 +175,7 @@ class Category extends IndexBaseController
         $cate_id = app(ProductService::class)->getDetail($filter["product_id"])["category_id"];
         // 相关文章
         $article_list = app(CategoryService::class)->getArticleList($filter);
-        return $this->success([
-            'article_list' => $article_list,
-        ]);
+        return $this->success($article_list);
     }
 
     /**
@@ -204,9 +194,7 @@ class Category extends IndexBaseController
         $cate_id = app(ProductService::class)->getDetail($filter["product_id"])["category_id"];
         // 同类排行榜
         $cate_rank = app(CategoryService::class)->getCategoryRank($cate_id, $filter);
-        return $this->success([
-            'cate_rank' => $cate_rank,
-        ]);
+        return $this->success($cate_rank);
     }
 
     /**
@@ -225,9 +213,7 @@ class Category extends IndexBaseController
         $cate_id = app(ProductService::class)->getDetail($filter["product_id"])["category_id"];
         // 看了还看
         $look_also = app(CategoryService::class)->getLookAlso($cate_id, $filter);
-        return $this->success([
-            'look_also' => $look_also,
-        ]);
+        return $this->success($look_also);
     }
 
 
@@ -239,8 +225,6 @@ class Category extends IndexBaseController
     public function hot(): Response
     {
         $category = app(CategoryService::class)->getHotCategory();
-        return $this->success([
-            'category' => $category,
-        ]);
+        return $this->success($category);
     }
 }

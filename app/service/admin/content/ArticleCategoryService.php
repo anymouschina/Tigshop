@@ -166,6 +166,14 @@ class ArticleCategoryService extends BaseService
         if (!$id) {
             throw new ApiException(/** LANG */'#id错误');
         }
+        //处理分类
+        if(isset($data['parent_id']) && is_array($data['parent_id'])){
+            //取数组最后一个值为要修改的分类
+            if(end($data['parent_id']) == 0) {
+                throw new ApiException(/** LANG */'上级分类选择有误');
+            }
+            $data['parent_id'] = end($data['parent_id']);
+        }
         $result = $this->articleCategoryModel->where('article_category_id', $id)->save($data);
         /* 清除文章分类缓存 */
         app(CacheManager::class)->clearCacheByTag('articleCate');

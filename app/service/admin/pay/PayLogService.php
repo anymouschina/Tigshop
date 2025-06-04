@@ -118,6 +118,7 @@ class PayLogService extends BaseService
         $params = [
             'pay_sn' => $pay_sn,
             'order_sn' => $order['order_sn'] ?? '订单支付',
+            'pay_name' => $order['pay_code'], //支付名称'
             'pay_code' => $order['pay_code'],
             'token_code' => '',
             'order_id' => $order['order_id'],

@@ -5,7 +5,7 @@ use think\facade\Route;
 // 访问日志控制器
 Route::group('sys', function () {
     // 日志
-    Route::group('access_log', function () {
+    Route::group('accessLog', function () {
         // 列表
         Route::get('list', 'sys.accessLog/list');
         // 详情
@@ -23,7 +23,7 @@ Route::group('sys', function () {
 			"authorityCheckSubPermissionName" => 'accessLogModifyManage'
 		]);
         // 更新字段
-        Route::post('update_field', 'sys.accessLog/updateField')->append([
+        Route::post('updateField', 'sys.accessLog/updateField')->append([
 			"authorityCheckSubPermissionName" => 'accessLogModifyManage'
 		]);
         // batch批量操作

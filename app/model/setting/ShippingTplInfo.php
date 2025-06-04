@@ -25,4 +25,20 @@ class ShippingTplInfo extends Model
     {
         return $this->hasOne(ShippingType::class, 'shipping_type_id', 'shipping_type_id')->bind(["shipping_type_name"]);
     }
+
+    public function getRegionDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setRegionDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
 }

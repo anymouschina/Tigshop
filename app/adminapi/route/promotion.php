@@ -7,6 +7,8 @@ Route::group('promotion', function () {
     Route::group('promotion', function () {
         // 活动管理列表
         Route::get('list', 'list');
+        //获取活动数量
+        Route::get('getPromotionCount', 'getPromotionCount');
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendGroupName' => 'promotionManage'
@@ -28,7 +30,7 @@ Route::group('promotion', function () {
             "authorityCheckSubPermissionName" => 'promotionCouponModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'promotionCouponModifyManage'
         ]);
         // 优惠券删除
@@ -45,7 +47,7 @@ Route::group('promotion', function () {
     ])->prefix('promotion.coupon/');
 
     // 积分商品管理
-    Route::group('points_exchange', function () {
+    Route::group('pointsExchange', function () {
         // 积分商品列表
         Route::get('list', 'list');
         // 积分商品详情
@@ -59,7 +61,7 @@ Route::group('promotion', function () {
             "authorityCheckSubPermissionName" => 'promotionPointsExchangeModifyManage'
         ]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'promotionPointsExchangeModifyManage'
         ]);
         // 删除
@@ -76,7 +78,7 @@ Route::group('promotion', function () {
     ])->prefix('promotion.pointsExchange/');
 
     // 优惠活动管理
-    Route::group('product_promotion', function () {
+    Route::group('productPromotion', function () {
         // 优惠活动列表
         Route::get('list', 'list');
         // 优惠活动配置
@@ -92,7 +94,7 @@ Route::group('promotion', function () {
             "authorityCheckSubPermissionName" => 'productPromotionModifyManage'
         ]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'productPromotionModifyManage'
         ]);
         // 优惠活动删除
@@ -111,7 +113,7 @@ Route::group('promotion', function () {
     ])->prefix('promotion.productPromotion/');
 
     // 活动赠品
-    Route::group('product_gift', function () {
+    Route::group('productGift', function () {
         // 活动赠品列表
         Route::get('list', 'list');
         // 活动赠品详情
@@ -136,7 +138,7 @@ Route::group('promotion', function () {
 
 
     // 限时折扣
-    Route::group('time_discount', function () {
+    Route::group('timeDiscount', function () {
         // 限时折扣列表
         Route::get('list', 'list');
         // 限时折扣详情
@@ -164,7 +166,7 @@ Route::group('promotion', function () {
     ])->prefix('promotion.timeDiscount/');
 
     // 余额充值
-    Route::group('recharge_setting', function () {
+    Route::group('rechargeSetting', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -178,7 +180,7 @@ Route::group('promotion', function () {
             "authorityCheckSubPermissionName" => 'rechargeSettingModifyManage'
         ]);
         // 更新单个字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'rechargeSettingModifyManage'
         ]);
         // 删除
@@ -199,7 +201,7 @@ Route::group('promotion', function () {
         // 列表
         Route::get('list', 'list');
         // 装修秒杀列表
-        Route::get('list_for_decorate', 'listForDecorate');
+        Route::get('listForDecorate', 'listForDecorate');
         // 详情
         Route::get('detail', 'detail');
         // 添加
@@ -225,7 +227,7 @@ Route::group('promotion', function () {
 
 
     // 拼团活动
-    Route::group('product_team', function () {
+    Route::group('productTeam', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -252,7 +254,7 @@ Route::group('promotion', function () {
     ])->prefix('promotion.productTeam/');
 
     // 积分签到
-    Route::group('sign_in_setting', function () {
+    Route::group('signInSetting', function () {
         // 列表
         Route::get('list', 'list');
         // 详情
@@ -279,7 +281,7 @@ Route::group('promotion', function () {
     ])->prefix('promotion.signInSetting/');
 
 	// 小程序直播
-	Route::group('wechat_live', function () {
+	Route::group('wechatLive', function () {
 		// 列表
 		Route::get('list', 'list');
 		// 详情

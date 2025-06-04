@@ -60,12 +60,32 @@ class Aftersales extends AdminBaseController
         $total = $this->aftersalesService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
             'status_list' => \app\model\order\Aftersales::STATUS_NAME,
-            'type_list' => \app\model\order\Aftersales::AFTERSALES_TYPE_NAME,
         ]);
+    }
+
+    /**
+     * 售后类型接口
+     * @return Response
+     */
+    public function applyType()
+    {
+        return $this->success(
+            \app\model\order\Aftersales::AFTERSALES_TYPE_NAME,
+        );
+    }
+
+    /**
+     * 售后状态接口
+     * @return Response
+     */
+    public function returnGoodsStatus()
+    {
+        return $this->success(
+            \app\model\order\Aftersales::STATUS_NAME,
+        );
     }
 
     /**
@@ -75,7 +95,7 @@ class Aftersales extends AdminBaseController
      */
     public function detail():Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->aftersalesService->getDetail($id);
         $item['status_config'] = \app\model\order\Aftersales::STATUS_NAME;
         $item['aftersales_type_config'] = \app\model\order\Aftersales::AFTERSALES_TYPE_NAME;
@@ -85,9 +105,9 @@ class Aftersales extends AdminBaseController
             $refundProductPrice += $v['number'] * $v['price'];
         }
         $item['suggest_refund_amount'] = (float)bcadd($refundProductPrice, 0,2);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+           $item
+        );
     }
 
     /**
@@ -97,7 +117,7 @@ class Aftersales extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'aftersale_id' => $id,
             'status/d' => 0,
@@ -108,7 +128,7 @@ class Aftersales extends AdminBaseController
 
         $result = $this->aftersalesService->agreeOrRefuse($id, $data);
         if ($result) {
-            return $this->success('操作成功');
+            return $this->success();
         } else {
             return $this->error('操作失败');
         }
@@ -121,10 +141,10 @@ class Aftersales extends AdminBaseController
      */
     public function complete(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $admin_id = request()->adminUid;
         $result = $this->aftersalesService->complete($id,$admin_id);
-        return $result ? $this->success('操作成功') : $this->error('操作失败');
+        return $result ? $this->success() : $this->error('操作失败');
     }
 
     /**
@@ -134,10 +154,10 @@ class Aftersales extends AdminBaseController
      */
     public function receive(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $result = $this->aftersalesService->receive($id);
         if ($result) {
-            return $this->success('操作成功');
+            return $this->success();
         } else {
             return $this->error('更新失败');
         }
@@ -159,7 +179,7 @@ class Aftersales extends AdminBaseController
         unset($input['aftersale_id']);
         $result = $this->aftersalesService->submitFeedbackRecord($id, $input, request()->adminUid);
         if ($result) {
-            return $this->success('操作成功');
+            return $this->success();
         } else {
             return $this->error('更新失败');
         }

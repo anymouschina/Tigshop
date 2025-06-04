@@ -22,6 +22,38 @@ class SalesmanOrder extends BaseModel
         'status_text'
     ];
 
+    public function getSalesmanProductDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setSalesmanProductDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getSalesmanSettlementDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setSalesmanSettlementDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
 
     public function userOrder()
     {

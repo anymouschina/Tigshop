@@ -16,7 +16,7 @@ class OrderQueueService extends BaseService
      */
     public function cancelUnPayOrderJob(int $order_id): void
     {
-        $auto_cancel_order_minute = Config::get('auto_cancel_order_minute', 'base_shopping');
+        $auto_cancel_order_minute = Config::get('autoCancelOrderMinute');
         if ($auto_cancel_order_minute > 0) {
             $job_data = ['action' => 'cancelUnPayOrder', 'data' => ['order_id' => $order_id]];
             app(TigQueue::class)->later(OrderCancelJob::class, $auto_cancel_order_minute * 60, $job_data);

@@ -42,7 +42,7 @@ class Conversation extends BaseController
 
         $total = $this->service->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $list,
+            'records' => $list,
             'filter' => $filter,
             'total' => $total,
         ]);
@@ -68,7 +68,7 @@ class Conversation extends BaseController
         $list = $this->service->getFilterList($filter, ['user', 'userLastTwoMessage']);
         $total = $this->service->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $list,
+            'records' => $list,
             'filter' => $filter,
             'total' => $total,
         ]);
@@ -131,7 +131,7 @@ class Conversation extends BaseController
         $filter['shop_id'] = request()->shopId;
         $list = $this->service->getConsultHistory($filter, ['user','servant','first_user_message','servant_message'],['conversation_duration']);
         return $this->success([
-            'filter_result' => $list['list'],
+            'records' => $list['list'],
             'filter' => $filter,
             'total' => $list['total'],
         ]);
@@ -183,7 +183,7 @@ class Conversation extends BaseController
             return $this->error("没有权限");
         }
         return $this->success([
-            'item' => $detail
+            $detail
         ]);
     }
 
@@ -206,7 +206,7 @@ class Conversation extends BaseController
         $existConversation->last_servant_id = request()->adminUid;
         $existConversation->save();
         return $this->success([
-            'item' => $existConversation
+            $existConversation
         ]);
     }
 
@@ -222,7 +222,7 @@ class Conversation extends BaseController
         $adminId = request()->adminUid;
         $result = $this->service->search($params['keyword'], $adminId);
         return $this->success([
-            'item' => $result
+            $result
         ]);
     }
 

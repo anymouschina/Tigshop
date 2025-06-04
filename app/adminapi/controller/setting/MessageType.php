@@ -56,8 +56,7 @@ class MessageType extends AdminBaseController
         $total = $this->messageTypeService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -68,11 +67,11 @@ class MessageType extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->messageTypeService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -103,7 +102,7 @@ class MessageType extends AdminBaseController
         $data = $this->requestData();
         $result = $this->messageTypeService->createMessageType($data);
         if ($result) {
-            return $this->success(/** LANG */ '消息设置添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */ '消息设置添加失败');
         }
@@ -115,12 +114,12 @@ class MessageType extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->requestData();
         $data["message_id"] = $id;
         $result = $this->messageTypeService->updateMessageType($id, $data);
         if ($result) {
-            return $this->success(/** LANG */ '消息设置更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */ '消息设置更新失败');
         }
@@ -133,8 +132,8 @@ class MessageType extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field,
             ['name', 'is_wechat', 'is_mini_program', 'is_message', 'is_msg', 'is_app', 'is_ding', 'add_time'])) {
@@ -143,12 +142,12 @@ class MessageType extends AdminBaseController
 
         $data = [
             'message_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->messageTypeService->updateMessageTypeField($id, $data);
 
-        return $this->success(/** LANG */ '更新成功');
+        return $this->success();
     }
 
     /**
@@ -158,9 +157,9 @@ class MessageType extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->messageTypeService->deleteMessageType($id);
-        return $this->success(/** LANG */ '指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -170,15 +169,15 @@ class MessageType extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */ '未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->messageTypeService->deleteMessageType($id);
                 }
@@ -188,7 +187,7 @@ class MessageType extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */ '批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */ '#type 错误');
         }
@@ -202,7 +201,7 @@ class MessageType extends AdminBaseController
     public function miniProgramMessageTemplate()
     {
         $this->messageTypeService->generateMiniProgramMessageTemplate();
-        return $this->success(/** LANG */ '消息模板更新成功');
+        return $this->success();
     }
 
     /**
@@ -213,7 +212,7 @@ class MessageType extends AdminBaseController
     public function miniProgramMessageTemplateSync()
     {
         $this->messageTypeService->generateMiniProgramMessageTemplateSync();
-        return $this->success(/** LANG */ '消息模板同步成功');
+        return $this->success();
     }
 
     /**
@@ -224,7 +223,7 @@ class MessageType extends AdminBaseController
     public function wechatMessageTemplate(): Response
     {
         $this->messageTypeService->generateWechatMessageTemplate();
-        return $this->success(/** LANG */ '消息模板更新成功');
+        return $this->success();
     }
 
     /**
@@ -235,7 +234,7 @@ class MessageType extends AdminBaseController
     public function wechatMessageTemplateSync()
     {
         $this->messageTypeService->generateWechatMessageTemplateSync();
-        return $this->success(/** LANG */ '消息模板同步成功');
+        return $this->success();
     }
 
 

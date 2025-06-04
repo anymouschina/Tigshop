@@ -13,6 +13,7 @@ namespace app\adminapi\controller\user;
 
 use app\adminapi\AdminBaseController;
 use app\service\admin\user\UserPointsLogService;
+use app\service\admin\user\UserService;
 use think\App;
 
 /**
@@ -53,9 +54,25 @@ class UserPointsLog extends AdminBaseController
         $total = $this->userPointsLogService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
+        ]);
+    }
+
+    /**
+     * 获取当前用户积分
+     * @return \think\Response
+     * @throws \exceptions\ApiException
+     */
+    public function getPoints(): \think\Response
+    {
+
+        $filter = $this->request->only([
+            'user_id/d' => 0,
+        ], 'get');
+        $user = app(UserService::class)->getDetail($filter['user_id']);
+        return $this->success([
+            $user['points'],
         ]);
     }
 
@@ -66,9 +83,9 @@ class UserPointsLog extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->userPointsLogService->deleteUserPointsLog($id);
-        return $this->success('指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -78,16 +95,16 @@ class UserPointsLog extends AdminBaseController
      */
     public function batch(): \think\Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error('未选择项目');
         }
 
-        if (input('type') == 'del') {
-            foreach (input('ids') as $key => $id) {
+        if ($this->request->all('type') == 'del') {
+            foreach ($this->request->all('ids') as $key => $id) {
                 $id = intval($id);
                 $this->userPointsLogService->deleteUserPointsLog($id);
             }
-            return $this->success('批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error('#type 错误');
         }

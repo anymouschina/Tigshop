@@ -400,7 +400,7 @@ class DecorateService extends BaseService
         }
         foreach ($result['data']['moduleList'] as $key => $item) {
             $result['data']['moduleList'][$key]['module'] = $this->formatModule($item['type'], $item['module']);
-            if (!$item['is_show']) {
+            if (!$item['isShow']) {
                 unset($result['data']['moduleList'][$key]);
             }
         }
@@ -455,7 +455,7 @@ class DecorateService extends BaseService
         }
         $module = [];
         foreach ($result['data']['moduleList'] as $key => $item) {
-            if (isset($item['module_index']) && $item['module_index'] == $module_index) {
+            if (isset($item['moduleIndex']) && $item['moduleIndex'] == $module_index) {
                 $module = $this->formatModule($item['type'], $item['module'], $params, $result);
             }
         }
@@ -482,7 +482,7 @@ class DecorateService extends BaseService
         }
         $module = [];
         foreach ($result['draft_data']['moduleList'] as $key => $item) {
-            if (isset($item['module_index']) && $item['module_index'] == $module_index) {
+            if (isset($item['moduleIndex']) && $item['moduleIndex'] == $module_index) {
                 $module = $this->formatModule($item['type'], $item['module'], $params, $result);
             }
         }

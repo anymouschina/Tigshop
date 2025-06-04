@@ -50,8 +50,7 @@ class Coupon extends IndexBaseController
         $filter['user_id'] = request()->userId;
         $filterResult = $this->userCouponService->getFilterResult($filter);
         return $this->success([
-            'filter_result' => $filterResult["list"],
-            'filter' => $filter,
+            'records' => $filterResult["list"],
             'total' => $filterResult["count"],
         ]);
     }
@@ -63,9 +62,9 @@ class Coupon extends IndexBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $result = $this->userCouponService->deleteUserCoupon($id);
-        return $result ? $this->success(/** LANG */Util::lang('删除成功')) : $this->error(/** LANG */Util::lang('删除失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('删除失败'));
     }
 
     /**
@@ -88,8 +87,7 @@ class Coupon extends IndexBaseController
         $filterResult = app(CouponService::class)->getFilterResult($filter);
         $total = app(CouponService::class)->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -104,9 +102,9 @@ class Coupon extends IndexBaseController
      */
     public function claim(): Response
     {
-        $coupon_id = input('coupon_id/d', 0);
+        $coupon_id = $this->request->all('coupon_id/d', 0);
         $result = app(CouponService::class)->claimCoupons($coupon_id, request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang('领取成功')) : $this->error(/** LANG */Util::lang('领取失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('领取失败'));
     }
 
     /**
@@ -116,11 +114,9 @@ class Coupon extends IndexBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = app(CouponService::class)->getDetail($id, request()->userId);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
 

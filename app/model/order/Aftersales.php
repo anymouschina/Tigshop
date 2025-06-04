@@ -25,6 +25,22 @@ class Aftersales extends Model
     protected $json = ['pics'];
     protected $jsonAssoc = true;
 
+    public function getPicsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setPicsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
     // 关联订单商品信息
     public function aftersalesItems()
     {

@@ -24,7 +24,7 @@ Route::group('user', function () {
         // 收货地址删除
         Route::post('del', 'user.address/del');
         // 设为选中
-        Route::post('set_selected', 'user.address/setSelected');
+        Route::post('setSelected', 'user.address/setSelected');
     })->middleware([
         \app\api\middleware\CheckLogin::class,
     ]);
@@ -35,17 +35,17 @@ Route::group('user', function () {
         // 配置型
         Route::get('config', 'user.aftersales/config');
         // 售后详情
-        Route::get('apply_data', 'user.aftersales/applyData');
+        Route::get('applyData', 'user.aftersales/applyData');
         // 售后申请
         Route::post('create', 'user.aftersales/create');
         // 售后申请修改
         Route::post('update', 'user.aftersales/update');
         // 售后申请记录
-        Route::get('get_record', 'user.aftersales/getRecord');
+        Route::get('getRecord', 'user.aftersales/getRecord');
         // 查看售后记录
         Route::get('detail', 'user.aftersales/detail');
         // 查看售后log记录
-        Route::get('detail_log', 'user.aftersales/detailLog');
+        Route::get('detailLog', 'user.aftersales/detailLog');
         // 提交售后反馈记录
         Route::post('feedback', 'user.aftersales/feedback');
         // 撤销申请售后
@@ -54,7 +54,7 @@ Route::group('user', function () {
         \app\api\middleware\CheckLogin::class,
     ]);
     // 商品收藏
-    Route::group('collect_product', function () {
+    Route::group('collectProduct', function () {
         // 商品收藏列表
         Route::get('list', 'user.collectProduct/list');
         // 收藏商品
@@ -67,9 +67,9 @@ Route::group('user', function () {
     // 评论晒单
     Route::group('comment', function () {
         // 评论晒单数量
-        Route::get('sub_num', 'user.comment/subNum');
+        Route::get('subNum', 'user.comment/subNum');
         // 晒单列表
-        Route::get('showed_list', 'user.comment/showedList');
+        Route::get('showedList', 'user.comment/showedList');
         // 已评价列表
         Route::get('list', 'user.comment/list');
         // 商品评价 / 晒单
@@ -90,7 +90,7 @@ Route::group('user', function () {
             \app\api\middleware\CheckLogin::class,
         ]);
         // 优惠券列表
-        Route::get('get_list', 'user.coupon/getList');
+        Route::get('getList', 'user.coupon/getList');
         // 领取优惠券
         Route::post('claim', 'user.coupon/claim')->middleware([
             \app\api\middleware\CheckLogin::class,
@@ -118,53 +118,53 @@ Route::group('user', function () {
         // 更新
         Route::post('update', 'user.invoice/update');
         // 判断当前用户的增票资质是否审核通过
-        Route::get('get_status', 'user.invoice/getStatus');
+        Route::get('getStatus', 'user.invoice/getStatus');
     })->middleware([
         \app\api\middleware\CheckLogin::class,
     ]);
     // 登录
     Route::group('login', function () {
         //快捷登录设置项目
-        Route::get('get_quick_login_setting', 'getQuickLoginSetting');
+        Route::get('getQuickLoginSetting', 'getQuickLoginSetting');
         // 登录
         Route::post('signin', 'signin');
         // 获取验证码
-        Route::post('send_mobile_code', 'sendMobileCode');
+        Route::post('sendMobileCode', 'sendMobileCode');
         // 验证手机号
-        Route::post('check_mobile', 'checkMobile');
+        Route::post('checkMobile', 'checkMobile');
         // 忘记密码 -- 修改密码
-        Route::post('forget_password', 'forgetPassword');
+        Route::post('forgetPassword', 'forgetPassword');
         // 获得微信授权url
-        Route::get('get_wx_login_url', 'getWechatLoginUrl');
+        Route::get('getWxLoginUrl', 'getWechatLoginUrl');
         // 通过微信code获得微信用户信息
-        Route::get('get_wx_login_info_by_code', 'getWechatLoginInfoByCode');
+        Route::get('getWxLoginInfoByCode', 'getWechatLoginInfoByCode');
         //第三方绑定手机号
-        Route::post('bind_mobile', 'bindMobile');
+        Route::post('bindMobile', 'bindMobile');
         //绑定微信公众号
-        Route::post('bind_wechat', 'bindWechat')->middleware([\app\api\middleware\CheckLogin::class]);
+        Route::post('bindWechat', 'bindWechat')->middleware([\app\api\middleware\CheckLogin::class]);
         //解除绑定微信公众号
-        Route::get('unbind_wechat', 'unbindWechat')->middleware([\app\api\middleware\CheckLogin::class]);
+        Route::get('unbindWechat', 'unbindWechat')->middleware([\app\api\middleware\CheckLogin::class]);
         //微信服务器校验
         Route::get('wechat_server', 'wechatServerVerify');
         //获取微信推送消息
-        Route::post('wechat_server', 'getWechatMessage');
+        Route::post('wechatServer', 'getWechatMessage');
         //检测微信用户操作事件
-        Route::post('wechat_event', 'wechatEvent');
+        Route::post('wechatEvent', 'wechatEvent');
         //获取手机号
-        Route::post('get_mobile', 'getUserMobile');
+        Route::post('getMobile', 'getUserMobile');
         //获取用户openid
-        Route::post('update_user_openid', 'updateUserOpenId')->middleware([\app\api\middleware\CheckLogin::class]);
+        Route::post('updateUserOpenId', 'updateUserOpenId')->middleware([\app\api\middleware\CheckLogin::class]);
         //获取jssdk配置项
-        Route::post('get_js_sdk_config', 'getJsSdkConfig')->middleware([\app\api\middleware\CheckLogin::class]);
+        Route::post('getJsSdkConfig', 'getJsSdkConfig')->middleware([\app\api\middleware\CheckLogin::class]);
     })->prefix("user.login/");
     // 站内信
     Route::group('message', function () {
         // 站内信列表
         Route::get('list', 'user.message/list');
         // 全部标记已读
-        Route::post('update_all_read', 'user.message/updateAllRead');
+        Route::post('updateAllRead', 'user.message/updateAllRead');
         // 设置站内信已读
-        Route::post('update_message_read', 'user.message/updateMessageRead');
+        Route::post('updateMessageRead', 'user.message/updateMessageRead');
         // 删除站内信
         Route::post('del', 'user.message/del');
     })->middleware([
@@ -178,22 +178,22 @@ Route::group('user', function () {
         // 详情
         Route::get('detail', 'user.order/detail');
         // 数量
-        Route::get('order_num', 'user.order/orderNum');
+        Route::get('orderNum', 'user.order/orderNum');
         // 取消
-        Route::post('cancel_order', 'user.order/cancelOrder');
+        Route::post('cancelOrder', 'user.order/cancelOrder');
         // 删除
-        Route::post('del_order', 'user.order/delOrder');
+        Route::post('delOrder', 'user.order/delOrder');
         // 收货
-        Route::post('confirm_receipt', 'user.order/confirmReceipt');
+        Route::post('confirmReceipt', 'user.order/confirmReceipt');
         // 物流信息
-        Route::get('shipping_info', 'user.order/shippingInfo');
+        Route::get('shippingInfo', 'user.order/shippingInfo');
         // 再次购买
-        Route::post('buy_again', 'user.order/buyAgain');
+        Route::post('buyAgain', 'user.order/buyAgain');
     })->middleware([
         \app\api\middleware\CheckLogin::class,
     ]);
     // 订单发票
-    Route::group('order_invoice', function () {
+    Route::group('orderInvoice', function () {
         //详情
         Route::get('detail', 'detail');
         // 新增
@@ -204,14 +204,14 @@ Route::group('user', function () {
         \app\api\middleware\CheckLogin::class,
     ])->prefix("user.order_invoice/");
     // 积分
-    Route::group('points_log', function () {
+    Route::group('pointsLog', function () {
         // 列表
         Route::get('list', 'user.pointsLog/list');
     })->middleware([
         \app\api\middleware\CheckLogin::class,
     ]);
     // 充值
-    Route::group('recharge_order', function () {
+    Route::group('rechargeOrder', function () {
         // 列表
         Route::get('list', 'user.rechargeOrder/list');
         // 充值申请
@@ -219,78 +219,78 @@ Route::group('user', function () {
         // 充值金额列表
         Route::get('setting', 'user.rechargeOrder/setting');
         // 充值支付列表
-        Route::get('payment_list', 'user.rechargeOrder/paymentList');
+        Route::get('paymentList', 'user.rechargeOrder/paymentList');
         // 充值支付
         Route::post('pay', 'user.rechargeOrder/pay');
         // 充值支付
         Route::post('create', 'user.rechargeOrder/create');
         // 获取充值支付状态
-        Route::get('check_status', 'user.rechargeOrder/checkStatus');
+        Route::get('checkStatus', 'user.rechargeOrder/checkStatus');
     })->middleware([
         \app\api\middleware\CheckLogin::class,
     ]);
     // 会员注册
     Route::group('regist', function () {
         // 会员注册操作
-        Route::post('regist_act', 'registAct');
+        Route::post('registAct', 'registAct');
 		// 邮箱验证码
-		Route::post('send_email_code', 'sendEmailCode');
+        Route::post('sendEmailCode', 'sendEmailCode');
     })->prefix("user.regist/");
     // 会员
     Route::group('user', function () {
         // 会员详情
         Route::get('detail', 'detail');
         // 修改个人信息
-        Route::post('update_information', 'updateInformation');
+        Route::post('updateInformation', 'updateInformation');
         // 会员中心首页数据
-        Route::get('member_center', 'memberCenter');
+        Route::get('memberCenter', 'memberCenter');
         // 授权回调获取用户信息
         Route::post('oAuth', 'oAuth');
         // 修改密码获取验证码
-        Route::post('send_mobile_code_by_modify_password', 'sendMobileCodeByModifyPassword');
+        Route::post('sendMobileCodeByModifyPassword', 'sendMobileCodeByModifyPassword');
         // 修改密码手机验证
-        Route::post('check_modify_password_mobile_code', 'checkModifyPasswordMobileCode');
+        Route::post('checkModifyPasswordMobileCode', 'checkModifyPasswordMobileCode');
         // 修改密码
-        Route::post('modify_password', 'modifyPassword');
+        Route::post('modifyPassword', 'modifyPassword');
         // 手机修改获取验证码
-        Route::post('send_mobile_code_by_mobile_validate', 'sendMobileCodeByMobileValidate');
+        Route::post('sendMobileCodeByMobileValidate', 'sendMobileCodeByMobileValidate');
         // 手机修改新手机获取验证码
-        Route::post('send_mobile_code_by_modify_mobile', 'sendMobileCodeByModifyMobile');
+        Route::post('sendMobileCodeByModifyMobile', 'sendMobileCodeByModifyMobile');
         // 手机绑定
-        Route::post('modify_mobile', 'modifyMobile');
+        Route::post('modifyMobile', 'modifyMobile');
         // 手机验证
-        Route::post('mobile_validate', 'mobileValidate');
+        Route::post('mobileValidate', 'mobileValidate');
         // 邮箱验证
-        Route::post('email_validate', 'emailValidate');
+        Route::post('emailValidate', 'emailValidate');
         // 最近浏览
-        Route::get('history_product', 'historyProduct');
+        Route::get('historyProduct', 'historyProduct');
         // 最近浏览
-        Route::post('del_history_product', 'delHistoryProduct');
+        Route::post('delHistoryProduct', 'delHistoryProduct');
         // 上传文件接口
-        Route::post('upload_img', 'uploadImg');
+        Route::post('uploadImg', 'uploadImg');
         // 修改头像
-        Route::post('modify_avatar', 'modifyAvatar');
+        Route::post('modifyAvatar', 'modifyAvatar');
         // 我收藏的
-        Route::get('collection_shop', 'myCollectShop');
+        Route::get('collectionShop', 'myCollectShop');
         // 会员等级列表
-        Route::get('level_list', 'levelList');
+        Route::get('levelList', 'levelList');
         //会员权益信息
-        Route::get('level_info', 'levelInfo');
+        Route::get('levelInfo', 'levelInfo');
     })->middleware([
         \app\api\middleware\CheckLogin::class,
     ])->prefix("user.user/");
     // 提现
-    Route::group('withdraw_apply', function () {
+    Route::group('withdrawApply', function () {
         // 列表
         Route::get('list', 'user.withdrawApply/list');
         // 添加提现账号
-        Route::post('create_account', 'user.withdrawApply/createAccount');
+        Route::post('createAccount', 'user.withdrawApply/createAccount');
         // 编辑提现账号
-        Route::post('update_account', 'user.withdrawApply/updateAccount');
+        Route::post('updateAccount', 'user.withdrawApply/updateAccount');
         // 提现账号详情
-        Route::get('account_detail', 'user.withdrawApply/accountDetail');
+        Route::get('accountDetail', 'user.withdrawApply/accountDetail');
         // 删除提现账号
-        Route::post('del_account', 'user.withdrawApply/delAccount');
+        Route::post('delAccount', 'user.withdrawApply/delAccount');
         // 提现申请
         Route::post('apply', 'user.withdrawApply/apply');
     })->middleware([
@@ -312,8 +312,20 @@ Route::group('user', function () {
 		// 认证详情
 		Route::get('detail', 'detail');
 		// 我的申请
-		Route::get('my_apply', 'myApply');
+        Route::get('myApply', 'myApply');
 	})->middleware([
 		\app\api\middleware\CheckLogin::class,
 	])->prefix("user.company/");
+
+
+    // 第三方登录
+    Route::group('oauth', function () {
+        //
+        // 获取系统配置
+        Route::get('render/:souce', 'render');
+        // 获得所有省份接口
+        Route::post('callback/:souce', 'callback');
+
+    })->prefix("user.oauth/");
+
 });

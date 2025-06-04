@@ -23,7 +23,7 @@ class ProductPromotionService extends BaseService
             $promotion = [];//具体的优惠信息是哪些
             $result['promotion'] = $productPromotion;
             foreach ($productPromotion['promotion_type_data'] as $promotionData) {
-                if ($promotionData['min_amount'] <= $compare_data) {
+                if ($promotionData['minAmount'] <= $compare_data) {
                     $promotion = $promotionData;
                 }
             }
@@ -67,7 +67,7 @@ class ProductPromotionService extends BaseService
                 $result['promotion']['amount'] = 0;
 
                 //如果是满赠返回满赠的信息
-                $gift = ProductGift::where('gift_id', $promotion['gift_id'])->where('gift_stock', '>', 0)->find();
+                $gift = ProductGift::where('gift_id', $promotion['giftId'])->where('gift_stock', '>', 0)->find();
                 if ($gift) {
                     $promotion['product_id'] = $gift['product_id'];
                     $promotion['sku_id'] = $gift['sku_id'];

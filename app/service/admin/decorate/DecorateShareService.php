@@ -73,15 +73,15 @@ class DecorateShareService extends BaseService
             throw new ApiException('返回结果有误！');
         }
         $res_arr = json_decode($res,true);
-        if(!isset($res_arr['data']['info'])) {
+        if (!isset($res_arr['data'])) {
             throw new ApiException('未获取到有用的模板信息，请重新导入分享模板链接！');
         }
-        $decorate = $res_arr['data']['info'];
+        $decorate = $res_arr['data'];
         //构建插入模板数据
-        $insert['decorate_title'] = $decorate['decorate_title'];
+        $insert['decorate_title'] = $decorate['decorateTitle'];
         $insert['data'] = $decorate['data'];
-        $insert['draft_data'] = $decorate['draft_data'];
-        $insert['decorate_type'] = $decorate['decorate_type'];
+        $insert['draft_data'] = $decorate['draftData'];
+        $insert['decorate_type'] = $decorate['decorateType'];
         $insert['shop_id'] = $filter['shop_id'];
         $insert['update_time'] = time();
         $model = new Decorate();
@@ -185,107 +185,107 @@ class DecorateShareService extends BaseService
             return '';
         }
         foreach ($data['moduleList'] as &$value) {
-            if(isset($value['module']['custom_pic']['pic_url'])){
-                if(isset($value['module']['custom_pic']['pic_url'])){
-                    $value['module']['custom_pic']['pic_url'] = $this->isUrl($value['module']['custom_pic']['pic_url']);
+            if(isset($value['module']['customPic']['picUrl'])){
+                if(isset($value['module']['customPic']['picUrl'])){
+                    $value['module']['customPic']['picUrl'] = $this->isUrl($value['module']['customPic']['picUrl']);
                 }
-                if(isset($value['module']['custom_pic']['pic_thumb'])) {
-                    $value['module']['custom_pic']['pic_thumb'] = $this->isUrl($value['module']['custom_pic']['pic_thumb']);
-                }
-            }
-
-            if(isset($value['module']['ico_pic']['pic_url'])){
-                if(isset($value['module']['ico_pic']['pic_url'])) {
-                    $value['module']['ico_pic']['pic_url'] = $this->isUrl($value['module']['ico_pic']['pic_url']);
-                }
-                if(isset($value['module']['ico_pic']['pic_thumb'])){
-                    $value['module']['ico_pic']['pic_thumb'] = $this->isUrl($value['module']['ico_pic']['pic_thumb']);
+                if(isset($value['module']['customPic']['picThumb'])) {
+                    $value['module']['customPic']['picThumb'] = $this->isUrl($value['module']['customPic']['picThumb']);
                 }
             }
 
-            if(isset($value['module']['banner_content']['pic_list'])) {
-                if(isset($value['module']['banner_content']['pic_url'])){
-                    $value['module']['banner_content']['pic_url'] = $this->isUrl($value['module']['banner_content']['pic_url']);
-                    $value['module']['banner_content']['pic_thumb'] = $this->isUrl($value['module']['banner_content']['pic_thumb']);
+            if(isset($value['module']['icoPic']['picUrl'])){
+                if(isset($value['module']['icoPic']['picUrl'])) {
+                    $value['module']['icoPic']['picUrl'] = $this->isUrl($value['module']['icoPic']['picUrl']);
+                }
+                if(isset($value['module']['icoPic']['picThumb'])){
+                    $value['module']['icoPic']['picThumb'] = $this->isUrl($value['module']['icoPic']['picThumb']);
+                }
+            }
+
+            if(isset($value['module']['bannerContent']['picList'])) {
+                if(isset($value['module']['bannerContent']['picUrl'])){
+                    $value['module']['bannerContent']['picUrl'] = $this->isUrl($value['module']['bannerContent']['picUrl']);
+                    $value['module']['bannerContent']['picThumb'] = $this->isUrl($value['module']['bannerContent']['picThumb']);
                 } else {
-                    foreach ($value['module']['banner_content']['pic_list'] as $k=> $v) {
-                        if(isset($value['module']['banner_content']['pic_list'][$k]['pic_url'])) {
-                            $value['module']['banner_content']['pic_list'][$k]['pic_url'] = $this->isUrl($v['pic_url']);
+                    foreach ($value['module']['bannerContent']['picList'] as $k=> $v) {
+                        if(isset($value['module']['bannerContent']['picList'][$k]['picUrl'])) {
+                            $value['module']['bannerContent']['picList'][$k]['picUrl'] = $this->isUrl($v['picUrl']);
                         }
-                        if(isset($value['module']['banner_content']['pic_list'][$k]['pic_thumb'])){
-                            $value['module']['banner_content']['pic_list'][$k]['pic_thumb'] = $this->isUrl($v['pic_thumb']);
+                        if(isset($value['module']['bannerContent']['picList'][$k]['picThumb'])){
+                            $value['module']['bannerContent']['picList'][$k]['picThumb'] = $this->isUrl($v['picThumb']);
                         }
                     }
                 }
             }
 
-            if(isset($value['module']['category_list'])) {
-                foreach ($value['module']['category_list'] as $k=> $v) {
-                    if(isset($value['module']['category_list'][$k]['pic_url'])) {
-                        $value['module']['category_list'][$k]['pic_url'] = $this->isUrl($v['pic_url']);
+            if(isset($value['module']['categoryList'])) {
+                foreach ($value['module']['categoryList'] as $k=> $v) {
+                    if(isset($value['module']['categoryList'][$k]['picUrl'])) {
+                        $value['module']['categoryList'][$k]['picUrl'] = $this->isUrl($v['picUrl']);
                     }
-                    if(isset($value['module']['category_list'][$k]['pic_thumb'])) {
-                        $value['module']['category_list'][$k]['pic_thumb'] = $this->isUrl($v['pic_thumb']);
+                    if(isset($value['module']['categoryList'][$k]['picThumb'])) {
+                        $value['module']['categoryList'][$k]['picThumb'] = $this->isUrl($v['picThumb']);
                     }
                 }
             }
 
-            if(isset($value['module']['title']['title_background_pic']['pic_url'])) {
-                if(isset($value['module']['title']['title_background_pic']['pic_url'])) {
-                    $value['module']['title']['title_background_pic']['pic_url'] = $this->isUrl(
-                        $value['module']['title']['title_background_pic']['pic_url']
+            if(isset($value['module']['title']['titleBackgroundPic']['picUrl'])) {
+                if(isset($value['module']['title']['titleBackgroundPic']['picUrl'])) {
+                    $value['module']['title']['titleBackgroundPic']['picUrl'] = $this->isUrl(
+                        $value['module']['title']['titleBackgroundPic']['picUrl']
                     );
                 }
-                if(isset($value['module']['title']['title_background_pic']['pic_thumb'])) {
-                    $value['module']['title']['title_background_pic']['pic_thumb'] = $this->isUrl(
-                        $value['module']['title']['title_background_pic']['pic_thumb']
+                if(isset($value['module']['title']['titleBackgroundPic']['picThumb'])) {
+                    $value['module']['title']['titleBackgroundPic']['picThumb'] = $this->isUrl(
+                        $value['module']['title']['titleBackgroundPic']['picThumb']
                     );
                 }
             }
 
-            if (isset($value['module']['pic_list'])) {
-                if (isset($value['module']['pic_list']['pic_url'])) {
-                    $value['module']['pic_list']['pic_url'] = $this->isUrl($value['module']['pic_list']['pic_url']);
-                    $value['module']['pic_list']['pic_thumb'] = $this->isUrl($value['module']['pic_list']['pic_thumb']);
+            if (isset($value['module']['picList'])) {
+                if (isset($value['module']['picList']['picUrl'])) {
+                    $value['module']['picList']['picUrl'] = $this->isUrl($value['module']['picList']['picUrl']);
+                    $value['module']['picList']['picThumb'] = $this->isUrl($value['module']['picList']['picThumb']);
                 } else {
-                    foreach ($value['module']['pic_list'] as $k => $v) {
-                        if(isset($value['module']['pic_list'][$k]['pic_url'])){
-                            $value['module']['pic_list'][$k]['pic_url'] = $this->isUrl($v['pic_url']);
+                    foreach ($value['module']['picList'] as $k => $v) {
+                        if(isset($value['module']['picList'][$k]['picUrl'])){
+                            $value['module']['picList'][$k]['picUrl'] = $this->isUrl($v['picUrl']);
                         }
-                        if(isset($value['module']['pic_list'][$k]['pic_thumb'])){
-                            $value['module']['pic_list'][$k]['pic_thumb'] = $this->isUrl($v['pic_thumb']);
+                        if(isset($value['module']['picList'][$k]['picThumb'])){
+                            $value['module']['picList'][$k]['picThumb'] = $this->isUrl($v['picThumb']);
                         }
                     }
                 }
             }
 
-            if (isset($value['module']['pic_list2'])) {
-                foreach ($value['module']['pic_list2'] as $k => $v) {
-                    if(isset($value['module']['pic_list2'][$k]['pic_url'])){
-                        $value['module']['pic_list2'][$k]['pic_url'] = $this->isUrl($v['pic_url']);
+            if (isset($value['module']['picList2'])) {
+                foreach ($value['module']['picList2'] as $k => $v) {
+                    if(isset($value['module']['picList2'][$k]['picUrl'])){
+                        $value['module']['picList2'][$k]['picUrl'] = $this->isUrl($v['picUrl']);
                     }
-                    if(isset($value['module']['pic_list2'][$k]['pic_thumb'])){
-                        $value['module']['pic_list2'][$k]['pic_thumb'] = $this->isUrl($v['pic_thumb']);
-                    }
-                }
-            }
-            if (isset($value['module']['pic_list3'])) {
-                foreach ($value['module']['pic_list3'] as $k => $v) {
-                    if(isset($value['module']['pic_list3'][$k]['pic_url'])) {
-                        $value['module']['pic_list3'][$k]['pic_url'] = $this->isUrl($v['pic_url']);
-                    }
-                    if(isset($value['module']['pic_list3'][$k]['pic_thumb'])) {
-                        $value['module']['pic_list3'][$k]['pic_thumb'] = $this->isUrl($v['pic_thumb']);
+                    if(isset($value['module']['picList2'][$k]['picThumb'])){
+                        $value['module']['picList2'][$k]['picThumb'] = $this->isUrl($v['picThumb']);
                     }
                 }
             }
-            if (isset($value['module']['nav_background_pic'])) {
-                $value['module']['nav_background_pic']['pic_url'] = $this->isUrl($value['module']['nav_background_pic']['pic_url']);
-                $value['module']['nav_background_pic']['pic_thumb'] = $this->isUrl($value['module']['nav_background_pic']['pic_thumb']);
+            if (isset($value['module']['picList3'])) {
+                foreach ($value['module']['picList3'] as $k => $v) {
+                    if(isset($value['module']['picList3'][$k]['picUrl'])) {
+                        $value['module']['picList3'][$k]['picUrl'] = $this->isUrl($v['picUrl']);
+                    }
+                    if(isset($value['module']['picList3'][$k]['picThumb'])) {
+                        $value['module']['picList3'][$k]['picThumb'] = $this->isUrl($v['picThumb']);
+                    }
+                }
             }
-            if (isset($value['module']['logo_pic'])) {
-                $value['module']['logo_pic']['pic_url'] = $this->isUrl($value['module']['logo_pic']['pic_url']);
-                $value['module']['logo_pic']['pic_thumb'] = $this->isUrl($value['module']['logo_pic']['pic_thumb']);
+            if (isset($value['module']['navBackgroundPic'])) {
+                $value['module']['navBackgroundPic']['picUrl'] = $this->isUrl($value['module']['navBackgroundPic']['picUrl']);
+                $value['module']['navBackgroundPic']['picThumb'] = $this->isUrl($value['module']['navBackgroundPic']['picThumb']);
+            }
+            if (isset($value['module']['logoPic'])) {
+                $value['module']['logoPic']['picUrl'] = $this->isUrl($value['module']['logoPic']['picUrl']);
+                $value['module']['logoPic']['picThumb'] = $this->isUrl($value['module']['logoPic']['picThumb']);
             }
         }
         return $data;

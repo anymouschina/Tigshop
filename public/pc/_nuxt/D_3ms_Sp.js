@@ -1,0 +1,1 @@
+import{aw as a,at as r}from"./vO8z_6wc.js";const e=r=>a({url:"order/pay/index",method:"get",params:r}),t=a=>r({url:"order/pay/create",method:"get",params:a}),o=a=>r({url:"order/pay/checkStatus",method:"get",params:a});export{o as a,t as c,e as o};

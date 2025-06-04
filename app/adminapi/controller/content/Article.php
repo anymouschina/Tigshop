@@ -63,8 +63,7 @@ class Article extends AdminBaseController
         $total = $this->articleService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -75,13 +74,13 @@ class Article extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = $this->articleService->getDetail($id)->toArray();
         $item["product_ids"] = array_column($item['product_article'], 'goods_id');
         unset($item["product_article"]);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+             $item
+        );
     }
 
     /**
@@ -129,7 +128,7 @@ class Article extends AdminBaseController
 
         $result = $this->articleService->createArticle($data);
         if ($result) {
-            return $this->success(/** LANG */'文章添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'文章添加失败');
         }
@@ -141,7 +140,7 @@ class Article extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $data = $this->requestData();
         $data["article_id"] = $id;
         try {
@@ -154,7 +153,7 @@ class Article extends AdminBaseController
 
         $result = $this->articleService->updateArticle($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'文章更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'文章更新失败');
         }
@@ -167,8 +166,8 @@ class Article extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id = $this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['article_title', 'article_sn', 'sort_order', 'is_hot', 'is_show'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -176,12 +175,12 @@ class Article extends AdminBaseController
 
         $data = [
             'article_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->articleService->updateArticleField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -191,9 +190,9 @@ class Article extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $this->articleService->deleteArticle($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -203,20 +202,20 @@ class Article extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
         // 转移的分类
-        $target_cat = input('target_cat/a', []);
+        $target_cat =$this->request->all('target_cat/a', []);
 
-        if (in_array(input('type'),['del','show',"hide","move_cat"])) {
+        if (in_array($this->request->all('type'),['del','show',"hide","move_cat"])) {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $id) {
+                foreach ($this->request->all('ids') as $id) {
                     $id = intval($id);
-                    $this->articleService->batchOperation($id, input('type'),$target_cat);
+                    $this->articleService->batchOperation($id,$this->request->all('type'),$target_cat);
                 }
                 Db::commit();
             } catch (\Exception $exception) {
@@ -224,7 +223,7 @@ class Article extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

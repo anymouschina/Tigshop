@@ -3,12 +3,12 @@
 use think\facade\Route;
 
 // 获取所有权限
-Route::get('authority/authority/get_all_authority', 'authority.authority/getAllAuthority');
+Route::get('authority/authority/getAllAuthority', 'authority.authority/getAllAuthority');
 
 // 权限组
 Route::group('authority', function () {
     // 管理员日志
-    Route::group('admin_log', function () {
+    Route::group('adminLog', function () {
         // 列表
         Route::get('list', 'authority.adminLog/list')->append([
             //用于权限校验的名称
@@ -17,7 +17,7 @@ Route::group('authority', function () {
     });
 
     // 角色管理
-    Route::group('admin_role', function () {
+    Route::group('adminRole', function () {
         // 角色列表
         Route::get('list', 'authority.adminRole/list');
         // 角色详情
@@ -35,7 +35,7 @@ Route::group('authority', function () {
             "authorityCheckSubPermissionName" => 'adminRoleDelManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'authority.adminRole/updateField')->append([
+        Route::post('updateField', 'authority.adminRole/updateField')->append([
             "authorityCheckSubPermissionName" => 'adminRoleUpdateManage'
         ]);
         // 批量操作
@@ -48,13 +48,13 @@ Route::group('authority', function () {
     ]);
 
     // 管理员
-    Route::group('admin_user', function () {
+    Route::group('adminUser', function () {
         // 管理员列表
         Route::get('list', 'authority.adminUser/list');
         // 指定管理员详情
         Route::get('detail', 'authority.adminUser/detail');
         // 当前管理员详情
-        Route::get('mine_detail', 'authority.adminUser/mineDetail');
+        Route::get('mineDetail', 'authority.adminUser/mineDetail');
         // 管理员添加
         Route::post('create', 'authority.adminUser/create')->append([
             "authorityCheckSubPermissionName" => 'adminUserUpdateManage'
@@ -68,7 +68,7 @@ Route::group('authority', function () {
             "authorityCheckSubPermissionName" => 'adminUserDelManage'
         ]);
         //更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'adminUserUpdateManage'
         ]);
         // 配置
@@ -78,13 +78,13 @@ Route::group('authority', function () {
             "authorityCheckSubPermissionName" => 'adminUserBatchManage'
         ]);
         // 账户修改
-        Route::post('modify_manage_accounts', 'authority.adminUser/modifyManageAccounts')->append([
+        Route::post('modifyManageAccounts', 'authority.adminUser/modifyManageAccounts')->append([
             "authorityCheckSubPermissionName" => 'modifyManageAccountsManage'
         ]);
         // 获取验证码
-        Route::get('get_code', 'authority.adminUser/getCode');
+        Route::get('getCode', 'authority.adminUser/getCode');
         // 验证验证码
-        Route::post('check_code', 'authority.adminUser/checkCode');
+        Route::post('checkCode', 'authority.adminUser/checkCode');
     })->append([
         //用于权限校验的名称
         'authorityCheckAppendName' => 'adminUserManage'
@@ -94,6 +94,8 @@ Route::group('authority', function () {
     Route::group('authority', function () {
         // 权限列表
         Route::get('list', 'authority.authority/list');
+        //获取parent_name
+        Route::get('getAuthorityParentName', 'authority.authority/getAuthorityParentName');
         // 权限详情
         Route::get('detail', 'authority.authority/detail');
         // 权限添加
@@ -110,7 +112,7 @@ Route::group('authority', function () {
             "authorityCheckSubPermissionName" => 'authorityDelManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'authority.authority/updateField')->append([
+        Route::post('updateField', 'authority.authority/updateField')->append([
             "authorityCheckSubPermissionName" => 'authorityUpdateManage'
         ]);
         // 批量操作
@@ -141,7 +143,7 @@ Route::group('authority', function () {
             "authorityCheckSubPermissionName" => 'suppliersDelManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'authority.suppliers/updateField')->append([
+        Route::post('updateField', 'authority.suppliers/updateField')->append([
             "authorityCheckSubPermissionName" => 'suppliersUpdateManage'
         ]);
         // 批量操作

@@ -23,6 +23,7 @@ use app\service\admin\product\ProductAttributesService;
 use app\service\admin\product\ProductDetailService;
 use app\service\admin\product\ProductPriceService;
 use app\service\admin\product\ProductStockService;
+use app\service\admin\promotion\PointsExchangeService;
 use app\service\admin\user\UserCouponService;
 use app\service\admin\user\UserRankService;
 use app\service\admin\user\UserService;
@@ -33,6 +34,7 @@ use think\db\exception\DataNotFoundException;
 use think\db\exception\DbException;
 use think\db\exception\ModelNotFoundException;
 use utils\Config;
+use utils\Config as UtilsConfig;
 use utils\Time;
 use utils\Util;
 
@@ -161,7 +163,7 @@ class CartService extends BaseService
 
         // 检查库存
         foreach ($data as $val) {
-            if (app(ProductStockService::class)->checkProductStock($val['quantity'], $id, $val['sku_id']) === false) {
+            if (app(ProductStockService::class)->checkProductStock($val['quantity'], $id, $val['sku_id']) === false ) {
                 throw new ApiException(/** LANG */ \utils\Util::lang('商品:%s 已加购总数达库存上限', '', [$product['product_name']]));
             }
         }
@@ -190,7 +192,7 @@ class CartService extends BaseService
     public function checkUserCompanyAuth(int $user_id):void
     {
         $user = User::find($user_id);
-        if (Config::get("is_identity",'base') && config('app.IS_B2B') == 1) {
+        if (Config::get("isIdentity") && config('app.IS_B2B') == 1) {
             if (!empty($user) && $user->is_company_auth == 0) {
                 throw new ApiException(/** LANG */ \utils\Util::lang('请先完成实名认证'));
             }
@@ -217,16 +219,22 @@ class CartService extends BaseService
         foreach ($cart_list as $key => $row) {
             //查询商品信息和查询店铺状态
             $product_info = Product::where('product_id',
-                $row['product_id'])->field('product_name,shop_id,product_price')->find();
+                $row['product_id'])->field('product_name,shop_id,product_price,no_shipping')->find();
             app(ShopService::class)->checkShopStatus($product_info['shop_id'], $product_info['product_name']);
 
             $row['is_checked'] = $row['is_checked'] == 1 ? true : false;
-            $row['price'] = app(ProductPriceService::class)->getProductFinalPrice($row['product_id'],
-                $row['sku'] ? $row['sku']['sku_price'] : $product_info['product_price'], $row['sku_id'],
-                app(UserService::class)->getUserRankId(request()->userId),
-                app(UserRankService::class)->getUserRankList());
+            if ($type == Cart::TYPE_EXCHANGE) {
+                $row['price'] = $row['sku'] ? $row['sku']['sku_price'] : $product_info['product_price'];
+            } else {
+                $row['price'] = app(ProductPriceService::class)->getProductFinalPrice($row['product_id'],
+                    $row['sku'] ? $row['sku']['sku_price'] : $product_info['product_price'], $row['sku_id'],
+                    app(UserService::class)->getUserRankId(request()->userId),
+                    app(UserRankService::class)->getUserRankList());
+            }
+
             $row['stock'] = app(ProductStockService::class)->getProductStock($row['product_id'], $row['sku_id'], $type > 1 ? 1 : 0);
             $row['has_sku'] = !empty($row['sku']);
+
             $row['subtotal'] = bcmul($row['quantity'], $row['price'], 2);
             $row['origin_price'] = $row['price'];
             $row['is_disabled'] = false;
@@ -252,6 +260,12 @@ class CartService extends BaseService
             if ($row['is_checked']) {
                 $total['checked_count'] += $row['quantity'];
                 $total['product_amount'] += $row['subtotal'];
+            }
+            if (!isset($carts[$row['shop_id']]['no_shipping'])) {
+                $carts[$row['shop_id']]['no_shipping'] = 1;
+            }
+            if ($product_info['no_shipping'] == 0 && $carts[$row['shop_id']]['no_shipping'] == 1) {
+                $carts[$row['shop_id']]['no_shipping'] = 0;
             }
             $carts[$row['shop_id']]['shop_id'] = $row['shop_id'];
             $carts[$row['shop_id']]['shop_title'] = !empty($row['shop']) ? $row['shop']['shop_title'] : '';
@@ -347,10 +361,10 @@ class CartService extends BaseService
         $data = [];
         $existing_ids = Cart::where('user_id', request()->userId)->column('cart_id');
         foreach ($arr as $key => $value) {
-            if (in_array($value['cart_id'], $existing_ids)) {
+            if (in_array($value['cartId'], $existing_ids)) {
                 $data[] = [
-                    'cart_id' => intval($value['cart_id']),
-                    'is_checked' => $value['is_checked'] == 1 ? 1 : 0,
+                    'cart_id' => intval($value['cartId']),
+                    'is_checked' => $value['isChecked'] == 1 ? 1 : 0,
                 ];
             }
         }
@@ -461,10 +475,10 @@ class CartService extends BaseService
                 //返回该产品所有的附加属性
                 if(isset($item['extra_sku_data'])){
                     if (is_array($item['extra_sku_data']) && !empty($item['extra_sku_data'])) {
-                        $attr_ids = array_column($item['extra_sku_data'], 'attributes_id');
+                        $attr_ids = array_column($item['extra_sku_data'], 'attributesId');
                         foreach ($item['extra_sku_data'] as $ke => $attr_item) {
                             $shopCart['carts'][$k]['extra_sku_data'][$ke]['total_attr_price'] = bcmul(
-                                (string)$attr_item['attr_price'],
+                                (string)$attr_item['attrPrice'],
                                 (string)$item['quantity'],
                                 2);
                         }
@@ -598,6 +612,9 @@ class CartService extends BaseService
             if ($maxCoupon) {
                 $use_coupon_ids[] = $maxCoupon['coupon_id'];
             }
+            if (UtilsConfig::get('useCoupon') != 1) {
+                $use_coupon_ids = [];
+            }
 
 
             //计算最大优惠券
@@ -677,7 +694,7 @@ class CartService extends BaseService
                     }
                 }
                 foreach ($cart['carts'][$cartIndex]['gift'] as &$gift) {
-                    $gift['num'] = floor($shopTotal / $gift['min_amount']) * $gift['num'];
+                    $gift['num'] = floor($shopTotal / $gift['minAmount']) * $gift['num'];
                 }
             }
             $cart['carts'][$cartIndex]['carts'] = array_values($promotions);

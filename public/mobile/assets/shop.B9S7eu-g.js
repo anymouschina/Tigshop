@@ -1,1 +1,0 @@
-import{Y as o}from"./index-BKXBH4vI.js";const s=s=>o({url:`shop/shop/detail?shop_id=${s}`,method:"get"}),t=s=>o({url:"shop/shop/collect",method:"post",data:s}),e=s=>o({url:`shop/shop/decorate?shop_id=${s}`,method:"get"}),h=s=>o({url:`shop/category/tree?shop_id=${s}`,method:"get"}),p=s=>o({url:"shop/shop/list",method:"get",params:s});export{e as a,s as b,h as c,p as g,t as s};

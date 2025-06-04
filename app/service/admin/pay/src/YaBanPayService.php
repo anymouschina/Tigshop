@@ -36,10 +36,10 @@ class YaBanPayService extends PayService
 
     public function __construct()
     {
-        $config = Config::getConfig('payment');
-        $this->uid = $config['yabandpay_uid'];
-        $this->secret_key = $config['yabandpay_secret_key'];
-        $this->currency = $config['yabanpay_currency'];
+        $config = Config::getConfig();
+        $this->uid = $config['yabandpayUid'];
+        $this->secret_key = $config['yabandpaySecretKey'];
+        $this->currency = $config['yabanpayCurrency'];
     }
 
     /**

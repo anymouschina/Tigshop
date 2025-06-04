@@ -55,8 +55,7 @@ class ProductServices extends AdminBaseController
         $total = $this->productServicesService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -68,11 +67,11 @@ class ProductServices extends AdminBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->productServicesService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -92,7 +91,7 @@ class ProductServices extends AdminBaseController
 
         $result = $this->productServicesService->updateProductServices(0, $data, true);
         if ($result) {
-            return $this->success('商品服务添加成功');
+            return $this->success();
         } else {
             return $this->error('商品服务更新失败');
         }
@@ -105,7 +104,7 @@ class ProductServices extends AdminBaseController
      */
     public function update(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'product_service_id' => $id,
             'product_service_name' => '',
@@ -117,7 +116,7 @@ class ProductServices extends AdminBaseController
 
         $result = $this->productServicesService->updateProductServices($id, $data, false);
         if ($result) {
-            return $this->success('商品服务更新成功');
+            return $this->success();
         } else {
             return $this->error('商品服务更新失败');
         }
@@ -130,8 +129,8 @@ class ProductServices extends AdminBaseController
      */
     public function updateField(): \think\Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['product_service_name', 'product_service_desc', 'default_on', 'sort_order'])) {
             return $this->error('#field 错误');
@@ -139,12 +138,12 @@ class ProductServices extends AdminBaseController
 
         $data = [
             'product_service_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->productServicesService->updateProductServicesField($id, $data);
 
-        return $this->success('更新成功');
+        return $this->success();
     }
 
     /**
@@ -154,9 +153,9 @@ class ProductServices extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->productServicesService->deleteProductServices($id);
-        return $this->success('指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -166,16 +165,16 @@ class ProductServices extends AdminBaseController
      */
     public function batch(): \think\Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error('未选择项目');
         }
 
-        if (input('type') == 'del') {
-            foreach (input('ids') as $key => $id) {
+        if ($this->request->all('type') == 'del') {
+            foreach ($this->request->all('ids') as $key => $id) {
                 $id = intval($id);
                 $this->productServicesService->deleteProductServices($id);
             }
-            return $this->success('批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error('#type 错误');
         }

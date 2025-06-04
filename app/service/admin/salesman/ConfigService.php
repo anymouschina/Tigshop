@@ -23,7 +23,7 @@ class ConfigService extends BaseService
         }
 
         // 分销模式配置验证
-        if ($code == 'salesman_config') {
+        if ($code == 'salesmanConfig') {
             $this->adjustLevels($data['level']);
         }
 
@@ -87,7 +87,11 @@ class ConfigService extends BaseService
     public function getDetail(string $code, int $shop_id = 0): ?array
     {
         $data = Config::where(['code' => $code, 'shop_id' => $shop_id])->findOrEmpty();
-        return !empty($data['data']) ? $data['data'] : null;
+        $data = !empty($data['data']) ? $data['data'] : null;
+        if (!empty($data)) {
+            return camelCase($data);
+        }
+        return null;
     }
 
     /**
@@ -98,7 +102,7 @@ class ConfigService extends BaseService
      */
     public function getSalesmanCommissionRate(int $level): mixed
     {
-        $detail = $this->getDetail('salesman_config');
+        $detail = $this->getDetail('salesmanConfig');
         if (!empty($detail['level'])) {
             foreach ($detail['level'] as $key => $value) {
                 if ($level == $value['id']) {
@@ -118,7 +122,7 @@ class ConfigService extends BaseService
     public function getSalesmanConfig(): ?array
     {
 
-        $data = Config::where(['code' => 'salesman_config'])->findOrEmpty();
+        $data = Config::where(['code' => 'salesmanConfig'])->findOrEmpty();
         $data = !empty($data['data']) ? $data['data'] : null;
         return $data;
     }
@@ -131,7 +135,7 @@ class ConfigService extends BaseService
      */
     public function getSalesmanSettlement(): ?array
     {
-        $data = Config::where(['code' => 'salesman_settlement'])->findOrEmpty();
+        $data = Config::where(['code' => 'salesmanSettlement'])->findOrEmpty();
         $data = !empty($data['data']) ? $data['data'] : null;
         return $data;
     }

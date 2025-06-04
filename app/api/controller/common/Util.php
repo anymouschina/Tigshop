@@ -39,11 +39,9 @@ class Util extends IndexBaseController
      */
     public function qrCode(): Response
     {
-        $data = input('url');
+        $data = $this->request->all('url');
         $qrcode = (new QRCode)->render($data);
-        return $this->success([
-            'qrcode' => $qrcode,
-        ]);
+        return $this->success($qrcode);
     }
 
     /**
@@ -57,10 +55,10 @@ class Util extends IndexBaseController
      */
     public function getMiniProgramCode(): Response
     {
-        $path = input('path', '');
-        $product_id = input('id', 0);
+        $path = $this->request->all('path', '');
+        $product_id = $this->request->all('id', 0);
         $buffer = app(WechatOAuthService::class)->getMiniCode($path,$product_id);
-        return $this->success(['qrcode' => $buffer]);
+        return $this->success($buffer);
     }
 
 }

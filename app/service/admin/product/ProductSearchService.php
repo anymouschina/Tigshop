@@ -121,6 +121,13 @@ class ProductSearchService extends BaseService
             $params['sort_order'] = $this->sortOrder;
         }
         $product_list = app(ProductService::class)->getProductList($params);
+        foreach ($product_list as &$item) {
+            $productDetailService = new ProductDetailService($item['product_id']);
+            $productAvailability = $productDetailService->getProductSkuDetail($item['product_sku']['0']['sku_id'] ?? 0,
+                0,
+                '');
+            $item['price'] = $productAvailability['price'];
+        }
         return $product_list;
     }
     public function getProductCount(): int

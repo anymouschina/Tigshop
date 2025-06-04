@@ -13,7 +13,7 @@ Route::group('shop', function () {
         // 分类
         Route::get('category', 'category');
         // 获取当前分类的父级分类
-        Route::get('parent_tree', 'parentTree');
+        Route::get('parentTree', 'parentTree');
         // 收藏
         Route::post('collect', 'collect')->middleware([
             \app\api\middleware\CheckLogin::class
@@ -33,7 +33,7 @@ Route::group('shop', function () {
         // 分类
         Route::get('tree', 'tree');
         // 获取当前分类的父级分类
-        Route::get('parent_tree', 'parentTree');
+        Route::get('parentTree', 'parentTree');
 
 
     })->prefix("shop.category/")->middleware([

@@ -1,1 +1,0 @@
-import{aq as e}from"./BLNaUqdG.js";const s=()=>e({url:"user/invoice/detail",method:"get"}),t=s=>e({url:"user/invoice/update",method:"post",params:s}),a=s=>e({url:"user/invoice/create",method:"post",params:s}),o=()=>e({url:"user/invoice/get_status",method:"get"});export{s as a,o as g,a as i,t as u};

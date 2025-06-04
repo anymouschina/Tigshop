@@ -70,11 +70,13 @@ class GalleryPic extends AdminBaseController
             $gallery_info = $this->galleryService->getDetail($filter['gallery_id']);
         }
         return $this->success([
-            'filter_result' => $filterResult,
+            'gallery_pic_page' => [
+                'records' => $filterResult,
+                'total' => $total,
+            ],
             'child_gallery_list' => $child_gallery_list ?? [],
             'gallery_info' => $gallery_info ?? [],
-            'filter' => $filter,
-            'total' => $total,
+
         ]);
     }
 
@@ -84,11 +86,11 @@ class GalleryPic extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->galleryPicService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -98,8 +100,8 @@ class GalleryPic extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['pic_name', 'sort_order'])) {
             return $this->error('#field 错误');
@@ -107,12 +109,12 @@ class GalleryPic extends AdminBaseController
 
         $data = [
             'pic_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->galleryPicService->updateGalleryPicField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -123,7 +125,7 @@ class GalleryPic extends AdminBaseController
      */
     public function uploadImg(): Response
     {
-        $gallery_id = input('gallery_id/d', 0);
+        $gallery_id =$this->request->all('gallery_id/d', 0);
         if ($gallery_id > 0) {
             $gallery_info = $this->galleryService->getDetail($gallery_id);
             if (!$gallery_info) {
@@ -167,9 +169,9 @@ class GalleryPic extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->galleryPicService->deleteGalleryPic($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -179,15 +181,15 @@ class GalleryPic extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->galleryPicService->deleteGalleryPic($id);
                 }
@@ -197,7 +199,7 @@ class GalleryPic extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

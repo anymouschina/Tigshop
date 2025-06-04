@@ -33,7 +33,7 @@ class DecorateShare extends AdminBaseController
         }
         $res = $this->decorateShareService->share($filter['decorate_id']);
         return $this->success(
-            ['item' => $res]
+             $res
         );
     }
 
@@ -54,6 +54,6 @@ class DecorateShare extends AdminBaseController
         if(!$res) {
             return $this->error('导入模版失败!');
         }
-        return $this->success('导入模板成功');
+        return $this->success();
     }
 }

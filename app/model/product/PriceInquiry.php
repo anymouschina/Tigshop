@@ -15,7 +15,7 @@ class PriceInquiry extends Model
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id', 'product_id')
-            ->field(['product_id','product_name','product_sn']);
+            ->field(['product_id','product_name','product_sn', 'pic_thumb']);
     }
 
     public function shopInfo()

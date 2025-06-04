@@ -50,10 +50,9 @@ class AccountPanel extends AdminBaseController
 
         $filterResult = $this->accountPanelService->getFilterResult($filter);
 
-        return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
-        ]);
+        return $this->success(
+            $filterResult
+        );
     }
 
 }

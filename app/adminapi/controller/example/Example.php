@@ -87,7 +87,7 @@ class Example extends AdminBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('example_id/d', 0);
+        $id =$this->request->all('example_id/d', 0);
         $detail = $this->exampleService->getDetail($id);
         return $this->success([
             'item' => $detail,
@@ -151,7 +151,7 @@ class Example extends AdminBaseController
      */
     public function del(): \think\Response
     {
-        $id = input('example_id/d', 0);
+        $id =$this->request->all('example_id/d', 0);
         $this->exampleService->del($id, request()->adminUid);
         return $this->success('指定项目已删除');
     }
@@ -163,15 +163,15 @@ class Example extends AdminBaseController
      */
     public function batch(): \think\Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error('未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->exampleService->del($id, request()->userId);
                 }

@@ -20,7 +20,7 @@ return [
     'watermark' => [
         'fontsize' => 12,
         'color' => '#ffffff',
-        'text' => 'TigShop',
+        'text' => '',
     ],
     'cache' => [
         'constructor' => [\think\facade\Cache::class, 'instance'],

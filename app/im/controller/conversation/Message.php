@@ -44,7 +44,7 @@ class Message extends BaseController
         }
         $total = $this->service->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $list,
+            'records' => $list,
             'filter' => $filter,
             'total' => $total,
         ]);
@@ -127,7 +127,7 @@ class Message extends BaseController
         $message = $this->service->send($params, false, $userFrom);
 
         return $this->success([
-            'item' => $message
+            $message
         ]);
     }
 

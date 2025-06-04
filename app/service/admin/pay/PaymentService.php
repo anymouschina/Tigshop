@@ -26,7 +26,7 @@ class PaymentService extends BaseService
      */
     public function getConfig(): array
     {
-        return Config::getConfig('payment');
+        return Config::getConfig();
     }
 
     /**
@@ -52,26 +52,30 @@ class PaymentService extends BaseService
         $config = $this->getConfig();
         $platFrom = $this->getPayType();
 
-        if (!empty($config['use_wechat']) && $config['use_wechat'] == 1) {
+        if (!empty($config['useWechat']) && $config['useWechat'] == 1) {
             $payment[] = 'wechat';
         }
-        if (!empty($config['use_alipay']) && $config['use_alipay'] == 1) {
+        if (!empty($config['useAlipay']) && $config['useAlipay'] == 1) {
             if ($platFrom != 'miniProgram' && $platFrom != 'wechat') $payment[] = 'alipay';
         }
-        if (!empty($config['use_paypal']) && $config['use_paypal'] == 1) {
+        if (!empty($config['usePaypal']) && $config['usePaypal'] == 1) {
             $payment[] = 'paypal';
         }
-        if (!empty($config['use_yabanpay']) && $config['use_yabanpay'] == 1) {
+        if (!empty($config['useYabanpay']) && $config['useYabanpay'] == 1) {
             //检测是否开启微信/支付宝支付
-            if ($config['use_yabanpay_wechat']) $payment[] = 'yabanpay_wechat';
-            if ($config['use_yabanpay_alipay'] && $platFrom != 'miniProgram' && $platFrom != 'wechat') $payment[] = 'yabanpay_alipay';
+            if ($config['useYabanpayWechat']) {
+                $payment[] = 'yabanpay_wechat';
+            }
+            if ($config['useYabanpayAlipay'] && $platFrom != 'miniProgram' && $platFrom != 'wechat') {
+                $payment[] = 'yabanpay_alipay';
+            }
         }
-        if (!empty($config['use_yunpay']) && $config['use_yunpay'] == 1) {
+        if (!empty($config['useYunpay']) && $config['useYunpay'] == 1) {
             $payment[] = 'yunpay_wechat';
             if ($platFrom != 'miniProgram' && $platFrom != 'wechat') $payment[] = 'yunpay_alipay';
 //            $payment[] = 'yunpay_yunshanfu';
         }
-        if (!empty($config['use_offline']) && $config['use_offline'] == 1 && $type == 'order') {
+        if (!empty($config['useOffline']) && $config['useOffline'] == 1 && $type == 'order') {
             $payment[] = 'offline';
         }
         return $payment;

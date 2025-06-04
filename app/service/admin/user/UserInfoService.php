@@ -149,13 +149,15 @@ class UserInfoService extends BaseService
                 $user_rank_log = UserRankLog::where('user_id',$this->id)->order("id","DESC")->find();
                 if (!empty($user_rank_log)) {
                     // 有时效
-                    $rank_expire_time = Time::format(strtotime('+' . $rank_config['data']['rank_after_month'] . ' months',Time::toTime($user_rank_log['change_time'])));
+                    $rank_expire_time = Time::format(strtotime('+' . $rank_config['data']['rankAfterMonth'] . ' months',
+                        Time::toTime($user_rank_log['change_time'])));
                     // 等级过期之后重新定义等级
                     if (Time::now() >= Time::toTime($rank_expire_time)) {
                         app(UserRankService::class)->getGrowthByRule($this->id);
                         // 重新定义有效期
                         $new_rank_log = UserRankLog::where('user_id',$this->id)->order("id","DESC")->find();
-                        $rank_expire_time = Time::format(strtotime('+' . $rank_config['data']['rank_after_month'] . ' months',Time::toTime($new_rank_log->change_time)));
+                        $rank_expire_time = Time::format(strtotime('+' . $rank_config['data']['rankAfterMonth'] . ' months',
+                            Time::toTime($new_rank_log->change_time)));
                     }
                 }
                 app(UserRankService::class)->modifyUserRank($this->id);

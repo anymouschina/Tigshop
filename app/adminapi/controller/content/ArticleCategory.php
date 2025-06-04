@@ -60,8 +60,7 @@ class ArticleCategory extends AdminBaseController
         $total = $this->articleCatService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -73,11 +72,11 @@ class ArticleCategory extends AdminBaseController
      */
     public function tree(): Response
     {
-        $pid = input('id/d', 0);
+        $pid =$this->request->all('id/d', 0);
         $cat_list = $this->articleCatService->catList($pid);
-        return $this->success([
-            'filter_result' => $cat_list["children"],
-        ]);
+        return $this->success(
+            $cat_list["children"],
+        );
     }
 
     /**
@@ -86,11 +85,11 @@ class ArticleCategory extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->articleCatService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+             $item
+        );
     }
 
     /**
@@ -127,7 +126,7 @@ class ArticleCategory extends AdminBaseController
         }
         $result = $this->articleCatService->createArticleCat($data);
         if ($result) {
-            return $this->success(/** LANG */'分类名称添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'分类名称添加失败');
         }
@@ -140,7 +139,7 @@ class ArticleCategory extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->requestData();
         $data["article_category_id"] = $id;
         try {
@@ -153,7 +152,7 @@ class ArticleCategory extends AdminBaseController
 
         $result = $this->articleCatService->updateArticleCat($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'分类名称更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'分类名称更新失败');
         }
@@ -166,8 +165,8 @@ class ArticleCategory extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['article_category_name', 'category_sn', 'sort_order'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -175,12 +174,12 @@ class ArticleCategory extends AdminBaseController
 
         $data = [
             'article_category_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->articleCatService->updateArticleCategoryField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -190,9 +189,9 @@ class ArticleCategory extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->articleCatService->deleteArticleCat($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -202,15 +201,15 @@ class ArticleCategory extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->articleCatService->deleteArticleCat($id);
                 }
@@ -220,7 +219,7 @@ class ArticleCategory extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

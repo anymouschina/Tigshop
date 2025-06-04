@@ -22,6 +22,22 @@ class SalesmanMaterial extends BaseModel
         self::STATUS_END => '已失效',
     ];
 
+    public function getPicsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setPicsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
     public function getStatusTextAttr($value, $data)
     {
         if (isset($data['start_time'], $data['end_time']) && !empty($data['start_time'])) {

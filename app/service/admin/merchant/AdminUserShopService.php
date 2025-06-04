@@ -88,7 +88,7 @@ class AdminUserShopService extends BaseService
         if ($data['shop_id']) {
             // 限制店铺子管理员数量 -- 员工数量限制
             $sub_user_count = AdminUserShop::where(['shop_id' => $data['shop_id'],'is_admin' => 0])->count();
-            $max_user = Config::get("max_sub_administrator",'shop');
+            $max_user = Config::get("maxSubAdministrator");
             if ($sub_user_count >= $max_user) {
                 throw new ApiException(/** LANG */"店铺子管理员数量不能超过{$max_user}个,如需修改,请前往配置");
             }

@@ -11,6 +11,7 @@
 
 namespace app\service\admin\order;
 
+use app\job\order\OrderConfirmReceiptJob;
 use app\model\msg\AdminMsg;
 use app\model\order\Order;
 use app\model\order\OrderAmountDetail;
@@ -31,6 +32,8 @@ use app\service\admin\user\UserService;
 use app\service\common\BaseService;
 use exceptions\ApiException;
 use think\facade\Db;
+use utils\Config;
+use utils\TigQueue;
 use utils\Time;
 use utils\Util;
 
@@ -452,6 +455,11 @@ class OrderDetailService extends BaseService
                 if ($deliver_num > $value->quantity || $deliver_num == 0) {
                     throw new ApiException('发货数量错误');
                 }
+                if (in_array($order->order_type, [6, 7, 8])) {
+                    if ($deliver_num != $value->quantity) {
+                        throw new ApiException('虚拟商品，付费商品，卡密商品不允许分批发货');
+                    }
+                }
                 $split_data[] = [
                     'item_id' => $value->item_id,
                     'split_quantity' => $deliver_num,
@@ -502,6 +510,16 @@ class OrderDetailService extends BaseService
             $order->tracking_no = $item['Order']['LogisticCode'];
             $order->save();
         }
+
+         //已发货后添加自动收货逻辑
+        $autoDeliveryDays = Config::get('autoDeliveryDays');
+        if(!empty($autoDeliveryDays) && $autoDeliveryDays > 0) {
+            //触发
+            $days = ceil($autoDeliveryDays * 86400);
+            app(TigQueue::class)->later(OrderConfirmReceiptJob::class, $days,
+                ['order_id' => $order->order_id]);
+        }
+
     }
 
     /**
@@ -644,8 +662,8 @@ class OrderDetailService extends BaseService
             $data['discount_amount'] = $orderAmountDetail['discount_amount'] ?? 0;
             $total_amount = bcsub($total_amount,$data['discount_amount'],2);
             // 配送类型
-            $data['shipping_type_id'] = isset($extension_data['shipping_type'][$shop_id]) ? $extension_data['shipping_type'][$shop_id]['type_id'] : 0;
-            $data['shipping_type_name'] = isset($extension_data['shipping_type'][$shop_id]) ? $extension_data['shipping_type'][$shop_id]['type_name'] : '';
+            $data['shipping_type_id'] = isset($extension_data['shippingType'][$shop_id]) ? $extension_data['shippingType'][$shop_id]['typeId'] : 0;
+            $data['shipping_type_name'] = isset($extension_data['shippingType'][$shop_id]) ? $extension_data['shippingType'][$shop_id]['typeName'] : '';
 
         } else {
             // 优惠券金额（平摊）

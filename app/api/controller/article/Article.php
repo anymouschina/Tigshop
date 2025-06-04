@@ -58,8 +58,7 @@ class Article extends IndexBaseController
         $filterResult = $this->articleService->getFilterLists($filter);
 
         return $this->success([
-            'filter_result' => $filterResult["list"],
-            'filter' => $filter,
+            'records' => $filterResult["list"],
             'total' => $filterResult["count"],
         ]);
     }
@@ -71,7 +70,7 @@ class Article extends IndexBaseController
      */
     public function newsInfo(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = $this->articleService->getNewsDetail($id);
         $next_prev = $this->articleService->getNextAndPrevDetail($id);
         if (!empty($item['product_ids'])) {
@@ -96,8 +95,8 @@ class Article extends IndexBaseController
      */
     public function issueInfo(): \think\Response
     {
-        $id = input('id/d', 0);
-        $article_sn = input('article_sn', '');
+        $id = $this->request->all('id/d', 0);
+        $article_sn = $this->request->all('article_sn', '');
         $item = $this->articleService->getIssueDetail($id, $article_sn);
         $next_prev = $this->articleService->getNextAndPrevDetail($item['article_id']);
         return $this->success([

@@ -59,8 +59,7 @@ class ShippingType extends AdminBaseController
         $total = $this->shippingTypeService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -71,11 +70,11 @@ class ShippingType extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->shippingTypeService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -113,7 +112,7 @@ class ShippingType extends AdminBaseController
         if (request()->shopId) $data['shop_id'] = request()->shopId;
         $result = $this->shippingTypeService->createShippingType($data);
         if ($result) {
-            return $this->success(/** LANG */'配送类型添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'配送类型添加失败');
         }
@@ -126,7 +125,7 @@ class ShippingType extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->requestData();
         $data["shipping_type_id"] = $id;
 
@@ -140,7 +139,7 @@ class ShippingType extends AdminBaseController
 
         $result = $this->shippingTypeService->updateShippingType($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'配送类型更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'配送类型更新失败');
         }
@@ -152,8 +151,8 @@ class ShippingType extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field,
             ['shipping_type_name', 'sort_order', 'is_show', 'shipping_type_desc', 'is_support_cod'])) {
@@ -162,12 +161,12 @@ class ShippingType extends AdminBaseController
 
         $data = [
             'shipping_type_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->shippingTypeService->updateShippingType($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -176,9 +175,9 @@ class ShippingType extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->shippingTypeService->deleteShippingType($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -188,15 +187,15 @@ class ShippingType extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->shippingTypeService->deleteShippingType($id);
                 }
@@ -206,7 +205,7 @@ class ShippingType extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

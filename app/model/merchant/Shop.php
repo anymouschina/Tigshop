@@ -30,6 +30,22 @@ class Shop extends Model
     protected $append = [
         'status_text',
     ];
+
+    public function getKefuInletAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setKefuInletAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
     // 字段处理
     public function getAddTimeAttr($value): string
     {
@@ -124,11 +140,11 @@ class Shop extends Model
         return '0.00';
     }
 
-    public function getKefuInletAttr($value,$data)
-    {
-        if (isset($data['kefu_inlet'])) {
-            return is_array($data['kefu_inlet']) ? $data['kefu_inlet'] : [];
-        }
-        return [];
-    }
+//    public function getKefuInletAttr($value,$data)
+//    {
+//        if (isset($data['kefu_inlet'])) {
+//            return is_array($data['kefu_inlet']) ? $data['kefu_inlet'] : [];
+//        }
+//        return [];
+//    }
 }

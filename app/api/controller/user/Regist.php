@@ -55,18 +55,18 @@ class Regist extends IndexBaseController
             'salesman_id' => 0
         ], 'post');
         $salesman_id = $data['salesman_id'];
-        $shop_reg_closed = Config::get('shop_reg_closed');
+        $shop_reg_closed = Config::get('shopRegClosed');
         if ($shop_reg_closed == 1) {
             $this->error(Util::lang('商城已停止注册！'));
         }
-        $regist_type = input('regist_type', 'mobile');
-        $password = input('password', '');
-        $referrer_user_id = input('referrer_user_id/d', 0);
+        $regist_type = $this->request->all('regist_type', 'mobile');
+        $password = $this->request->all('password', '');
+        $referrer_user_id = $this->request->all('referrer_user_id/d', 0);
         $username = app(UserRegistService::class)->generateUsername();
         if ($regist_type == 'mobile') {
             // 手机号注册
-            $mobile = input('mobile', '');
-            $mobile_code = input('mobile_code', '');
+            $mobile = $this->request->all('mobile', '');
+            $mobile_code = $this->request->all('mobile_code', '');
             if (empty($mobile)) {
                 return $this->error(Util::lang('手机号不能为空'));
             }
@@ -85,8 +85,8 @@ class Regist extends IndexBaseController
             ];
         } elseif ($regist_type == 'email') {
             // 邮箱注册
-            $email = input('email', '');
-            $email_code = input('email_code', '');
+            $email = $this->request->all('email', '');
+            $email_code = $this->request->all('email_code', '');
             if (empty($email)) {
                 return $this->error(Util::lang('邮箱不能为空'));
             }
@@ -117,9 +117,7 @@ class Regist extends IndexBaseController
         app(UserService::class)->setLogin($user->user_id);
 
         $token = app(UserService::class)->getLoginToken($user->user_id);
-        return $this->success([
-            'token' => $token,
-        ]);
+        return $this->success($token);
     }
 
 	/**
@@ -129,13 +127,13 @@ class Regist extends IndexBaseController
 	 */
 	public function sendEmailCode(): \think\Response
     {
-		$email = input('email', '');
+		$email = $this->request->all('email', '');
 		if (!$email) {
 			return $this->error(Util::lang('邮箱不能为空'));
 		}
 		// 行为验证码
 		app(CaptchaService::class)->setTag('emailCode:' . $email)
-			->setToken(input('verify_token', ''))
+			->setToken($this->request->all('verify_token', ''))
 			->verification();
 
 		try {

@@ -60,8 +60,7 @@ class LogisticsCompany extends AdminBaseController
         $total = $this->logisticsCompanyService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -82,10 +81,9 @@ class LogisticsCompany extends AdminBaseController
 
         $filterResult = $this->logisticsCompanyService->getFilterResult($filter);
 
-        return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
-        ]);
+        return $this->success(
+           $filterResult
+        );
     }
 
     /**
@@ -94,11 +92,11 @@ class LogisticsCompany extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->logisticsCompanyService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -131,7 +129,7 @@ class LogisticsCompany extends AdminBaseController
         $data["shop_id"] = request()->shopId;
         $result = $this->logisticsCompanyService->createLogisticsCompany($data);
         if ($result) {
-            return $this->success(/** LANG */'物流公司添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'物流公司更新失败');
         }
@@ -144,7 +142,7 @@ class LogisticsCompany extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'logistics_id' => $id,
             'logistics_name' => '',
@@ -170,7 +168,7 @@ class LogisticsCompany extends AdminBaseController
 
         $result = $this->logisticsCompanyService->updateLogisticsCompany($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'物流公司更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'物流公司更新失败');
         }
@@ -182,8 +180,8 @@ class LogisticsCompany extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['logistics_name', 'sort_order', "is_show", "logistics_code", "logistics_desc"])) {
             return $this->error(/** LANG */'#field 错误');
@@ -191,12 +189,12 @@ class LogisticsCompany extends AdminBaseController
 
         $data = [
             'logistics_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->logisticsCompanyService->updateLogisticsCompanyField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -206,7 +204,7 @@ class LogisticsCompany extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->logisticsCompanyService->deleteLogisticsCompany($id);
         return $this->success(/** LANG */'指定项目已删除');
     }
@@ -218,15 +216,15 @@ class LogisticsCompany extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->logisticsCompanyService->deleteLogisticsCompany($id);
                 }

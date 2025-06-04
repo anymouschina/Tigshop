@@ -14,6 +14,7 @@ namespace app\api\controller\product;
 use app\api\IndexBaseController;
 use app\service\admin\product\ProductDetailService;
 use app\service\admin\product\ProductService;
+use app\service\admin\product\ProductSkuService;
 use app\service\admin\promotion\PointsExchangeService;
 use app\service\admin\user\FeedbackService;
 use app\service\admin\user\UserCouponService;
@@ -50,9 +51,9 @@ class Product extends IndexBaseController
     public function detail(): \think\Response
     {
         // 此处id有可能传的是sn
-        $product_id = input('id', 0);
-        $sku_id = input('sku_id', 0);
-        $goods_sn = input('sn', '');
+        $product_id = $this->request->all('id', 0);
+        $sku_id = $this->request->all('sku_id', 0);
+        $goods_sn = $this->request->all('sn', '');
         if (!empty($goods_sn)) {
             [$product_id, $sku_id] = app(ProductService::class)->getProductKeyBySn($goods_sn);
         }
@@ -67,6 +68,7 @@ class Product extends IndexBaseController
             'desc_arr' => $productDetailService->getDescArr(),
             'sku_list' => $productDetailService->getSkuList(),
             'pic_list' => $productDetailService->getPicList(),
+            'video_list' => $productDetailService->getVideoList(),
             'attr_list' => $productDetailService->getAttrList(),
             'rank_detail' => $productDetailService->getProductCommentRankDetail(),
             'seckill_detail' => $productDetailService->getSeckillInfo(),
@@ -78,16 +80,14 @@ class Product extends IndexBaseController
 
     public function getComment(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $productDetailService = new ProductDetailService($id);
-        return $this->success([
-            'item' => $productDetailService->getProductCommentDetail(),
-        ]);
+        return $this->success($productDetailService->getProductCommentDetail());
     }
 
     public function getCommentList(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $filter = $this->request->only([
             'id' => $id,
             'type/d' => 1,
@@ -98,8 +98,7 @@ class Product extends IndexBaseController
         }
         $productDetailService = new ProductDetailService($id);
         return $this->success([
-            'filter_result' => $productDetailService->getProductCommentList($filter),
-            'filter' => $filter,
+            'records' => $productDetailService->getProductCommentList($filter),
             'total' => $productDetailService->getProductCommentCount($filter),
         ]);
     }
@@ -123,8 +122,7 @@ class Product extends IndexBaseController
         $result = app(FeedbackService::class)->orderInquiryList($filter);
 		$count = app(FeedbackService::class)->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $result,
-            'filter' => $filter,
+            'records' => $result,
             'total' => $count,
         ]);
     }
@@ -139,11 +137,11 @@ class Product extends IndexBaseController
      */
     public function getProductAvailability(): \think\Response
     {
-        $id = input('id/d', 0);
-        $sku_id = input('sku_id/d', 0);
-        $is_exchange = input('is_exchange/d', 0);
+        $id = $this->request->all('id/d', 0);
+        $sku_id = $this->request->all('sku_id/d', 0);
+        $is_exchange = $this->request->all('is_exchange/d', 0);
         //商品附加属性
-        $extra_attr_ids = input('extra_attr_ids', '');
+        $extra_attr_ids = $this->request->all('extra_attr_ids', '');
         $productDetailService = new ProductDetailService($id);
         $result = $productDetailService->getProductSkuDetail($sku_id, $is_exchange, $extra_attr_ids);
         if ($is_exchange){
@@ -162,25 +160,48 @@ class Product extends IndexBaseController
         ]);
     }
 
+
+    public function getBatchProductAvailability()
+    {
+        $sku_ids = $this->request->all('skuIds', 0);
+        $skuId = explode(',', $sku_ids);
+        $result = [];
+        foreach ($skuId as $sku_id) {
+            $sku = app(ProductSkuService::class)->getDetail($sku_id);
+            $productDetailService = new ProductDetailService($sku['product_id']);
+            $productAvailability = $productDetailService->getProductSkuDetail($sku_id, 0, '');
+            $skuResult = [
+                'origin_price' => $productAvailability['origin_price'],
+                'price' => $productAvailability['price'],
+                'stock' => $productAvailability['stock'],
+                'promotion' => $productAvailability['promotion'],
+            ];
+            $result[$sku_id] = $skuResult;
+        }
+        return $this->success($result);
+    }
+
     /**
      * 商品优惠信息
      * @return Response
      */
     public function getProductsPromotion(): \think\Response
     {
-        $products = input('products', []);
-        $shopId = input('shop_id', null);
-        $from = input('from', 'list');
+        $products = $this->request->all('products', []);
+        $params = $this->request->only([
+            'products' => [],
+        ], 'get');
+        $products = $params['products'];
+        $shopId = $this->request->all('shop_id', null);
+        $from = $this->request->all('from', 'list');
         $promotion = app(PromotionService::class)->getProductsPromotion($products, $shopId, $from);
-        return $this->success([
-            'list' => $promotion
-        ]);
+        return $this->success($promotion);
     }
 
     public function getProductAmount()
     {
-        $id = input('id/d', 0);
-        $sku_item = input('sku_item/a', [
+        $id = $this->request->all('id/d', 0);
+        $sku_item = $this->request->all('sku_item/a', [
         ]);
         $return = [
             'count' => 0,
@@ -191,9 +212,29 @@ class Product extends IndexBaseController
             $return['count'] += $item['num'];
             $return['total'] = bcadd(bcmul($item['num'], $itemData['price'], 2), $return['total'], 2);
         }
-        return $this->success([
-            'item' => $return
-        ]);
+        return $this->success($return);
+    }
+
+    /**
+     * 批量获取商品价格
+     */
+    public function getPriceInBatches()
+    {
+        $products = input('products', []);
+        $result = [];
+        foreach ($products as $item) {
+            $productDetailService = new ProductDetailService($item['productId']);
+            $productAvailability = $productDetailService->getProductSkuDetail($item['skuId'], 0, '');
+            $result[] = [
+                'origin_price' => $productAvailability['origin_price'],
+                'price' => $productAvailability['price'],
+                'stock' => $productAvailability['stock'],
+                'promotion' => $productAvailability['promotion'],
+                'sku_id' => $item['skuId'],
+                'product_id' => $item['productId'],
+            ];
+        }
+        return $this->success($result);
     }
 
     /**
@@ -227,8 +268,7 @@ class Product extends IndexBaseController
         $waiting_checked_count = app(ProductService::class)->getWaitingCheckedCount();
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
             'waiting_checked_count' => $waiting_checked_count,
         ]);
@@ -271,9 +311,7 @@ class Product extends IndexBaseController
 
         }
         $coupon = array_merge($coupon, $exist_coupon);
-        return $this->success([
-            'list' => $coupon,
-        ]);
+        return $this->success($coupon);
     }
 
     /**
@@ -283,12 +321,10 @@ class Product extends IndexBaseController
      */
     public function isCollect(): \think\Response
     {
-        $id = input('id/d', "");
+        $id = $this->request->all('id/d', "");
         $productDetailService = new ProductDetailService($id);
         $result = $productDetailService->getIsCollect();
-        return $this->success([
-            'item' => $result,
-        ]);
+        return $this->success($result);
     }
 
     /**
@@ -300,12 +336,10 @@ class Product extends IndexBaseController
      */
     public function getProductRelated():Response
     {
-        $id = input('product_id/d', "");
+        $id = $this->request->all('product_id/d', "");
         $productDetailService = new ProductDetailService($id);
         $result = $productDetailService->getRelatedList();
-        return $this->success([
-            'related_list' => $result,
-        ]);
+        return $this->success($result);
     }
 
     /**
@@ -322,6 +356,6 @@ class Product extends IndexBaseController
         ], 'post');
         $productDetailService = new ProductDetailService($data['product_id']);
         $result = $productDetailService->getPriceInquiry($data);
-        return $result ? $this->success("操作成功") : $this->error("操作失败");
+        return $result ? $this->success() : $this->error("操作失败");
     }
 }

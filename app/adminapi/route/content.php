@@ -23,7 +23,7 @@ Route::group('content', function () {
             "authorityCheckSubPermissionName" => 'articleModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'content.article/updateField')->append([
+        Route::post('updateField', 'content.article/updateField')->append([
             "authorityCheckSubPermissionName" => 'articleModifyManage'
         ]);
         // 批量操作
@@ -36,7 +36,7 @@ Route::group('content', function () {
     ]);
 
     // 文章分类管理
-    Route::group('article_category', function () {
+    Route::group('articleCategory', function () {
         // 文章分类列表
         Route::get('list', 'content.articleCategory/list')->append([
             //用于权限校验的名称
@@ -57,7 +57,7 @@ Route::group('content', function () {
             "authorityCheckSubPermissionName" => 'articleCategoryModifyManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'content.articleCategory/updateField')->append([
+        Route::post('updateField', 'content.articleCategory/updateField')->append([
             "authorityCheckSubPermissionName" => 'articleCategoryModifyManage'
         ]);
         // 获取所有分类

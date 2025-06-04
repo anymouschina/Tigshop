@@ -2,11 +2,12 @@
 
 namespace app\service\admin\image\src;
 
+use app\service\admin\setting\ConfigService;
 use OSS\Core\OssException;
 use OSS\OssClient;
 use think\Exception;
 use think\File\UploadedFile;
-use utils\Config;
+use utils\Config as UtilsConfig;
 
 class Oss
 {
@@ -20,10 +21,10 @@ class Oss
 
     public function __construct()
     {
-        $accessKeyId = Config::get('storage_oss_access_key_id', 'base_api_storage');
-        $accessKeySecret = Config::get('storage_oss_access_key_secret', 'base_api_storage');
-        $bucket = Config::get('storage_oss_bucket', 'base_api_storage');
-        $endpoint = Config::get('storage_oss_region', 'base_api_storage');
+        $accessKeyId = UtilsConfig::get('storageOssAccessKeyId');
+        $accessKeySecret = UtilsConfig::get('storageOssAccessKeySecret');
+        $bucket = UtilsConfig::get('storageOssBucket');
+        $endpoint = UtilsConfig::get('storageOssRegion');
         if (empty($accessKeyId) || empty($accessKeySecret) || empty($endpoint) || empty($bucket)) {
             throw new Exception("OSS参数设置错误！");
         }
@@ -71,7 +72,7 @@ class Oss
         try {
             if (is_string($this->image)) {
                 //替换oss链接地址
-                $storage_url = Config::get('storage_oss_url', 'base_api_storage');
+                $storage_url = UtilsConfig::get('storageOssUrl');
                 $orgPath = str_replace($storage_url, '', $this->orgPath);
                 $this->ossClient->copyObject($this->bucket, $orgPath, $this->bucket, $this->filePath);
             } else {
@@ -80,10 +81,12 @@ class Oss
         } catch (OssException $e) {
             throw new Exception('上传图片失败:' . $e->getMessage());
         }
+
         $this->url = $this->filePath;
-        $upload_save_full_domain = Config::get('upload_save_full_domain');
+        $upload_save_full_domain = UtilsConfig::get('uploadSaveFullDomain');
         if ($upload_save_full_domain) {
-            $storage_url = Config::get('storage_oss_url', 'base_api_storage');
+            $storage_url = !empty(UtilsConfig::get('storageOssUrl')) ?
+                UtilsConfig::get('storageOssUrl'): 'base_api_storage';
             return $storage_url . $this->filePath;
         }
 
@@ -96,9 +99,12 @@ class Oss
      */
     public function changeFilePath(): string
     {
-        $upload_save_full_domain = Config::get('storage_save_full_path', 'base_api_storage');
+        $upload_save_full_domain = !empty(UtilsConfig::get('storageSaveFullPath')) ?
+            UtilsConfig::get('storageSaveFullPath'): 'base_api_storage';
+
         if ($upload_save_full_domain) {
-            $storage_url = Config::get('storage_oss_url', 'base_api_storage');
+            $storage_url = !empty(UtilsConfig::get('storageOssUrl')) ?
+                UtilsConfig::get('storageOssUrl'): 'base_api_storage';
             return $storage_url . $this->filePath;
         }
 

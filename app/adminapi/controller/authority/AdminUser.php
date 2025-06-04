@@ -74,8 +74,7 @@ class AdminUser extends AdminBaseController
         $total = $this->adminUserService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -88,9 +87,9 @@ class AdminUser extends AdminBaseController
     {
         $shopId = request()->shopId;
         $admin_type = request()->adminType;
-        return $this->success([
-            'Role_list' => $this->adminUserService->getRoleList($shopId,$admin_type),
-        ]);
+        return $this->success(
+            $this->adminUserService->getRoleList($shopId,$admin_type)
+        );
     }
 
     /**
@@ -99,13 +98,13 @@ class AdminUser extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->adminUserService->getDetail($id);
         $item['encipher_mobile'] = Format::dimMobile($item->mobile);
 
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
     /**
      * 管理员详情
@@ -116,9 +115,9 @@ class AdminUser extends AdminBaseController
         $item = $this->adminUserService->getDetail(request()->adminUid);
         $item['mobile'] = Format::dimMobile($item->mobile);
 
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -147,7 +146,7 @@ class AdminUser extends AdminBaseController
         $data["merchant_id"] = request()->merchantId;
         if (request()->shopId) {
             $data['shop_id'] = request()->shopId;
-            $data['user_id'] = input('user_id/d', 0);
+            $data['user_id'] =$this->request->all('user_id/d', 0);
             if (empty($data['user_id'])) {
                 return $this->error(lang('商户关联的用户必填'));
             }
@@ -168,7 +167,7 @@ class AdminUser extends AdminBaseController
 
         $result = $this->adminUserService->createAdminUser($data);
         if ($result) {
-            return $this->success(/** LANG */'管理员添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'管理员添加失败');
         }
@@ -181,7 +180,7 @@ class AdminUser extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'admin_id' => $id,
             'username' => '',
@@ -208,7 +207,7 @@ class AdminUser extends AdminBaseController
             throw new ApiException($e->getError());
         }
         if (request()->shopId) {
-            $data['user_id'] = input('user_id/d', 0);
+            $data['user_id'] =$this->request->all('user_id/d', 0);
             if (empty($data['user_id'])) {
                 return $this->error(lang('商户关联的用户必填'));
             }
@@ -222,7 +221,7 @@ class AdminUser extends AdminBaseController
         }
         $result = $this->adminUserService->updateAdminUser($data, $id);
         if ($result) {
-            return $this->success(/** LANG */'管理员更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'管理员更新失败');
         }
@@ -235,8 +234,8 @@ class AdminUser extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id = $this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['is_using'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -244,12 +243,12 @@ class AdminUser extends AdminBaseController
 
         $data = [
             'admin_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->adminUserService->updateAdminUserField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -259,9 +258,9 @@ class AdminUser extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $this->adminUserService->deleteAdminUser($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -271,15 +270,15 @@ class AdminUser extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->adminUserService->deleteAdminUser($id);
                 }
@@ -289,7 +288,7 @@ class AdminUser extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }
@@ -308,7 +307,7 @@ class AdminUser extends AdminBaseController
         $result = app(SmsService::class)->checkCode($data["mobile"], $data["code"]);
         if ($result === true) {
             Cache::delete('loginmobileCode:' . $data["mobile"]);
-            return $this->success(/** LANG */'验证成功');
+            return $this->success();
         }else{
             return $this->error(/** LANG */'验证码错误');
         }
@@ -333,7 +332,7 @@ class AdminUser extends AdminBaseController
         ], 'post');
         $data["admin_uid"] = request()->adminUid;
         $result = $this->adminUserService->modifyManageAccounts($data);
-        return $result ? $this->success(/** LANG */'更新成功') : $this->error(/** LANG */'更新失败');
+        return $result ? $this->success() : $this->error(/** LANG */'更新失败');
     }
 
     /**
@@ -343,18 +342,18 @@ class AdminUser extends AdminBaseController
      */
     public function getCode(): Response
     {
-        $mobile = input('mobile', '');
+        $mobile = $this->request->all('mobile', '');
         if (!$mobile) {
             return $this->error(/** LANG */'手机号不能为空');
         }
         // 行为验证码
         app(CaptchaService::class)->setTag('mobileCode:' . $mobile)
-            ->setToken(input('verify_token', ''))
+            ->setToken($this->request->all('verify_token', ''))
             ->verification();
 
         try {
             app(SmsService::class)->sendCode($mobile);
-            return $this->success(/** LANG */'发送成功！');
+            return $this->success();
         } catch (\Exception $e) {
             return $this->error(/** LANG */'发送失败！' . $e->getMessage());
         }

@@ -26,6 +26,22 @@ class UserWithdrawApply extends Model
     protected $createTime = 'add_time';
     protected $autoWriteTimestamp = true;
 
+
+    public function getAccountDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setAccountDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
     // 关联用户
     public function user()
     {

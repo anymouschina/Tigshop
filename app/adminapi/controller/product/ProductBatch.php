@@ -53,9 +53,9 @@ class ProductBatch extends AdminBaseController
         }
 
         $result = $this->productBatchService->productBatchDeal($data);
-        return $this->success([
-            'filter_result' => $result,
-        ]);
+        return $this->success(
+            $result
+        );
     }
 
     /**
@@ -73,9 +73,9 @@ class ProductBatch extends AdminBaseController
         ], 'post');
 
         $result = $this->productBatchService->productBatchModify($data);
-        return $this->success([
-            'filter_result' => $result,
-        ]);
+        return $this->success(
+          $result
+        );
     }
 
     /**
@@ -87,9 +87,9 @@ class ProductBatch extends AdminBaseController
     {
         $data = $this->request->post();
         $result = $this->productBatchService->productBatchEdit($data);
-        return $this->success([
-            'filter_result' => $result,
-        ]);
+        return $this->success(
+            $result
+        );
     }
 
     /**
@@ -99,6 +99,6 @@ class ProductBatch extends AdminBaseController
     public function downloadTemplate()
     {
         $result = $this->productBatchService->downloadTemplate();
-        return $result ? $this->success("操作成功") : $this->error("操作失败");
+        return $result ? $this->success() : $this->error("操作失败");
     }
 }

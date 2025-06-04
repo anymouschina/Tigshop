@@ -46,24 +46,25 @@ class Login extends BaseController
      */
     public function signin(): Response
     {
-        $login_type = input('login_type', 'password');
+        $login_type =$this->request->all('login_type', 'password');
         if ($login_type == 'password') {
             // 密码登录
-            $username = input('username', '');
-            $password = input('password', '');
+            $username =$this->request->all('username', '');
+            $password =$this->request->all('password', '');
             if (empty($username)) {
                 return $this->error('用户名不能为空');
             }
+            $verifyToken = empty($this->request->all('verify_token', '')) ? '' : $this->request->all('verify_token', '');
             // 行为验证码
             app(CaptchaService::class)->setTag('adminSignin:' . $username)
-                ->setToken(input('verify_token', ''))
+                ->setToken($verifyToken)
                 ->setAllowNoCheckTimes(3) //3次内无需判断
                 ->verification();
             $user = $this->adminUserService->getAdminUserByPassword($username, $password);
         } elseif ($login_type == 'mobile') {
             // 手机登录
-            $mobile = $username = input('mobile', '');
-            $mobile_code = input('mobile_code', '');
+            $mobile = $username =$this->request->all('mobile', '');
+            $mobile_code =$this->request->all('mobile_code', '');
             $user = $this->adminUserService->getAdminUserByMobile($mobile, $mobile_code);
         }
         if (!$user) {
@@ -85,18 +86,18 @@ class Login extends BaseController
      */
     public function sendMobileCode(): Response
     {
-        $mobile = input('mobile', '');
+        $mobile =$this->request->all('mobile', '');
         if (!$mobile) {
             return $this->error('手机号不能为空');
         }
         // 行为验证码
         app(CaptchaService::class)->setTag('mobileCode:' . $mobile)
-            ->setToken(input('verify_token', ''))
+            ->setToken($this->request->all('verify_token', ''))
             ->verification();
 
         try {
             app(SmsService::class)->sendCode($mobile);
-            return $this->success('发送成功！');
+            return $this->success();
         } catch (\Exception $e) {
             return $this->error('发送失败！' . $e->getMessage());
         }

@@ -20,10 +20,10 @@ class PHPMailerWrapper
 
     public function sendMail($to, $subject, $content, $from = "", $fromName = "")
     {
-        $username = Config::get("smtp_user","mail_server");
-        $host = Config::get("smtp_host","mail_server");
-        $password = Config::get("smtp_pass","mail_server");
-        $port = Config::get("smtp_port","mail_server");
+        $username = Config::get("smtpUser");
+        $host = Config::get("smtpHost");
+        $password = Config::get("smtpPass");
+        $port = Config::get("smtpPort");
 
         try {
             $this->mailer->isSMTP();

@@ -20,8 +20,8 @@ class MiniWechatService extends BaseService
     public function getApplication(): object
     {
         if ($this->application != null) return $this->application;
-        $app_id = Config::get('wechat_miniProgram_appId','base_api_mini_program');
-        $app_secret = Config::get('wechat_miniProgram_secret','base_api_mini_program');
+        $app_id = Config::get('wechatMiniProgramAppId');
+        $app_secret = Config::get('wechatMiniProgramSecret');
         if (!$app_id || !$app_secret) {
             throw new ApiException('请先填写小程序appId和secret并保存');
         }

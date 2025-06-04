@@ -1,1 +1,0 @@
-import{y as e}from"./index-CGYuOau0.js";const u=r=>e({url:"user/user_rank/list",method:"get",params:r}),a=r=>e({url:"user/user_rank/"+r,method:"get"}),n=(r,s)=>e({url:"user/user_rank/"+r,method:"post",data:s});export{a,u as g,n as u};

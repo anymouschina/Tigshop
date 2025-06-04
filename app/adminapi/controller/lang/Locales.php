@@ -48,8 +48,7 @@ class Locales extends AdminBaseController
         $total = $this->localesService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -90,7 +89,7 @@ class Locales extends AdminBaseController
         }
 
         $result = $this->localesService->createLocales($data);
-        return $result ? $this->success(/** LANG */'添加成功') : $this->error(/** LANG */'添加失败');
+        return $result ? $this->success() : $this->error(/** LANG */'添加失败');
     }
 
     /**
@@ -101,7 +100,7 @@ class Locales extends AdminBaseController
     public function update():Response
     {
         $data = $this->requestData();
-        $data['id'] = input('id/d', 0);
+        $data['id'] = $this->request->all('id/d', 0);
         try {
             validate(LocalesValidate::class)
                 ->scene('update')
@@ -111,7 +110,7 @@ class Locales extends AdminBaseController
         }
 
         $result = $this->localesService->updateLocales($data['id'],$data);
-        return $result ? $this->success(/** LANG */'编辑成功') : $this->error(/** LANG */'编辑失败');
+        return $result ? $this->success() : $this->error(/** LANG */'编辑失败');
     }
 
     /**
@@ -120,11 +119,11 @@ class Locales extends AdminBaseController
      */
     public function detail():Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->localesService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -134,9 +133,9 @@ class Locales extends AdminBaseController
      */
     public function del():Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->localesService->deleteLocales($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -146,17 +145,17 @@ class Locales extends AdminBaseController
      */
     public function updateField():Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
         if (!in_array($field, ['is_enabled', 'is_default', 'sort'])) {
             return $this->error(/** LANG */'#field 错误');
         }
         $data = [
             'id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
         $this->localesService->updateLocalesField($id, $data);
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -166,17 +165,17 @@ class Locales extends AdminBaseController
      */
     public function batch():Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (in_array(input('type'),['del','enabled','cancel_enabled'])) {
+        if (in_array($this->request->all('type'),['del','enabled','cancel_enabled'])) {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
-                    $this->localesService->batchOperation($id,input('type'));
+                    $this->localesService->batchOperation($id,$this->request->all('type'));
                 }
                 Db::commit();
             } catch (\Exception $exception) {
@@ -184,7 +183,7 @@ class Locales extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

@@ -32,11 +32,11 @@ class Config  extends AdminBaseController
     public function detail(): Response
     {
         $code = input('code', "");
-        $shop_id = input('shop_id', "");
+        $shop_id = input('shopId', "");
         $config = $this->orderConfigService->getDetail($code, $shop_id);
-        return $this->success([
-            'item' => $config,
-        ]);
+        return $this->success(
+            $config
+        );
     }
 
     /**
@@ -45,10 +45,16 @@ class Config  extends AdminBaseController
      */
     public function save(): Response
     {
-        $code = input('code', "");
-        $data = request()->all();
+        $data = $this->request->only([
+            'shop_id/d' => 0,
+            'date_type/d' => 0,
+            'use_day/d' => 0,
+            'code' => '',
+        ]);
         $shop_id = $data['shop_id'];
-        $result = $this->orderConfigService->saveConfig($code, $data, $shop_id);
-        return $result ? $this->success(/** LANG */ '设置项更新成功') : $this->error(/** LANG */ '设置项更新失败');
+
+//        $data['code'] = strtolower(preg_replace('/(?<=[a-z])([A-Z])/', '_$1', $data['code']));
+        $result = $this->orderConfigService->saveConfig($data['code'], $data, $shop_id);
+        return $result ? $this->success() : $this->error(/** LANG */ '设置项更新失败');
     }
 }

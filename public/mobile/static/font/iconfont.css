@@ -433,9 +433,9 @@
 @font-face {
     font-family: "iconfont-h5"; /* Project id 4483982 */
     src:
-        url("https://at.alicdn.com/t/c/font_4483982_nj3uqq9nrj.woff2?t=1735885728862") format("woff2"),
-        url("https://at.alicdn.com/t/c/font_4483982_nj3uqq9nrj.woff?t=1735885728862") format("woff"),
-        url("https://at.alicdn.com/t/c/font_4483982_nj3uqq9nrj.ttf?t=1735885728862") format("truetype");
+        url("//at.alicdn.com/t/c/font_4483982_ktulbaz08ae.woff2?t=1745819360903") format("woff2"),
+        url("//at.alicdn.com/t/c/font_4483982_ktulbaz08ae.woff?t=1745819360903") format("woff"),
+        url("//at.alicdn.com/t/c/font_4483982_ktulbaz08ae.ttf?t=1745819360903") format("truetype");
 }
 
 .iconfont-h5 {
@@ -444,6 +444,10 @@
     font-style: normal;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-tongzhi:before {
+    content: "\e6c8";
 }
 
 .icon-yirenzheng:before {

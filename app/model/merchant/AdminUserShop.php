@@ -16,6 +16,22 @@ class AdminUserShop extends Model
     protected $createTime = "add_time";
     protected $autoWriteTimestamp = true;
 
+    public function getAuthListAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value, true);
+    }
+
+    public function setAuthListAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
     // 关联管理员
     public function adminUser()
     {

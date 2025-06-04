@@ -99,3 +99,84 @@ if(!function_exists('is_json')){
         return true;
     }
 }
+
+/**
+ * 将下划线命名转换为驼峰式命名
+ *
+ * @param $str
+ * @param bool $ucfirst
+ *
+ * @return string|string[]
+ */
+function convertUnderline($str, $ucfirst = true)
+{
+    if (version_compare(config('app.version'), '2.2.7', '<')) {
+        return $str;
+    }
+    $str = ucwords(str_replace('_', ' ', $str));
+    $str = str_replace(' ', '', lcfirst($str));
+    return $ucfirst ? $str : $str;
+}
+
+/*
+* 将下划线命名数组转换为驼峰式命名数组
+* @pram $data 原数组
+* @pram $ucfirst 首字母大小写，false 小写，TRUE 大写
+*
+* @return string|string[]
+*/
+function camelCase($data, $ucfirst = false)
+{
+    if (version_compare(config('app.version'), '2.2.7', '<')) {
+        return $data;
+    }
+    if ($data instanceof \think\Collection || $data instanceof \think\Model) {
+        $data = $data->toArray();
+    }
+    if (!is_array($data)) {
+        return $data;
+    }
+    $result = [];
+    foreach ($data as $key => $value) {
+        $key1 = convertUnderline($key, $ucfirst);
+        $value1 = camelCase($value);
+        $result[$key1] = $value1;
+    }
+    return $result;
+}
+
+
+/*
+* 将小驼峰代码转成下划线
+*/
+function convertCamelCase($str)
+{
+    if (version_compare(config('app.version'), '2.2.7', '<')) {
+        return $str;
+    }
+    $str = preg_replace_callback('/([A-Z])/', function ($matches) {
+        return '_' . strtolower($matches[1]);
+    }, $str);
+    return $str;
+}
+
+function isSequentialArray($arr)
+{
+    // 检查是否为一维数组
+    foreach ($arr as $value) {
+        if (is_array($value)) {
+            return false;
+        }
+    }
+
+    // 检查键是否为自增整数
+    $keys = array_keys($arr);
+    for ($i = 0; $i < count($keys); $i++) {
+        if ($keys[$i] !== $i) {
+            return false;
+        }
+    }
+
+    return true;
+}
+

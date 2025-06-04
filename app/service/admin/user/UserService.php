@@ -57,7 +57,13 @@ class UserService extends BaseService
         } else {
             $result = $query->page($filter['page'], $filter['size'])->select();
         }
-
+        foreach ($result as $key => $value) {
+            //重新统计消费次数
+            $result[$key]['order_count'] = Order::where('user_id', $value['user_id'])->where('pay_status', 2)->count();
+            //重新统计消费金额
+            $result[$key]['order_amount'] = Order::where('user_id', $value['user_id'])->where('pay_status',
+                2)->sum('total_amount');
+        }
         return $result->toArray();
     }
 
@@ -465,6 +471,9 @@ class UserService extends BaseService
         if (empty($user_id)) {
             throw new ApiException(Util::lang('#uId错误'));
         }
+        if (!User::find($user_id)) {
+            throw new ApiException('token用户无效,请重新登录', 401);
+        }
         request()->userId = $user_id;
         return true;
     }
@@ -484,7 +493,7 @@ class UserService extends BaseService
     // 处理会员默认头像
     public function getUserAvatar(string $avatar = ''): string
     {
-        return $avatar ? $avatar : Config::get('default_avatar');
+        return $avatar ? $avatar : Config::get('defaultAvatar');
     }
 
     /**

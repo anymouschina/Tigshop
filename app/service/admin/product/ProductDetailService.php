@@ -98,6 +98,17 @@ class ProductDetailService extends BaseService
                 $result->product_stock = $card_num;
             }
 
+            if(!empty($result->paid_content)) {
+                if(!is_array($result->paid_content)) {
+                    $result->paid_content = [
+                        [
+                        'html' => $result->paid_content,
+                        'type' => 'text'
+                        ]
+                    ];
+                }
+            }
+
             $this->product = $result;
 
             // 添加浏览记录
@@ -178,6 +189,11 @@ class ProductDetailService extends BaseService
     public function getPicList(): array
     {
         return app(ProductGalleryService::class)->getProductGalleryList($this->id);
+    }
+
+    public function getVideoList(): array
+    {
+        return app(ProductVideoService::class)->getProductVideoList($this->id);
     }
 
     /**
@@ -271,7 +287,12 @@ class ProductDetailService extends BaseService
             }
         }
         $ranks_list = app(UserRankService::class)->getUserRankList();
-        $user_rank_id = app(UserService::class)->getUserRankId(request()->userId);
+        if(request()->userId) { //兼容商品添加报错
+            $user_rank_id = app(UserService::class)->getUserRankId(request()->userId);
+        } else {
+            $user_rank_id = -1;
+        }
+
         foreach ($ranks_list as $key => $value) {
             if ($value['rank_id'] == $user_rank_id && $value['discount'] > 0) {
                 $discount = floatval($value['discount']);
@@ -303,8 +324,10 @@ class ProductDetailService extends BaseService
                         'seckill_id' => $promotion['data']['seckill_id'],
                         'sku_id' => $sku_id
                     ])->find();
-                    $newPrice = $promotionList[$key]['data']['item']['seckill_price'];
-                    $stock = $promotionList[$key]['data']['item']['seckill_stock'];
+                    if (!empty($promotionList[$key]['data']['item'])) {
+                        $newPrice = $promotionList[$key]['data']['item']['seckill_price'];
+                        $stock = $promotionList[$key]['data']['item']['seckill_stock'];
+                    }
                 } elseif ($promotion['type'] == 6) {
                     $promotionList[$key]['data']['item'] = TimeDiscountItem::where([
                         'discount_id' => $promotion['data']['discount_id']

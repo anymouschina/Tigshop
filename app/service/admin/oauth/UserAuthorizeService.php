@@ -111,6 +111,17 @@ class UserAuthorizeService extends BaseService
     }
 
     /**
+     * 获取用户授权的openid
+     * @param int $user_id
+     * @param int $authorize_type
+     * @return string|null
+     */
+    public function getUserAuthorizeByOpenId($openId, int $authorize_type = 1): string|null
+    {
+        return UserAuthorize::where(['open_id' => $openId, 'authorize_type' => $authorize_type])->find();
+    }
+
+    /**
      * 删除授权
      * @param int $user_id
      * @param int $authorize_type

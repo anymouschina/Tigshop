@@ -52,7 +52,19 @@ class CommentService extends BaseService
             $query->field('comment_id,user_id,username,content,add_time,parent_id');
         }]);
         $result = $query->page($filter['page'], $filter['size'])->select();
-        return $result->toArray();
+        $res = $result->toArray();
+        if(!empty($res)) {
+            foreach ($res as $k=> $comment) {
+                if($comment['order_item_id'] > 0) {
+                    $orderItem = OrderItem::where('item_id', $comment['order_item_id'])->find();
+                    if(!empty($orderItem)) {
+                        $res[$k]['sku_id'] = $orderItem->sku_id;
+                        $res[$k]['sku_data'] = $orderItem->sku_data;
+                    }
+                }
+            }
+        }
+        return $res;
     }
 
     /**
@@ -160,7 +172,7 @@ class CommentService extends BaseService
         ])->where('comment_id', $id)->find();
 
 		// 获取客服名称
-		$result->kefu_name = Config::get("kefu_setting",'base_kefu','','kefu_name') ?? "";
+        $result->kefu_name = Config::get("kefuSetting") ?? "";
         if (!$result) {
             throw new ApiException('评论晒单不存在');
         }
@@ -462,7 +474,7 @@ class CommentService extends BaseService
         $data["username"] = $user_info->username;
         $data["avatar"] = $user_info->avatar;
         // 审核状态
-        $data["status"] = Config::get("comment_check") ? 0 : 1;
+        $data["status"] = Config::get("commentCheck") ? 0 : 1;
         // 是否晒单
         $data["is_showed"] = isset($data['show_pics']) && !empty($data["show_pics"]) ? 1 : 0;
         // 判断是否已评价
@@ -483,8 +495,8 @@ class CommentService extends BaseService
                 $result = $is_comment->save(["show_pics" => $data["show_pics"], "is_showed" => 1]);
             }
         }
-        $show_send_point = Config::get('points_setting', 'base_shopping','','show_send_point');
-        $comment_send_point = Config::get('points_setting', 'base_shopping','','comment_send_point');
+        $show_send_point = Config::get('pointsSetting');
+        $comment_send_point = Config::get('pointsSetting');
         if ($result !== false) {
             if (!empty($is_comment)) {
                 // 单独晒单，增加晒单积分

@@ -24,7 +24,7 @@ class Product extends Model
 {
     protected $pk = 'product_id';
     protected $table = 'product';
-    protected $json = ['product_related', 'product_service_ids'];
+    protected $json = ['product_related', 'product_service_ids', 'paid_content'];
     // 设置JSON数据返回数组
     protected $jsonAssoc = true;
 
@@ -150,9 +150,10 @@ class Product extends Model
         if (in_array($value, ['new', 'hot', 'best'])) {
             $value = 'is_' . $value;
         }
-        if (!in_array($value, ['is_new', 'is_hot', 'is_best'])) {
+        if (!in_array($value, ['isNew', 'isHot', 'isBest'])) {
             return $query;
         }
+        $value = convertCamelCase($value);
         return $query->where($value, 1);
     }
 

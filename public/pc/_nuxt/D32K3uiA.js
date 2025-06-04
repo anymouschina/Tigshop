@@ -1,0 +1,1 @@
+import{at as a}from"./vO8z_6wc.js";const s=s=>a({url:"user/aftersales/list",method:"get",params:s}),e=()=>a({url:"user/aftersales/config",method:"get"}),t=s=>a({url:"user/aftersales/applyData",method:"get",params:s}),r=s=>a({url:"user/aftersales/create",method:"post",data:s});export{e as a,s as b,t as g,r as u};

@@ -4222,40 +4222,33 @@
         },
         {
             "name": "overtrue/socialite",
-            "version": "4.11.0",
-            "version_normalized": "4.11.0.0",
+            "version": "4.11.2",
+            "version_normalized": "4.11.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/overtrue/socialite.git",
-                "reference": "4929bbb9241818783c5954151ebbbef36d4953f4"
+                "reference": "83dd537a88b30cd9204ee2c46a5b2e181bc1fa66"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/overtrue/socialite/zipball/4929bbb9241818783c5954151ebbbef36d4953f4",
-                "reference": "4929bbb9241818783c5954151ebbbef36d4953f4",
-                "shasum": "",
-                "mirrors": [
-                    {
-                        "url": "https://mirrors.aliyun.com/composer/dists/%package%/%reference%.%type%",
-                        "preferred": true
-                    }
-                ]
+                "url": "https://api.github.com/repos/overtrue/socialite/zipball/83dd537a88b30cd9204ee2c46a5b2e181bc1fa66",
+                "reference": "83dd537a88b30cd9204ee2c46a5b2e181bc1fa66",
+                "shasum": ""
             },
             "require": {
                 "ext-json": "*",
                 "ext-openssl": "*",
                 "guzzlehttp/guzzle": "^7.0",
-                "php": ">=8.0.2",
-                "symfony/psr-http-message-bridge": "^2.1|^6.0"
+                "php": ">=8.0.2"
             },
             "require-dev": {
                 "jetbrains/phpstorm-attributes": "^1.0",
                 "laravel/pint": "^1.2",
                 "mockery/mockery": "^1.3",
                 "phpstan/phpstan": "^1.7",
-                "phpunit/phpunit": "^9.0"
+                "phpunit/phpunit": "^11.3"
             },
-            "time": "2024-06-07T06:46:20+00:00",
+            "time": "2024-10-08T16:23:14+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -4291,7 +4284,7 @@
             ],
             "support": {
                 "issues": "https://github.com/overtrue/socialite/issues",
-                "source": "https://github.com/overtrue/socialite/tree/4.11.0"
+                "source": "https://github.com/overtrue/socialite/tree/4.11.2"
             },
             "funding": [
                 {

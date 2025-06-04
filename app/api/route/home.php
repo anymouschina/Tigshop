@@ -8,23 +8,23 @@ Route::group('home', function () {
         // 首页
         Route::get('index', 'index');
         // PC首页
-        Route::get('pc_index', 'pcIndex');
+        Route::get('pcIndex', 'pcIndex');
         // 首页今日推荐
-        Route::get('get_recommend', 'getRecommend');
+        Route::get('getRecommend', 'getRecommend');
         // 首页秒杀
-        Route::get('get_seckill', 'getSeckill');
+        Route::get('getSeckill', 'getSeckill');
         // 首页优惠券
-        Route::get('get_coupon', 'getCoupon');
+        Route::get('getCoupon', 'getCoupon');
         // 首页分类栏
-        Route::get('mobile_cat_nav', 'mobileCatNav');
+        Route::get('mobileCatNav', 'mobileCatNav');
         // 移动端导航栏
-        Route::get('mobile_nav', 'mobileNav');
+        Route::get('mobileNav', 'mobileNav');
         // 个人中心状态
-        Route::get('member_decorate', 'memberDecorate');
+        Route::get('memberDecorate', 'memberDecorate');
         // 客服
-        Route::get('get_customer_service_config', 'customerServiceConfig');
+        Route::get('getCustomerServiceConfig', 'customerServiceConfig');
         // 友情链接
-        Route::get('friend_links', 'friendLinks');
+        Route::get('friendLinks', 'friendLinks');
     })->prefix("home.home/");
     //装修模板导入
     Route::group('share', function () {

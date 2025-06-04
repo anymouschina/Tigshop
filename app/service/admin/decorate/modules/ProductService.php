@@ -37,50 +37,50 @@ class ProductService extends BaseService
             $products = $module['products'];
             $page = isset($params['page']) && $params['page'] > 0 ? $params['page'] : 1;
             $size = isset($params['size']) && $params['size'] > 0 ? $params['size'] : 10;
-            if ($page == 1 && isset($products['product_number']) && $size > $products['product_number']) {
-                $size = $products['product_number'];
+            if ($page == 1 && isset($products['productNumber']) && $size > $products['productNumber']) {
+                $size = $products['productNumber'];
             }
 
-            if ($products['product_select_type'] == 3) {
-                if ($size * ($page - 1) > $products['product_number']) {
-                    $module['products']['product_list'] = [];
+            if ($products['productSelectType'] == 3) {
+                if ($size * ($page - 1) > $products['productNumber']) {
+                    $module['products']['productList'] = [];
                 } else {
                     $filter = [
-                        'intro_type' => $products['product_tag'],
+                        'intro_type' => $products['productTag'],
                         'page' => $page,
                         'size' => $size,
                     ];
                     if (!empty($decorate['shop_id'])) {
                         $filter['shop_id'] = $decorate['shop_id'];
                     }
-                    $module['products']['product_list'] = app(ProductProductService::class)->getProductList($filter);
+                    $module['products']['productList'] = app(ProductProductService::class)->getProductList($filter);
                 }
-            } elseif ($products['product_select_type'] == 2) {
+            } elseif ($products['productSelectType'] == 2) {
 
-                if ($size * ($page - 1) > $products['product_number']) {
-                    $module['products']['product_list'] = [];
+                if ($size * ($page - 1) > $products['productNumber']) {
+                    $module['products']['productList'] = [];
                 } else {
                     $filter = [
                         'page' => $params['page'],
                         'size' => $size,
-                        'category_id' => $products['product_category_id'],
+                        'category_id' => $products['productCategoryId'],
                     ];
                     if (!empty($decorate['shop_id'])) {
                         $filter['shop_id'] = $decorate['shop_id'];
                     }
-                    $module['products']['product_list'] = app(ProductProductService::class)->getProductList($filter);
+                    $module['products']['productList'] = app(ProductProductService::class)->getProductList($filter);
                 }
-            } elseif ($products['product_select_type'] == 1) {
+            } elseif ($products['productSelectType'] == 1) {
                 $filter = [
-                    'product_ids' => $products['product_ids'],
+                    'product_ids' => $products['productIds'],
                     'page' => 1,
-                    'size' => count($products['product_ids'])
+                    'size' => count($products['productIds'])
                 ];
                 if (!empty($decorate['shop_id'])) {
                     $filter['shop_id'] = $decorate['shop_id'];
                 }
                 if ($page == 1) {
-                    $module['products']['product_list'] = app(ProductProductService::class)->getProductList($filter);
+                    $module['products']['productList'] = app(ProductProductService::class)->getProductList($filter);
                 }
             }
         }

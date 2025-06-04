@@ -76,6 +76,6 @@ class Sign extends IndexBaseController
         $result = $SignService->addSignIn($user_id, $sign_num);
         if (!$result) return $this->error(Util::lang('签到失败！'));
 
-        return $this->success(Util::lang('签到成功'));
+        return $this->success();
     }
 }

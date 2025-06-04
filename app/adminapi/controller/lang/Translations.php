@@ -45,20 +45,8 @@ class Translations extends AdminBaseController
             'shop_id' => request()->shopId,
         ], 'get');
 
-        $locales = app(LocalesService::class)->getFilterList([
-            'is_enabled' => 1,
-            'size' => 10,
-            'page' => 1
-        ]);
-        $locales = $locales->toArray();
-        foreach ($locales as $key => $locale) {
-			// 排除中文及显示部分语种信息
-			if ($locale['locale_code'] == "zh" || $key > 3) {
-				unset($locales[$key]);
-			}
-        }
-        $locales = array_values($locales);
-		$localeIds = array_column($locales, 'id');
+        $locales = $this->getLocalesValues();
+        $localeIds = array_column($locales, 'id');
 
         $filterResult = $this->translationsService->getFilterList($filter);
         $total = $this->translationsService->getFilterCount($filter);
@@ -68,11 +56,18 @@ class Translations extends AdminBaseController
             }
         ]);
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
-            'locales' => $locales
         ]);
+    }
+
+    /**
+     * 获取前3条数据
+     * @return Response
+     */
+    public function getLocalesLimit3(): Response
+    {
+        return $this->success($this->getLocalesValues());
     }
 
     /**
@@ -100,7 +95,7 @@ class Translations extends AdminBaseController
         $data = $this->requestData();
         $data['shop_id'] = request()->shopId;
         $result = $this->translationsService->update(0, $data, true);
-        return $result ? $this->success(/** LANG */ '添加成功') : $this->error(/** LANG */ '添加失败');
+        return $result ? $this->success() : $this->error(/** LANG */ '添加失败');
     }
 
     /**
@@ -131,7 +126,7 @@ class Translations extends AdminBaseController
             return $this->error($e->getMessage());
         }
 
-        return $result ? $this->success(/** LANG */ '添加成功') : $this->error(/** LANG */ '添加失败');
+        return $result ? $this->success() : $this->error(/** LANG */ '添加失败');
     }
 
     /**
@@ -148,7 +143,7 @@ class Translations extends AdminBaseController
         ], 'post');
 
         $this->translationsService->createTranslationsData($params);
-        return $this->success(/** LANG */ '保存成功');
+        return $this->success();
     }
 
     /**
@@ -173,13 +168,11 @@ class Translations extends AdminBaseController
      */
     public function translation(): Response
     {
-        $code = $this->request->param('code');
-        $text = $this->request->param('text');
+        $code =$this->request->all('code');
+        $text =$this->request->all('text');
         $result = Translate::getInstance()->translateText('zh', $code, [$text]);
         return $this->success(
-            [
-                'translation' => $result['0'] ?? []
-            ]
+                $result['0'] ?? []
         );
     }
 
@@ -191,10 +184,10 @@ class Translations extends AdminBaseController
     public function update(): Response
     {
         $data = $this->requestData();
-        $data['id'] = input('id/d', 0);
+        $data['id'] = $this->request->all('id/d', 0);
 
         $result = $this->translationsService->update($data['id'], $data);
-        return $result ? $this->success(/** LANG */ '编辑成功') : $this->error(/** LANG */ '编辑失败');
+        return $result ? $this->success() : $this->error(/** LANG */ '编辑失败');
     }
 
     /**
@@ -203,11 +196,11 @@ class Translations extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $item = $this->translationsService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -217,9 +210,9 @@ class Translations extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $this->translationsService->delete($id);
-        return $this->success(/** LANG */ '指定项目已删除');
+        return $this->success();
     }
 
 
@@ -230,17 +223,17 @@ class Translations extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */ '未选择项目');
         }
 
-        if (in_array(input('type'), ['del'])) {
+        if (in_array($this->request->all('type'), ['del'])) {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
-                    $this->translationsService->batchOperation($id, input('type'));
+                    $this->translationsService->batchOperation($id,$this->request->all('type'));
                 }
                 Db::commit();
             } catch (\Exception $exception) {
@@ -248,7 +241,7 @@ class Translations extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */ '批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */ '#type 错误');
         }
@@ -270,6 +263,26 @@ class Translations extends AdminBaseController
             'page' => 1
 		], 'post');
 		$result = $this->translationsService->multipleTranslation($data);
-        return $this->success(Util::lang('批量操作执行成功！'));
+        return $this->success();
 	}
+
+    /**
+     * @return array
+     */
+    public function getLocalesValues(): array
+    {
+        $locales = app(LocalesService::class)->getFilterList([
+            'is_enabled' => 1,
+            'size' => 10,
+            'page' => 1
+        ]);
+        $locales = $locales->toArray();
+        foreach ($locales as $key => $locale) {
+            // 排除中文及显示部分语种信息
+            if ($locale['locale_code'] == "zh" || $key > 3) {
+                unset($locales[$key]);
+            }
+        }
+        return array_values($locales);
+    }
 }

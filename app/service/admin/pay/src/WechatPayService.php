@@ -276,15 +276,15 @@ class WechatPayService extends PayService
 
         $total_fee = intval($total_fee * 100);
         //查询是否是服务商模式
-        $config = Config::getConfig('payment');
-        $wechat_mchid_type = $config['wechat_mchid_type'] ?? 1;
-        $sp_mchid = $config['wechat_pay_sub_mchid'];
+        $config = Config::getConfig();
+        $wechat_mchid_type = $config['wechatMchidType'] ?? 1;
+        $sp_mchid = $config['wechatPaySubMchid'];
         if ($wechat_mchid_type == 2 && !empty($sp_mchid)) {
             //服务商模式
             $data = [
                 'sp_appid' => $this->appId,
-                'sp_mchid' => $config['wechat_pay_mchid'],
-                'sub_mchid' => $config['wechat_pay_sub_mchid'],
+                'sp_mchid' => $config['wechatPayMchid'],
+                'sub_mchid' => $config['wechatPaySubMchid'],
                 'out_trade_no' => $out_trade_no,
                 'description' => '商品购买',
                 'notify_url' => $notify_url ?: $this->getNotifyUrl(),
@@ -298,7 +298,7 @@ class WechatPayService extends PayService
             }
         } else {
             $data = [
-                'mchid' => $config['wechat_pay_mchid'],
+                'mchid' => $config['wechatPayMchid'],
                 'out_trade_no' => $out_trade_no,
                 'appid' => $this->appId,
                 'description' => '商品购买',
@@ -349,11 +349,11 @@ class WechatPayService extends PayService
      */
     public function queryOrderPay(string $outTradeNo): array
     {
-        $cfg = Config::getConfig('payment');
+        $cfg = Config::getConfig();
         try {
             $response = $this->getApplication()->getClient()->get("v3/pay/transactions/out-trade-no/" . $outTradeNo, [
                 'query' => [
-                    'mchid' => $cfg['wechat_pay_mchid'],
+                    'mchid' => $cfg['wechatPayMchid'],
                 ],
             ]);
             return $response->toArray();
@@ -376,25 +376,25 @@ class WechatPayService extends PayService
             case self::NATIVE_PAY:
             case self::HTML_PAY:
             case self::JSAPI_PAY:
-                $appid = Config::get('wechat_appId', 'base_api_wechat');
+            $appid = Config::get('wechatAppId');
                 break;
             case self::MINI_PROGRAM_PAY:
-                $appid = Config::get('wechat_miniProgram_appId', 'base_api_mini_program');
+                $appid = Config::get('wechatMiniProgramAppId');
                 break;
             case self::APP_PAY:
-                $appid = Config::get('wechat_pay_app_id','base_api_app_pay');
+                $appid = Config::get('wechatPayAppId');
                 break;
         }
         $this->appId = $appid;
         //平台证书序列号
-        $cfg = Config::getConfig('payment');
+        $cfg = Config::getConfig();
         $config = [
-            'mch_id' => $cfg['wechat_pay_mchid'],
+            'mch_id' => $cfg['wechatPayMchid'],
             // 商户证书
             'private_key' => app()->getRootPath() . '/runtime/certs/wechat/apiclient_key.pem',
             'certificate' => app()->getRootPath() . '/runtime/certs/wechat/apiclient_cert.pem',
             // v3 API 秘钥
-            'secret_key' => $cfg['wechat_pay_key'],
+            'secret_key' => $cfg['wechatPayKey'],
             'platform_certs' => [
                 app()->getRootPath() . '/runtime/certs/wechat/cert.pem',
             ],
@@ -403,11 +403,11 @@ class WechatPayService extends PayService
                 'timeout' => 5.0,
             ],
         ];
-        if (isset($cfg['wechat_pay_check_type'])){
-            if ($cfg['wechat_pay_check_type'] == 2){
+        if (isset($cfg['wechatPayCheckType'])) {
+            if ($cfg['wechatPayCheckType'] == 2) {
                 //微信支付公钥方式
                 $config['platform_certs'] = [
-                    $cfg['wechat_pay_public_key_id']  => app()->getRootPath() . '/runtime/certs/wechat/public_key.pem',
+                    $cfg['wechatPayPublicKeyId'] => app()->getRootPath() . '/runtime/certs/wechat/public_key.pem',
                 ];
             }
         }
@@ -424,8 +424,8 @@ class WechatPayService extends PayService
      */
     public function decryptToString($associatedData, $nonceStr, $ciphertext)
     {
-        $cfg = Config::getConfig('payment');
-        $aesKey = $cfg['wechat_pay_key'];
+        $cfg = Config::getConfig();
+        $aesKey = $cfg['wechatPayKey'];
         $ciphertext = \base64_decode($ciphertext);
         if (strlen($ciphertext) <= self::AUTH_TAG_LENGTH_BYTE) {
             return false;

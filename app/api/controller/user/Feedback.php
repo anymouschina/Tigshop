@@ -52,8 +52,7 @@ class Feedback extends IndexBaseController
         $result = $this->feedbackService->orderInquiryList($filter);
 		$count = $this->feedbackService->getFilterCount($filter);
         return $this->success([
-            'filter_result' => $result,
-            'filter' => $filter,
+            'records' => $result,
             'total' => $count,
         ]);
     }
@@ -77,6 +76,6 @@ class Feedback extends IndexBaseController
             'feedback_pics/a' => [],
         ], 'post');
         $result = $this->feedbackService->submitFeedback($data, request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang("提交成功")) : $this->error(/** LANG */Util::lang('未知错误,提交失败'));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang('未知错误,提交失败'));
     }
 }

@@ -12,6 +12,7 @@
 namespace app\model\product;
 
 use app\model\order\Order;
+use app\model\order\OrderItem;
 use app\model\user\User;
 use think\Model;
 
@@ -23,6 +24,22 @@ class Comment extends Model
     protected $jsonAssoc = true;
     protected $createTime = "add_time";
     protected $autoWriteTimestamp = true;
+
+    public function getShowPicsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setShowPicsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
 
     // 关联回复评论
     public function reply()

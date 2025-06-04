@@ -20,4 +20,21 @@ class ProductAttributesTpl extends Model
     protected $json = ['tpl_data'];
     // 设置JSON数据返回数组
     protected $jsonAssoc = true;
+
+
+    public function getTplDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setTplDataAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
 }

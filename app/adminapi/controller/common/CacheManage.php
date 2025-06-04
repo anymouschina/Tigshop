@@ -24,6 +24,6 @@ class CacheManage extends BaseController
     {
         $tag = input('tag', 'all');
         app(CacheManager::class)->clearCacheByTag($tag);
-        return $this->success('缓存清除成功');
+        return $this->success();
     }
 }

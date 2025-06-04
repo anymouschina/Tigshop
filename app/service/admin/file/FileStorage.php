@@ -21,7 +21,7 @@ class FileStorage
      */
     public function __construct(UploadedFile $file, int $use_storage_type = -1, string $rootPathName = 'upload/file', string $fileName = '')
     {
-        $storage_type = Config::get('storage_type','base_api_storage');
+        $storage_type = Config::get('storageType');
         if ($use_storage_type > -1) {
             $storage_type = $use_storage_type;
         }

@@ -61,8 +61,7 @@ class UserWithdrawApply extends AdminBaseController
         $total = $this->userWithdrawApplyService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -73,11 +72,11 @@ class UserWithdrawApply extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->userWithdrawApplyService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -105,7 +104,7 @@ class UserWithdrawApply extends AdminBaseController
 
         $result = $this->userWithdrawApplyService->createUserWithdrawApply($data);
         if ($result) {
-            return $this->success(/** LANG */'提现申请添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'提现申请添加失败');
         }
@@ -117,7 +116,7 @@ class UserWithdrawApply extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'id' => $id,
             'postscript' => '',
@@ -134,7 +133,7 @@ class UserWithdrawApply extends AdminBaseController
 
         $result = $this->userWithdrawApplyService->updateUserWithdrawApply($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'提现申请更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'提现申请更新失败');
         }
@@ -147,9 +146,9 @@ class UserWithdrawApply extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->userWithdrawApplyService->deleteUserWithdrawApply($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -159,15 +158,15 @@ class UserWithdrawApply extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->userWithdrawApplyService->deleteUserWithdrawApply($id);
                 }
@@ -177,7 +176,7 @@ class UserWithdrawApply extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

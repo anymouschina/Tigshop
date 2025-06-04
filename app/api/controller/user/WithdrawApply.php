@@ -53,8 +53,8 @@ class WithdrawApply extends IndexBaseController
         $filterResult = $this->userWithdrawApplyService->getAccountList($filter, request()->userId);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
+            'total' => count($filterResult)
         ]);
     }
 
@@ -72,7 +72,7 @@ class WithdrawApply extends IndexBaseController
             "bank_name" => "",
         ], 'post');
         $result = $this->userWithdrawApplyService->addWithdrawAccount($data, request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang("添加成功")) : $this->error(/** LANG */Util::lang("添加失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("添加失败"));
     }
 
     /**
@@ -90,7 +90,7 @@ class WithdrawApply extends IndexBaseController
             "bank_name" => "",
         ], 'post');
         $result = $this->userWithdrawApplyService->editWithdrawAccount($data['account_id'], request()->userId, $data);
-        return $result ? $this->success(/** LANG */Util::lang("编辑成功")) : $this->error(/** LANG */Util::lang("编辑失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("编辑失败"));
     }
 
     /**
@@ -103,9 +103,7 @@ class WithdrawApply extends IndexBaseController
             'account_id/d' => 0,
         ]);
         $result = $this->userWithdrawApplyService->withdrawAccountDetail($data['account_id'], request()->userId);
-        return $this->success([
-            'account_detail' => $result,
-        ]);
+        return $this->success($result);
     }
 
     /**
@@ -118,7 +116,7 @@ class WithdrawApply extends IndexBaseController
             'account_id/d' => 0,
         ], 'post');
         $result = $this->userWithdrawApplyService->delWithdrawAccount($data['account_id'], request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang("删除成功")) : $this->error(/** LANG */Util::lang("删除失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("删除失败"));
     }
 
     /**
@@ -133,7 +131,7 @@ class WithdrawApply extends IndexBaseController
             "account_data/a" => [],
         ], 'post');
         $result = $this->userWithdrawApplyService->updateUserWithdrawApplyPc($data, request()->userId);
-        return $result ? $this->success(/** LANG */Util::lang("提现申请成功")) : $this->error(/** LANG */Util::lang("提现申请失败"));
+        return $result ? $this->success() : $this->error(/** LANG */ Util::lang("提现申请失败"));
     }
 
 }

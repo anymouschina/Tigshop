@@ -58,8 +58,7 @@ class Exchange extends IndexBaseController
         $total = $this->pointsExchangeService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -71,7 +70,7 @@ class Exchange extends IndexBaseController
      */
     public function detail(): \think\Response
     {
-        $id = input('id/d', 0);
+        $id = $this->request->all('id/d', 0);
         $exchangeInfo = $this->pointsExchangeService->getDetail($id);
         $productDetailService = new ProductDetailService($exchangeInfo["product_id"]);
         $product = $productDetailService->getDetail();

@@ -42,11 +42,11 @@ class DecorateDiscrete extends AdminBaseController
      */
     public function detail(): Response
     {
-        $decorate_sn = input('decorate_sn', '');
+        $decorate_sn = $this->request->all('decorate_sn', '');
         $item = $this->decorateDiscreteService->getDetail($decorate_sn, request()->shopId);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+             $item
+        );
     }
 
     /**
@@ -56,14 +56,14 @@ class DecorateDiscrete extends AdminBaseController
      */
     public function update(): Response
     {
-        $decorate_sn = input('decorate_sn', '');
+        $decorate_sn = $this->request->all('decorate_sn', '');
         $data = $this->request->only([
             'decorate_sn' => $decorate_sn,
             'data' => [],
         ], 'post');
         $result = $this->decorateDiscreteService->updateDecorateDiscrete($decorate_sn, $data, request()->shopId);
         if ($result) {
-            return $this->success(/** LANG */'装修模块更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'装修模块更新失败');
         }
@@ -198,9 +198,9 @@ class DecorateDiscrete extends AdminBaseController
                 ]
             ]
         ];
-        return $this->success([
-            'menus' => $menus,
-        ]);
+        return $this->success(
+             $menus
+        );
     }
 
 

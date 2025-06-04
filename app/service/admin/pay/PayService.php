@@ -36,7 +36,7 @@ abstract class PayService
      */
     public function getNotifyUrl(string $pay_code = ''): string
     {
-        $domain = Config::get('pc_domain');
+        $domain = Config::get('pcDomain');
         if (empty($domain)) $domain = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
         $notify_url = $domain . '/api/order/pay/notify';
         if ($pay_code) $notify_url .= '?pay_code=' . $pay_code;
@@ -50,7 +50,7 @@ abstract class PayService
      */
     public function getRefundNotifyUrl(string $pay_code = ''): string
     {
-        $domain = Config::get('pc_domain');
+        $domain = Config::get('pcDomain');
         if (empty($domain)) $domain = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
         $refund_url = $domain . '/api/order/pay/refund_notify';
         if ($pay_code) $refund_url .= '?pay_code=' . $pay_code;
@@ -65,7 +65,7 @@ abstract class PayService
      */
     public function getReturnUrl(int $order_id = 0): string
     {
-        $domain = Config::get('pc_domain');
+        $domain = Config::get('pcDomain');
         if (empty($domain)) $domain = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
         if ($order_id) {
             return $domain . '/member/order/info?id=' . $order_id;

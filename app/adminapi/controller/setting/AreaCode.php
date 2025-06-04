@@ -45,8 +45,7 @@ class AreaCode extends AdminBaseController
 		$total = $this->areaCodeService->getFilterCount($filter);
 
 		return $this->success([
-			'filter_result' => $filterResult,
-			'filter' => $filter,
+			'records' => $filterResult,
 			'total' => $total,
 		]);
 	}
@@ -58,9 +57,9 @@ class AreaCode extends AdminBaseController
 	 */
 	public function detail(): Response
 	{
-		$id = input('id/d',0);
+		$id =$this->request->all('id/d',0);
 		$detail = $this->areaCodeService->getDetail($id);
-		return $this->success(['item' => $detail]);
+		return $this->success($detail);
 	}
 
 	/**
@@ -83,7 +82,7 @@ class AreaCode extends AdminBaseController
 			return $this->error($e->getError());
 		}
 		$result = $this->areaCodeService->createAreaCode($data);
-		return $result ? $this->success(/** LANG */'添加成功') : $this->error(/** LANG */'添加失败');
+		return $result ? $this->success() : $this->error(/** LANG */'添加失败');
 	}
 
 	/**
@@ -93,7 +92,7 @@ class AreaCode extends AdminBaseController
 	 */
 	public function update(): Response
 	{
-		$id = input('id/d',0);
+		$id =$this->request->all('id/d',0);
 		$data = $this->request->only([
 			'id' => $id,
 			'name' => '',
@@ -110,7 +109,7 @@ class AreaCode extends AdminBaseController
 			return $this->error($e->getError());
 		}
 		$result = $this->areaCodeService->updateAreaCode($id,$data);
-		return $result ? $this->success(/** LANG */'编辑成功') : $this->error(/** LANG */'编辑失败');
+		return $result ? $this->success() : $this->error(/** LANG */'编辑失败');
 	}
 
 	/**
@@ -120,9 +119,9 @@ class AreaCode extends AdminBaseController
 	 */
 	public function del(): Response
 	{
-		$id = input('id/d',0);
+		$id =$this->request->all('id/d',0);
 		$result = $this->areaCodeService->deleteAreaCode($id);
-		return $result ? $this->success(/** LANG */'删除成功') : $this->error(/** LANG */'删除失败');
+		return $result ? $this->success() : $this->error(/** LANG */'删除失败');
 	}
 
 	/**
@@ -132,17 +131,17 @@ class AreaCode extends AdminBaseController
 	 */
 	public function updateField(): Response
 	{
-		$id = input('id/d', 0);
-		$field = input('field', '');
+		$id =$this->request->all('id/d', 0);
+		$field =$this->request->all('field', '');
 		if (!in_array($field, ['code','name', 'is_available','is_default'])) {
 			return $this->error(/** LANG */'#field 错误');
 		}
 		$data = [
 			'id' => $id,
-			$field => input('val'),
+			$field =>$this->request->all('val'),
 		];
 		$this->areaCodeService->updateAreaCodeField($id, $data);
-		return $this->success(/** LANG */'更新成功');
+		return $this->success();
 	}
 
 	/**
@@ -152,15 +151,15 @@ class AreaCode extends AdminBaseController
 	 */
 	public function batch(): Response
 	{
-		if (empty(input('ids')) || !is_array(input('ids'))) {
+		if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
 			return $this->error(/** LANG */'未选择项目');
 		}
 
-		if (in_array(input('type'),['del'])) {
+		if (in_array($this->request->all('type'),['del'])) {
 			try {
 				//批量操作一定要事务
 				Db::startTrans();
-				foreach (input('ids') as $id) {
+				foreach ($this->request->all('ids') as $id) {
 					$id = intval($id);
 					$this->areaCodeService->batchOperation($id);
 				}
@@ -170,7 +169,7 @@ class AreaCode extends AdminBaseController
 				throw new ApiException($exception->getMessage());
 			}
 
-			return $this->success(/** LANG */'批量操作执行成功！');
+			return $this->success();
 		} else {
 			return $this->error(/** LANG */'#type 错误');
 		}

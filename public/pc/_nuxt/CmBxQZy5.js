@@ -1,1 +1,0 @@
-import{aq as a}from"./BLNaUqdG.js";const e=e=>a({url:"user/aftersales/get_record",method:"get",params:e}),s=e=>a({url:"user/aftersales/detail",method:"get",params:e}),r=e=>a({url:"user/aftersales/feedback",method:"post",params:e}),t=e=>a({url:"user/aftersales/cancel",method:"post",params:e});export{s as a,t as c,e as g,r as u};

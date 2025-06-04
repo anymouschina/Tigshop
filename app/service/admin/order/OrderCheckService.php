@@ -12,6 +12,7 @@
 namespace app\service\admin\order;
 
 use app\model\finance\OrderInvoice;
+use app\model\finance\UserInvoice;
 use app\model\msg\AdminMsg;
 use app\model\order\Order;
 use app\model\order\OrderAmountDetail;
@@ -24,6 +25,7 @@ use app\model\setting\ShippingType;
 use app\model\user\User;
 use app\model\user\UserCoupon;
 use app\service\admin\finance\OrderInvoiceService;
+use app\service\admin\finance\UserInvoiceService;
 use app\service\admin\msg\AdminMsgService;
 use app\service\admin\product\ECardService;
 use app\service\admin\product\ProductService;
@@ -137,7 +139,7 @@ class OrderCheckService extends BaseService
         if ($point > 0) {
             $avalibale_point = $this->getOrderAvailablePoints();
             if ($avalibale_point < $point) {
-                throw new ApiException('当前积分不足');
+                throw new ApiException('可用积分不足或超过超出单次使用上限');
             }
             $this->usePoint = $point;
         } else {
@@ -195,7 +197,7 @@ class OrderCheckService extends BaseService
     public function getAvailablePaymentType(): array
     {
         // 判断shipping_type是否全部支持货到付款
-        $is_offline = Config::get('use_offline',"payment");
+        $is_offline = Config::get('useOffline');
         $result = [
             [
                 'type_id' => PaymentService::PAY_TYPE_ONLINE,
@@ -306,7 +308,7 @@ class OrderCheckService extends BaseService
         $types = [];
         $idx = 0;
         foreach ($tpl_ids as $key => $tpl_id) {
-            if (Config::get('shopping_global', 'base_shopping', '', 'child_area_need_region') == 1) {
+            if (Config::get('childAreaNeedRegion', '') == 1) {
                 $tpl_info = ShippingTplInfo::where('shipping_tpl_id', $tpl_id)->where('is_default', 0)->field('region_data,shipping_type_id')->select();
                 if ($tpl_info) {
                     foreach ($tpl_info as $row) {
@@ -320,7 +322,7 @@ class OrderCheckService extends BaseService
             $types = $idx != 0 ? array_intersect($types, $shipping_type_ids) : $shipping_type_ids; //取交集
             $idx++;
         }
-        if (Config::get('shopping_global', 'base_shopping', '', 'child_area_need_region') == 1) {
+        if (Config::get('shoppingGlobal') == 1) {
             $type_list = array_intersect($types, $enabled_tpl_type); //取交集，去掉地域不合的模板
         } else {
             $type_list = $types;
@@ -350,14 +352,14 @@ class OrderCheckService extends BaseService
     //计算积分能抵多少金额
     public function getPointValueAmount($point = 0)
     {
-        $scale = intval(Config::get('points_setting', 'base_shopping', '', 'integral_scale'));
+        $scale = intval(Config::get('integralScale'));
         return $scale > 0 ? round(($point / 100) * $scale, 2) : 0;
     }
 
     //计算金额需要多少积分
     public function getAmountValuePoints($amount = 0)
     {
-        $point_scale = Config::get('points_setting', 'base_shopping', '', 'integral_scale');
+        $point_scale = Config::get('integralScale');
         $scale = intval($point_scale);
         return $scale > 0 ? intval($amount / $scale * 100) : 0;
     }
@@ -487,7 +489,8 @@ class OrderCheckService extends BaseService
         $total_amount = round($total['product_amount'] + $total['shipping_fee'] + $total['service_fee'] - $total['points_amount'] - $total['discount_amount'] - $total['coupon_amount'],
             2);
         $total['total_amount'] = $total_amount > 0 ? $total_amount : 0;
-        $total['order_send_point'] = app(OrderService::class)->getOrderSendPoint($total['total_amount']);
+        $total['order_send_point'] = app(OrderService::class)->getOrderSendPoint($total['total_amount'],
+            request()->userId);
         // 余额
         if ($this->useBalance) {
             $user_balance = $this->getUserBalance();
@@ -520,8 +523,10 @@ class OrderCheckService extends BaseService
                 $free_shipping = true;
             }
         }
+        $storeNoShipping = [];
         foreach ($carts as $key => $store) {
             $default_tpl_id = app(ShippingTplService::class)->getDefaultShippingTplId($store['shop_id']);
+            $storeNoShipping[$store['shop_id']] = $store['no_shipping'];
             foreach ($store['carts'] as $_key => $value) {
                 $shipping_tpl_id = $value['shipping_tpl_id'] > 0 ? $value['shipping_tpl_id'] : $default_tpl_id;
                 if (!isset($data[$value['shop_id']][$shipping_tpl_id])) {
@@ -549,6 +554,10 @@ class OrderCheckService extends BaseService
         foreach ($data as $shop_id => $row) {
             $type_id = $selected_type_ids[$shop_id] ?? 0;
             if ($free_shipping) {
+                $result['store_shipping_fee'][$shop_id] = 0;
+                continue;
+            }
+            if ($storeNoShipping[$shop_id] == 1) {
                 $result['store_shipping_fee'][$shop_id] = 0;
                 continue;
             }
@@ -883,6 +892,9 @@ class OrderCheckService extends BaseService
         $address = $result['address'];
 
         $carts = $cart['carts'];
+        if(empty($carts)) {
+            throw new ApiException(/** LANG */ '购物车不存在此商品');
+        }
         $cart_total = $cart['total'];
         $item_data = [];
         $cart_ids = [];
@@ -1021,8 +1033,8 @@ class OrderCheckService extends BaseService
             $data['shop_id'] = $carts[0]['shop_id'];
             // 更新订单配送类型
             $shipping_type = $this->getSelectedShippingType();
-            $data['shipping_type_id'] = $shipping_type[$data['shop_id']]['type_id'];
-            $data['shipping_type_name'] = $shipping_type[$data['shop_id']]['type_name'];
+            $data['shipping_type_id'] = $shipping_type[$data['shop_id']]['type_id'] ?? 0;
+            $data['shipping_type_name'] = $shipping_type[$data['shop_id']]['type_name'] ?? '';
         }
 
         $order = new Order();
@@ -1209,6 +1221,30 @@ class OrderCheckService extends BaseService
     {
         $query = app(OrderInvoiceService::class)->filterQuery($params);
         $result = $query->where("status", 1)->order("id", "desc")->limit(1)->findOrEmpty()->toArray();
+        //如果没找到就去user_invoice表去找
+        if(empty($result) && $params['title_type'] == 2){
+            $userInvoice = UserInvoice::where("user_id", $params['user_id'])
+                ->where("status", 1)
+                ->order("invoice_id", "desc")
+                ->limit(1)
+                ->findOrEmpty()
+                ->toArray();
+            if(!empty($userInvoice)){
+                $result  = $userInvoice;
+            }
+        }
+
+
         return !empty($result) ? $result : false;
+    }
+
+
+    /**
+     * 获取使用积分
+     * @return int|nul
+     */
+    public function getUsePoint()
+    {
+        return $this->usePoint;
     }
 }

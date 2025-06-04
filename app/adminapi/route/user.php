@@ -49,7 +49,7 @@ Route::group('user', function () {
             "authorityCheckSubPermissionName" => 'userDelManage'
         ]);
         // 更新字段
-        Route::post('update_field', 'updateField')->append([
+        Route::post('updateField', 'updateField')->append([
             "authorityCheckSubPermissionName" => 'userModifyFieldManage'
         ]);
         // batch批量操作
@@ -59,9 +59,9 @@ Route::group('user', function () {
         // 搜索会员
         Route::get('search', 'searchByMobile');
         // 资金明细
-        Route::get('user_fund_detail', 'userFundDetail');
+        Route::get('userFundDetail', 'userFundDetail');
         // 资金管理
-        Route::post('fund_management', 'fundManagement')->append([
+        Route::post('fundManagement', 'fundManagement')->append([
             "authorityCheckSubPermissionName" => 'fundManagementManage'
         ]);
     })->append([
@@ -69,7 +69,7 @@ Route::group('user', function () {
         'authorityCheckAppendName' => 'userManage'
     ])->prefix("user.user/");
     // 站内信
-    Route::group('user_message_log', function () {
+    Route::group('userMessageLog', function () {
         // 列表
         Route::get('list', 'list');
         // 列表
@@ -99,13 +99,15 @@ Route::group('user', function () {
         'authorityCheckAppendName' => 'messageLogManage'
     ])->prefix("user.userMessageLog/");
     // 会员积分日志
-    Route::group('user_points_log', function () {
+    Route::group('userPointsLog', function () {
         // 列表
         Route::get('list', 'list');
         // 删除
         Route::post('del', 'del')->append([
             "authorityCheckSubPermissionName" => 'userPointsLogModifyManage'
         ]);
+        //获取会员积分
+        Route::get('getPoints', 'getPoints');
         // batch批量操作
         Route::post('batch', 'batch')->append([
             "authorityCheckSubPermissionName" => 'userPointsLogModifyManage'
@@ -114,23 +116,25 @@ Route::group('user', function () {
         //用于权限校验的名称
         'authorityCheckAppendName' => 'integralLogManage'
     ])->prefix("user.userPointsLog/");
+
     // 会员等级
-    Route::group('user_rank', function () {
+    Route::group('userRank', function () {
         // 列表
-        Route::get('list', 'list');
+        Route::get('list', 'list')->append([
+            "authorityCheckSubPermissionName" => 'levelManageManage'
+        ]);
+        //pro会员列表
+        Route::get('listByPro', 'listByPro')->append([
+            "authorityCheckSubPermissionName" => 'userLevelProManage'
+        ]);
         // 详情
         Route::get('detail', 'detail');
         // 编辑
-        Route::post('update', 'update')->append([
-            "authorityCheckSubPermissionName" => 'userRankModifyManage'
-        ]);
-    })->append([
-        //用于权限校验的名称
-        'authorityCheckAppendName' => 'userRankManage'
-    ])->prefix("user.userRank/");
+        Route::post('update', 'update');
+    })->prefix("user.userRank/");
 
     // 会员等级变更日志
-    Route::group('user_rank_log', function () {
+    Route::group('userRankLog', function () {
         // 列表
         Route::get('list', 'list');
     })->append([
@@ -139,7 +143,7 @@ Route::group('user', function () {
     ])->prefix("user.userRankLog/");
 
 	// 会员企业认证
-	Route::group('user_company', function () {
+	Route::group('userCompany', function () {
 		// 列表
 		Route::get('list', 'list');
 		// 详情

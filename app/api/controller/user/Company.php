@@ -38,9 +38,7 @@ class Company extends IndexBaseController
 
 		$result = $this->userCompanyService->companyApply($data);
 
-		return $this->success([
-			'item' => $result
-		]);
+        return $this->success($result);
 	}
 
 	/**
@@ -50,14 +48,12 @@ class Company extends IndexBaseController
 	 */
 	public function detail():Response
 	{
-		$id = input('id/d',0);
+		$id = $this->request->all('id/d',0);
 		$item = $this->userCompanyService->getDetail($id);
 		if ($item['user_id'] != request()->userId) {
 			return $this->error(Util::lang('企业认证信息不存在'));
 		}
-		return $this->success([
-			'item' => $item,
-		]);
+        return $this->success($item);
 	}
 
 	/**
@@ -67,8 +63,6 @@ class Company extends IndexBaseController
 	public function myApply():Response
 	{
 		$item = $this->userCompanyService->getApplyByUserId(request()->userId);
-		return $this->success([
-			'item' => $item,
-		]);
+        return $this->success($item);
 	}
 }

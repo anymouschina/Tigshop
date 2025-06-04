@@ -45,8 +45,8 @@ class Home extends IndexBaseController
      */
     public function index(): Response
     {
-        $preview_id = input('preview_id/d', 0);
-        $decorate_id = input('decorate_id/d', 0);
+        $preview_id = $this->request->all('preview_id/d', 0);
+        $decorate_id = $this->request->all('decorate_id/d', 0);
         if (env("DEMO_DEFAULT_DECORATE_ID")) {
             $preview_id = env("DEMO_DEFAULT_DECORATE_ID");
         }
@@ -73,8 +73,8 @@ class Home extends IndexBaseController
      */
     public function pcIndex(): Response
     {
-        $preview_id = input('preview_id/d', 0);
-        $decorate_id = input('decorate_id/d', 0);
+        $preview_id = $this->request->all('preview_id/d', 0);
+        $decorate_id = $this->request->all('decorate_id/d', 0);
         if ($preview_id > 0) {
             // 预览
             $decorate = app(DecorateService::class)->getPcPreviewDecorate($preview_id);
@@ -101,10 +101,10 @@ class Home extends IndexBaseController
      */
     public function getRecommend(): Response
     {
-        $decorate_id = input('decorate_id/d', 0);
-        $module_index = input('module_index');
-        $page = input('page/d', 1);
-        $preview_id = input('preview_id/d', 0);
+        $decorate_id = $this->request->all('decorate_id/d', 0);
+        $module_index = $this->request->all('module_index');
+        $page = $this->request->all('page/d', 1);
+        $preview_id = $this->request->all('preview_id/d', 0);
         if ($preview_id > 0) {
             $module = app(DecorateService::class)->getPreviewDecorateModuleData($decorate_id, $module_index,
                 ['page' => $page, 'size' => 10]);
@@ -113,9 +113,7 @@ class Home extends IndexBaseController
                 ['page' => $page, 'size' => 10]);
         }
 
-        return $this->success([
-            'item' => $module,
-        ]);
+        return $this->success($module);
     }
 
     /**
@@ -127,13 +125,13 @@ class Home extends IndexBaseController
 
         $data = [
             'size' => 15,
-            'page' => input('page/d', 1),
-            'un_started' => input('un_started/d', 0),
+            'page' => $this->request->all('page/d', 1),
+            'un_started' => $this->request->all('un_started/d', 0),
         ];
 
         $filterResult = app(SeckillService::class)->getSeckillProductList($data);
         return $this->success([
-            'seckill_list' => $filterResult['list'],
+            'records' => $filterResult['list'],
             'total' => $filterResult['total'],
         ]);
     }
@@ -152,14 +150,12 @@ class Home extends IndexBaseController
             'sort_field' => 'add_time',
             'sort_order' => 'desc',
         ];
-        $shop_id = input('shop_id', -1);
+        $shop_id = $this->request->all('shop_id', -1);
         if ($shop_id > -1) {
             $data['shop_id'] = $shop_id;
         }
         $filterResult = app(CouponService::class)->getFilterResult($data);
-        return $this->success([
-            'coupon_list' => $filterResult,
-        ]);
+        return $this->success($filterResult);
     }
 
     /**
@@ -176,9 +172,7 @@ class Home extends IndexBaseController
 
         $filterResult = app(MobileCatNavService::class)->getFilterResult($data);
 
-        return $this->success([
-            'filter_result' => $filterResult,
-        ]);
+        return $this->success($filterResult);
     }
 
     /**
@@ -187,11 +181,9 @@ class Home extends IndexBaseController
      */
     public function mobileNav(): Response
     {
-        $decorateSn = input('decorate_sn', 'mobile_nav');
+        $decorateSn = $this->request->all('decorate_sn', 'mobileNav');
         $item = app(DecorateDiscreteService::class)->getDetail($decorateSn);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -200,11 +192,9 @@ class Home extends IndexBaseController
      */
     public function memberDecorate(): Response
     {
-        $decorateSn = input('decorate_sn', 'member_decorate');
+        $decorateSn = $this->request->all('decorate_sn', 'memberDecorate');
         $item = app(DecorateDiscreteService::class)->getDetail($decorateSn);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success($item);
     }
 
     /**
@@ -213,23 +203,23 @@ class Home extends IndexBaseController
      */
     public function customerServiceConfig(): Response
     {
-        $data = ['h5_domain' => Config::get('h5_domain') ?? '', 'corp_id' => ''];
-        $service_type = Config::get('kefu_setting', 'base_kefu', '', 'kefu_type');
-        $open_type = Config::get('kefu_setting', 'base_kefu', '', 'kefu_yzf_type');
+        $data = ['h5_domain' => Config::get('h5Domain') ?? '', 'corp_id' => ''];
+        $service_type = Config::get('kefuType');
+        $open_type = Config::get('kefuYzfType');
         switch ($service_type) {
             case 0:
                 break;
             case 1:
-                $data['url'] = config('app.kf.yzf_url') . Config::get('kefu_setting', 'base_kefu', '', 'kefu_yzf_sign');
-                $data['corp_id'] = Config::get('kefu_setting', 'base_kefu', '', 'corp_id');
+                $data['url'] = config('app.kf.yzf_url') . Config::get('kefuYzfSign');
+                $data['corp_id'] = Config::get('corpId');
                 break;
             case 2:
-                $data['url'] = config('app.kf.work_url') . Config::get('kefu_setting', 'base_kefu', '', 'kefu_workwx_id');
+                $data['url'] = config('app.kf.work_url') . Config::get('kefuWorkwxId');
                 $open_type = 0;
-                $data['corp_id'] = Config::get('kefu_setting', 'base_kefu', '', 'corp_id');
+                $data['corp_id'] = Config::get('corpId');
                 break;
             case 3:
-                $data['url'] = Config::get('kefu_setting', 'base_kefu', '', 'kefu_code');
+                $data['url'] = Config::get('kefuCode');
                 break;
             case 4:
                 $data['url'] = '';
@@ -239,7 +229,7 @@ class Home extends IndexBaseController
         $data['service_type'] = $service_type;
         $data['show'] = $service_type > 0 ? 1 : 0;
 
-        return $this->success(['item' => $data]);
+        return $this->success($data);
     }
 
     /**
@@ -254,9 +244,7 @@ class Home extends IndexBaseController
             'page' => 1,
             'size' => 20,
         ]);
-        return $this->success([
-            'list' => $list,
-        ]);
+        return $this->success($list);
     }
 
 }

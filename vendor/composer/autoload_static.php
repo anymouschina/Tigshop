@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit31d48e4919afd132f31fe0b6730baadb
+class ComposerStaticInit1b0f3c9786549442bfc74a19c346c77b
 {
     public static $files = array (
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
@@ -13,13 +13,13 @@ class ComposerStaticInit31d48e4919afd132f31fe0b6730baadb
         '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
         '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
         'd767e4fc2dc52fe66584ab8c6684783e' => __DIR__ . '/..' . '/adbario/php-dot-notation/src/helpers.php',
-        'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
         '9b552a3cc426e3287cc811caefa3cf53' => __DIR__ . '/..' . '/topthink/think-helper/src/helper.php',
-        'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
+        'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
         'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
+        'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         '35fab96057f1bf5e7aba31a8a6d5fdde' => __DIR__ . '/..' . '/topthink/think-orm/stubs/load_stubs.php',
-        '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
         'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
+        '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
         'def43f6c87e4f8dfd0c9e1b1bab14fe8' => __DIR__ . '/..' . '/symfony/polyfill-iconv/bootstrap.php',
         '8825ede83f2f289127722d4e842cf7e8' => __DIR__ . '/..' . '/symfony/polyfill-intl-grapheme/bootstrap.php',
         'b067bc7112e384b61c701452d53a14a8' => __DIR__ . '/..' . '/mtdowling/jmespath.php/src/JmesPath.php',
@@ -916,11 +916,11 @@ class ComposerStaticInit31d48e4919afd132f31fe0b6730baadb
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$prefixesPsr0;
-            $loader->fallbackDirsPsr0 = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$fallbackDirsPsr0;
-            $loader->classMap = ComposerStaticInit31d48e4919afd132f31fe0b6730baadb::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit1b0f3c9786549442bfc74a19c346c77b::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit1b0f3c9786549442bfc74a19c346c77b::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit1b0f3c9786549442bfc74a19c346c77b::$prefixesPsr0;
+            $loader->fallbackDirsPsr0 = ComposerStaticInit1b0f3c9786549442bfc74a19c346c77b::$fallbackDirsPsr0;
+            $loader->classMap = ComposerStaticInit1b0f3c9786549442bfc74a19c346c77b::$classMap;
 
         }, null, ClassLoader::class);
     }

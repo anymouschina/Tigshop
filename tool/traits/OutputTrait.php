@@ -3,33 +3,22 @@
 namespace traits;
 
 use think\facade\Env;
+use think\Collection;
 use think\Response;
 
 trait OutputTrait
 {
     // 普通逻辑层的格式输出
-    protected function defaultOutput(string | array $message = '', int $error_code = 0): Response
+    protected function defaultOutput($data = '', $message = '', int $error_code = 0): Response
     {
-        if (is_array($message)) {
-            $data = $message;
-            $data['errcode'] = $error_code;
-            $data['message'] = $data['message'] ?? '';
-            return json([
-                'code' => 0,
-                'msg' => 'ok',
-                'data' => $data,
-            ]);
-        } else {
-            return json([
-                'code' => 0,
-                'msg' => 'ok',
-                'data' => [
-                    'errcode' => $error_code,
-                    'message' => $message,
-                ],
-            ]);
-        }
+        //判断$data是一个集合则转数组
+        return json([
+            'code' => $error_code,
+            'message' => $message,
+            'data' => camelCase($data),
+        ]);
     }
+
     // 页面层的严重错误抛出格式，如代码错误、数据库错误等
     protected function fatalOutput($exception): Response
     {
@@ -41,11 +30,8 @@ trait OutputTrait
         }
         $arr = [
             'code' => $code,
-            'msg' => $message,
-            'data' => [
-                'errcode' => $code,
-                'message' => $message,
-            ],
+            'message' => $message,
+            'data' => null,
         ];
         if ($app_debug == true) {
             $arr['data']['file'] = $exception->getFile();

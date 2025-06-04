@@ -27,4 +27,44 @@ class MobileCatNav extends Model
         return $this->hasOne(Category::class, 'category_id', 'category_id')->bind(["category_name"]);
     }
 
+    public function getChildCatIdsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setChildCatIdsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getBrandIdsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function setBrandIdsAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value);
+    }
+
+    public function getImgUrlAttr($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        return camelCase($value, true);
+    }
+
 }

@@ -63,18 +63,30 @@ class Authority extends AdminBaseController
         $filterResult = $this->authorityService->getFilterResult($filter);
         $total = $this->authorityService->getFilterCount($filter);
 
+        return $this->success([
+            'records' => $filterResult,
+            'total' => $total,
+        ]);
+    }
+
+    /**
+     * 获取父级权限名称
+     *
+     * @return Response
+     */
+    public function getAuthorityParentName():Response
+    {
+        $filter = $this->request->only([
+            'parent_id' => 0,
+        ], 'get');
         if ($filter['parent_id'] > 0) {
             $parent_name = $this->authorityService->getName($filter['parent_id']);
         } else {
             $parent_name = null;
         }
-
-        return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
-            'total' => $total,
-            'parent_name' => $parent_name,
-        ]);
+        return $this->success(
+            $parent_name
+        );
     }
 
     /**
@@ -84,11 +96,11 @@ class Authority extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d',0);
+        $id =$this->request->all('id/d',0);
         $item = $this->authorityService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success( 
+            $item
+        );
     }
 
     /**
@@ -120,7 +132,7 @@ class Authority extends AdminBaseController
         $result = $this->authorityService->createAuthority($data);
         if ($result) {
             AdminLog::add('添加权限：' . $data['authority_name']);
-            return $this->success(/** LANG */'权限添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'权限更新失败');
         }
@@ -133,7 +145,7 @@ class Authority extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->request->only([
             'authority_id' => $id,
             'authority_name' => '',
@@ -159,7 +171,7 @@ class Authority extends AdminBaseController
         $result = $this->authorityService->updateAuthority($id, $data);
         if ($result) {
             AdminLog::add('编辑权限：' . $data['authority_name']);
-            return $this->success(/** LANG */'权限更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'权限更新失败');
         }
@@ -172,8 +184,11 @@ class Authority extends AdminBaseController
      */
     public function getAllAuthority(): Response
     {
-        $type = input('type/d', 0);
-        $getType = input('admin_type', 'admin');
+        $type = $this->request->all('type/d' , '0');
+        $getType = $this->request->all('admin_type', 'admin');
+
+
+
         $admin_id = request()->adminUid;
         $shop_id = request()->shopId;
         if ($shop_id) {
@@ -185,9 +200,9 @@ class Authority extends AdminBaseController
         }
         $cat_list = $this->authorityService->authorityList(0, $type, $auth, $admin_type,$admin_id,$shop_id);
 
-        return $this->success([
-            'item' => $cat_list,
-        ]);
+        return $this->success( 
+            $cat_list
+        );
     }
 
     /**
@@ -197,8 +212,8 @@ class Authority extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d');
-        $field = input('field');
+        $id = $this->request->all('id/d');
+        $field = $this->request->all('field');
 
         if (!in_array($field, ['authority_name', 'authority_sn', 'route_link', 'is_show', 'sort_order'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -206,7 +221,7 @@ class Authority extends AdminBaseController
 
         $data = [
             'authority_id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->authorityService->updateAuthorityField($id, $data);
@@ -221,12 +236,12 @@ class Authority extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d');
+        $id = $this->request->all('id/d');
 
         if ($id) {
             $this->authorityService->deleteAuthority($id);
 
-            return $this->success(/** LANG */'指定项目已删除');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#id 错误');
         }
@@ -239,15 +254,15 @@ class Authority extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->authorityService->deleteAuthority($id);
                 }
@@ -256,7 +271,7 @@ class Authority extends AdminBaseController
                 Db::rollback();
                 throw new ApiException($exception->getMessage());
             }
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

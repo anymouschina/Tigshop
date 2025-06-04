@@ -53,6 +53,7 @@ class PcNavigation extends AdminBaseController
             'size/d' => 15,
             'is_show' => -1,
             'type/d' => 0,
+            'parent_id/d' => 0,
             'sort_field' => 'id',
             'sort_order' => 'desc',
         ], 'get');
@@ -61,8 +62,7 @@ class PcNavigation extends AdminBaseController
         $total = $this->pcNavigationService->getFilterCount($filter);
 
         return $this->success([
-            'filter_result' => $filterResult,
-            'filter' => $filter,
+            'records' => $filterResult,
             'total' => $total,
         ]);
     }
@@ -73,11 +73,11 @@ class PcNavigation extends AdminBaseController
      */
     public function detail(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $item = $this->pcNavigationService->getDetail($id);
-        return $this->success([
-            'item' => $item,
-        ]);
+        return $this->success(
+            $item
+        );
     }
 
     /**
@@ -87,11 +87,11 @@ class PcNavigation extends AdminBaseController
     public function getParentNav(): Response
     {
         //上级导航
-        $type = input('type/d', 0);
+        $type =$this->request->all('type/d', 0);
         $nav_list = $this->pcNavigationService->getParentNav($type);
-        return $this->success([
-            'filter_result' => $nav_list,
-        ]);
+        return $this->success(
+            $nav_list
+        );
     }
 
     /**
@@ -101,9 +101,9 @@ class PcNavigation extends AdminBaseController
     public function selectLink(): Response
     {
         $base_link = $this->pcNavigationService->getBaseLink();
-        return $this->success([
-            'item' => $base_link,
-        ]);
+        return $this->success(
+          $base_link
+        );
     }
 
     /**
@@ -144,7 +144,7 @@ class PcNavigation extends AdminBaseController
 
         $result = $this->pcNavigationService->createNavigation($data);
         if ($result) {
-            return $this->success(/** LANG */'PC导航栏添加成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'PC导航栏添加失败');
         }
@@ -156,7 +156,7 @@ class PcNavigation extends AdminBaseController
      */
     public function update(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $data = $this->requestData();
         $data["id"] = $id;
         try {
@@ -169,7 +169,7 @@ class PcNavigation extends AdminBaseController
 
         $result = $this->pcNavigationService->updateNavigation($id, $data);
         if ($result) {
-            return $this->success(/** LANG */'PC导航栏更新成功');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'PC导航栏更新失败');
         }
@@ -182,8 +182,8 @@ class PcNavigation extends AdminBaseController
      */
     public function updateField(): Response
     {
-        $id = input('id/d', 0);
-        $field = input('field', '');
+        $id =$this->request->all('id/d', 0);
+        $field =$this->request->all('field', '');
 
         if (!in_array($field, ['sort_order', 'is_show', 'is_blank'])) {
             return $this->error(/** LANG */'#field 错误');
@@ -191,12 +191,12 @@ class PcNavigation extends AdminBaseController
 
         $data = [
             'id' => $id,
-            $field => input('val'),
+            $field =>$this->request->all('val'),
         ];
 
         $this->pcNavigationService->updateNavigationField($id, $data);
 
-        return $this->success(/** LANG */'更新成功');
+        return $this->success();
     }
 
     /**
@@ -206,9 +206,9 @@ class PcNavigation extends AdminBaseController
      */
     public function del(): Response
     {
-        $id = input('id/d', 0);
+        $id =$this->request->all('id/d', 0);
         $this->pcNavigationService->deleteNavigation($id);
-        return $this->success(/** LANG */'指定项目已删除');
+        return $this->success();
     }
 
     /**
@@ -218,15 +218,15 @@ class PcNavigation extends AdminBaseController
      */
     public function batch(): Response
     {
-        if (empty(input('ids')) || !is_array(input('ids'))) {
+        if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
             return $this->error(/** LANG */'未选择项目');
         }
 
-        if (input('type') == 'del') {
+        if ($this->request->all('type') == 'del') {
             try {
                 //批量操作一定要事务
                 Db::startTrans();
-                foreach (input('ids') as $key => $id) {
+                foreach ($this->request->all('ids') as $key => $id) {
                     $id = intval($id);
                     $this->pcNavigationService->deleteNavigation($id);
                 }
@@ -236,7 +236,7 @@ class PcNavigation extends AdminBaseController
                 throw new ApiException($exception->getMessage());
             }
 
-            return $this->success(/** LANG */'批量操作执行成功！');
+            return $this->success();
         } else {
             return $this->error(/** LANG */'#type 错误');
         }

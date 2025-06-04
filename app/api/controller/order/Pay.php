@@ -40,7 +40,7 @@ class Pay extends IndexBaseController
      */
     public function index(): Response
     {
-        $order_id = input('id/d', 0);
+        $order_id = $this->request->all('id/d', 0);
         $orderDetail = app(OrderDetailService::class)->setId($order_id)->setUserId(request()->userId);
         // 检查订单是否可支付
         $orderDetail->checkActionAvailable('to_pay');
@@ -58,13 +58,20 @@ class Pay extends IndexBaseController
         $offline_payment_list = [];
         if (in_array('offline', $payment_list)) {
             $offline_payment_list = [
-                'offline_pay_bank' => str_replace('{$order_sn}', $order['order_sn'], Config::get('offline_pay_bank', 'payment')),
-                'offline_pay_company' => str_replace('{$order_sn}', $order['order_sn'], Config::get('offline_pay_company', 'payment')),
+                'offline_pay_bank' => str_replace('{$order_sn}', $order['order_sn'], Config::get('offlinePayBank')),
+                'offline_pay_company' => str_replace('{$order_sn}', $order['order_sn'],
+                    Config::get('offlinePayCompany')),
             ];
+        }
+        $result = [];
+        if(!empty($payment_list)) {
+            foreach ($payment_list as  $value) {
+                $result[] =  lcfirst(str_replace('_', '', ucwords($value, '_')));
+            }
         }
         return $this->success([
             'order' => $order,
-            'payment_list' => $payment_list,
+            'payment_list' => $result,
             'offline_payment_list' => $offline_payment_list,
         ]);
     }
@@ -75,8 +82,8 @@ class Pay extends IndexBaseController
      */
     public function checkStatus(): Response
     {
-        $order_id = input('id/d', 0);
-        $pay_log_id = input('paylog_id/d', 0);
+        $order_id = $this->request->all('id/d', 0);
+        $pay_log_id = $this->request->all('paylog_id/d', 0);
         if (empty($order_id) && empty($pay_log_id)) {
             return $this->error(Util::lang('参数缺失'));
         }
@@ -86,9 +93,7 @@ class Pay extends IndexBaseController
         } else {
             $pay_status = app(PayLogService::class)->getPayStatus($pay_log_id);
         }
-        return $this->success([
-            'pay_status' => $pay_status > 0 ? 1 : 0,
-        ]);
+        return $this->success($pay_status > 0 ? 1 : 0);
     }
 
     /**
@@ -105,12 +110,12 @@ class Pay extends IndexBaseController
      */
     public function create(): Response
     {
-        $order_id = input('id/d', 0);
-        $pay_type = input('type', '');
+        $order_id = $this->request->all('id/d', 0);
+        $pay_type = $this->request->all('type', '');
         if (empty($pay_type)) {
             return $this->error(Util::lang('未选择支付方式'));
         }
-        $code = input('code', '');
+        $code = $this->request->all('code', '');
         $openid = '';
         if (!empty($code)) {
             $openid = app(WechatOAuthService::class)->getMiniOpenid($code);
@@ -178,7 +183,8 @@ class Pay extends IndexBaseController
      */
     public function notify(): string|Response
     {
-        $pay_type = input('pay_code', '');
+        $pay_type = $this->request->all('pay_code', '');
+        \think\facade\Log::info('支付回调：' . $pay_type);
         try {
             switch ($pay_type) {
                 case 'wechat':
@@ -212,7 +218,7 @@ class Pay extends IndexBaseController
      */
     public function refundNotify(): string|Response
     {
-        $pay_type = input('pay_code', '');
+        $pay_type = $this->request->all('pay_code', '');
         try {
             switch ($pay_type) {
                 case 'wechat':

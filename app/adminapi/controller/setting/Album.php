@@ -44,8 +44,7 @@ class Album extends AdminBaseController
 		$total = $this->albumService->getFilterCount($filter);
 
 		return $this->success([
-			'filter_result' => $filterResult,
-			'filter' => $filter,
+			'records' => $filterResult,
 			'total' => $total,
 		]);
 	}
@@ -57,8 +56,8 @@ class Album extends AdminBaseController
 	 */
 	public function updateField(): Response
 	{
-		$id = input('id/d', 0);
-		$field = input('field', '');
+		$id =$this->request->all('id/d', 0);
+		$field =$this->request->all('field', '');
 
 		if (!in_array($field, ['pic_name'])) {
 			return $this->error('#field 错误');
@@ -66,12 +65,12 @@ class Album extends AdminBaseController
 
 		$data = [
 			'pic_id' => $id,
-			$field => input('val'),
+			$field =>$this->request->all('val'),
 		];
 
 		$this->albumService->updateAlbumField($id, $data);
 
-		return $this->success(/** LANG */'更新成功');
+		return $this->success();
 	}
 
 	/**
@@ -81,9 +80,9 @@ class Album extends AdminBaseController
 	 */
 	public function del(): Response
 	{
-		$id = input('id/d', 0);
+		$id =$this->request->all('id/d', 0);
 		$this->albumService->delAlbum($id);
-		return $this->success(/** LANG */'指定项目已删除');
+		return $this->success();
 	}
 
 	/**
@@ -93,15 +92,15 @@ class Album extends AdminBaseController
 	 */
 	public function batch(): Response
 	{
-		if (empty(input('ids')) || !is_array(input('ids'))) {
+		if (empty($this->request->all('ids')) || !is_array($this->request->all('ids'))) {
 			return $this->error(/** LANG */'未选择项目');
 		}
 
-		if (input('type') == 'del') {
+		if ($this->request->all('type') == 'del') {
 			try {
 				//批量操作一定要事务
 				Db::startTrans();
-				foreach (input('ids') as $key => $id) {
+				foreach ($this->request->all('ids') as $key => $id) {
 					$id = intval($id);
 					$this->albumService->delAlbum($id);
 				}
@@ -111,7 +110,7 @@ class Album extends AdminBaseController
 				throw new ApiException($exception->getMessage());
 			}
 
-			return $this->success(/** LANG */'批量操作执行成功！');
+			return $this->success();
 		} else {
 			return $this->error(/** LANG */'#type 错误');
 		}
