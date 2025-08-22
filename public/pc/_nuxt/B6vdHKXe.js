@@ -1,1 +1,0 @@
-import{at as e}from"./vO8z_6wc.js";const t=()=>e({url:"user/comment/subNum",method:"get"}),s=t=>e({url:"user/comment/showedList?isShowed=0",method:"get",params:t}),m=t=>e({url:"user/comment/list",method:"get",params:t}),a=t=>e({url:"user/comment/evaluate",method:"post",data:t}),o=t=>e({url:"user/comment/detail",method:"get",params:t});export{s as a,m as b,t as c,o as g,a as u};

@@ -1,1 +1,0 @@
-import{y as e}from"./index-DrbzVNl6.js";const n=t=>e({url:"merchant/merchant/list",method:"get",params:t}),c=(t,r)=>e({url:"merchant/merchant/"+t,method:"get",params:r}),h=(t,r)=>e({url:"merchant/merchant/"+t,method:"post",data:r}),m=t=>e({url:"merchant/merchant/updateField",method:"post",data:t});export{m as a,c as b,n as g,h as u};

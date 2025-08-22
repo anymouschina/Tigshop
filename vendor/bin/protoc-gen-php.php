@@ -1,1 +1,0 @@
-../stanley-cheung/protobuf-php/protoc-gen-php.php

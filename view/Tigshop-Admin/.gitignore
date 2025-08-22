@@ -1,0 +1,21 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+admin-dist
+.svn
+# Node dependencies
+node_modules
+.vscode
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+admin-dist.zip
+.env.development

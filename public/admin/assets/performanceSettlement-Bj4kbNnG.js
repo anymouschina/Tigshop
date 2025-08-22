@@ -1,1 +1,0 @@
-import{y as t}from"./index-DrbzVNl6.js";const a=e=>t({url:"salesman/order/list",method:"get",params:e}),r=e=>t({url:"salesman/order/list",method:"get",responseType:"arraybuffer",params:e}),n=()=>t({url:"salesman/config/detail?code=salesmanSettlement",method:"get"}),o=e=>t({url:"salesman/config/save?code=salesmanSettlement",method:"post",data:e});export{a,r as b,n as g,o as s};

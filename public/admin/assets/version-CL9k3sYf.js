@@ -1,1 +1,0 @@
-const _={VITE_IS_MERCHANT:"0",VITE_IS_OVERSEAS:"0",VITE_IS_PRO:"0"},{VITE_IS_MERCHANT:n,VITE_IS_PRO:t,VITE_IS_OVERSEAS:E}=_;function I(){return n==1}function r(){return t==1}function e(){return E==1}export{I as a,e as b,r as i};

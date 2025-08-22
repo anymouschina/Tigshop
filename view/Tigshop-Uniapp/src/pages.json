@@ -1,0 +1,563 @@
+{
+    "pages": [
+        {
+            "path": "pages/index/index",
+            "style": {
+                "enablePullDownRefresh": true
+            }
+        },
+        {
+            "path": "pages/search/index",
+            "style": {}
+        },
+        {
+            "path": "pages/search/result",
+            "style": {}
+        },
+        {
+            "path": "pages/productCate/index",
+            "style": {}
+        },
+        {
+            "path": "pages/cart/index",
+            "style": {}
+        },
+        {
+            "path": "pages/cart/cartJump",
+            "style": {}
+        },
+        {
+            "path": "pages/register/index",
+            "style": {}
+        },
+        {
+            "path": "pages/register/agreement",
+            "style": {}
+        },
+        {
+            "path": "pages/address/list",
+            "style": {}
+        },
+        {
+            "path": "pages/address/editRegion",
+            "style": {}
+        },
+        {
+            "path": "pages/seckill/list"
+        },
+        {
+            "path": "pages/404"
+        },
+        {
+            "path": "pages/webviewPage/index"
+        },
+        {
+            "path": "pages/exchange/list"
+        },
+        {
+            "path": "pages/reset/index"
+        }
+    ],
+    "subPackages": [
+        {
+            "root": "pages/login",
+            "pages": [
+                {
+                    "path": "index",
+                    "style": {
+                        "softinputMode": "adjustPan"
+                    }
+                },
+                {
+                    "path": "mallAgreement"
+                }
+            ]
+        },
+        {
+            "root": "pages/customPage",
+            "pages": [
+                {
+                    "path": "index"
+                }
+            ]
+        },
+        {
+            "root": "pages/shop",
+            "pages": [
+                {
+                    "path": "index"
+                },
+                {
+                    "path": "category"
+                },
+                {
+                    "path": "list"
+                }
+            ]
+        },
+        {
+            "root": "pages/article",
+            "pages": [
+                {
+                    "path": "issue/list"
+                },
+                {
+                    "path": "issue/detail"
+                },
+                {
+                    "path": "news/detail"
+                },
+                {
+                    "path": "news/list"
+                }
+            ]
+        },
+        {
+            "root": "pages/product",
+            "pages": [
+                {
+                    "path": "index",
+                    "meta": {
+                        "sync": true,
+                        "title": "普通商品",
+                        "group": "商品"
+                    }
+                },
+                {
+                    "path": "consult",
+                    "meta": {
+                        "sync": true,
+                        "title": "商品咨询",
+                        "group": "商品"
+                    }
+                },
+                {
+                    "path": "comment",
+                    "meta": {
+                        "sync": true,
+                        "title": "商品评价",
+                        "group": "商品"
+                    }
+                }
+            ]
+        },
+        {
+            "root": "pages/coupon",
+            "pages": [
+                {
+                    "path": "index",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "detail",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "search",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                }
+            ]
+        },
+        {
+            "root": "pages/order",
+            "pages": [
+                {
+                    "path": "check",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "pay",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "payStatus",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "openPay",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                }
+            ]
+        },
+        {
+            "root": "pages/im",
+            "pages": [
+                {
+                    "path": "index",
+                    "meta": {
+                        "sync": true,
+                        "title": "聊天",
+                        "group": "聊天"
+                    }
+                },
+                {
+                    "path": "list",
+                    "meta": {
+                        "sync": true,
+                        "title": "消息列表",
+                        "group": "消息列表"
+                    }
+                }
+            ]
+        },
+        {
+            "root": "pages/salesman",
+            "pages": [
+                {
+                    "path": "index",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "personalInfo",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "upQrcode",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "performanceStat",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "level",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "assetsCenter",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "orderPromote",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "list",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "detail",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "inOutRecordList",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "withdraw",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "relationList",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "withdrawHelp",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "businessCard",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "businessCardExternal",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "salesmanCard",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "portalPoster",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "notifyCenter",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "notifyCenterDetail",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "settlementDetail",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                },
+                {
+                    "path": "material",
+                    "meta": {
+                        "sync": true,
+                        "title": "",
+                        "group": ""
+                    }
+                }
+            ]
+        },
+        {
+            "root": "pages/user",
+            "pages": [
+                {
+                    "path": "index",
+                    "style": {
+                        "navigationBarTitleText": ""
+                    }
+                },
+                {
+                    "path": "afterSale/edit"
+                },
+                {
+                    "path": "messageLog/index"
+                },
+                {
+                    "path": "afterSale/info"
+                },
+                {
+                    "path": "afterSale/list"
+                },
+                {
+                    "path": "afterSale/negotiate"
+                },
+                {
+                    "path": "afterSale/shipments"
+                },
+                {
+                    "path": "comment/list"
+                },
+                {
+                    "path": "security/phone"
+                },
+                {
+                    "path": "security/newPhone"
+                },
+                {
+                    "path": "security/email"
+                },
+                {
+                    "path": "account/index",
+                    "style": {}
+                },
+                {
+                    "path": "account/cardManagement/list",
+                    "style": {}
+                },
+                {
+                    "path": "account/cardManagement/edit",
+                    "style": {}
+                },
+                {
+                    "path": "historyProduct/index"
+                },
+                {
+                    "path": "order/list"
+                },
+                {
+                    "path": "order/info"
+                },
+                {
+                    "path": "profile/index"
+                },
+                {
+                    "path": "collectProduct/index"
+                },
+                {
+                    "path": "comment/info"
+                },
+                {
+                    "path": "afterSale/leaveMessage"
+                },
+                {
+                    "path": "invoiceManagement/index"
+                },
+                {
+                    "path": "invoiceManagement/applyInvoice"
+                },
+                {
+                    "path": "invoiceManagement/invoiceInfo"
+                },
+                {
+                    "path": "invoiceManagement/src/imageView"
+                },
+                {
+                    "path": "security/password"
+                },
+                {
+                    "path": "point/detail"
+                },
+                {
+                    "path": "merchantEnter/index"
+                },
+                {
+                    "path": "merchantEnter/principalType"
+                },
+                {
+                    "path": "merchantEnter/agreement"
+                },
+                {
+                    "path": "collectionShop/index"
+                },
+                {
+                    "path": "sign/index"
+                },
+                {
+                    "path": "bindMobilePhone/index"
+                },
+                {
+                    "path": "ranks/index"
+                },
+                {
+                    "path": "userCertification/index"
+                },
+                {
+                    "path": "levelCenter/index"
+                },
+                {
+                    "path": "levelCenter/benefit"
+                }
+            ]
+        }
+    ],
+    "requiredPrivateInfos": ["chooseLocation", "chooseAddress"],
+    "tabBar": {
+        "backgroundColor": "#f5f5f5",
+        "borderStyle": "white",
+        "list": [
+            {
+                "pagePath": "pages/index/index"
+            },
+            {
+                "pagePath": "pages/cart/index"
+            }
+        ]
+    },
+    "globalStyle": {
+        "backgroundTextStyle": "dark",
+        "navigationBarBackgroundColor": "#fff",
+        "navigationBarTextStyle": "black",
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "tigshop",
+        "app-plus": {
+            "bounce": "none"
+        }
+    },
+    "easycom": {
+        "autoscan": true,
+        "custom": {
+            "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue",
+            "^u--(.*)": "uview-plus/components/u-$1/u-$1.vue",
+            "^up-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+            "^u-([^-].*)": "uview-plus/components/u-$1/u-$1.vue",
+            "tig-(.*)": "@/components/tig/tig-$1/tig-$1.vue",
+            "format-price": "@/components/format-price/format-price.vue",
+            "loading-box": "@/components/loading-box/loading-box.vue",
+            "empty-box": "@/components/empty-box/empty-box.vue"
+        }
+    }
+}

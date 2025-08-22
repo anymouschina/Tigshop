@@ -1,1 +1,0 @@
-import{at as e}from"./vO8z_6wc.js";const t=()=>e({url:"user/invoice/detail",method:"get"}),s=t=>e({url:"user/invoice/update",method:"post",params:t}),a=t=>e({url:"user/invoice/create",method:"post",params:t}),o=()=>e({url:"user/invoice/getStatus",method:"get"});export{t as a,o as g,a as i,s as u};

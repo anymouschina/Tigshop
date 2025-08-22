@@ -1,0 +1,1 @@
+import{ap as e}from"./index-BEWhCL1q.js";const r=e("category",{state:()=>({categoryTree:null}),getters:{},actions:{clearCategory(){this.categoryTree=null}},persist:{enabled:!0,strategies:[{storage:sessionStorage,paths:[]}]}});export{r as u};

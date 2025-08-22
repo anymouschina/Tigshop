@@ -1,0 +1,1 @@
+export { default as PicSelect } from "./src/PicSelect.vue";

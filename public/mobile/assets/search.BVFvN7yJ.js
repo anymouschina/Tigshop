@@ -1,1 +1,0 @@
-import{Y as e}from"./index-BKzbZvRR.js";const r=r=>e({url:"category/category/parentTree",method:"get",data:{id:r}}),a=r=>e({url:"search/search/getFilter",method:"get",params:r}),t=r=>e({url:"search/search/getProduct",method:"get",params:r}),s=r=>e({url:`shop/category/parentTree?id=${r}`,method:"get"});export{a,r as b,s as c,t as g};
