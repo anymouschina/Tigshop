@@ -90,8 +90,6 @@ JAVA安装教程：https://www.tigshop.com/course/tigshop-java/index
 | PC 端前台 | https://demo.tigshop.cn/        | 123123   | 123123   |
 | H5 端前台 | https://demo.tigshop.cn/mobile/ | 123123   | 123123   |
 
-【免费开源】下载地址：[点击下载](https://gitee.com/tigshop/tigshop/repository/archive/master.zip)
-
 
 ### 技术选型
 
