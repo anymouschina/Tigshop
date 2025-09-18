@@ -6,9 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { ProductModule } from './product/product.module';
+import { CartModule } from './cart/cart.module';
+import { OrderModule } from './order/order.module';
 import { ScheduleModule } from '@nestjs/schedule';
-// import { CartModule } from './cart/cart.module';
-// import { OrderModule } from './order/order.module';
 // import { PaymentModule } from './payment/payment.module';
 // import { UploadModule } from './upload/upload.module';
 // import { NotificationModule } from './notification/notification.module';
@@ -27,9 +27,9 @@ import { ScheduleModule } from '@nestjs/schedule';
     AdminModule,
     UserModule,
     ProductModule,
+    CartModule,
+    OrderModule,
     // Temporarily disabled modules with compilation issues
-    // CartModule,
-    // OrderModule,
     // PaymentModule,
     // UploadModule,
     // NotificationModule,
