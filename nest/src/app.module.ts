@@ -5,8 +5,8 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { LoggerModule } from './common/logger/logger.module';
+import { ProductModule } from './product/product.module';
 import { ScheduleModule } from '@nestjs/schedule';
-// import { ProductModule } from './product/product.module';
 // import { CartModule } from './cart/cart.module';
 // import { OrderModule } from './order/order.module';
 // import { PaymentModule } from './payment/payment.module';
@@ -26,8 +26,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthModule,
     AdminModule,
     UserModule,
+    ProductModule,
     // Temporarily disabled modules with compilation issues
-    // ProductModule,
     // CartModule,
     // OrderModule,
     // PaymentModule,
