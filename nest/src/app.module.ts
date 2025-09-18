@@ -9,10 +9,10 @@ import { LoggerModule } from './common/logger/logger.module';
 import { ProductModule } from './product/product.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
+import { PaymentModule } from './payment/payment.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-// import { PaymentModule } from './payment/payment.module';
 // import { UploadModule } from './upload/upload.module';
 // import { NotificationModule } from './notification/notification.module';
 // import { AppointmentModule } from './appointment/appointment.module';
@@ -32,8 +32,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     ProductModule,
     CartModule,
     OrderModule,
-    // Temporarily disabled modules with compilation issues
-    // PaymentModule,
+    PaymentModule,
     // UploadModule,
     // NotificationModule,
     // AppointmentModule,
