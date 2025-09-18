@@ -55,6 +55,32 @@ export class CouponService {
   constructor(private readonly prisma: DatabaseService) {}
 
   /**
+   * 映射更新DTO到优惠券字段
+   */
+  private mapUpdateDtoToCoupon(updateDto: UpdateCouponDto): any {
+    const mapped: any = {};
+
+    if (updateDto.name !== undefined) mapped.couponName = updateDto.name;
+    if (updateDto.code !== undefined) mapped.couponCode = updateDto.code;
+    if (updateDto.type !== undefined) mapped.couponType = updateDto.type === CouponType.FIXED ? 1 : 2;
+    if (updateDto.value !== undefined) {
+      if (updateDto.type === CouponType.FIXED) {
+        mapped.discountAmount = updateDto.value;
+      } else {
+        mapped.discountRate = updateDto.value;
+      }
+    }
+    if (updateDto.minAmount !== undefined) mapped.minAmount = updateDto.minAmount;
+    if (updateDto.quantity !== undefined) mapped.totalNum = updateDto.quantity;
+    if (updateDto.description !== undefined) mapped.description = updateDto.description;
+    if (updateDto.startTime !== undefined) mapped.startTime = updateDto.startTime;
+    if (updateDto.endTime !== undefined) mapped.endTime = updateDto.endTime;
+    if (updateDto.status !== undefined) mapped.isEnable = updateDto.status;
+
+    return mapped;
+  }
+
+  /**
    * 创建优惠券 - 对齐PHP版本 coupon/create
    */
   async createCoupon(createCouponDto: CreateCouponDto): Promise<CouponResponse> {
@@ -141,10 +167,10 @@ export class CouponService {
         take: size,
         orderBy: [
           { createdAt: 'desc' },
-          { id: 'desc' }
+          { userCouponId: 'desc' }
         ],
         include: {
-          coupon: true,
+          Coupon: true,
         },
       }),
       this.prisma.userCoupon.count({
@@ -166,7 +192,7 @@ export class CouponService {
    */
   async getCouponDetail(couponId: number): Promise<CouponResponse> {
     const coupon = await this.prisma.coupon.findFirst({
-      where: { id: couponId },
+      where: { couponId: couponId },
     });
 
     if (!coupon) {
@@ -182,7 +208,7 @@ export class CouponService {
   async updateCoupon(couponId: number, updateCouponDto: UpdateCouponDto): Promise<CouponResponse> {
     // 检查优惠券是否存在
     const existingCoupon = await this.prisma.coupon.findFirst({
-      where: { id: couponId },
+      where: { couponId: couponId },
     });
 
     if (!existingCoupon) {
@@ -190,11 +216,11 @@ export class CouponService {
     }
 
     // 如果修改了代码，检查是否与其他优惠券冲突
-    if (updateCouponDto.code && updateCouponDto.code !== existingCoupon.code) {
+    if (updateCouponDto.code && updateCouponDto.code !== existingCoupon.couponCode) {
       const codeConflict = await this.prisma.coupon.findFirst({
         where: {
-          code: updateCouponDto.code,
-          id: { not: couponId }
+          couponCode: updateCouponDto.code,
+          couponId: { not: couponId }
         },
       });
 
@@ -205,7 +231,7 @@ export class CouponService {
 
     // 更新优惠券
     const updatedCoupon = await this.prisma.coupon.update({
-      where: { id: couponId },
+      where: { couponId: couponId },
       data: updateCouponDto,
     });
 
@@ -218,7 +244,7 @@ export class CouponService {
   async deleteCoupon(couponId: number) {
     // 检查优惠券是否存在
     const coupon = await this.prisma.coupon.findFirst({
-      where: { id: couponId },
+      where: { couponId: couponId },
     });
 
     if (!coupon) {
@@ -229,7 +255,7 @@ export class CouponService {
     const usedCount = await this.prisma.userCoupon.count({
       where: {
         couponId,
-        isUsed: true
+        status: 1
       },
     });
 
@@ -239,7 +265,7 @@ export class CouponService {
 
     // 删除优惠券
     await this.prisma.coupon.delete({
-      where: { id: couponId },
+      where: { couponId: couponId },
     });
 
     return { message: '优惠券删除成功' };
@@ -293,7 +319,7 @@ export class CouponService {
 
     // 更新优惠券已领取数量
     await this.prisma.coupon.update({
-      where: { id: couponId },
+      where: { couponId: couponId },
       data: {
         usedQuantity: {
           increment: 1,
@@ -357,7 +383,7 @@ export class CouponService {
         userId,
         couponId: coupon.id,
         status: 'ACTIVE',
-        isUsed: false,
+        status: 0,
       },
     });
 
@@ -425,10 +451,10 @@ export class CouponService {
       where: {
         userId,
         couponId: validation.coupon.id,
-        isUsed: false,
+        status: 0,
       },
       data: {
-        isUsed: true,
+        status: 1,
         usedTime: new Date().toISOString(),
         status: 'USED',
       },
@@ -449,7 +475,7 @@ export class CouponService {
       where: {
         userId,
         status: 'ACTIVE',
-        isUsed: false,
+        status: 0,
       },
       include: {
         coupon: true,
@@ -461,7 +487,7 @@ export class CouponService {
     const now = new Date();
 
     for (const userCoupon of userCoupons) {
-      const coupon = userCoupon.coupon;
+      const coupon = userCoupon.Coupon;
 
       // 检查优惠券状态和有效期
       if (coupon.status !== 'ACTIVE') continue;
@@ -501,19 +527,19 @@ export class CouponService {
    */
   private formatCouponResponse(coupon: any): CouponResponse {
     return {
-      id: coupon.id,
-      name: coupon.name,
-      code: coupon.code,
-      type: coupon.type,
-      value: Number(coupon.value),
+      id: coupon.couponId,
+      name: coupon.couponName,
+      code: coupon.couponCode,
+      type: coupon.couponType === 1 ? CouponType.FIXED : CouponType.PERCENTAGE,
+      value: Number(coupon.discountAmount || coupon.discountRate),
       minAmount: Number(coupon.minAmount),
-      maxDiscount: coupon.maxDiscount ? Number(coupon.maxDiscount) : undefined,
-      quantity: coupon.quantity,
-      usedQuantity: coupon.usedQuantity,
+      maxDiscount: coupon.discountRate ? Number(coupon.discountRate) : undefined,
+      quantity: coupon.totalNum,
+      usedQuantity: coupon.usedNum,
       description: coupon.description,
       startTime: coupon.startTime,
       endTime: coupon.endTime,
-      status: coupon.status,
+      status: coupon.isEnable ? CouponStatus.ACTIVE : CouponStatus.INACTIVE,
     };
   }
 
@@ -521,20 +547,21 @@ export class CouponService {
    * 格式化用户优惠券响应
    */
   private formatUserCouponResponse(userCoupon: any): UserCouponResponse {
+    const coupon = userCoupon.Coupon;
     return {
-      id: userCoupon.id,
+      id: userCoupon.userCouponId,
       couponId: userCoupon.couponId,
-      couponName: userCoupon.coupon.name,
-      code: userCoupon.coupon.code,
-      type: userCoupon.coupon.type,
-      value: Number(userCoupon.coupon.value),
-      minAmount: Number(userCoupon.coupon.minAmount),
-      maxDiscount: userCoupon.coupon.maxDiscount ? Number(userCoupon.coupon.maxDiscount) : undefined,
-      description: userCoupon.coupon.description,
-      startTime: userCoupon.coupon.startTime,
-      endTime: userCoupon.coupon.endTime,
-      status: userCoupon.status,
-      isUsed: userCoupon.isUsed,
+      couponName: coupon.couponName,
+      code: coupon.couponCode,
+      type: coupon.couponType === 1 ? CouponType.FIXED : CouponType.PERCENTAGE,
+      value: Number(coupon.discountAmount || coupon.discountRate),
+      minAmount: Number(coupon.minAmount),
+      maxDiscount: coupon.discountRate ? Number(coupon.discountRate) : undefined,
+      description: coupon.description,
+      startTime: coupon.startTime,
+      endTime: coupon.endTime,
+      status: userCoupon.status === 1 ? CouponStatus.ACTIVE : CouponStatus.USED,
+      isUsed: userCoupon.status !== 0,
       usedTime: userCoupon.usedTime,
     };
   }

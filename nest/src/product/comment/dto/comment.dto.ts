@@ -9,9 +9,9 @@ export enum CommentRating {
 }
 
 export enum CommentStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
 }
 
 export class CreateCommentDto {

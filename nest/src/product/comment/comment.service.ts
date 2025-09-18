@@ -86,7 +86,7 @@ export class CommentService {
 
     // 如果是回复评论，检查原评论是否存在
     if (replyId) {
-      const originalComment = await this.prisma.comment.findFirst({
+      const originalComment = await this.prisma.Comment.findFirst({
         where: { id: replyId },
       });
 
@@ -119,7 +119,7 @@ export class CommentService {
     if (rating) whereClause.rating = rating;
 
     const [comments, total] = await Promise.all([
-      this.prisma.comment.findMany({
+      this.prisma.Comment.findMany({
         where: whereClause,
         skip,
         take: size,
@@ -137,7 +137,7 @@ export class CommentService {
           },
         },
       }),
-      this.prisma.comment.count({
+      this.prisma.Comment.count({
         where: whereClause,
       }),
     ]);
@@ -155,8 +155,8 @@ export class CommentService {
    * 获取评论详情 - 对齐PHP版本 product/comment/getComment
    */
   async getCommentDetail(commentId: number): Promise<CommentResponse> {
-    const comment = await this.prisma.comment.findFirst({
-      where: { id: commentId },
+    const comment = await this.prisma.Comment.findFirst({
+      where: { commentId: commentId },
       include: {
         user: {
           select: {
@@ -180,7 +180,7 @@ export class CommentService {
    */
   async updateComment(commentId: number, userId: number, updateCommentDto: UpdateCommentDto): Promise<CommentResponse> {
     // 检查评论是否存在且属于该用户
-    const existingComment = await this.prisma.comment.findFirst({
+    const existingComment = await this.prisma.Comment.findFirst({
       where: {
         id: commentId,
         userId,
@@ -192,8 +192,8 @@ export class CommentService {
     }
 
     // 更新评论
-    const updatedComment = await this.prisma.comment.update({
-      where: { id: commentId },
+    const updatedComment = await this.prisma.Comment.update({
+      where: { commentId: commentId },
       data: updateCommentDto,
       include: {
         user: {
@@ -214,7 +214,7 @@ export class CommentService {
    */
   async deleteComment(commentId: number, userId: number) {
     // 检查评论是否存在且属于该用户
-    const comment = await this.prisma.comment.findFirst({
+    const comment = await this.prisma.Comment.findFirst({
       where: {
         id: commentId,
         userId,
@@ -226,8 +226,8 @@ export class CommentService {
     }
 
     // 删除评论
-    await this.prisma.comment.delete({
-      where: { id: commentId },
+    await this.prisma.Comment.delete({
+      where: { commentId: commentId },
     });
 
     return { message: '评论删除成功' };
@@ -238,8 +238,8 @@ export class CommentService {
    */
   async likeComment(userId: number, commentId: number) {
     // 检查评论是否存在
-    const comment = await this.prisma.comment.findFirst({
-      where: { id: commentId },
+    const comment = await this.prisma.Comment.findFirst({
+      where: { commentId: commentId },
     });
 
     if (!comment) {
@@ -247,7 +247,7 @@ export class CommentService {
     }
 
     // 检查用户是否已点赞
-    const existingLike = await this.prisma.userLike.findFirst({
+    const existingLike = await this.prisma.UserLike.findFirst({
       where: {
         userId,
         commentId,
@@ -256,14 +256,14 @@ export class CommentService {
 
     if (existingLike) {
       // 取消点赞
-      await this.prisma.userLike.delete({
+      await this.prisma.UserLike.delete({
         where: {
           id: existingLike.id,
         },
       });
 
-      await this.prisma.comment.update({
-        where: { id: commentId },
+      await this.prisma.Comment.update({
+        where: { commentId: commentId },
         data: {
           likes: {
             decrement: 1,
@@ -279,8 +279,8 @@ export class CommentService {
         VALUES (${userId}, ${commentId}, NOW(), NOW())
       `;
 
-      await this.prisma.comment.update({
-        where: { id: commentId },
+      await this.prisma.Comment.update({
+        where: { commentId: commentId },
         data: {
           likes: {
             increment: 1,
@@ -299,8 +299,8 @@ export class CommentService {
     const { content, images } = replyDto;
 
     // 检查原评论是否存在
-    const originalComment = await this.prisma.comment.findFirst({
-      where: { id: commentId },
+    const originalComment = await this.prisma.Comment.findFirst({
+      where: { commentId: commentId },
     });
 
     if (!originalComment) {
@@ -315,8 +315,8 @@ export class CommentService {
     ` as any[];
 
     // 更新原评论的回复内容
-    await this.prisma.comment.update({
-      where: { id: commentId },
+    await this.prisma.Comment.update({
+      where: { commentId: commentId },
       data: {
         replyContent: content,
         replyTime: new Date(),
@@ -331,7 +331,7 @@ export class CommentService {
    */
   async getCommentStats(productId: number): Promise<CommentStatsResponse> {
     // 获取所有已通过的评论
-    const comments = await this.prisma.comment.findMany({
+    const comments = await this.prisma.Comment.findMany({
       where: {
         productId,
         status: CommentStatus.APPROVED,
@@ -382,7 +382,7 @@ export class CommentService {
     if (status) whereClause.status = status;
 
     const [comments, total] = await Promise.all([
-      this.prisma.comment.findMany({
+      this.prisma.Comment.findMany({
         where: whereClause,
         skip,
         take: size,
@@ -407,7 +407,7 @@ export class CommentService {
           },
         },
       }),
-      this.prisma.comment.count({
+      this.prisma.Comment.count({
         where: whereClause,
       }),
     ]);
@@ -430,7 +430,7 @@ export class CommentService {
    */
   private formatCommentResponse(comment: any): CommentResponse {
     return {
-      id: comment.id,
+      id: comment.commentId,
       productId: comment.productId,
       userId: comment.userId,
       userName: comment.user?.nickname || '匿名用户',

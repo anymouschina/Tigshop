@@ -56,7 +56,7 @@ export class ProductController {
       productId: Number(id),
       page: Number(page),
       size: Number(size),
-      status: 'APPROVED',
+      status: CommentStatus.APPROVED,
     });
 
     // 获取评论统计
@@ -88,7 +88,7 @@ export class ProductController {
       productId: Number(id),
       page: Number(page),
       size: Number(size),
-      status: 'APPROVED',
+      status: CommentStatus.APPROVED,
     });
   }
 
