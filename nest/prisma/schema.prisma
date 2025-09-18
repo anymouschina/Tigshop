@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId          Int               @id @default(autoincrement())
+  name            String
+  email           String?           @unique
+  password        String?
+  address         String?
+  createdAt       DateTime          @default(now())
+  openId          String?           @unique
+  unionId         String?           @unique
+  avatarUrl       String?
+  gender          Int?
+  country         String?
+  province        String?
+  city            String?
+  language        String?
+  ref             String?           // 引荐码，用于记录用户是被谁引荐的
+  appointments    Appointment[]
+  cart            Cart?
+  CoupunOrderUser CoupunOrderUser[]
+  orders          Order[]
+  referredUsers   UserReferral[]    @relation("ReferredUsers")
+  referredBy      UserReferral?     @relation("ReferredBy")
+}
+
+// 用户引荐关联记录表
+model UserReferral {
+  id                Int           @id @default(autoincrement())
+  userId            Int           @unique // 被引荐的用户ID
+  refCode           String        // 引荐码
+  referrerOpenId    String?       // 引荐人的OpenID，设为可选
+  createdAt         DateTime      @default(now())
+  source            String?       // 引荐来源
+  metadata          Json?         // 额外元数据
+  user              User          @relation("ReferredBy", fields: [userId], references: [userId])
+  referrer          User?         @relation("ReferredUsers", fields: [referrerOpenId], references: [openId])
+  referralCodeId    Int?          // 关联的引荐码ID，可为空（兼容老数据）
+  referralCode      ReferralCode? @relation(fields: [referralCodeId], references: [id])
+}
+
+model Order {
+  orderId         Int               @id @default(autoincrement())
+  total           Float
+  status          Status            @default(PENDING)
+  createdAt       DateTime          @default(now())
+  userId          Int
+  appointmentId   Int?
+  appointmentInfo Json?
+  paymentStatus   PaymentStatus     @default(UNPAID)
+  CoupunOrderUser CoupunOrderUser[]
+  appointment     Appointment?      @relation(fields: [appointmentId], references: [id])
+  user            User              @relation(fields: [userId], references: [userId])
+  items           OrderItem[]
+}
+
+model OrderItem {
+  orderItemId Int      @id @default(autoincrement())
+  quantity    Int
+  createdAt   DateTime @default(now())
+  orderId     Int
+  productId   Int
+  order       Order    @relation(fields: [orderId], references: [orderId])
+  product     Product  @relation(fields: [productId], references: [productId])
+}
+
+model Product {
+  productId   Int         @id @default(autoincrement())
+  name        String
+  price       Float
+  description String
+  stock       Int
+  createdAt   DateTime    @default(now())
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+}
+
+model Cart {
+  cartId    Int        @id @default(autoincrement())
+  createdAt DateTime   @default(now())
+  userId    Int        @unique
+  user      User       @relation(fields: [userId], references: [userId])
+  items     CartItem[]
+}
+
+model CartItem {
+  cartItemId Int      @id @default(autoincrement())
+  quantity   Int
+  createdAt  DateTime @default(now())
+  cartId     Int
+  productId  Int
+  cart       Cart     @relation(fields: [cartId], references: [cartId])
+  product    Product  @relation(fields: [productId], references: [productId])
+}
+
+model Coupon {
+  couponId        Int               @id @default(autoincrement())
+  code            String            @unique
+  discount        Decimal
+  expireAt        DateTime
+  createdAt       DateTime          @default(now())
+  CoupunOrderUser CoupunOrderUser[]
+}
+
+model CoupunOrderUser {
+  userId   Int
+  orderId  Int
+  couponId Int
+  coupun   Coupon @relation(fields: [couponId], references: [couponId])
+  order    Order  @relation(fields: [orderId], references: [orderId])
+  user     User   @relation(fields: [userId], references: [userId])
+
+  @@id([userId, orderId, couponId])
+}
+
+model BlacklistedToken {
+  id            Int      @id @default(autoincrement())
+  token         String   @unique
+  userId        Int
+  blacklistedAt DateTime @default(now())
+  expiresAt     DateTime
+}
+
+model Appointment {
+  id             Int               @id @default(autoincrement())
+  serviceType    String
+  name           String
+  phone          String
+  region         String
+  address        String?
+  sceneType      String[]
+  location       String
+  createdAt      DateTime          @default(now())
+  userId         Int
+  cancelReason   String?
+  cancelledAt    DateTime?
+  cityCode       String?
+  completedAt    DateTime?
+  districtCode   String?
+  followUpCount  Int               @default(0)
+  lastFollowUpAt DateTime?
+  latitude       Float?
+  longitude      Float?
+  description    String?           // 预约描述字段
+  imageUrls      String[]          // 图片URL数组
+  updatedAt      DateTime          @updatedAt
+  user           User              @relation(fields: [userId], references: [userId])
+  orders         Order[]
+}
+
+enum Status {
+  PENDING    // 待接单
+  ACCEPTED   // 已接单
+  PROCESSING // 施工中
+  COMPLETED  // 已完成
+  CANCELLED  // 已取消
+  DELIVERED  // 已交付 (保留原有状态)
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum AppointmentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+// 引荐码表
+model ReferralCode {
+  id            Int             @id @default(autoincrement())
+  code          String          @unique  // 引荐码，唯一
+  description   String?         // 引荐码描述
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  isActive      Boolean         @default(true) // 是否激活
+  referrals     UserReferral[]  // 关联的引荐记录
+}
