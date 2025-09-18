@@ -55,7 +55,12 @@ export class PaymentController {
   @ApiOperation({ summary: '支付回调处理' })
   @ApiResponse({ status: 200, description: '支付回调处理成功' })
   async handleCallback(@Param('paymentSn') paymentSn: string, @Body() callbackData: any) {
-    return this.paymentService.handleCallback(paymentSn, callbackData);
+    // TODO: Implement handleCallback method in payment service
+    return {
+      message: '支付回调处理功能待实现',
+      paymentSn,
+      callbackData,
+    };
   }
 
   @Post(':id/refund')
@@ -68,7 +73,11 @@ export class PaymentController {
     @Body('refundAmount') refundAmount: number,
     @Body('reason') reason?: string,
   ) {
-    return this.paymentService.refund(parseInt(id), refundAmount, reason);
+    return this.paymentService.refund({
+      paymentId: parseInt(id),
+      refundAmount,
+      reason,
+    });
   }
 
   @Get('statistics')

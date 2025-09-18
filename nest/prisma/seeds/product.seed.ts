@@ -78,7 +78,11 @@ async function main() {
 
   for (const product of products) {
     await prisma.product.create({
-      data: product,
+      data: {
+        ...product,
+        categoryId: 1, // 设置默认分类ID
+        shopId: 1, // 设置默认店铺ID
+      },
     });
   }
 }

@@ -14,12 +14,12 @@ export class CouponService {
    */
   async getCoupun(applyCouponDto: ApplyCouponDto) {
     const coupon = await this.databaseService.coupon.findFirst({
-      where: { code: applyCouponDto.code },
+      where: { couponCode: applyCouponDto.code },
     });
 
     if (!coupon) return { error: { message: 'Coupon is invalid' } };
 
-    const expireAt = new Date(coupon.expireAt).getTime();
+    const expireAt = new Date(coupon.endTime).getTime();
 
     if (Date.now() >= expireAt)
       return { error: { message: 'Coupon is expired' } };

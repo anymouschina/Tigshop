@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { OrderService } from '../order/order.service';
 import { OrderMicroservicePatterns } from '../common/constants/microservice.constants';
-import { $Enums } from '@prisma/client';
+import { OrderStatus } from '../order/dto/create-order.dto';
 
 @Controller()
 export class OrderMicroserviceController {
@@ -11,7 +11,14 @@ export class OrderMicroserviceController {
   @MessagePattern(OrderMicroservicePatterns.FIND_ALL)
   async findAll(@Payload() data: { status?: string; userId?: number; page?: number; pageSize?: number }) {
     const { status, userId, page = 1, pageSize = 20 } = data;
-    return this.orderService.findAll(status, userId, page, pageSize);
+    // 创建查询对象传递给服务
+    const queryDto = {
+      page,
+      size: pageSize,
+      userId,
+      status: status as any
+    };
+    return this.orderService.findAll(queryDto);
   }
 
   @MessagePattern(OrderMicroservicePatterns.FIND_ONE)
@@ -22,9 +29,8 @@ export class OrderMicroserviceController {
   @MessagePattern(OrderMicroservicePatterns.UPDATE_STATUS)
   async updateStatus(@Payload() data: { id: number; status: string; reason?: string }) {
     const { id, status, reason } = data;
-    return this.orderService.updateStatus(id, { 
-      status: status.toUpperCase() as $Enums.Status, 
-      reason 
+    return this.orderService.updateStatus(id, {
+      status: status.toUpperCase() as any
     });
   }
 
@@ -41,8 +47,7 @@ export class OrderMicroserviceController {
     return this.orderService.getStatistics(
       data.timeRange,
       data.startDate,
-      data.endDate,
-      true // 确保微服务内部调用不会形成循环依赖
+      data.endDate
     );
   }
 }

@@ -57,7 +57,7 @@ export class ProductService {
           supplierId,
           shopId: shopId || 1,
           images: images || [],
-          specs: {
+          productSpecs: {
             create: specs?.map(spec => ({
               specName: spec.specName,
               specValue: spec.specValue,
@@ -68,7 +68,7 @@ export class ProductService {
               sort: spec.sort
             })) || []
           },
-          attrs: {
+          productAttrs: {
             create: attrs?.map(attr => ({
               attrName: attr.attrName,
               attrValue: attr.attrValue,
@@ -81,8 +81,8 @@ export class ProductService {
           brand: true,
           supplier: true,
           shop: true,
-          specs: true,
-          attrs: true
+          productSpecs: true,
+          productAttrs: true
         }
       });
 
@@ -184,8 +184,8 @@ export class ProductService {
             brand: true,
             supplier: true,
             shop: true,
-            specs: true,
-            attrs: true
+            productSpecs: true,
+            productAttrs: true
           }
         }),
         this.databaseService.product.count({ where })
@@ -218,10 +218,10 @@ export class ProductService {
           brand: true,
           supplier: true,
           shop: true,
-          specs: {
+          productSpecs: {
             orderBy: { sort: 'asc' }
           },
-          attrs: {
+          productAttrs: {
             orderBy: { sort: 'asc' }
           }
         }
@@ -292,7 +292,7 @@ export class ProductService {
           brandId,
           supplierId,
           images: images || undefined,
-          specs: {
+          productSpecs: {
             create: specs?.map(spec => ({
               specName: spec.specName,
               specValue: spec.specValue,
@@ -303,7 +303,7 @@ export class ProductService {
               sort: spec.sort
             })) || []
           },
-          attrs: {
+          productAttrs: {
             create: attrs?.map(attr => ({
               attrName: attr.attrName,
               attrValue: attr.attrValue,
@@ -316,8 +316,8 @@ export class ProductService {
           brand: true,
           supplier: true,
           shop: true,
-          specs: true,
-          attrs: true
+          productSpecs: true,
+          productAttrs: true
         }
       });
 
@@ -400,9 +400,9 @@ export class ProductService {
     this.logger.debug(`获取商品库存: ${productId}, ${specId}`);
 
     const product = await this.databaseService.product.findUnique({
-      where: { productId: id },
+      where: { productId: productId },
       include: {
-        specs: specId ? { where: { specId } } : true
+        productSpecs: specId ? { where: { specId } } : true
       }
     });
 
@@ -411,7 +411,7 @@ export class ProductService {
     }
 
     if (specId) {
-      const spec = product.specs[0];
+      const spec = product.productSpecs[0];
       if (!spec) {
         throw new NotFoundException('商品规格不存在');
       }

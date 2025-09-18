@@ -3,6 +3,7 @@ import { UploadDto, UploadType } from './dto/upload.dto';
 import { DatabaseService } from 'src/database/database.service';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import * as multer from 'multer';
 
 @Injectable()
 export class UploadService {
@@ -31,7 +32,7 @@ export class UploadService {
    * @param uploadDto 上传参数
    * @returns 上传结果
    */
-  async uploadFile(file: Express.Multer.File, uploadDto: UploadDto) {
+  async uploadFile(file: multer.File, uploadDto: UploadDto) {
     try {
       // 验证文件
       this.validateFile(file);
@@ -90,7 +91,7 @@ export class UploadService {
    * @param uploadDto 上传参数
    * @returns 上传结果
    */
-  async uploadMultipleFiles(files: Express.Multer.File[], uploadDto: UploadDto) {
+  async uploadMultipleFiles(files: multer.File[], uploadDto: UploadDto) {
     if (!files || files.length === 0) {
       throw new BadRequestException('请选择要上传的文件');
     }
@@ -206,7 +207,7 @@ export class UploadService {
    * 验证文件
    * @param file 文件对象
    */
-  private validateFile(file: Express.Multer.File) {
+  private validateFile(file: multer.File) {
     if (!file) {
       throw new BadRequestException('请选择文件');
     }

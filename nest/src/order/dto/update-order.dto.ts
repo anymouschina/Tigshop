@@ -1,20 +1,20 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateOrderDto } from './create-order.dto';
 import { OrderStatus, ShippingStatus, PayStatus } from './create-order.dto';
-import { IsEnum, IsOptional, IsNumber, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsNumber, IsString, Min } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateOrderDto extends PartialType(CreateOrderDto) {
+export class UpdateOrderDto {
   @ApiProperty({ description: '订单状态', enum: OrderStatus, required: false })
   @IsOptional()
   @IsEnum(OrderStatus)
-  orderStatus?: OrderStatus;
+  status?: OrderStatus;
 
   @ApiProperty({ description: '支付状态', enum: PayStatus, required: false })
   @IsOptional()
   @IsEnum(PayStatus)
-  payStatus?: PayStatus;
+  paymentStatus?: PayStatus;
 
   @ApiProperty({ description: '发货状态', enum: ShippingStatus, required: false })
   @IsOptional()

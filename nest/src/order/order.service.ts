@@ -3,7 +3,7 @@ import { CreateOrderDto, OrderStatus, ShippingStatus, PayStatus, OrderItemDto, O
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
 import { DatabaseService } from 'src/database/database.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, OrderStatus as PrismaOrderStatus, ShippingStatus as PrismaShippingStatus, PaymentStatus as PrismaPaymentStatus } from '@prisma/client';
 
 @Injectable()
 export class OrderService {
@@ -44,58 +44,48 @@ export class OrderService {
         data: {
           orderSn,
           userId,
-          shopId: createOrderDto.shopId,
           totalAmount,
-          productAmount,
-          shippingFee,
           discountAmount,
-          balance: createOrderDto.balance,
-          usePoints: createOrderDto.usePoints,
-          pointsAmount: createOrderDto.pointsAmount,
-          couponAmount: createOrderDto.couponAmount,
-          payType: this.getPayTypeName(createOrderDto.payTypeId),
-          orderType: createOrderDto.orderType,
-          status: OrderStatus.PENDING,
-          payStatus: PayStatus.UNPAID,
-          shippingStatus: ShippingStatus.PENDING,
-          consignee: createOrderDto.consignee,
-          mobile: createOrderDto.mobile,
-          address: createOrderDto.address,
-          buyerNote: createOrderDto.buyerNote,
-          invoiceData: createOrderDto.invoiceData,
-          shippingType: createOrderDto.shippingType,
+          shippingFee,
+          paymentAmount: totalAmount,
+          remark: createOrderDto.buyerNote,
         },
       });
 
       // 创建订单项
-      for (const item of items) {
-        await tx.orderItem.create({
-          data: {
-            orderId: order.orderId,
-            productId: item.productId,
-            skuId: item.skuId,
-            productName: item.productName,
-            productSn: item.productSn,
-            productImage: item.productImage,
-            skuValue: item.skuValue,
-            quantity: item.quantity,
-            price: item.price,
-            productWeight: item.productWeight,
-            skuData: item.skuData,
-          },
-        });
+      const orderItems = items.map(item => ({
+        orderId: order.orderId,
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+        totalPrice: item.price * item.quantity,
+        productName: item.productName,
+        productImage: item.productImage,
+        specValue: item.skuValue,
+      }));
 
-        // 扣减库存
+      await tx.orderItem.createMany({
+        data: orderItems,
+      });
+
+      // 创建订单地址
+      await tx.orderAddress.create({
+        data: {
+          orderId: order.orderId,
+          name: createOrderDto.consignee,
+          mobile: createOrderDto.mobile,
+          province: createOrderDto.regionNames?.[0] || '',
+          city: createOrderDto.regionNames?.[1] || '',
+          district: createOrderDto.regionNames?.[2] || '',
+          address: createOrderDto.address,
+        },
+      });
+
+      // 扣除商品库存
+      for (const item of items) {
         await tx.product.update({
           where: { productId: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-            sales: {
-              increment: item.quantity,
-            },
-          },
+          data: { stock: { decrement: item.quantity } },
         });
       }
 
@@ -111,7 +101,7 @@ export class OrderService {
    * @returns 库存不足的商品列表
    */
   private async checkProductStock(items: OrderItemDto[]): Promise<any[]> {
-    const outOfStockItems = [];
+    const insufficientStockItems: any[] = [];
 
     for (const item of items) {
       const product = await this.databaseService.product.findUnique({
@@ -119,16 +109,16 @@ export class OrderService {
       });
 
       if (!product || product.stock < item.quantity) {
-        outOfStockItems.push({
+        insufficientStockItems.push({
           productId: item.productId,
           productName: item.productName,
-          currentStock: product?.stock || 0,
-          requiredStock: item.quantity,
+          requestedQuantity: item.quantity,
+          availableStock: product?.stock || 0,
         });
       }
     }
 
-    return outOfStockItems;
+    return insufficientStockItems;
   }
 
   /**
@@ -136,139 +126,43 @@ export class OrderService {
    * @returns 订单号
    */
   private generateOrderSn(): string {
-    const date = new Date();
-    const dateStr = date.getFullYear().toString() +
-                   (date.getMonth() + 1).toString().padStart(2, '0') +
-                   date.getDate().toString().padStart(2, '0');
-    const timeStr = date.getHours().toString().padStart(2, '0') +
-                   date.getMinutes().toString().padStart(2, '0') +
-                   date.getSeconds().toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `${dateStr}${timeStr}${random}`;
-  }
-
-  /**
-   * 获取支付方式名称
-   * @param payTypeId 支付方式ID
-   * @returns 支付方式名称
-   */
-  private getPayTypeName(payTypeId: PayTypeId): string {
-    const payTypeNames = {
-      [PayTypeId.ONLINE]: '在线支付',
-      [PayTypeId.CASH]: '货到付款',
-      [PayTypeId.OFFLINE]: '线下支付',
-    };
-    return payTypeNames[payTypeId] || '在线支付';
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    return `ORDER_${timestamp}_${random}`;
   }
 
   /**
    * 更新订单状态
    * @param orderId 订单ID
    * @param updateOrderDto 更新数据
-   * @returns 更新后的订单
+   * @returns 更新后的订单信息
    */
   async updateStatus(orderId: number, updateOrderDto: UpdateOrderDto) {
-    const order = await this.databaseService.order.findUnique({
+    // 检查订单是否存在
+    const existingOrder = await this.databaseService.order.findUnique({
       where: { orderId },
     });
 
-    if (!order) {
+    if (!existingOrder) {
       throw new NotFoundException('订单不存在');
     }
 
-    // 检查状态转换是否有效
-    if (!this.isValidStatusTransition(order.status, updateOrderDto.orderStatus)) {
-      throw new BadRequestException(`无法从 ${order.status} 转换到 ${updateOrderDto.orderStatus}`);
-    }
-
-    const updateData: any = {};
-
-    if (updateOrderDto.orderStatus !== undefined) {
-      updateData.status = updateOrderDto.orderStatus;
-    }
-
-    if (updateOrderDto.payStatus !== undefined) {
-      updateData.payStatus = updateOrderDto.payStatus;
-    }
-
-    if (updateOrderDto.shippingStatus !== undefined) {
-      updateData.shippingStatus = updateOrderDto.shippingStatus;
-    }
-
-    if (updateOrderDto.payTime) {
-      updateData.payTime = new Date(updateOrderDto.payTime);
-    }
-
-    if (updateOrderDto.shippingTime) {
-      updateData.shippingTime = new Date(updateOrderDto.shippingTime);
-    }
-
-    if (updateOrderDto.receivedTime) {
-      updateData.receivedTime = new Date(updateOrderDto.receivedTime);
-    }
-
-    if (updateOrderDto.completedTime) {
-      updateData.completedTime = new Date(updateOrderDto.completedTime);
-    }
-
-    if (updateOrderDto.logisticsId !== undefined) {
-      updateData.logisticsId = updateOrderDto.logisticsId;
-    }
-
-    if (updateOrderDto.trackingNo) {
-      updateData.trackingNo = updateOrderDto.trackingNo;
-    }
-
-    if (updateOrderDto.logisticsName) {
-      updateData.logisticsName = updateOrderDto.logisticsName;
-    }
-
-    if (updateOrderDto.payType) {
-      updateData.payType = updateOrderDto.payType;
-    }
-
-    if (updateOrderDto.transactionId) {
-      updateData.transactionId = updateOrderDto.transactionId;
-    }
-
-    if (updateOrderDto.paidAmount !== undefined) {
-      updateData.paidAmount = updateOrderDto.paidAmount;
-    }
-
-    if (updateOrderDto.adminNote) {
-      updateData.adminNote = updateOrderDto.adminNote;
-    }
-
-    if (updateOrderDto.orderExtension) {
-      updateData.orderExtension = updateOrderDto.orderExtension;
-    }
-
-    if (updateOrderDto.addressData) {
-      updateData.addressData = updateOrderDto.addressData;
-    }
-
-    if (updateOrderDto.mark !== undefined) {
-      updateData.mark = updateOrderDto.mark;
-    }
-
+    // 更新订单
     const updatedOrder = await this.databaseService.order.update({
       where: { orderId },
-      data: updateData,
+      data: {
+        status: updateOrderDto.status as unknown as PrismaOrderStatus,
+        paymentStatus: updateOrderDto.paymentStatus as unknown as PrismaPaymentStatus,
+        shippingStatus: updateOrderDto.shippingStatus as unknown as PrismaShippingStatus,
+        paymentTime: updateOrderDto.paymentStatus === PayStatus.PAID ? new Date() : null,
+        shippingTime: updateOrderDto.shippingStatus === 1 ? new Date() : null,
+        receiveTime: updateOrderDto.shippingStatus === 2 ? new Date() : null,
+        completeTime: updateOrderDto.status === 5 ? new Date() : null,
+      },
       include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-        user: {
-          select: {
-            userId: true,
-            username: true,
-            nickname: true,
-            email: true,
-            mobile: true,
-          },
-        },
+        items: true,
+        addresses: true,
+        user: true,
       },
     });
 
@@ -276,160 +170,54 @@ export class OrderService {
   }
 
   /**
-   * 检查状态转换是否有效
-   * @param currentStatus 当前状态
-   * @param newStatus 新状态
-   * @returns 状态转换是否有效
-   */
-  private isValidStatusTransition(currentStatus: OrderStatus, newStatus: OrderStatus): boolean {
-    // 定义状态转换规则
-    const validTransitions: Record<OrderStatus, OrderStatus[]> = {
-      [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
-      [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
-      [OrderStatus.PROCESSING]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
-      [OrderStatus.CANCELLED]: [], // 已取消状态不能再改变
-      [OrderStatus.INVALID]: [], // 无效状态不能再改变
-      [OrderStatus.COMPLETED]: [], // 已完成状态不能再改变
-    };
-
-    return validTransitions[currentStatus]?.includes(newStatus) || false;
-  }
-
-  /**
    * 查询订单列表
    * @param queryDto 查询参数
-   * @returns 订单列表和总数
+   * @returns 订单列表
    */
   async findAll(queryDto: OrderQueryDto) {
     const {
       page = 1,
       size = 15,
+      orderSn,
+      userId,
+      status,
+      paymentStatus,
+      shippingStatus,
+      startDate,
+      endDate,
       sortField = 'orderId',
       sortOrder = 'desc',
-      keyword,
-      orderId,
-      userId,
-      shopId,
-      orderStatus,
-      payStatus,
-      shippingStatus,
-      commentStatus,
-      orderType,
-      payTypeId,
-      isEnable,
-      minAmount,
-      maxAmount,
-      startTime,
-      endTime,
-      ids,
-      consignee,
-      mobile,
-      dateType,
     } = queryDto;
 
-    const skip = (page - 1) * size;
-
-    // 构建查询条件
-    const where: any = {
-      isDelete: queryDto.isDelete === 0 ? 0 : { not: 0 },
+    const where: Prisma.OrderWhereInput = {
+      ...(orderSn && { orderSn: { contains: orderSn } }),
+      ...(userId && { userId }),
+      ...(status !== undefined && { status: status as unknown as PrismaOrderStatus }),
+      ...(paymentStatus !== undefined && { paymentStatus: paymentStatus as unknown as PrismaPaymentStatus }),
+      ...(shippingStatus !== undefined && { shippingStatus: shippingStatus as unknown as PrismaShippingStatus }),
+      ...(startDate && endDate && {
+        createdAt: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      }),
     };
 
-    if (keyword) {
-      where.OR = [
-        { orderSn: { contains: keyword } },
-        { consignee: { contains: keyword } },
-        { mobile: { contains: keyword } },
-      ];
-    }
-
-    if (orderId) {
-      where.orderId = orderId;
-    }
-
-    if (userId) {
-      where.userId = userId;
-    }
-
-    if (shopId && shopId !== -2) {
-      where.shopId = shopId;
-    }
-
-    if (orderStatus !== undefined) {
-      where.status = orderStatus;
-    }
-
-    if (payStatus !== undefined) {
-      where.payStatus = payStatus;
-    }
-
-    if (shippingStatus !== undefined) {
-      where.shippingStatus = shippingStatus;
-    }
-
-    if (commentStatus !== undefined) {
-      where.commentStatus = commentStatus;
-    }
-
-    if (orderType !== undefined) {
-      where.orderType = orderType;
-    }
-
-    if (payTypeId !== undefined) {
-      where.payTypeId = payTypeId;
-    }
-
-    if (isEnable !== undefined) {
-      where.isEnable = isEnable;
-    }
-
-    if (minAmount !== undefined) {
-      where.totalAmount = { gte: minAmount };
-    }
-
-    if (maxAmount !== undefined) {
-      where.totalAmount = where.totalAmount ? { ...where.totalAmount, lte: maxAmount } : { lte: maxAmount };
-    }
-
-    if (startTime) {
-      where.createdAt = { gte: new Date(startTime) };
-    }
-
-    if (endTime) {
-      where.createdAt = where.createdAt ? { ...where.createdAt, lte: new Date(endTime) } : { lte: new Date(endTime) };
-    }
-
-    if (consignee) {
-      where.consignee = { contains: consignee };
-    }
-
-    if (mobile) {
-      where.mobile = { contains: mobile };
-    }
-
-    // 构建排序条件
-    const orderBy: any = {};
-    orderBy[sortField] = sortOrder;
-
-    // 查询订单
     const [orders, total] = await Promise.all([
       this.databaseService.order.findMany({
         where,
-        skip,
+        orderBy: {
+          [sortField]: sortOrder,
+        },
+        skip: (page - 1) * size,
         take: size,
-        orderBy,
         include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
+          items: true,
+          addresses: true,
           user: {
             select: {
               userId: true,
-              username: true,
-              nickname: true,
               email: true,
-              mobile: true,
             },
           },
         },
@@ -438,7 +226,7 @@ export class OrderService {
     ]);
 
     return {
-      orders,
+      records: orders,
       total,
       page,
       size,
@@ -447,9 +235,9 @@ export class OrderService {
   }
 
   /**
-   * 根据ID查询订单
+   * 查询单个订单
    * @param orderId 订单ID
-   * @returns 订单详情
+   * @returns 订单信息
    */
   async findOne(orderId: number) {
     const order = await this.databaseService.order.findUnique({
@@ -460,15 +248,8 @@ export class OrderService {
             product: true,
           },
         },
-        user: {
-          select: {
-            userId: true,
-            username: true,
-            nickname: true,
-            email: true,
-            mobile: true,
-          },
-        },
+        addresses: true,
+        user: true,
       },
     });
 
@@ -483,311 +264,132 @@ export class OrderService {
    * 取消订单
    * @param orderId 订单ID
    * @param reason 取消原因
-   * @returns 取消后的订单
+   * @returns 取消后的订单信息
    */
   async cancel(orderId: number, reason?: string) {
-    const order = await this.databaseService.order.findUnique({
+    // 检查订单是否存在
+    const existingOrder = await this.databaseService.order.findUnique({
       where: { orderId },
-      include: {
-        items: true,
-      },
     });
 
-    if (!order) {
+    if (!existingOrder) {
       throw new NotFoundException('订单不存在');
     }
 
-    // 检查订单状态是否可以取消
-    if (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.CONFIRMED) {
-      throw new BadRequestException('当前订单状态无法取消');
+    // 检查订单状态是否允许取消
+    if (existingOrder.paymentStatus === PrismaPaymentStatus.PAID) {
+      throw new BadRequestException('已支付的订单无法取消');
     }
 
-    // 使用事务处理订单取消
-    const result = await this.databaseService.$transaction(async (tx) => {
-      // 更新订单状态
-      const updatedOrder = await tx.order.update({
-        where: { orderId },
-        data: {
-          status: OrderStatus.CANCELLED,
-          cancelReason: reason || '用户取消',
-          cancelledAt: new Date(),
-        },
-        include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
-        },
-      });
-
-      // 恢复商品库存
-      for (const item of order.items) {
-        await tx.product.update({
-          where: { productId: item.productId },
-          data: {
-            stock: {
-              increment: item.quantity,
-            },
-            sales: {
-              decrement: item.quantity,
-            },
-          },
-        });
-      }
-
-      return updatedOrder;
+    // 更新订单状态
+    const updatedOrder = await this.databaseService.order.update({
+      where: { orderId },
+      data: {
+        status: PrismaOrderStatus.CANCELLED,
+        cancelReason: reason,
+        cancelTime: new Date(),
+      },
     });
 
-    return result;
+    return updatedOrder;
   }
 
   /**
    * 确认订单
    * @param orderId 订单ID
-   * @returns 确认后的订单
+   * @returns 确认结果
    */
   async confirm(orderId: number) {
-    const order = await this.databaseService.order.findUnique({
+    const order = await this.databaseService.order.update({
       where: { orderId },
+      data: { status: PrismaOrderStatus.CONFIRMED },
     });
 
-    if (!order) {
-      throw new NotFoundException('订单不存在');
-    }
-
-    if (order.status !== OrderStatus.PENDING) {
-      throw new BadRequestException('只有待确认的订单可以确认');
-    }
-
-    const updatedOrder = await this.databaseService.order.update({
-      where: { orderId },
-      data: {
-        status: OrderStatus.CONFIRMED,
-        confirmedAt: new Date(),
-      },
-    });
-
-    return updatedOrder;
+    return { message: '订单确认成功', order };
   }
 
   /**
    * 发货
    * @param orderId 订单ID
    * @param shippingData 发货数据
-   * @returns 发货后的订单
+   * @returns 发货结果
    */
   async ship(orderId: number, shippingData: { logisticsId?: number; trackingNo: string; logisticsName?: string }) {
-    const order = await this.databaseService.order.findUnique({
-      where: { orderId },
-    });
-
-    if (!order) {
-      throw new NotFoundException('订单不存在');
-    }
-
-    if (order.status !== OrderStatus.CONFIRMED) {
-      throw new BadRequestException('只有已确认的订单可以发货');
-    }
-
-    const updatedOrder = await this.databaseService.order.update({
+    const order = await this.databaseService.order.update({
       where: { orderId },
       data: {
-        status: OrderStatus.PROCESSING,
-        shippingStatus: ShippingStatus.SENT,
+        shippingStatus: PrismaShippingStatus.SHIPPED,
         shippingTime: new Date(),
-        logisticsId: shippingData.logisticsId,
-        trackingNo: shippingData.trackingNo,
-        logisticsName: shippingData.logisticsName,
       },
     });
 
-    return updatedOrder;
+    return { message: '订单发货成功', order };
   }
 
   /**
-   * 确认收货
+   * 收货
    * @param orderId 订单ID
-   * @returns 确认收货后的订单
+   * @returns 收货结果
    */
   async receive(orderId: number) {
-    const order = await this.databaseService.order.findUnique({
-      where: { orderId },
-    });
-
-    if (!order) {
-      throw new NotFoundException('订单不存在');
-    }
-
-    if (order.status !== OrderStatus.PROCESSING) {
-      throw new BadRequestException('只有处理中的订单可以确认收货');
-    }
-
-    const updatedOrder = await this.databaseService.order.update({
+    const order = await this.databaseService.order.update({
       where: { orderId },
       data: {
-        status: OrderStatus.COMPLETED,
-        shippingStatus: ShippingStatus.SHIPPED,
-        receivedTime: new Date(),
-        completedTime: new Date(),
+        shippingStatus: PrismaShippingStatus.DELIVERED,
+        receiveTime: new Date(),
       },
     });
 
-    return updatedOrder;
+    return { message: '订单收货成功', order };
   }
 
   /**
-   * 删除订单（软删除）
+   * 删除订单
    * @param orderId 订单ID
    * @returns 删除结果
    */
   async remove(orderId: number) {
-    const order = await this.databaseService.order.findUnique({
+    await this.databaseService.order.delete({
       where: { orderId },
     });
 
-    if (!order) {
-      throw new NotFoundException('订单不存在');
-    }
-
-    const updatedOrder = await this.databaseService.order.update({
-      where: { orderId },
-      data: {
-        isDelete: 1,
-        deletedAt: new Date(),
-      },
-    });
-
-    return updatedOrder;
+    return { message: '订单删除成功' };
   }
 
   /**
-   * 恢复删除的订单
+   * 恢复订单
    * @param orderId 订单ID
-   * @returns 恢复后的订单
+   * @returns 恢复结果
    */
   async restore(orderId: number) {
-    const order = await this.databaseService.order.findUnique({
+    const order = await this.databaseService.order.update({
       where: { orderId },
+      data: { status: PrismaOrderStatus.PENDING },
     });
 
-    if (!order) {
-      throw new NotFoundException('订单不存在');
-    }
-
-    const updatedOrder = await this.databaseService.order.update({
-      where: { orderId },
-      data: {
-        isDelete: 0,
-        deletedAt: null,
-      },
-    });
-
-    return updatedOrder;
+    return { message: '订单恢复成功', order };
   }
 
   /**
-   * 获取订单统计信息
+   * 获取订单统计
    * @param timeRange 时间范围
    * @param startDate 开始日期
    * @param endDate 结束日期
-   * @returns 统计信息
+   * @returns 统计数据
    */
   async getStatistics(timeRange?: 'day' | 'week' | 'month' | 'year', startDate?: string, endDate?: string) {
-    // 构建时间过滤条件
-    let dateFilter: any = {};
+    const query = `
+      SELECT
+        DATE(createdAt) as date,
+        COUNT(*) as orderCount,
+        SUM(totalAmount) as totalAmount
+      FROM orders
+      WHERE createdAt BETWEEN ? AND ?
+      GROUP BY DATE(createdAt)
+      ORDER BY date
+    `;
 
-    if (startDate && endDate) {
-      dateFilter.createdAt = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
-    } else if (startDate) {
-      dateFilter.createdAt = {
-        gte: new Date(startDate),
-      };
-    } else if (endDate) {
-      dateFilter.createdAt = {
-        lte: new Date(endDate),
-      };
-    } else {
-      // 默认最近30天
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      dateFilter.createdAt = {
-        gte: thirtyDaysAgo,
-      };
-    }
-
-    // 获取基础统计
-    const [totalOrders, paidOrders, cancelledOrders, completedOrders] = await Promise.all([
-      this.databaseService.order.count({ where: dateFilter }),
-      this.databaseService.order.count({
-        where: {
-          ...dateFilter,
-          payStatus: PayStatus.PAID,
-        },
-      }),
-      this.databaseService.order.count({
-        where: {
-          ...dateFilter,
-          status: OrderStatus.CANCELLED,
-        },
-      }),
-      this.databaseService.order.count({
-        where: {
-          ...dateFilter,
-          status: OrderStatus.COMPLETED,
-        },
-      }),
-    ]);
-
-    // 获取总销售额
-    const totalSales = await this.databaseService.order.aggregate({
-      where: {
-        ...dateFilter,
-        payStatus: PayStatus.PAID,
-      },
-      _sum: {
-        totalAmount: true,
-      },
-    });
-
-    // 按状态统计
-    const statusStats = await this.databaseService.order.groupBy({
-      by: ['status'],
-      where: dateFilter,
-      _count: {
-        status: true,
-      },
-    });
-
-    // 按支付状态统计
-    const payStatusStats = await this.databaseService.order.groupBy({
-      by: ['payStatus'],
-      where: dateFilter,
-      _count: {
-        payStatus: true,
-      },
-    });
-
-    return {
-      totalOrders,
-      paidOrders,
-      cancelledOrders,
-      completedOrders,
-      totalSales: totalSales._sum.totalAmount || 0,
-      statusStats: statusStats.map(stat => ({
-        status: stat.status,
-        count: stat._count.status,
-      })),
-      payStatusStats: payStatusStats.map(stat => ({
-        payStatus: stat.payStatus,
-        count: stat._count.payStatus,
-      })),
-      timeRange,
-      startDate,
-      endDate,
-    };
+    const stats = await this.databaseService.$queryRawUnsafe(query, startDate, endDate);
+    return stats;
   }
 }

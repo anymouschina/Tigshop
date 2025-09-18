@@ -160,7 +160,8 @@ export class AppointmentService {
         // 创建金额为0的订单
         const order = await prisma.order.create({
           data: {
-            total: 0,
+            orderSn: `ORDER_${Date.now()}`,
+            totalAmount: 0,
             status: 'PENDING',
             paymentStatus: 'UNPAID',
             appointmentInfo,

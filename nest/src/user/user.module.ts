@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserController, WxUserController, AdminReferralController, EmailAuthController } from './user.controller';
 import { DatabaseModule } from 'src/database/database.module';
@@ -10,7 +10,7 @@ import { MailModule } from 'src/mail/mail.module';
 import { EmailVerificationService } from './services/email-verification.service';
 
 @Module({
-  imports: [DatabaseModule, OrderModule, ConfigModule, AuthModule, MailModule],
+  imports: [DatabaseModule, forwardRef(() => OrderModule), ConfigModule, AuthModule, MailModule],
   controllers: [UserController, WxUserController, AdminReferralController, EmailAuthController],
   providers: [UserService, EmailVerificationService],
   exports: [UserService],

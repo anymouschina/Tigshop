@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Param, Query, Body, UseGuards, Request, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, Query, Body, UseGuards, Request, UseInterceptors, BadRequestException, UploadedFile, UploadedFiles } from '@nestjs/common';
 import { UploadService } from './upload.service';
 import { UploadDto, UploadType } from './dto/upload.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -6,7 +6,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { Express } from 'express';
+import * as multer from 'multer';
 
 @ApiTags('文件上传')
 @Controller('api/upload')
@@ -46,7 +46,7 @@ export class UploadController {
     },
   })
   async uploadSingle(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: multer.File,
     @Body() uploadDto: UploadDto,
   ) {
     if (!file) {
@@ -90,7 +90,7 @@ export class UploadController {
     },
   })
   async uploadMultiple(
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() files: multer.File[],
     @Body() uploadDto: UploadDto,
   ) {
     if (!files || files.length === 0) {

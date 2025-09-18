@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, MaxLength, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, MaxLength, IsEnum } from 'class-validator';
 
 export enum ProductIntroType {
   BEST = 'best',

@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateCartDto } from './dto/create-cart.dto';
 import { Prisma } from '@prisma/client';
-import { Product } from 'src/product/product.model';
 import { RemoveCartItemDto } from './dto/remove-cart-item.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
 
@@ -90,7 +89,7 @@ export class CartService {
       },
     });
 
-    if (!this.checkEnoughStock(product, createCartDto.quantity))
+    if (!this.checkEnoughStock(product as any, createCartDto.quantity))
       return { error: { message: 'Not enough stock' } };
 
     if (cartItem) {
@@ -159,7 +158,7 @@ export class CartService {
    * @param wanted - The desired quantity of the product.
    * @returns A boolean indicating whether there is enough stock.
    */
-  checkEnoughStock(product: Product, wanted: number): boolean {
+  checkEnoughStock(product: any, wanted: number): boolean {
     return !(wanted > product.stock);
   }
 
