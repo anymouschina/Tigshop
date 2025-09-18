@@ -9,7 +9,7 @@ datasource db {
 
 model User {
   userId          Int               @id @default(autoincrement())
-  name            String
+  name            String?
   email           String?           @unique
   password        String?
   address         String?
@@ -17,18 +17,33 @@ model User {
   openId          String?           @unique
   unionId         String?           @unique
   avatarUrl       String?
-  gender          Int?
+  gender          Int?              // 0: 未知, 1: 男, 2: 女
   country         String?
   province        String?
   city            String?
   language        String?
   ref             String?           // 引荐码，用于记录用户是被谁引荐的
+  mobile          String?           @unique
+  nickname        String?
+  birthday        DateTime?
+  registerTime    DateTime          @default(now())
+  lastLoginTime   DateTime?
+  lastLoginIp     String?
+  userRankId      Int?              // 用户等级ID
+  points          Int               @default(0) // 积分
+  balance         Decimal?          // 余额
+  totalAmount     Decimal?          // 消费总额
+  isEnable        Boolean           @default(true) // 是否启用
+  isDeleted       Boolean           @default(false) // 是否删除
   appointments    Appointment[]
   cart            Cart?
-  CoupunOrderUser CoupunOrderUser[]
+  coupunOrderUsers CoupunOrderUser[]
   orders          Order[]
+  notifications  Notification[]
+  userCoupons     UserCoupon[]
   referredUsers   UserReferral[]    @relation("ReferredUsers")
   referredBy      UserReferral?     @relation("ReferredBy")
+  userRank        UserRank?         @relation(fields: [userRankId], references: [userRankId])
 }
 
 // 用户引荐关联记录表
@@ -48,38 +63,118 @@ model UserReferral {
 
 model Order {
   orderId         Int               @id @default(autoincrement())
-  total           Float
-  status          Status            @default(PENDING)
-  createdAt       DateTime          @default(now())
-  userId          Int
+  orderSn        String           @unique // 订单编号
+  userId          Int               // 用户ID
+  totalAmount     Decimal?          // 订单总金额
+  discountAmount  Decimal?          // 优惠金额
+  shippingFee     Decimal?          // 运费
+  paymentAmount   Decimal?          // 实际支付金额
+  status          OrderStatus       @default(PENDING)
+  paymentStatus   PaymentStatus     @default(UNPAID)
+  paymentMethod   String?           // 支付方式
+  paymentTime     DateTime?         // 支付时间
+  shippingStatus  ShippingStatus    @default(UNSHIPPED)
+  shippingTime    DateTime?         // 发货时间
+  receiveTime    DateTime?         // 收货时间
+  completeTime    DateTime?         // 完成时间
+  cancelTime     DateTime?         // 取消时间
+  cancelReason   String?           // 取消原因
+  remark         String?           // 备注
   appointmentId   Int?
   appointmentInfo Json?
-  paymentStatus   PaymentStatus     @default(UNPAID)
-  CoupunOrderUser CoupunOrderUser[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  coupunOrderUsers CoupunOrderUser[]
   appointment     Appointment?      @relation(fields: [appointmentId], references: [id])
   user            User              @relation(fields: [userId], references: [userId])
   items           OrderItem[]
+  addresses       OrderAddress[]
+}
+
+enum OrderStatus {
+  PENDING         // 待处理
+  CONFIRMED       // 已确认
+  PROCESSING      // 处理中
+  SHIPPED         // 已发货
+  DELIVERED       // 已送达
+  COMPLETED       // 已完成
+  CANCELLED       // 已取消
+  REFUNDING       // 退款中
+  REFUNDED        // 已退款
+}
+
+enum ShippingStatus {
+  UNSHIPPED       // 未发货
+  SHIPPED         // 已发货
+  DELIVERED       // 已送达
+  RETURNED        // 已退货
 }
 
 model OrderItem {
-  orderItemId Int      @id @default(autoincrement())
-  quantity    Int
-  createdAt   DateTime @default(now())
-  orderId     Int
-  productId   Int
-  order       Order    @relation(fields: [orderId], references: [orderId])
-  product     Product  @relation(fields: [productId], references: [productId])
+  orderItemId   Int              @id @default(autoincrement())
+  orderId       Int              // 订单ID
+  productId     Int              // 商品ID
+  productSpecId Int?             // 商品规格ID
+  quantity      Int              // 数量
+  price         Decimal?          // 商品单价
+  totalPrice    Decimal?          // 商品总价
+  discountPrice Decimal?          // 优惠金额
+  shippingFee   Decimal?          // 运费
+  productName   String           // 商品名称
+  productImage  String?          // 商品图片
+  specValue     String?          // 规格值
+  remark        String?          // 备注
+  createdAt     DateTime         @default(now())
+  order         Order            @relation(fields: [orderId], references: [orderId])
+  product       Product          @relation(fields: [productId], references: [productId])
 }
 
 model Product {
-  productId   Int         @id @default(autoincrement())
-  name        String
-  price       Float
-  description String
-  stock       Int
-  createdAt   DateTime    @default(now())
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
+  productId        Int              @id @default(autoincrement())
+  name             String
+  subtitle         String?
+  description      String?
+  price            Decimal?
+  marketPrice      Decimal?          // 市场价
+  costPrice        Decimal?          // 成本价
+  stock            Int              @default(0)
+  sales            Int              @default(0) // 销量
+  categoryId       Int              // 分类ID
+  brandId          Int?             // 品牌ID
+  supplierId       Int?             // 供应商ID
+  shopId           Int              @default(1) // 店铺ID
+  image            String?          // 主图
+  images           String[]         // 图片数组
+  video            String?          // 视频
+  videoCover       String?          // 视频封面
+  specType         Int              @default(0) // 规格类型：0单规格，1多规格
+  weight           Decimal?          // 重量(kg)
+  volume           Decimal?          // 体积(m³)
+  shippingFee      Decimal?          // 运费
+  minBuy           Int              @default(1) // 最小购买数量
+  maxBuy           Int?             // 最大购买数量
+  keywords         String?          // 关键词
+  seoTitle         String?          // SEO标题
+  seoKeywords      String?          // SEO关键词
+  seoDescription   String?          // SEO描述
+  sort             Int              @default(100) // 排序
+  isBest           Boolean          @default(false) // 是否精选
+  isNew            Boolean          @default(false) // 是否新品
+  isHot            Boolean          @default(false) // 是否热卖
+  isRecommend      Boolean          @default(false) // 是否推荐
+  isEnable          Boolean          @default(true) // 是否启用
+  isDeleted        Boolean          @default(false) // 是否删除
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+  category         Category         @relation(fields: [categoryId], references: [categoryId])
+  brand            Brand?           @relation(fields: [brandId], references: [brandId])
+  supplier         Supplier?        @relation(fields: [supplierId], references: [supplierId])
+  shop             Shop             @relation(fields: [shopId], references: [shopId])
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  productSpecs     ProductSpec[]
+  productAttrs     ProductAttr[]
 }
 
 model Cart {
@@ -100,10 +195,10 @@ model CartItem {
   product    Product  @relation(fields: [productId], references: [productId])
 }
 
-model Coupon {
+model CouponCode {
   couponId        Int               @id @default(autoincrement())
   code            String            @unique
-  discount        Decimal
+  discount        Decimal?
   expireAt        DateTime
   createdAt       DateTime          @default(now())
   CoupunOrderUser CoupunOrderUser[]
@@ -113,7 +208,7 @@ model CoupunOrderUser {
   userId   Int
   orderId  Int
   couponId Int
-  coupun   Coupon @relation(fields: [couponId], references: [couponId])
+  coupun   CouponCode @relation(fields: [couponId], references: [couponId])
   order    Order  @relation(fields: [orderId], references: [orderId])
   user     User   @relation(fields: [userId], references: [userId])
 
@@ -186,4 +281,228 @@ model ReferralCode {
   updatedAt     DateTime        @updatedAt
   isActive      Boolean         @default(true) // 是否激活
   referrals     UserReferral[]  // 关联的引荐记录
+}
+
+// 用户等级表
+model UserRank {
+  userRankId     Int              @id @default(autoincrement())
+  rankName      String           // 等级名称
+  minPoints      Int              // 最小积分要求
+  maxPoints      Int?             // 最大积分要求
+  discount       Decimal?          // 折扣
+  description    String?          // 描述
+  icon           String?          // 图标
+  sort           Int              @default(0) // 排序
+  isEnable       Boolean          @default(true) // 是否启用
+  users          User[]
+}
+
+// 商品分类表
+model Category {
+  categoryId     Int              @id @default(autoincrement())
+  parentId       Int?             // 父分类ID
+  categoryName   String           // 分类名称
+  categoryImage  String?          // 分类图片
+  keywords       String?          // 关键词
+  description    String?          // 描述
+  sort           Int              @default(0) // 排序
+  isShow         Boolean          @default(true) // 是否显示
+  isNav          Boolean          @default(false) // 是否导航显示
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  parent         Category?        @relation("CategoryParent", fields: [parentId], references: [categoryId])
+  children       Category[]       @relation("CategoryParent")
+  products       Product[]
+}
+
+// 品牌表
+model Brand {
+  brandId        Int              @id @default(autoincrement())
+  brandName      String           // 品牌名称
+  brandLogo      String?          // 品牌LOGO
+  brandImage     String?          // 品牌图片
+  keywords       String?          // 关键词
+  description    String?          // 描述
+  sort           Int              @default(0) // 排序
+  isShow         Boolean          @default(true) // 是否显示
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  products       Product[]
+}
+
+// 供应商表
+model Supplier {
+  supplierId     Int              @id @default(autoincrement())
+  supplierName   String           // 供应商名称
+  contact        String?          // 联系人
+  mobile         String?          // 手机号
+  email          String?          // 邮箱
+  address        String?          // 地址
+  description    String?          // 描述
+  sort           Int              @default(0) // 排序
+  isEnable       Boolean          @default(true) // 是否启用
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  products       Product[]
+}
+
+// 店铺表
+model Shop {
+  shopId         Int              @id @default(autoincrement())
+  shopName       String           // 店铺名称
+  shopLogo       String?          // 店铺LOGO
+  shopImage      String?          // 店铺图片
+  keywords       String?          // 关键词
+  description    String?          // 描述
+  mobile         String?          // 手机号
+  email          String?          // 邮箱
+  address        String?          // 地址
+  sort           Int              @default(0) // 排序
+  isEnable       Boolean          @default(true) // 是否启用
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  products       Product[]
+}
+
+// 商品规格表
+model ProductSpec {
+  specId         Int              @id @default(autoincrement())
+  productId      Int              // 商品ID
+  specName       String           // 规格名称
+  specValue      String           // 规格值
+  specPrice      Decimal?          // 规格价格
+  specStock      Int              @default(0) // 规格库存
+  specSku        String?          // SKU
+  specImage      String?          // 规格图片
+  sort           Int              @default(0) // 排序
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  product        Product          @relation(fields: [productId], references: [productId])
+}
+
+// 商品属性表
+model ProductAttr {
+  attrId         Int              @id @default(autoincrement())
+  productId      Int              // 商品ID
+  attrName       String           // 属性名称
+  attrValue      String           // 属性值
+  sort           Int              @default(0) // 排序
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  product        Product          @relation(fields: [productId], references: [productId])
+}
+
+// 订单地址表
+model OrderAddress {
+  addressId      Int              @id @default(autoincrement())
+  orderId        Int              // 订单ID
+  order          Order            @relation(fields: [orderId], references: [orderId])
+  name           String           // 收货人姓名
+  mobile         String           // 手机号
+  province       String           // 省
+  city           String           // 市
+  district       String           // 区
+  address        String           // 详细地址
+  isDefault      Boolean          @default(false) // 是否默认地址
+  createdAt      DateTime         @default(now())
+}
+
+// 优惠券表
+model Coupon {
+  couponId       Int              @id @default(autoincrement())
+  couponName     String           // 优惠券名称
+  couponType     Int              @default(1) // 类型：1满减券，2折扣券，3现金券
+  couponCode     String           @unique // 优惠码
+  discountAmount Decimal?          // 减免金额
+  discountRate   Decimal?          // 折扣率
+  minAmount      Decimal?          // 最小使用金额
+  startTime      DateTime         // 开始时间
+  endTime        DateTime         // 结束时间
+  totalNum       Int              // 总数量
+  usedNum       Int              @default(0) // 已使用数量
+  isEnable       Boolean          @default(true) // 是否启用
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  userCoupons    UserCoupon[]
+}
+
+// 优惠券用户关联表
+model UserCoupon {
+  userCouponId   Int              @id @default(autoincrement())
+  userId         Int              // 用户ID
+  couponId       Int              // 优惠券ID
+  orderId        Int?             // 使用订单ID
+  status         Int              @default(0) // 状态：0未使用，1已使用，2已过期
+  usedTime       DateTime?        // 使用时间
+  createdAt      DateTime         @default(now())
+  user           User             @relation(fields: [userId], references: [userId])
+  coupon         Coupon           @relation(fields: [couponId], references: [couponId])
+}
+
+// 管理员表
+model AdminUser {
+  adminId        Int              @id @default(autoincrement())
+  username       String           @unique // 用户名
+  password       String           // 密码
+  email          String?          // 邮箱
+  mobile         String?          // 手机号
+  avatar         String?          // 头像
+  adminType      String           @default("admin") // 类型：admin、shop、vendor
+  isEnable       Boolean          @default(true) // 是否启用
+  lastLoginTime  DateTime?        // 最后登录时间
+  lastLoginIp    String?          // 最后登录IP
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+// 管理员角色表
+model AdminRole {
+  roleId         Int              @id @default(autoincrement())
+  roleName       String           // 角色名称
+  roleDesc       String?          // 角色描述
+  authorityList  Json             // 权限列表
+  adminType      String           @default("admin") // 管理类型
+  isEnable       Boolean          @default(true) // 是否启用
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+// 通知表
+model Notification {
+  notificationId Int              @id @default(autoincrement())
+  userId         Int
+  type           String           // 通知类型: email, sms, system, wechat, push
+  template       String           // 通知模板
+  title          String           // 通知标题
+  content        String           // 通知内容
+  status         String           @default("pending") // 状态: pending, processing, sent, failed
+  priority       String           @default("normal") // 优先级: low, normal, high
+  relatedData    Json?            // 关联数据
+  scheduledAt    DateTime?        // 定时发送时间
+  sentAt         DateTime?        // 发送时间
+  failedAt       DateTime?        // 失败时间
+  result         Json?            // 发送结果
+  error          String?          // 错误信息
+  isRead         Boolean          @default(false) // 是否已读
+  readAt         DateTime?        // 阅读时间
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user           User             @relation(fields: [userId], references: [userId])
+}
+
+// 文件表
+model File {
+  fileId        Int              @id @default(autoincrement())
+  fileName      String           // 文件名
+  originalName  String           // 原始文件名
+  filePath      String           // 文件路径
+  fileUrl       String           // 文件URL
+  fileSize      Int              // 文件大小(字节)
+  mimeType      String           // MIME类型
+  type          String           // 文件类型: product, user, category, brand, order, other
+  relatedId     Int?             // 关联ID
+  description   String?          // 文件描述
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 }

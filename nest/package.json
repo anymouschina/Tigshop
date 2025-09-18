@@ -37,15 +37,17 @@
     "@nestjs/schedule": "^6.0.0",
     "@nestjs/swagger": "^7.3.1",
     "@prisma/client": "^5.15.1",
-    "@types/nodemailer": "^6.4.17",
+    "@types/handlebars": "^4.0.40",
+    "@types/nodemailer": "^6.4.19",
     "axios": "^1.9.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "dotenv": "^16.4.5",
+    "handlebars": "^4.7.8",
     "ioredis": "^5.6.1",
     "joi": "^17.13.3",
-    "nodemailer": "^7.0.5",
+    "nodemailer": "^7.0.6",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^5.15.1",
@@ -84,7 +86,10 @@
       "ts"
     ],
     "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
+    "testMatch": [
+      "**/__tests__/**/*.spec.ts",
+      "**/?(*.)+(spec|test).ts"
+    ],
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
@@ -92,7 +97,10 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    }
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

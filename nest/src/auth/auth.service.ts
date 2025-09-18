@@ -8,6 +8,7 @@ export interface JwtPayload {
   sub: number;      // User ID
   openId?: string;  // WeChat openId
   name?: string;    // Username
+  email?: string;   // Email address
   iat?: number;     // Issued at
   exp?: number;     // Expiration time
 }

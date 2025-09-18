@@ -37,11 +37,11 @@ export class CartService {
         where: { productId: item.productId },
       });
 
-      fullPrice += product.price * item.quantity;
+      fullPrice += Number(product.price) * item.quantity;
       cartItemsCount += item.quantity;
 
       product['quantity'] = item.quantity;
-      product['fullPrice'] = product.price * item.quantity;
+      product['fullPrice'] = Number(product.price) * item.quantity;
 
       delete product['stock'];
       delete product['createdAt'];

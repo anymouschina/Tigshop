@@ -7,6 +7,8 @@ import { AuthService } from '../auth/auth.service';
 import { ReferralDto } from './dto/referral.dto';
 import { CreateReferralCodeDto } from './dto/create-referral-code.dto';
 import { EmailRegisterDto } from './dto/email-register.dto';
+import { EmailLoginDto } from './dto/email-login.dto';
+import { LoginDto } from '../user/dto/login.dto';
 import { EmailVerificationService } from './services/email-verification.service';
 import axios from 'axios';
 import { Prisma } from '@prisma/client';
@@ -779,5 +781,273 @@ export class UserService {
     }
 
     return user;
+  }
+
+  /**
+   * 邮箱注册
+   * @param registerDto 注册数据
+   * @returns 注册结果
+   */
+  async emailRegister(registerDto: EmailRegisterDto) {
+    try {
+      // 验证邮箱验证码
+      const isValidCode = await this.emailVerificationService.verifyCode(
+        registerDto.email,
+        registerDto.code,
+        'register'
+      );
+
+      if (!isValidCode.success) {
+        throw new BadRequestException(isValidCode.message);
+      }
+
+      // 检查邮箱是否已存在
+      const existingUser = await this.databaseService.user.findUnique({
+        where: { email: registerDto.email }
+      });
+
+      if (existingUser) {
+        throw new BadRequestException('邮箱已注册');
+      }
+
+      // 处理推荐码
+      let refCode = null;
+      if (registerDto.referralCode) {
+        // 验证推荐码是否有效
+        const referrerUser = await this.databaseService.user.findFirst({
+          where: { openId: registerDto.referralCode }
+        });
+
+        if (referrerUser) {
+          refCode = registerDto.referralCode;
+        }
+      }
+
+      // 生成用户ID
+      const maxUserId = await this.databaseService.user.findFirst({
+        orderBy: { userId: 'desc' }
+      });
+
+      const newUserId = (maxUserId?.userId || 0) + 1;
+
+      // 创建用户
+      const newUser = await this.databaseService.user.create({
+        data: {
+          userId: newUserId,
+          email: registerDto.email,
+          name: registerDto.name || registerDto.email.split('@')[0],
+          password: await this.authService.hashPassword(registerDto.password),
+          ref: refCode,
+          registerTime: new Date(),
+          lastLoginTime: new Date(),
+          isEnable: true,
+          isDeleted: false,
+          points: 0,
+          balance: 0,
+          totalAmount: 0,
+        }
+      });
+
+      // 创建引荐记录
+      if (refCode) {
+        const referrerUser = await this.databaseService.user.findFirst({
+          where: { openId: refCode }
+        });
+
+        if (referrerUser && referrerUser.openId !== newUser.openId) {
+          await this.databaseService.userReferral.create({
+            data: {
+              userId: newUser.userId,
+              refCode: refCode,
+              referrerOpenId: referrerUser.openId,
+              source: 'email_register'
+            }
+          });
+        }
+      }
+
+      // 标记邮箱为已验证
+      await this.emailVerificationService.markEmailAsVerified(registerDto.email, 'register');
+      await this.emailVerificationService.clearVerificationCode(registerDto.email, 'register');
+
+      // 生成JWT token
+      const token = await this.authService.generateToken(newUser.userId, {
+        name: newUser.name,
+        email: newUser.email
+      });
+
+      // 更新最后登录时间和IP
+      await this.databaseService.user.update({
+        where: { userId: newUser.userId },
+        data: {
+          lastLoginTime: new Date()
+        }
+      });
+
+      return {
+        success: true,
+        message: '注册成功',
+        data: {
+          userId: newUser.userId,
+          email: newUser.email,
+          name: newUser.name,
+          token,
+          createdAt: newUser.createdAt
+        }
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        '邮箱注册失败: ' + error.message,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  /**
+   * 邮箱登录
+   * @param loginDto 登录数据
+   * @returns 登录结果
+   */
+  async emailLogin(loginDto: EmailLoginDto) {
+    try {
+      // 查找用户
+      const user = await this.databaseService.user.findUnique({
+        where: { email: loginDto.email }
+      });
+
+      if (!user) {
+        throw new BadRequestException('邮箱不存在');
+      }
+
+      if (!user.isEnable) {
+        throw new BadRequestException('账号已被禁用');
+      }
+
+      if (user.isDeleted) {
+        throw new BadRequestException('账号已被删除');
+      }
+
+      // 验证密码
+      const isValidPassword = await this.authService.validatePassword(
+        loginDto.password,
+        user.password
+      );
+
+      if (!isValidPassword) {
+        throw new BadRequestException('密码错误');
+      }
+
+      // 生成JWT token
+      const token = await this.authService.generateToken(user.userId, {
+        name: user.name,
+        email: user.email
+      });
+
+      // 更新最后登录时间和IP
+      await this.databaseService.user.update({
+        where: { userId: user.userId },
+        data: {
+          lastLoginTime: new Date()
+        }
+      });
+
+      return {
+        success: true,
+        message: '登录成功',
+        data: {
+          userId: user.userId,
+          email: user.email,
+          name: user.name,
+          token,
+          lastLoginTime: new Date()
+        }
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        '邮箱登录失败: ' + error.message,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  /**
+   * 用户名/邮箱 登录
+   * @param loginDto 登录数据
+   * @returns 登录结果
+   */
+  async login(loginDto: LoginDto) {
+    try {
+      // 查找用户（支持用户名或邮箱登录）
+      let user = await this.databaseService.user.findFirst({
+        where: {
+          OR: [
+            { email: loginDto.usernameOrEmail },
+            { name: loginDto.usernameOrEmail }
+          ]
+        }
+      });
+
+      if (!user) {
+        throw new BadRequestException('用户不存在');
+      }
+
+      if (!user.isEnable) {
+        throw new BadRequestException('账号已被禁用');
+      }
+
+      if (user.isDeleted) {
+        throw new BadRequestException('账号已被删除');
+      }
+
+      // 验证密码
+      const isValidPassword = await this.authService.validatePassword(
+        loginDto.password,
+        user.password
+      );
+
+      if (!isValidPassword) {
+        throw new BadRequestException('密码错误');
+      }
+
+      // 生成JWT token
+      const token = await this.authService.generateToken(user.userId, {
+        name: user.name,
+        email: user.email
+      });
+
+      // 更新最后登录时间和IP
+      await this.databaseService.user.update({
+        where: { userId: user.userId },
+        data: {
+          lastLoginTime: new Date()
+        }
+      });
+
+      return {
+        success: true,
+        message: '登录成功',
+        data: {
+          userId: user.userId,
+          email: user.email,
+          name: user.name,
+          token,
+          lastLoginTime: new Date()
+        }
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        '登录失败: ' + error.message,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 }

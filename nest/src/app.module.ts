@@ -3,6 +3,9 @@ import { UserModule } from './user/user.module';
 import { ProductModule } from './product/product.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
+import { PaymentModule } from './payment/payment.module';
+import { UploadModule } from './upload/upload.module';
+import { NotificationModule } from './notification/notification.module';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
@@ -26,6 +29,9 @@ import { RedisModule } from './redis/redis.module';
     ProductModule,
     CartModule,
     OrderModule,
+    PaymentModule,
+    UploadModule,
+    NotificationModule,
     AppointmentModule,
     MicroservicesModule,
     WechatModule,
