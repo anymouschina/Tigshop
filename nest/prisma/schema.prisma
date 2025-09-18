@@ -297,12 +297,46 @@ model Product {
   weight         Decimal?
   CartItem       CartItem[]
   OrderItem      OrderItem[]
+  Comment        Comment[]
   Brand          Brand?        @relation(fields: [brandId], references: [brandId])
   Category       Category      @relation(fields: [categoryId], references: [categoryId])
   Shop           Shop          @relation(fields: [shopId], references: [shopId])
   Supplier       Supplier?     @relation(fields: [supplierId], references: [supplierId])
   ProductAttr    ProductAttr[]
   ProductSpec    ProductSpec[]
+}
+
+model Comment {
+  commentId      Int           @id @default(autoincrement())
+  productId      Int
+  userId         Int
+  rating         Int           @default(5)
+  content        String
+  images         String?
+  orderSn        String?
+  replyId        Int?
+  replyContent   String?
+  replyTime      DateTime?
+  status         String        @default("PENDING")
+  likes          Int           @default(0)
+  isLiked        Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  UserLike       UserLike[]
+  Product        Product       @relation(fields: [productId], references: [productId])
+  User           User          @relation(fields: [userId], references: [userId])
+  Comment        Comment?      @relation("CommentReplies", fields: [replyId], references: [commentId])
+  replies        Comment[]     @relation("CommentReplies")
+}
+
+model UserLike {
+  id             Int           @id @default(autoincrement())
+  userId         Int
+  commentId      Int
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  Comment        Comment       @relation(fields: [commentId], references: [commentId])
+  User           User          @relation(fields: [userId], references: [userId])
 }
 
 model ProductAttr {
@@ -435,6 +469,8 @@ model User {
   Refund                                         Refund[]
   UserAddress                                    UserAddress[]
   UserCollection                                 UserCollection[]
+  UserLike                                       UserLike[]
+  Comment                                        Comment[]
   PointsLog                                      PointsLog[]
   PointsExchange                                 PointsExchange[]
 }

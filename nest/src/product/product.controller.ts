@@ -6,9 +6,12 @@ import {
   Query,
   UseGuards,
   Request,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductService } from './product.service';
+import { CommentService } from './comment/comment.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Product Management')
@@ -16,7 +19,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    @Inject(forwardRef(() => CommentService))
+    private readonly commentService: CommentService,
+  ) {}
 
   /**
    * 获取商品列表 - 对齐PHP版本 product/product/list
@@ -41,24 +48,31 @@ export class ProductController {
    */
   @Get('getComment')
   @ApiOperation({ summary: '获取商品评论' })
-  async getProductComment(@Query() query: { id: number }) {
-    // 简化实现，返回评论数据
+  async getProductComment(@Query() query: { id: number; page?: number; size?: number }) {
+    const { id, page = 1, size = 10 } = query;
+
+    // 获取评论列表
+    const comments = await this.commentService.getComments({
+      productId: Number(id),
+      page: Number(page),
+      size: Number(size),
+      status: 'APPROVED',
+    });
+
+    // 获取评论统计
+    const stats = await this.commentService.getCommentStats(Number(id));
+
     return {
-      comments: [
-        {
-          id: 1,
-          userId: 1,
-          userName: '用户1',
-          avatar: '/images/avatar/default.png',
-          rating: 5,
-          content: '商品质量很好，推荐购买！',
-          images: ['/images/comment/1.jpg'],
-          createTime: '2024-01-10 10:30:00',
-          reply: null,
-        },
-      ],
-      averageRating: 4.5,
-      totalComments: 128,
+      comments: comments.list,
+      averageRating: stats.averageRating,
+      totalComments: stats.totalComments,
+      ratingDistribution: stats.ratingDistribution,
+      pagination: {
+        page: comments.page,
+        size: comments.size,
+        total: comments.total,
+        totalPages: comments.totalPages,
+      },
     };
   }
 
@@ -68,28 +82,14 @@ export class ProductController {
   @Get('getCommentList')
   @ApiOperation({ summary: '获取评论列表' })
   async getCommentList(@Query() query: { id: number; page?: number; size?: number }) {
-    const page = Number(query.page) || 1;
-    const size = Number(query.size) || 10;
+    const { id, page = 1, size = 10 } = query;
 
-    return {
-      list: [
-        {
-          id: 1,
-          userId: 1,
-          userName: '用户1',
-          avatar: '/images/avatar/default.png',
-          rating: 5,
-          content: '商品质量很好，推荐购买！',
-          images: ['/images/comment/1.jpg'],
-          createTime: '2024-01-10 10:30:00',
-          reply: null,
-        },
-      ],
-      total: 128,
-      page,
-      size,
-      totalPages: 13,
-    };
+    return this.commentService.getComments({
+      productId: Number(id),
+      page: Number(page),
+      size: Number(size),
+      status: 'APPROVED',
+    });
   }
 
   /**
