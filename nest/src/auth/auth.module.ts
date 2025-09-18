@@ -4,7 +4,6 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ConfigModule } from '../config/config.module';
-import { AppConfigService } from '../config/config.service';
 import { DatabaseService } from "../database/database.service";
 import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from "../database/database.module";
@@ -14,20 +13,19 @@ import { DatabaseModule } from "../database/database.module";
     DatabaseModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
-      imports: [
-    DatabaseModule,ConfigModule],
-      inject: [AppConfigService],
-      useFactory: async (configService: AppConfigService) => ({
-        secret: configService.jwtSecret,
+      imports: [ConfigModule],
+      inject: ['CONFIG'],
+      useFactory: async (config: any) => ({
+        secret: config.jwtSecret || 'fallback-secret-key',
         signOptions: {
-          expiresIn: configService.jwtExpiresIn,
+          expiresIn: '7d',
         },
       }),
     }),
     ConfigModule,
     ScheduleModule.forRoot(),
   ],
-  providers: [AuthService, JwtStrategy, DatabaseService],
+  providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {} 

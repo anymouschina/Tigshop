@@ -1,0 +1,1 @@
+{"version":3,"file":"seckill.js","sourceRoot":"","sources":["seckill.ts"],"names":[],"mappings":"AAAA,OAAO,OAAO,4BAAwB;AAGtC,OAAO;AACP,MAAM,CAAC,MAAM,UAAU,GAAG,CAAC,MAAW,EAAE,EAAE;IACtC,OAAO,OAAO,CAAsB;QAChC,GAAG,EAAE,sBAAsB;QAC3B,MAAM,EAAE,KAAK;QACb,MAAM;KACT,CAAC,CAAC;AACP,CAAC,CAAC"}

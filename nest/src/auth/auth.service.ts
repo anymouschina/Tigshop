@@ -1,6 +1,5 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AppConfigService } from '../config/config.service';
 import { DatabaseService } from '../database/database.service';
 import { Cron } from '@nestjs/schedule';
 
@@ -17,7 +16,7 @@ export interface JwtPayload {
 export class AuthService implements OnModuleInit {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly configService: AppConfigService,
+    @Inject('CONFIG') private readonly config: any,
     private readonly databaseService: DatabaseService,
   ) {}
 

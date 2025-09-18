@@ -220,6 +220,8 @@ model Order {
   User            User              @relation(fields: [userId], references: [userId])
   OrderAddress    OrderAddress[]
   OrderItem       OrderItem[]
+  Payment         Payment[]
+  Refund          Refund[]
 }
 
 model OrderAddress {
@@ -329,6 +331,27 @@ model ProductSpec {
   Product   Product  @relation(fields: [productId], references: [productId])
 }
 
+model ProductSpecTemplate {
+  templateId   Int            @id @default(autoincrement())
+  name         String
+  description  String?
+  shopId       Int            @default(1)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  templateSpecs ProductSpecTemplateSpec[]
+}
+
+model ProductSpecTemplateSpec {
+  id           Int            @id @default(autoincrement())
+  templateId   Int
+  specName     String
+  specValues   String[]       // JSON array of possible values
+  sort         Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  template     ProductSpecTemplate @relation(fields: [templateId], references: [templateId])
+}
+
 model ReferralCode {
   id           Int            @id @default(autoincrement())
   code         String         @unique
@@ -408,6 +431,12 @@ model User {
   UserCoupon                                     UserCoupon[]
   UserReferral_UserReferral_referrerOpenIdToUser UserReferral[]    @relation("UserReferral_referrerOpenIdToUser")
   UserReferral_UserReferral_userIdToUser         UserReferral?     @relation("UserReferral_userIdToUser")
+  Payment                                        Payment[]
+  Refund                                         Refund[]
+  UserAddress                                    UserAddress[]
+  UserCollection                                 UserCollection[]
+  PointsLog                                      PointsLog[]
+  PointsExchange                                 PointsExchange[]
 }
 
 model UserCoupon {
@@ -470,8 +499,10 @@ enum OrderStatus {
 
 enum PaymentStatus {
   UNPAID
+  PENDING
   PAID
   REFUNDED
+  CLOSED
 }
 
 enum ShippingStatus {
@@ -553,4 +584,72 @@ enum RefundStatus {
   COMPLETED
   FAILED
   CANCELLED
+}
+
+model UserAddress {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  name       String
+  mobile     String
+  province   String
+  city       String
+  district   String
+  address    String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  User       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model UserCollection {
+  id         Int             @id @default(autoincrement())
+  userId     Int
+  type       CollectionType
+  targetId   Int
+  createdAt  DateTime        @default(now())
+  User       User            @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([userId, type, targetId])
+}
+
+model PointsLog {
+  id          Int             @id @default(autoincrement())
+  userId      Int
+  type        PointsType
+  points      Int
+  balance     Int
+  sourceType  PointsSourceType
+  description String
+  relatedId   Int?
+  createdAt   DateTime        @default(now())
+  User        User            @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model PointsExchange {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  points       Int
+  exchangeType String
+  description  String
+  createdAt    DateTime @default(now())
+  User         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+enum CollectionType {
+  PRODUCT
+  SHOP
+}
+
+enum PointsType {
+  EARN
+  SPEND
+}
+
+enum PointsSourceType {
+  SIGN_IN
+  EXCHANGE
+  PURCHASE
+  REFUND
+  ADMIN
+  OTHER
 }

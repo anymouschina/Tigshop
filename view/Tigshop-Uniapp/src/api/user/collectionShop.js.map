@@ -1,0 +1,1 @@
+{"version":3,"file":"collectionShop.js","sourceRoot":"","sources":["collectionShop.ts"],"names":[],"mappings":"AAAA,OAAO,OAAO,4BAAwB;AAGtC,MAAM,CAAC,MAAM,iBAAiB,GAAG,CAAC,MAAc,EAAE,EAAE;IAChD,OAAO,OAAO,CAAyB;QACnC,GAAG,EAAE,0BAA0B;QAC/B,MAAM,EAAE,KAAK;QACb,MAAM;KACT,CAAC,CAAC;AACP,CAAC,CAAC"}
