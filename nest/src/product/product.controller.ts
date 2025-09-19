@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductService } from './product.service';
 import { CommentService } from './comment/comment.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CommentStatus } from './comment/dto/comment.dto';
 
 @ApiTags('Product Management')
 @Controller('product/product')
@@ -137,10 +138,10 @@ export class ProductController {
     return {
       productId: data.productId,
       quantity,
-      unitPrice: product.price,
-      totalPrice: Number(product.price) * quantity,
+      unitPrice: product.productPrice,
+      totalPrice: Number(product.productPrice) * quantity,
       discountAmount: 0,
-      finalPrice: Number(product.price) * quantity,
+      finalPrice: Number(product.productPrice) * quantity,
     };
   }
 
@@ -157,8 +158,8 @@ export class ProductController {
           const product = await this.productService.findById(id);
           return {
             productId: id,
-            stock: product.stock || 0,
-            isAvailable: product.isEnable && (product.stock || 0) > 0,
+            stock: product.productStock || 0,
+            isAvailable: product.productStatus === 1 && (product.productStock || 0) > 0,
           };
         } catch {
           return {

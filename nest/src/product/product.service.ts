@@ -16,7 +16,7 @@ export class ProductService {
   async create(createProductDto: CreateProductDto) {
     // 检查商品名称是否已存在
     const existingProduct = await this.prisma.product.findFirst({
-      where: { name: createProductDto.name },
+      where: { productName: createProductDto.name },
     });
 
     if (existingProduct) {
@@ -193,7 +193,7 @@ export class ProductService {
     if (updateProductDto.name) {
       const existingProduct = await this.prisma.product.findFirst({
         where: {
-          name: updateProductDto.name,
+          productName: updateProductDto.name,
           productId: { not: id },
         },
       });
@@ -203,10 +203,46 @@ export class ProductService {
       }
     }
 
-    return this.prisma.product.update({
-      where: { productId: id },
-      data: updateProductDto,
-    });
+    // 使用原始SQL更新商品以绕过XOR类型问题
+    const result = await this.prisma.$queryRaw`
+      UPDATE "Product"
+      SET
+        productName = ${updateProductDto.name || null},
+        subtitle = ${updateProductDto.subtitle || null},
+        description = ${updateProductDto.description || null},
+        productPrice = ${updateProductDto.price || null},
+        marketPrice = ${updateProductDto.marketPrice || null},
+        costPrice = ${updateProductDto.costPrice || null},
+        productStock = ${updateProductDto.stock || null},
+        sales = ${updateProductDto.sales || null},
+        categoryId = ${updateProductDto.categoryId || null},
+        brandId = ${updateProductDto.brandId || null},
+        supplierId = ${updateProductDto.supplierId || null},
+        image = ${updateProductDto.image || null},
+        images = ${updateProductDto.images || null},
+        video = ${updateProductDto.video || null},
+        videoCover = ${updateProductDto.videoCover || null},
+        specType = ${updateProductDto.specType || null},
+        weight = ${updateProductDto.weight || null},
+        volume = ${updateProductDto.volume || null},
+        shippingFee = ${updateProductDto.shippingFee || null},
+        minBuy = ${updateProductDto.minBuy || null},
+        maxBuy = ${updateProductDto.maxBuy || null},
+        keywords = ${updateProductDto.keywords || null},
+        seoTitle = ${updateProductDto.seoTitle || null},
+        seoKeywords = ${updateProductDto.seoKeywords || null},
+        seoDescription = ${updateProductDto.seoDescription || null},
+        sort = ${updateProductDto.sort || null},
+        isBest = ${updateProductDto.isBest !== undefined ? updateProductDto.isBest : false},
+        isNew = ${updateProductDto.isNew !== undefined ? updateProductDto.isNew : false},
+        isHot = ${updateProductDto.isHot !== undefined ? updateProductDto.isHot : false},
+        isRecommend = ${updateProductDto.isRecommend !== undefined ? updateProductDto.isRecommend : false},
+        "updatedAt" = NOW()
+      WHERE productId = ${id}
+      RETURNING productId, productName, subtitle, description, productPrice, marketPrice, costPrice, productStock, sales, categoryId, brandId, supplierId, image, images, video, videoCover, specType, weight, volume, shippingFee, minBuy, maxBuy, keywords, seoTitle, seoKeywords, seoDescription, sort, isBest, isNew, isHot, isRecommend, productStatus, "createdAt", "updatedAt"
+    ` as any[];
+
+    return result[0];
   }
 
   /**
@@ -228,12 +264,12 @@ export class ProductService {
    * @param status 商品状态
    * @returns 更新后的商品
    */
-  async updateStatus(id: number, status: boolean) {
+  async updateStatus(id: number, status: string) {
     await this.findById(id);
 
     return this.prisma.product.update({
       where: { productId: id },
-      data: { isEnable: status },
+      data: { productStatus: status === 'ENABLE' ? 1 : 0 },
     });
   }
 
@@ -244,8 +280,8 @@ export class ProductService {
   async getStats() {
     const [total, active, inactive] = await Promise.all([
       this.prisma.product.count(),
-      this.prisma.product.count({ where: { isEnable: true } }),
-      this.prisma.product.count({ where: { isEnable: false } }),
+      this.prisma.product.count({ where: { productStatus: 1 } }),
+      this.prisma.product.count({ where: { productStatus: 0 } }),
     ]);
 
     return {

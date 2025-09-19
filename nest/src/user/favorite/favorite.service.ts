@@ -327,7 +327,7 @@ export class FavoriteService {
       isFavorite: !!existingFavorite,
       targetId,
       type,
-      favoriteId: existingFavorite?.collectId || existingFavorite?.id,
+      favoriteId: existingFavorite?.collectId,
     };
   }
 

@@ -136,7 +136,7 @@ export class SkuController {
   @ApiOperation({ summary: '检查SKU编码是否可用' })
   async checkSkuCode(@Query('skuCode') skuCode: string, @Query('productId') productId?: number) {
     // 检查SKU编码是否已存在
-    const existingSku = await this.skuService['prisma'].sku.findFirst({
+    const existingSku = await this.skuService['prisma'].productSku.findFirst({
       where: { skuCode },
     });
 
@@ -172,10 +172,11 @@ export class SkuController {
     const results = await Promise.all(
       skuIds.map(async (skuId) => {
         try {
-          await this.skuService['prisma'].sku.update({
-            where: { id: skuId },
-            data: { isEnable },
-          });
+          await this.skuService['prisma'].$queryRaw`
+            UPDATE "ProductSku"
+            SET "isEnable" = ${isEnable}, "updatedAt" = NOW()
+            WHERE skuId = ${skuId}
+          `;
           return { skuId, success: true };
         } catch (error) {
           return { skuId, success: false, error: error.message };

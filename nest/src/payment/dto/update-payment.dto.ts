@@ -3,7 +3,19 @@ import { CreatePaymentDto } from './create-payment.dto';
 import { IsEnum, IsOptional, IsNumber, IsString, Min } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { PaymentStatus, RefundStatus } from '@prisma/client';
+// These enums don't exist in the schema, define them here
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED',
+}
+
+export enum RefundStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
 
 export class UpdatePaymentDto {
   @ApiProperty({ description: '支付状态', enum: PaymentStatus, required: false })

@@ -93,9 +93,9 @@ export class UpdateCouponDto {
   @IsOptional()
   endTime?: string;
 
-  @IsBoolean()
+  @IsEnum(CouponStatus)
   @IsOptional()
-  status?: boolean;
+  status?: CouponStatus;
 }
 
 export class UseCouponDto {

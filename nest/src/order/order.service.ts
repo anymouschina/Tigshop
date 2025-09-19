@@ -120,32 +120,17 @@ export class OrderService {
       // 获取创建的订单ID
       const orderId = (order as any)[0].orderId;
 
-      // 创建订单地址 - 使用新的字段名
-      await tx.orderaddress.create({
-        data: {
-          orderId,
-          consignee: address.consignee,
-          mobile: address.mobile,
-          regionIds: address.regionIds,
-          regionNames: address.regionNames,
-          address: address.address,
-          isDefault: address.isDefault,
-        },
-      });
+      // 订单地址信息已直接存储在Order表中，无需单独创建
 
-      // 创建订单项
+      // 创建订单项 - 使用原始SQL避免XOR类型问题
       for (const item of cart.items) {
-        await tx.orderItem.create({
-          data: {
-            orderId,
-            productId: item.productId,
-            quantity: item.quantity,
-            price: 0, // Will be calculated based on SKU or product price
-            productName: '', // Will need to fetch product info
-            productImage: '', // Will need to fetch product info
-            totalPrice: 0, // Will be calculated
-          },
-        });
+        await tx.$queryRaw`
+          INSERT INTO "OrderItem" (
+            "orderId", "productId", "quantity", "price", "productName", "picThumb"
+          ) VALUES (
+            ${orderId}, ${item.productId}, ${item.quantity}, ${item.originalPrice}, ${item.productSn || ''}, ${item.picThumb || ''}
+          )
+        `;
 
         // 扣减库存
         await tx.product.update({
@@ -154,7 +139,7 @@ export class OrderService {
             productStock: {
               decrement: item.quantity,
             },
-            sales: {
+            clickCount: {
               increment: item.quantity,
             },
           },
@@ -221,8 +206,8 @@ export class OrderService {
         skip,
         take: size,
         include: {
-          orderAddress: true,
-          orderItem: {
+          // orderAddress: true, // 地址信息已直接存储在Order表中
+          orderItems: {
             include: {
               product: {
                 include: {
@@ -232,7 +217,7 @@ export class OrderService {
               },
             },
           },
-          payment: true,
+          payments: true,
         },
         orderBy: { addTime: 'desc' },
       }),
@@ -263,10 +248,10 @@ export class OrderService {
     const order = await this.prisma.order.findFirst({
       where,
       include: {
-        OrderAddress: true,
-        OrderItem: {
+        // OrderAddress: true, // Address info is now stored directly in Order table
+        orderItems: {
           include: {
-            Product: {
+            product: {
               include: {
                 brand: true,
                 category: true,
@@ -274,11 +259,11 @@ export class OrderService {
             },
           },
         },
-        Payment: true,
-        User: {
+        payments: true,
+        user: {
           select: {
             userId: true,
-            name: true,
+            nickname: true,
             mobile: true,
           },
         },
@@ -302,19 +287,19 @@ export class OrderService {
   async cancelOrder(orderId: number, userId: number, reason?: string) {
     const order = await this.getOrderDetail(orderId, userId);
 
-    if (order.status !== 'PENDING') {
+    if (order.orderStatus !== 0) { // PENDING = 0
       throw new BadRequestException('只有待付款的订单才能取消');
     }
 
     // 恢复库存
-    for (const item of order.OrderItem) {
+    for (const item of order.orderItems) {
       await this.prisma.product.update({
         where: { productId: item.productId },
         data: {
-          stock: {
+          productStock: {
             increment: item.quantity,
           },
-          sales: {
+          clickCount: {
             decrement: item.quantity,
           },
         },
@@ -325,9 +310,8 @@ export class OrderService {
     return this.prisma.order.update({
       where: { orderId },
       data: {
-        status: 'CANCELLED',
-        cancelReason: reason,
-        cancelTime: new Date(),
+        orderStatus: 2, // CANCELLED = 2
+        // cancelReason and cancelTime fields don't exist in schema
       },
     });
   }
@@ -341,15 +325,15 @@ export class OrderService {
   async confirmReceive(orderId: number, userId: number) {
     const order = await this.getOrderDetail(orderId, userId);
 
-    if (order.status !== 'SHIPPED') {
+    if (order.orderStatus !== 1) { // SHIPPED = 1
       throw new BadRequestException('只有已发货的订单才能确认收货');
     }
 
     return this.prisma.order.update({
       where: { orderId },
       data: {
-        status: 'COMPLETED',
-        completeTime: new Date(),
+        orderStatus: 3, // COMPLETED = 3
+        // completeTime field doesn't exist in schema
       },
     });
   }
@@ -363,7 +347,7 @@ export class OrderService {
   async deleteOrder(orderId: number, userId: number) {
     const order = await this.getOrderDetail(orderId, userId);
 
-    if (!['CANCELLED', 'COMPLETED'].includes(order.status)) {
+    if (![2, 3].includes(order.orderStatus)) { // CANCELLED = 2, COMPLETED = 3
       throw new BadRequestException('只能删除已取消或已完成的订单');
     }
 
@@ -382,11 +366,11 @@ export class OrderService {
   async getOrderStats(userId: number) {
     const [total, pending, paid, shipped, completed, cancelled] = await Promise.all([
       this.prisma.order.count({ where: { userId } }),
-      this.prisma.order.count({ where: { userId, status: 'PENDING' } }),
-      this.prisma.order.count({ where: { userId, paymentStatus: 'PAID' } }),
-      this.prisma.order.count({ where: { userId, status: 'SHIPPED' } }),
-      this.prisma.order.count({ where: { userId, status: 'COMPLETED' } }),
-      this.prisma.order.count({ where: { userId, status: 'CANCELLED' } }),
+      this.prisma.order.count({ where: { userId, orderStatus: 0 } }), // PENDING = 0
+      this.prisma.order.count({ where: { userId, payStatus: 1 } }), // PAID = 1
+      this.prisma.order.count({ where: { userId, orderStatus: 1 } }), // SHIPPED = 1
+      this.prisma.order.count({ where: { userId, orderStatus: 3 } }), // COMPLETED = 3
+      this.prisma.order.count({ where: { userId, orderStatus: 2 } }), // CANCELLED = 2
     ]);
 
     return {

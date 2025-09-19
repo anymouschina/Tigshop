@@ -112,7 +112,7 @@ export class UserService {
       where: { userId: id },
       data: {
         lastLogin: new Date(),
-        lastLoginIp: ip,
+        // lastLoginIp field doesn't exist in the User model
       },
     });
   }
