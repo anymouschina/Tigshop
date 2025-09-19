@@ -1,21 +1,21 @@
-# Alipay\OpenAPISDK\AlipayEbppInvoiceApplystatusApi
+# Alipay\OpenAPISDK\AlipayEbppInvoiceApplyStatusApi
 
 All URIs are relative to https://openapi.alipay.com.
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**query()**](AlipayEbppInvoiceApplystatusApi.md#query) | **POST** /v3/alipay/ebpp/invoice/applystatus/query | 根据外部订单号查询开票状态
+[**notify()**](AlipayEbppInvoiceApplyStatusApi.md#notify) | **PUT** /v3/alipay/ebpp/invoice/apply/status/notify | 发票申请状态变更
 
 
-## `query()`
+## `notify()`
 
 ```php
-query($alipayEbppInvoiceApplystatusQueryModel): \Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplystatusQueryResponseModel
+notify($alipayEbppInvoiceApplyStatusNotifyModel): \Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplyStatusNotifyResponseModel
 ```
 
-根据外部订单号查询开票状态
+发票申请状态变更
 
-根据外部订单号查询开票状态，仅有申请状态无完整票据信息
+发票申请状态变更通知
 
 ### Example
 
@@ -25,7 +25,7 @@ require_once(__DIR__ . '/vendor/autoload.php');
 
 
 
-$apiInstance = new Alipay\OpenAPISDK\Api\AlipayEbppInvoiceApplystatusApi(
+$apiInstance = new Alipay\OpenAPISDK\Api\AlipayEbppInvoiceApplyStatusApi(
     // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
     // This is optional, `GuzzleHttp\Client` will be used as default.
     new GuzzleHttp\Client()
@@ -45,13 +45,13 @@ $alipayConfig->setEncryptKey('encrypt_key');
 $alipayConfigUtil = new \Alipay\OpenAPISDK\Util\AlipayConfigUtil($alipayConfig);
 $apiInstance->setAlipayConfigUtil($alipayConfigUtil);
 
-$alipayEbppInvoiceApplystatusQueryModel = new \Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplystatusQueryModel(); // \Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplystatusQueryModel
+$alipayEbppInvoiceApplyStatusNotifyModel = new \Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplyStatusNotifyModel(); // \Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplyStatusNotifyModel
 
 try {
-    $result = $apiInstance->query($alipayEbppInvoiceApplystatusQueryModel);
+    $result = $apiInstance->notify($alipayEbppInvoiceApplyStatusNotifyModel);
     print_r($result);
 } catch (Exception $e) {
-    echo 'Exception when calling AlipayEbppInvoiceApplystatusApi->query: ', $e->getMessage(), PHP_EOL;
+    echo 'Exception when calling AlipayEbppInvoiceApplyStatusApi->notify: ', $e->getMessage(), PHP_EOL;
 }
 ```
 
@@ -59,11 +59,11 @@ try {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **alipayEbppInvoiceApplystatusQueryModel** | **\Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplystatusQueryModel**|  | [optional]
+ **alipayEbppInvoiceApplyStatusNotifyModel** | **\Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplyStatusNotifyModel**|  | [optional]
 
 ### Return type
 
-**\Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplystatusQueryResponseModel**
+**\Alipay\OpenAPISDK\Model\AlipayEbppInvoiceApplyStatusNotifyResponseModel**
 
 ### Authorization
 
