@@ -51,8 +51,8 @@ export class FavoriteController {
    */
   @Get('detail')
   @ApiOperation({ summary: '获取收藏详情' })
-  async getFavoriteDetail(@Request() req, @Query('id') id: number) {
-    return this.favoriteService.getFavoriteDetail(req.user.userId, Number(id));
+  async getFavoriteDetail(@Request() req, @Query('id') id: number, @Query('type') type: string) {
+    return this.favoriteService.getFavoriteDetail(req.user.userId, Number(id), type as any);
   }
 
   /**
@@ -60,8 +60,8 @@ export class FavoriteController {
    */
   @Put('update')
   @ApiOperation({ summary: '更新收藏' })
-  async updateFavorite(@Request() req, @Query('id') id: number, @Body() updateFavoriteDto: UpdateFavoriteDto) {
-    return this.favoriteService.updateFavorite(req.user.userId, Number(id), updateFavoriteDto);
+  async updateFavorite(@Request() req, @Query('id') id: number, @Query('type') type: string, @Body() updateFavoriteDto: UpdateFavoriteDto) {
+    return this.favoriteService.updateFavorite(req.user.userId, Number(id), updateFavoriteDto, type as any);
   }
 
   /**
@@ -69,8 +69,8 @@ export class FavoriteController {
    */
   @Delete('delete')
   @ApiOperation({ summary: '删除收藏' })
-  async deleteFavorite(@Request() req, @Query('id') id: number) {
-    return this.favoriteService.deleteFavorite(req.user.userId, Number(id));
+  async deleteFavorite(@Request() req, @Query('id') id: number, @Query('type') type: string) {
+    return this.favoriteService.deleteFavorite(req.user.userId, Number(id), type as any);
   }
 
   /**

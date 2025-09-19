@@ -1,16 +1,31 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { Decimal } from '@prisma/client/runtime/library';
 
 export interface CartItem {
+  cartId: number;
   productId: number;
+  productSn: string;
+  picThumb: string;
+  marketPrice: number;
+  originalPrice: number;
   quantity: number;
-  selected?: boolean;
+  skuId: number;
+  skuData?: string;
+  productType: number;
+  isChecked: number;
+  shopId: number;
+  type: number;
+  salesmanId: number;
+  extraSkuData?: string;
 }
 
 export interface CartData {
   items: CartItem[];
   totalPrice: number;
   totalQuantity: number;
+  selectedTotalPrice: number;
+  selectedTotalQuantity: number;
 }
 
 @Injectable()
@@ -22,43 +37,46 @@ export class CartService {
    * @param userId 用户ID
    * @param productId 商品ID
    * @param quantity 数量
+   * @param skuId SKU ID
    * @returns 更新后的购物车
    */
-  async addItem(userId: number, productId: number, quantity: number = 1) {
+  async addItem(userId: number, productId: number, quantity: number = 1, skuId: number = 0) {
     // 验证商品是否存在且启用
     const product = await this.prisma.product.findUnique({
       where: { productId },
-      include: { Brand: true, Category: true },
+      include: { brand: true, category: true },
     });
 
     if (!product) {
       throw new NotFoundException('商品不存在');
     }
 
-    if (!product.isEnable) {
+    if (product.isDelete !== 0) {
       throw new BadRequestException('商品已下架');
     }
 
-    if (product.stock < quantity) {
+    // 检查库存
+    let stock = product.productStock;
+    if (skuId > 0) {
+      const sku = await this.prisma.productSku.findUnique({
+        where: { skuId },
+      });
+      if (!sku) {
+        throw new NotFoundException('SKU不存在');
+      }
+      stock = sku.skuStock;
+    }
+
+    if (stock < quantity) {
       throw new BadRequestException('库存不足');
     }
 
-    // 获取或创建用户购物车
-    let cart = await this.prisma.cart.findUnique({
-      where: { userId },
-    });
-
-    if (!cart) {
-      cart = await this.prisma.cart.create({
-        data: { userId },
-      });
-    }
-
-    // 检查购物车中是否已有该商品
-    const existingItem = await this.prisma.cartItem.findFirst({
+    // 检查购物车中是否已有该商品（相同SKU）
+    const existingItem = await this.prisma.cart.findFirst({
       where: {
-        cartId: cart.cartId,
+        userId,
         productId,
+        skuId,
       },
     });
 
@@ -67,21 +85,67 @@ export class CartService {
     if (existingItem) {
       // 更新数量
       const newQuantity = existingItem.quantity + quantity;
-      if (newQuantity > product.stock) {
+      if (newQuantity > stock) {
         throw new BadRequestException('库存不足');
       }
 
-      cartItem = await this.prisma.cartItem.update({
-        where: { cartItemId: existingItem.cartItemId },
-        data: { quantity: newQuantity },
+      cartItem = await this.prisma.cart.update({
+        where: { cartId: existingItem.cartId },
+        data: {
+          quantity: newQuantity,
+          updateTime: new Date(),
+        },
       });
     } else {
       // 添加新商品到购物车
-      cartItem = await this.prisma.cartItem.create({
+      const productData = await this.prisma.product.findUnique({
+        where: { productId },
+        select: {
+          productSn: true,
+          picThumb: true,
+          shopId: true,
+        },
+      });
+
+      if (!productData) {
+        throw new NotFoundException('商品信息不完整');
+      }
+
+      let skuData = null;
+      let marketPrice = 0;
+      let originalPrice = 0;
+
+      if (skuId > 0) {
+        const sku = await this.prisma.productSku.findUnique({
+          where: { skuId },
+        });
+        if (sku) {
+          skuData = sku.skuData;
+          marketPrice = Number(sku.skuMarketPrice);
+          originalPrice = Number(sku.skuPrice);
+        }
+      } else {
+        // Use product price if no SKU
+        marketPrice = Number(product.productPrice);
+        originalPrice = Number(product.productPrice);
+      }
+
+      cartItem = await this.prisma.cart.create({
         data: {
-          cartId: cart.cartId,
+          userId,
           productId,
+          productSn: productData.productSn,
+          picThumb: productData.picThumb || '',
+          marketPrice: marketPrice,
+          originalPrice: originalPrice,
           quantity,
+          skuId,
+          skuData,
+          productType: 1,
+          isChecked: 1,
+          shopId: productData.shopId || 0,
+          type: 1,
+          updateTime: new Date(),
         },
       });
     }
@@ -92,24 +156,20 @@ export class CartService {
   /**
    * 更新购物车商品数量
    * @param userId 用户ID
-   * @param cartItemId 购物车项ID
+   * @param cartId 购物车项ID
    * @param quantity 新数量
    * @returns 更新后的购物车
    */
-  async updateQuantity(userId: number, cartItemId: number, quantity: number) {
-    const cartItem = await this.prisma.cartItem.findUnique({
-      where: { cartItemId },
-      include: {
-        Product: true,
-        Cart: true,
-      },
+  async updateQuantity(userId: number, cartId: number, quantity: number) {
+    const cartItem = await this.prisma.cart.findUnique({
+      where: { cartId },
     });
 
     if (!cartItem) {
       throw new NotFoundException('购物车商品不存在');
     }
 
-    if (cartItem.Cart.userId !== userId) {
+    if (cartItem.userId !== userId) {
       throw new BadRequestException('无权操作此购物车商品');
     }
 
@@ -117,13 +177,30 @@ export class CartService {
       throw new BadRequestException('数量必须大于0');
     }
 
-    if (quantity > cartItem.Product.stock) {
+    // 检查库存
+    let stock = 0;
+    if (cartItem.skuId > 0) {
+      const sku = await this.prisma.productSku.findUnique({
+        where: { skuId: cartItem.skuId },
+      });
+      stock = sku?.skuStock || 0;
+    } else {
+      const product = await this.prisma.product.findUnique({
+        where: { productId: cartItem.productId },
+      });
+      stock = product?.productStock || 0;
+    }
+
+    if (quantity > stock) {
       throw new BadRequestException('库存不足');
     }
 
-    await this.prisma.cartItem.update({
-      where: { cartItemId },
-      data: { quantity },
+    await this.prisma.cart.update({
+      where: { cartId },
+      data: {
+        quantity,
+        updateTime: new Date(),
+      },
     });
 
     return this.getCart(userId);
@@ -132,25 +209,24 @@ export class CartService {
   /**
    * 删除购物车商品
    * @param userId 用户ID
-   * @param cartItemId 购物车项ID
+   * @param cartId 购物车项ID
    * @returns 更新后的购物车
    */
-  async removeItem(userId: number, cartItemId: number) {
-    const cartItem = await this.prisma.cartItem.findUnique({
-      where: { cartItemId },
-      include: { Cart: true },
+  async removeItem(userId: number, cartId: number) {
+    const cartItem = await this.prisma.cart.findUnique({
+      where: { cartId },
     });
 
     if (!cartItem) {
       throw new NotFoundException('购物车商品不存在');
     }
 
-    if (cartItem.Cart.userId !== userId) {
+    if (cartItem.userId !== userId) {
       throw new BadRequestException('无权操作此购物车商品');
     }
 
-    await this.prisma.cartItem.delete({
-      where: { cartItemId },
+    await this.prisma.cart.delete({
+      where: { cartId },
     });
 
     return this.getCart(userId);
@@ -159,24 +235,14 @@ export class CartService {
   /**
    * 清空购物车
    * @param userId 用户ID
-   * @returns 清空结果
+   * @returns 空购物车
    */
   async clearCart(userId: number) {
-    const cart = await this.prisma.cart.findUnique({
+    await this.prisma.cart.deleteMany({
       where: { userId },
     });
 
-    if (!cart) {
-      return { message: '购物车已经是空的' };
-    }
-
-    const result = await this.prisma.cartItem.deleteMany({
-      where: { cartId: cart.cartId },
-    });
-
-    return {
-      message: `已清空购物车，删除了 ${result.count} 件商品`,
-    };
+    return this.getCart(userId);
   }
 
   /**
@@ -184,114 +250,146 @@ export class CartService {
    * @param userId 用户ID
    * @returns 购物车数据
    */
-  async getCart(userId: number) {
-    const cart = await this.prisma.cart.findUnique({
+  async getCart(userId: number): Promise<CartData> {
+    const cartItems = await this.prisma.cart.findMany({
       where: { userId },
       include: {
-        CartItem: {
+        product: {
           include: {
-            Product: {
-              include: {
-                Brand: true,
-                Category: true,
-              },
-            },
+            brand: true,
+            category: true,
           },
-          orderBy: { createdAt: 'desc' },
         },
+      },
+      orderBy: {
+        updateTime: 'desc',
       },
     });
 
-    if (!cart) {
-      return {
-        items: [],
-        totalPrice: 0,
-        totalQuantity: 0,
-      };
-    }
+    const items = cartItems.map(item => ({
+      cartId: item.cartId,
+      productId: item.productId,
+      productSn: item.productSn,
+      picThumb: item.picThumb,
+      marketPrice: Number(item.marketPrice),
+      originalPrice: Number(item.originalPrice),
+      quantity: item.quantity,
+      skuId: item.skuId,
+      skuData: item.skuData,
+      productType: item.productType,
+      isChecked: item.isChecked,
+      shopId: item.shopId,
+      type: item.type,
+      salesmanId: item.salesmanId,
+      extraSkuData: item.extraSkuData,
+    }));
 
-    let totalPrice = 0;
-    let totalQuantity = 0;
-    const items = [];
-
-    for (const item of cart.CartItem) {
-      const itemPrice = Number(item.Product.price || 0);
-      const itemTotal = itemPrice * item.quantity;
-      totalPrice += itemTotal;
-      totalQuantity += item.quantity;
-
-      items.push({
-        cartItemId: item.cartItemId,
-        productId: item.productId,
-        quantity: item.quantity,
-        price: itemPrice,
-        selected: true, // 简化处理，所有商品默认选中
-        product: item.Product,
-        subtotal: itemTotal,
-      });
-    }
+    const totalPrice = items.reduce((sum, item) => sum + (item.originalPrice * item.quantity), 0);
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+    const selectedTotalPrice = items
+      .filter(item => item.isChecked === 1)
+      .reduce((sum, item) => sum + (item.originalPrice * item.quantity), 0);
+    const selectedTotalQuantity = items
+      .filter(item => item.isChecked === 1)
+      .reduce((sum, item) => sum + item.quantity, 0);
 
     return {
       items,
       totalPrice,
       totalQuantity,
+      selectedTotalPrice,
+      selectedTotalQuantity,
     };
   }
 
   /**
-   * 获取选中的购物车商品（简化版，返回所有商品）
+   * 选择/取消选择购物车商品
    * @param userId 用户ID
-   * @returns 选中的商品列表
+   * @param cartId 购物车项ID
+   * @param isChecked 是否选中
+   * @returns 更新后的购物车
    */
-  async getSelectedItems(userId: number) {
-    const cart = await this.prisma.cart.findUnique({
-      where: { userId },
-      include: {
-        CartItem: {
-          include: {
-            Product: {
-              include: {
-                Brand: true,
-                Category: true,
-              },
-            },
-          },
-        },
+  async updateSelected(userId: number, cartId: number, isChecked: number) {
+    const cartItem = await this.prisma.cart.findUnique({
+      where: { cartId },
+    });
+
+    if (!cartItem) {
+      throw new NotFoundException('购物车商品不存在');
+    }
+
+    if (cartItem.userId !== userId) {
+      throw new BadRequestException('无权操作此购物车商品');
+    }
+
+    await this.prisma.cart.update({
+      where: { cartId },
+      data: {
+        isChecked,
+        updateTime: new Date(),
       },
     });
 
-    if (!cart) {
-      return {
-        items: [],
-        totalPrice: 0,
-        totalQuantity: 0,
-      };
+    return this.getCart(userId);
+  }
+
+  /**
+   * 全选/取消全选购物车商品
+   * @param userId 用户ID
+   * @param isChecked 是否全选
+   * @returns 更新后的购物车
+   */
+  async updateAllSelected(userId: number, isChecked: number) {
+    await this.prisma.cart.updateMany({
+      where: { userId },
+      data: {
+        isChecked,
+        updateTime: new Date(),
+      },
+    });
+
+    return this.getCart(userId);
+  }
+
+  /**
+   * 批量删除购物车商品
+   * @param userId 用户ID
+   * @param cartIds 购物车项ID数组
+   * @returns 更新后的购物车
+   */
+  async batchRemoveItems(userId: number, cartIds: number[]) {
+    // 验证所有购物车项都属于该用户
+    const cartItems = await this.prisma.cart.findMany({
+      where: {
+        cartId: { in: cartIds },
+        userId,
+      },
+    });
+
+    if (cartItems.length !== cartIds.length) {
+      throw new BadRequestException('部分购物车商品不存在或无权操作');
     }
 
-    let totalPrice = 0;
-    let totalQuantity = 0;
-    const items = [];
+    await this.prisma.cart.deleteMany({
+      where: {
+        cartId: { in: cartIds },
+        userId,
+      },
+    });
 
-    for (const item of cart.CartItem) {
-      const itemPrice = Number(item.Product.price || 0);
-      const itemTotal = itemPrice * item.quantity;
-      totalPrice += itemTotal;
-      totalQuantity += item.quantity;
+    return this.getCart(userId);
+  }
 
-      items.push({
-        cartItemId: item.cartItemId,
-        productId: item.productId,
-        quantity: item.quantity,
-        price: itemPrice,
-        product: item.Product,
-        subtotal: itemTotal,
-      });
-    }
+  /**
+   * 获取购物车商品数量
+   * @param userId 用户ID
+   * @returns 购物车商品数量
+   */
+  async getCartCount(userId: number) {
+    const count = await this.prisma.cart.count({
+      where: { userId },
+    });
 
-    return {
-      items,
-      totalPrice,
-      totalQuantity,
-    };
+    return { count };
   }
 }

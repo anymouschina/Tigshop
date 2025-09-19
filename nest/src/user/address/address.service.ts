@@ -2,23 +2,21 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '../../database/database.service';
 
 export interface CreateAddressDto {
-  name: string;
+  consignee: string;
   mobile: string;
-  province: string;
-  city: string;
-  district: string;
+  regionIds: string;
+  regionNames: string;
   address: string;
-  isDefault?: boolean;
+  isDefault?: number;
 }
 
 export interface UpdateAddressDto {
-  name?: string;
+  consignee?: string;
   mobile?: string;
-  province?: string;
-  city?: string;
-  district?: string;
+  regionIds?: string;
+  regionNames?: string;
   address?: string;
-  isDefault?: boolean;
+  isDefault?: number;
 }
 
 @Injectable()
@@ -48,7 +46,7 @@ export class AddressService {
     ]);
 
     return {
-      list: addresses,
+      list: addresses.map(address => this.formatAddressResponse(address)),
       total,
       page,
       size,
@@ -62,7 +60,7 @@ export class AddressService {
   async getAddressDetail(userId: number, addressId: number) {
     const address = await this.prisma.userAddress.findFirst({
       where: {
-        id: addressId,
+        addressId,
         userId,
       },
     });
@@ -71,156 +69,164 @@ export class AddressService {
       throw new NotFoundException('地址不存在');
     }
 
-    return address;
+    return this.formatAddressResponse(address);
   }
 
   /**
-   * 添加地址 - 对齐PHP版本 user/address/create
+   * 创建地址 - 对齐PHP版本 user/address/create
    */
   async createAddress(userId: number, createAddressDto: CreateAddressDto) {
-    const { name, mobile, province, city, district, address, isDefault } = createAddressDto;
-
-    // 验证手机号格式
-    if (!this.validateMobile(mobile)) {
-      throw new BadRequestException('手机号格式不正确');
-    }
+    const { consignee, mobile, regionIds, regionNames, address, isDefault = 0 } = createAddressDto;
 
     // 如果设置为默认地址，先将其他地址设为非默认
-    if (isDefault) {
+    if (isDefault === 1) {
       await this.prisma.userAddress.updateMany({
         where: { userId },
-        data: { isDefault: false },
+        data: { isDefault: 0 },
       });
     }
 
-    // 创建新地址 (使用raw SQL避免Prisma XOR类型问题)
-    const newAddress = await this.prisma.$queryRaw`
-      INSERT INTO "UserAddress" ("userId", "name", "mobile", "province", "city", "district", "address", "isDefault", "createdAt", "updatedAt")
-      VALUES (${userId}, ${name}, ${mobile}, ${province}, ${city}, ${district}, ${address}, ${isDefault || false}, NOW(), NOW())
-      RETURNING *
-    `;
+    const newAddress = await this.prisma.userAddress.create({
+      data: {
+        userId,
+        consignee,
+        mobile,
+        regionIds,
+        regionNames,
+        address,
+        isDefault,
+      },
+    });
 
-    return newAddress;
+    return this.formatAddressResponse(newAddress);
   }
 
   /**
    * 更新地址 - 对齐PHP版本 user/address/update
    */
   async updateAddress(userId: number, addressId: number, updateAddressDto: UpdateAddressDto) {
-    // 检查地址是否存在且属于当前用户
+    // 验证地址是否存在且属于该用户
     const existingAddress = await this.prisma.userAddress.findFirst({
       where: {
-        id: addressId,
+        addressId,
         userId,
       },
     });
 
     if (!existingAddress) {
       throw new NotFoundException('地址不存在');
-    }
-
-    // 如果更新手机号，验证格式
-    if (updateAddressDto.mobile && !this.validateMobile(updateAddressDto.mobile)) {
-      throw new BadRequestException('手机号格式不正确');
     }
 
     // 如果设置为默认地址，先将其他地址设为非默认
-    if (updateAddressDto.isDefault) {
+    if (updateAddressDto.isDefault === 1) {
       await this.prisma.userAddress.updateMany({
         where: {
           userId,
-          id: { not: addressId },
+          addressId: { not: addressId },
         },
-        data: { isDefault: false },
+        data: { isDefault: 0 },
       });
     }
 
-    // 更新地址
     const updatedAddress = await this.prisma.userAddress.update({
-      where: { id: addressId },
+      where: { addressId },
       data: updateAddressDto,
     });
 
-    return updatedAddress;
+    return this.formatAddressResponse(updatedAddress);
   }
 
   /**
-   * 删除地址 - 对齐PHP版本 user/address/del
+   * 删除地址 - 对齐PHP版本 user/address/delete
    */
   async deleteAddress(userId: number, addressId: number) {
-    // 检查地址是否存在且属于当前用户
-    const existingAddress = await this.prisma.userAddress.findFirst({
+    // 验证地址是否存在且属于该用户
+    const address = await this.prisma.userAddress.findFirst({
       where: {
-        id: addressId,
+        addressId,
         userId,
       },
     });
 
-    if (!existingAddress) {
+    if (!address) {
       throw new NotFoundException('地址不存在');
     }
 
-    // 删除地址
     await this.prisma.userAddress.delete({
-      where: { id: addressId },
+      where: { addressId },
     });
 
     return { message: '地址删除成功' };
   }
 
   /**
-   * 设置默认地址 - 对齐PHP版本 user/address/setSelected
+   * 设置默认地址 - 对齐PHP版本 user/address/setDefault
    */
   async setDefaultAddress(userId: number, addressId: number) {
-    // 检查地址是否存在且属于当前用户
-    const existingAddress = await this.prisma.userAddress.findFirst({
+    // 验证地址是否存在且属于该用户
+    const address = await this.prisma.userAddress.findFirst({
       where: {
-        id: addressId,
+        addressId,
         userId,
       },
     });
 
-    if (!existingAddress) {
+    if (!address) {
       throw new NotFoundException('地址不存在');
     }
 
-    // 开启事务更新默认地址
-    await this.prisma.$transaction(async (tx) => {
-      // 将所有地址设为非默认
-      await tx.userAddress.updateMany({
-        where: { userId },
-        data: { isDefault: false },
-      });
+    // 先将所有地址设为非默认
+    await this.prisma.userAddress.updateMany({
+      where: { userId },
+      data: { isDefault: 0 },
+    });
 
-      // 将指定地址设为默认
-      await tx.userAddress.update({
-        where: { id: addressId },
-        data: { isDefault: true },
-      });
+    // 设置指定地址为默认
+    await this.prisma.userAddress.update({
+      where: { addressId },
+      data: { isDefault: 1 },
     });
 
     return { message: '默认地址设置成功' };
   }
 
   /**
-   * 获取默认地址
+   * 获取默认地址 - 对齐PHP版本 user/address/getDefault
    */
   async getDefaultAddress(userId: number) {
     const address = await this.prisma.userAddress.findFirst({
       where: {
         userId,
-        isDefault: true,
+        isDefault: 1,
       },
     });
 
-    return address;
+    if (!address) {
+      // 如果没有默认地址，返回第一个地址
+      const firstAddress = await this.prisma.userAddress.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'asc' },
+      });
+      return firstAddress ? this.formatAddressResponse(firstAddress) : null;
+    }
+
+    return this.formatAddressResponse(address);
   }
 
   /**
-   * 验证手机号格式
+   * 格式化地址响应
    */
-  private validateMobile(mobile: string): boolean {
-    const mobileRegex = /^1[3-9]\d{9}$/;
-    return mobileRegex.test(mobile);
+  private formatAddressResponse(address: any) {
+    return {
+      id: address.addressId,
+      consignee: address.consignee,
+      mobile: address.mobile,
+      regionIds: address.regionIds ? JSON.parse(address.regionIds) : [],
+      regionNames: address.regionNames ? JSON.parse(address.regionNames) : [],
+      address: address.address,
+      isDefault: address.isDefault === 1,
+      createdAt: address.createdAt,
+      updatedAt: address.updatedAt,
+    };
   }
 }

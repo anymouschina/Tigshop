@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { Decimal } from '@prisma/client/runtime/library';
 import {
   CreateCouponDto,
   UpdateCouponDto,
@@ -61,21 +62,29 @@ export class CouponService {
     const mapped: any = {};
 
     if (updateDto.name !== undefined) mapped.couponName = updateDto.name;
-    if (updateDto.code !== undefined) mapped.couponCode = updateDto.code;
     if (updateDto.type !== undefined) mapped.couponType = updateDto.type === CouponType.FIXED ? 1 : 2;
     if (updateDto.value !== undefined) {
       if (updateDto.type === CouponType.FIXED) {
-        mapped.discountAmount = updateDto.value;
+        mapped.couponMoney = new Decimal(updateDto.value);
       } else {
-        mapped.discountRate = updateDto.value;
+        mapped.couponDiscount = new Decimal(updateDto.value);
       }
     }
-    if (updateDto.minAmount !== undefined) mapped.minAmount = updateDto.minAmount;
-    if (updateDto.quantity !== undefined) mapped.totalNum = updateDto.quantity;
-    if (updateDto.description !== undefined) mapped.description = updateDto.description;
-    if (updateDto.startTime !== undefined) mapped.startTime = updateDto.startTime;
-    if (updateDto.endTime !== undefined) mapped.endTime = updateDto.endTime;
-    if (updateDto.status !== undefined) mapped.isEnable = updateDto.status;
+    if (updateDto.minAmount !== undefined) mapped.minOrderAmount = new Decimal(updateDto.minAmount);
+    if (updateDto.maxDiscount !== undefined) mapped.maxOrderAmount = new Decimal(updateDto.maxDiscount);
+    if (updateDto.quantity !== undefined) mapped.limitNum = updateDto.quantity;
+    if (updateDto.description !== undefined) mapped.couponDesc = updateDto.description;
+    if (updateDto.startTime !== undefined) {
+      mapped.useStartDate = new Date(updateDto.startTime);
+      mapped.sendStartDate = new Date(updateDto.startTime);
+    }
+    if (updateDto.endTime !== undefined) {
+      mapped.useEndDate = new Date(updateDto.endTime);
+      mapped.sendEndDate = new Date(updateDto.endTime);
+    }
+    if (updateDto.status !== undefined) {
+        mapped.isDelete = updateDto.status === CouponStatus.ACTIVE ? 0 : 1;
+      }
 
     return mapped;
   }
@@ -86,13 +95,13 @@ export class CouponService {
   async createCoupon(createCouponDto: CreateCouponDto): Promise<CouponResponse> {
     const { name, code, type, value, minAmount, maxDiscount, quantity, description, startTime, endTime } = createCouponDto;
 
-    // 检查优惠券代码是否已存在
+    // 检查优惠券代码是否已存在 - 使用新的字段名
     const existingCoupon = await this.prisma.coupon.findFirst({
-      where: { couponCode: code }
+      where: { couponName: name }
     });
 
     if (existingCoupon) {
-      throw new BadRequestException('优惠券代码已存在');
+      throw new BadRequestException('优惠券名称已存在');
     }
 
     // 验证时间范围
@@ -105,14 +114,25 @@ export class CouponService {
       throw new BadRequestException('百分比类型的最大折扣不能大于折扣值');
     }
 
-    // 创建优惠券
-    const coupon = await this.prisma.$queryRaw`
-      INSERT INTO "Coupon" (couponName, couponCode, couponType, discountAmount, "minAmount", discountRate, totalNum, "usedNum", isEnable, "startTime", "endTime", "createdAt", "updatedAt")
-      VALUES (${name}, ${code}, ${type === CouponType.FIXED ? 1 : 2}, ${type === CouponType.FIXED ? value : null}, ${minAmount}, ${type === CouponType.PERCENTAGE ? value : null}, ${quantity}, 0, true, ${startTime}, ${endTime}, NOW(), NOW())
-      RETURNING *
-    ` as any[];
+    // 创建优惠券 - 使用新的字段名
+    const coupon = await this.prisma.coupon.create({
+      data: {
+        couponName: name,
+        couponType: type === CouponType.FIXED ? 1 : 2,
+        couponMoney: type === CouponType.FIXED ? new Decimal(value) : new Decimal(0),
+        couponDiscount: type === CouponType.PERCENTAGE ? new Decimal(value) : new Decimal(0),
+        minOrderAmount: new Decimal(minAmount),
+        maxOrderAmount: maxDiscount ? new Decimal(maxDiscount) : new Decimal(0),
+        limitNum: quantity,
+        couponDesc: description || '',
+        useStartDate: new Date(startTime),
+        useEndDate: new Date(endTime),
+        sendStartDate: new Date(startTime),
+        sendEndDate: new Date(endTime),
+      }
+    });
 
-    return this.formatCouponResponse(coupon[0]);
+    return this.formatCouponResponse(coupon);
   }
 
   /**
@@ -123,8 +143,9 @@ export class CouponService {
     const skip = (page - 1) * size;
 
     const whereClause: any = {};
-    if (status) whereClause.status = status;
-    if (type) whereClause.type = type;
+    // 使用新的字段名
+    if (status) whereClause.isDelete = status === 'ACTIVE' ? 0 : 1;
+    if (type) whereClause.couponType = type === CouponType.FIXED ? 1 : 2;
 
     const [coupons, total] = await Promise.all([
       this.prisma.coupon.findMany({
@@ -132,7 +153,7 @@ export class CouponService {
         skip,
         take: size,
         orderBy: [
-          { createdAt: 'desc' },
+          { addTime: 'desc' },
           { couponId: 'desc' }
         ],
       }),
@@ -158,7 +179,15 @@ export class CouponService {
     const skip = (page - 1) * size;
 
     const whereClause: any = { userId };
-    if (status) whereClause.status = status;
+    // 使用新的字段名和逻辑
+    if (status === 'USED') {
+      whereClause.usedTime = { not: null };
+    } else if (status === 'EXPIRED') {
+      whereClause.endDate = { lt: new Date() };
+    } else {
+      whereClause.usedTime = null;
+      whereClause.endDate = { gte: new Date() };
+    }
 
     const [userCoupons, total] = await Promise.all([
       this.prisma.userCoupon.findMany({
@@ -167,10 +196,10 @@ export class CouponService {
         take: size,
         orderBy: [
           { createdAt: 'desc' },
-          { userCouponId: 'desc' }
+          { id: 'desc' }
         ],
         include: {
-          Coupon: true,
+          coupon: true,
         },
       }),
       this.prisma.userCoupon.count({
@@ -215,24 +244,24 @@ export class CouponService {
       throw new NotFoundException('优惠券不存在');
     }
 
-    // 如果修改了代码，检查是否与其他优惠券冲突
-    if (updateCouponDto.code && updateCouponDto.code !== existingCoupon.couponCode) {
-      const codeConflict = await this.prisma.coupon.findFirst({
+    // 如果修改了名称，检查是否与其他优惠券冲突
+    if (updateCouponDto.name && updateCouponDto.name !== existingCoupon.couponName) {
+      const nameConflict = await this.prisma.coupon.findFirst({
         where: {
-          couponCode: updateCouponDto.code,
+          couponName: updateCouponDto.name,
           couponId: { not: couponId }
         },
       });
 
-      if (codeConflict) {
-        throw new BadRequestException('优惠券代码已存在');
+      if (nameConflict) {
+        throw new BadRequestException('优惠券名称已存在');
       }
     }
 
-    // 更新优惠券
+    // 更新优惠券 - 使用映射方法
     const updatedCoupon = await this.prisma.coupon.update({
       where: { couponId: couponId },
-      data: updateCouponDto,
+      data: this.mapUpdateDtoToCoupon(updateCouponDto),
     });
 
     return this.formatCouponResponse(updatedCoupon);
@@ -255,7 +284,7 @@ export class CouponService {
     const usedCount = await this.prisma.userCoupon.count({
       where: {
         couponId,
-        status: 1
+        usedTime: { not: null }
       },
     });
 
@@ -278,8 +307,8 @@ export class CouponService {
     // 检查优惠券是否存在且可领取
     const coupon = await this.prisma.coupon.findFirst({
       where: {
-        id: couponId,
-        status: 'ACTIVE'
+        couponId: couponId,
+        isDelete: 0
       },
     });
 
@@ -289,12 +318,15 @@ export class CouponService {
 
     // 检查优惠券是否在有效期内
     const now = new Date();
-    if (now < new Date(coupon.startTime) || now > new Date(coupon.endTime)) {
+    if (now < new Date(coupon.useStartDate) || now > new Date(coupon.useEndDate)) {
       throw new BadRequestException('优惠券不在有效期内');
     }
 
     // 检查优惠券是否还有库存
-    if (coupon.usedQuantity >= coupon.quantity) {
+    const currentSendCount = await this.prisma.userCoupon.count({
+      where: { couponId }
+    });
+    if (currentSendCount >= coupon.limitNum) {
       throw new BadRequestException('优惠券已领完');
     }
 
@@ -310,21 +342,15 @@ export class CouponService {
       throw new BadRequestException('您已领取过该优惠券');
     }
 
-    // 领取优惠券
-    const userCoupon = await this.prisma.$queryRaw`
-      INSERT INTO "UserCoupon" ("userId", "couponId", status, "isUsed", "createdAt", "updatedAt")
-      VALUES (${userId}, ${couponId}, 'ACTIVE', false, NOW(), NOW())
-      RETURNING *
-    ` as any[];
-
-    // 更新优惠券已领取数量
-    await this.prisma.coupon.update({
-      where: { couponId: couponId },
+    // 领取优惠券 - 使用新的字段名
+    const userCoupon = await this.prisma.userCoupon.create({
       data: {
-        usedQuantity: {
-          increment: 1,
-        },
-      },
+        userId,
+        couponId,
+        couponSn: `CPN${Date.now()}`,
+        startDate: coupon.useStartDate,
+        endDate: coupon.useEndDate,
+      }
     });
 
     return { message: '优惠券领取成功' };
@@ -336,9 +362,9 @@ export class CouponService {
   async validateCoupon(userId: number, validateCouponDto: ValidateCouponDto): Promise<CouponValidationResponse> {
     const { code, orderAmount } = validateCouponDto;
 
-    // 查找优惠券
+    // 查找优惠券 - 通过优惠券名称查找
     const coupon = await this.prisma.coupon.findFirst({
-      where: { code },
+      where: { couponName: code },
     });
 
     if (!coupon) {
@@ -350,7 +376,7 @@ export class CouponService {
     }
 
     // 检查优惠券状态
-    if (coupon.status !== 'ACTIVE') {
+    if (coupon.isDelete !== 0) {
       return {
         isValid: false,
         discountAmount: 0,
@@ -360,7 +386,7 @@ export class CouponService {
 
     // 检查优惠券有效期
     const now = new Date();
-    if (now < new Date(coupon.startTime) || now > new Date(coupon.endTime)) {
+    if (now < new Date(coupon.useStartDate) || now > new Date(coupon.useEndDate)) {
       return {
         isValid: false,
         discountAmount: 0,
@@ -369,7 +395,10 @@ export class CouponService {
     }
 
     // 检查是否还有库存
-    if (coupon.usedQuantity >= coupon.quantity) {
+    const currentSendCount = await this.prisma.userCoupon.count({
+      where: { couponId: coupon.couponId }
+    });
+    if (currentSendCount >= coupon.limitNum) {
       return {
         isValid: false,
         discountAmount: 0,
@@ -381,9 +410,8 @@ export class CouponService {
     const userCoupon = await this.prisma.userCoupon.findFirst({
       where: {
         userId,
-        couponId: coupon.id,
-        status: 'ACTIVE',
-        status: 0,
+        couponId: coupon.couponId,
+        usedTime: null,
       },
     });
 
@@ -396,23 +424,23 @@ export class CouponService {
     }
 
     // 检查最低消费金额
-    if (orderAmount < coupon.minAmount) {
+    if (orderAmount < Number(coupon.minOrderAmount)) {
       return {
         isValid: false,
         discountAmount: 0,
-        message: `订单金额未达到最低消费金额 ${coupon.minAmount} 元`,
+        message: `订单金额未达到最低消费金额 ${coupon.minOrderAmount} 元`,
       };
     }
 
     // 计算折扣金额
     let discountAmount = 0;
-    if (coupon.type === CouponType.FIXED) {
-      discountAmount = coupon.value;
-    } else if (coupon.type === CouponType.PERCENTAGE) {
-      discountAmount = orderAmount * (coupon.value / 100);
+    if (coupon.couponType === 1) { // FIXED
+      discountAmount = Number(coupon.couponMoney);
+    } else if (coupon.couponType === 2) { // PERCENTAGE
+      discountAmount = orderAmount * (Number(coupon.couponDiscount) / 100);
       // 应用最大折扣限制
-      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-        discountAmount = coupon.maxDiscount;
+      if (coupon.maxOrderAmount && discountAmount > Number(coupon.maxOrderAmount)) {
+        discountAmount = Number(coupon.maxOrderAmount);
       }
     }
 
@@ -446,17 +474,15 @@ export class CouponService {
       throw new BadRequestException('优惠券验证失败');
     }
 
-    // 标记优惠券为已使用
+    // 标记优惠券为已使用 - 使用新的字段名
     await this.prisma.userCoupon.updateMany({
       where: {
         userId,
         couponId: validation.coupon.id,
-        status: 0,
+        usedTime: null,
       },
       data: {
-        status: 1,
-        usedTime: new Date().toISOString(),
-        status: 'USED',
+        usedTime: new Date(),
       },
     });
 
@@ -474,8 +500,7 @@ export class CouponService {
     const userCoupons = await this.prisma.userCoupon.findMany({
       where: {
         userId,
-        status: 'ACTIVE',
-        status: 0,
+        usedTime: null,
       },
       include: {
         coupon: true,
@@ -487,22 +512,21 @@ export class CouponService {
     const now = new Date();
 
     for (const userCoupon of userCoupons) {
-      const coupon = userCoupon.Coupon;
+      const coupon = userCoupon.coupon;
 
       // 检查优惠券状态和有效期
-      if (coupon.status !== 'ACTIVE') continue;
-      if (now < new Date(coupon.startTime) || now > new Date(coupon.endTime)) continue;
-      if (coupon.usedQuantity >= coupon.quantity) continue;
-      if (orderAmount < coupon.minAmount) continue;
+      if (coupon.isDelete !== 0) continue;
+      if (now < new Date(coupon.useStartDate) || now > new Date(coupon.useEndDate)) continue;
+      if (orderAmount < Number(coupon.minOrderAmount)) continue;
 
       // 计算折扣金额
       let discountAmount = 0;
-      if (coupon.type === CouponType.FIXED) {
-        discountAmount = coupon.value;
-      } else if (coupon.type === CouponType.PERCENTAGE) {
-        discountAmount = orderAmount * (coupon.value / 100);
-        if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-          discountAmount = coupon.maxDiscount;
+      if (coupon.couponType === 1) { // FIXED
+        discountAmount = Number(coupon.couponMoney);
+      } else if (coupon.couponType === 2) { // PERCENTAGE
+        discountAmount = orderAmount * (Number(coupon.couponDiscount) / 100);
+        if (coupon.maxOrderAmount && discountAmount > Number(coupon.maxOrderAmount)) {
+          discountAmount = Number(coupon.maxOrderAmount);
         }
       }
 
@@ -529,17 +553,17 @@ export class CouponService {
     return {
       id: coupon.couponId,
       name: coupon.couponName,
-      code: coupon.couponCode,
+      code: coupon.couponName, // 使用优惠券名称作为代码
       type: coupon.couponType === 1 ? CouponType.FIXED : CouponType.PERCENTAGE,
-      value: Number(coupon.discountAmount || coupon.discountRate),
-      minAmount: Number(coupon.minAmount),
-      maxDiscount: coupon.discountRate ? Number(coupon.discountRate) : undefined,
-      quantity: coupon.totalNum,
-      usedQuantity: coupon.usedNum,
-      description: coupon.description,
-      startTime: coupon.startTime,
-      endTime: coupon.endTime,
-      status: coupon.isEnable ? CouponStatus.ACTIVE : CouponStatus.INACTIVE,
+      value: Number(coupon.couponMoney || coupon.couponDiscount),
+      minAmount: Number(coupon.minOrderAmount),
+      maxDiscount: coupon.maxOrderAmount ? Number(coupon.maxOrderAmount) : undefined,
+      quantity: coupon.limitNum,
+      usedQuantity: 0, // 暂时设为0，因为新结构中没有直接的已使用数量字段
+      description: coupon.couponDesc,
+      startTime: coupon.useStartDate,
+      endTime: coupon.useEndDate,
+      status: coupon.isDelete === 0 ? CouponStatus.ACTIVE : CouponStatus.INACTIVE,
     };
   }
 
@@ -547,21 +571,21 @@ export class CouponService {
    * 格式化用户优惠券响应
    */
   private formatUserCouponResponse(userCoupon: any): UserCouponResponse {
-    const coupon = userCoupon.Coupon;
+    const coupon = userCoupon.coupon;
     return {
-      id: userCoupon.userCouponId,
+      id: userCoupon.id,
       couponId: userCoupon.couponId,
       couponName: coupon.couponName,
-      code: coupon.couponCode,
+      code: coupon.couponName, // 使用优惠券名称作为代码
       type: coupon.couponType === 1 ? CouponType.FIXED : CouponType.PERCENTAGE,
-      value: Number(coupon.discountAmount || coupon.discountRate),
-      minAmount: Number(coupon.minAmount),
-      maxDiscount: coupon.discountRate ? Number(coupon.discountRate) : undefined,
-      description: coupon.description,
-      startTime: coupon.startTime,
-      endTime: coupon.endTime,
-      status: userCoupon.status === 1 ? CouponStatus.ACTIVE : CouponStatus.USED,
-      isUsed: userCoupon.status !== 0,
+      value: Number(coupon.couponMoney || coupon.couponDiscount),
+      minAmount: Number(coupon.minOrderAmount),
+      maxDiscount: coupon.maxOrderAmount ? Number(coupon.maxOrderAmount) : undefined,
+      description: coupon.couponDesc,
+      startTime: userCoupon.startDate,
+      endTime: userCoupon.endDate,
+      status: userCoupon.usedTime ? CouponStatus.USED : CouponStatus.ACTIVE,
+      isUsed: userCoupon.usedTime !== null,
       usedTime: userCoupon.usedTime,
     };
   }

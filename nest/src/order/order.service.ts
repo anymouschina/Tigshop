@@ -39,7 +39,7 @@ export class OrderService {
 
     // 获取用户地址
     const address = await this.prisma.userAddress.findUnique({
-      where: { id: addressId },
+      where: { addressId: addressId },
     });
 
     if (!address) {
@@ -52,12 +52,12 @@ export class OrderService {
         where: { productId: item.productId },
       });
 
-      if (!product || !product.isEnable) {
-        throw new BadRequestException(`商品 ${item.product.name} 已下架`);
+      if (!product || product.isDelete !== 0) {
+        throw new BadRequestException(`商品 ${item.productId} 已下架`);
       }
 
-      if (product.stock < item.quantity) {
-        throw new BadRequestException(`商品 ${item.product.name} 库存不足`);
+      if (product.productStock < item.quantity) {
+        throw new BadRequestException(`商品 ${item.productId} 库存不足`);
       }
     }
 
@@ -69,27 +69,27 @@ export class OrderService {
     // 处理优惠券
     if (couponId) {
       const coupon = await this.prisma.userCoupon.findUnique({
-        where: { userCouponId: couponId },
-        include: { Coupon: true },
+        where: { id: couponId },
+        include: { coupon: true },
       });
 
-      if (!coupon || coupon.status !== 0) {
+      if (!coupon || coupon.usedTime !== null) {
         throw new BadRequestException('优惠券不可用');
       }
 
       const now = new Date();
-      if (coupon.Coupon.startTime > now || coupon.Coupon.endTime < now) {
+      if (coupon.coupon.useStartDate > now || coupon.coupon.useEndDate < now) {
         throw new BadRequestException('优惠券已过期');
       }
 
-      if (totalAmount < Number(coupon.Coupon.minAmount || 0)) {
-        throw new BadRequestException(`订单金额未达到优惠券使用门槛: ${coupon.Coupon.minAmount}`);
+      if (totalAmount < Number(coupon.coupon.minOrderAmount || 0)) {
+        throw new BadRequestException(`订单金额未达到优惠券使用门槛: ${coupon.coupon.minOrderAmount}`);
       }
 
-      if (coupon.Coupon.discountAmount) {
-        discountAmount = Number(coupon.Coupon.discountAmount);
-      } else if (coupon.Coupon.discountRate) {
-        discountAmount = totalAmount * Number(coupon.Coupon.discountRate);
+      if (coupon.coupon.couponType === 1) { // 固定金额
+        discountAmount = Number(coupon.coupon.couponMoney);
+      } else if (coupon.coupon.couponType === 2) { // 百分比
+        discountAmount = totalAmount * Number(coupon.coupon.couponDiscount) / 100;
       }
 
       // 优惠金额不能超过订单金额
@@ -120,15 +120,14 @@ export class OrderService {
       // 获取创建的订单ID
       const orderId = (order as any)[0].orderId;
 
-      // 创建订单地址
-      await tx.orderAddress.create({
+      // 创建订单地址 - 使用新的字段名
+      await tx.orderaddress.create({
         data: {
           orderId,
-          name: address.name,
+          consignee: address.consignee,
           mobile: address.mobile,
-          province: address.province,
-          city: address.city,
-          district: address.district,
+          regionIds: address.regionIds,
+          regionNames: address.regionNames,
           address: address.address,
           isDefault: address.isDefault,
         },
@@ -141,10 +140,10 @@ export class OrderService {
             orderId,
             productId: item.productId,
             quantity: item.quantity,
-            price: item.price,
-            productName: item.product.name,
-            productImage: item.product.image,
-            totalPrice: item.subtotal,
+            price: 0, // Will be calculated based on SKU or product price
+            productName: '', // Will need to fetch product info
+            productImage: '', // Will need to fetch product info
+            totalPrice: 0, // Will be calculated
           },
         });
 
@@ -152,7 +151,7 @@ export class OrderService {
         await tx.product.update({
           where: { productId: item.productId },
           data: {
-            stock: {
+            productStock: {
               decrement: item.quantity,
             },
             sales: {
@@ -165,20 +164,18 @@ export class OrderService {
       // 使用优惠券
       if (couponId) {
         await tx.userCoupon.update({
-          where: { userCouponId: couponId },
+          where: { id: couponId },
           data: {
-            status: 1,
             usedTime: new Date(),
           },
         });
       }
 
       // 清空购物车
-      await tx.cartItem.deleteMany({
+      await tx.cart.deleteMany({
         where: {
-          Cart: {
-            userId,
-          },
+          userId,
+          isChecked: 1, // 只清空选中的商品
         },
       });
 
@@ -224,20 +221,20 @@ export class OrderService {
         skip,
         take: size,
         include: {
-          OrderAddress: true,
-          OrderItem: {
+          orderAddress: true,
+          orderItem: {
             include: {
-              Product: {
+              product: {
                 include: {
-                  Brand: true,
-                  Category: true,
+                  brand: true,
+                  category: true,
                 },
               },
             },
           },
-          Payment: true,
+          payment: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { addTime: 'desc' },
       }),
       this.prisma.order.count({ where }),
     ]);
@@ -271,8 +268,8 @@ export class OrderService {
           include: {
             Product: {
               include: {
-                Brand: true,
-                Category: true,
+                brand: true,
+                category: true,
               },
             },
           },

@@ -111,7 +111,7 @@ export class UserService {
     return this.databaseService.user.update({
       where: { userId: id },
       data: {
-        lastLoginTime: new Date(),
+        lastLogin: new Date(),
         lastLoginIp: ip,
       },
     });

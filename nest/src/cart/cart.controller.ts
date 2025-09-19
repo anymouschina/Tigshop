@@ -35,12 +35,13 @@ export class CartController {
   @ApiOperation({ summary: '添加商品到购物车' })
   async addToCart(
     @Request() req,
-    @Query() params: { productId: number; quantity?: number },
+    @Query() params: { productId: number; quantity?: number; skuId?: number },
   ) {
     return this.cartService.addItem(
       req.user.userId,
       Number(params.productId),
       Number(params.quantity) || 1,
+      Number(params.skuId) || 0,
     );
   }
 
@@ -51,16 +52,22 @@ export class CartController {
   @ApiOperation({ summary: '更新购物车商品' })
   async updateItem(
     @Request() req,
-    @Body() data: { cartItemId: number; quantity?: number; selected?: boolean },
+    @Body() data: { cartId: number; quantity?: number; selected?: boolean },
   ) {
     if (data.quantity !== undefined) {
       return this.cartService.updateQuantity(
         req.user.userId,
-        data.cartItemId,
+        data.cartId,
         data.quantity,
       );
     }
-    // 如果只是更新选中状态，暂时返回成功（后续可扩展）
+    if (data.selected !== undefined) {
+      return this.cartService.updateSelected(
+        req.user.userId,
+        data.cartId,
+        data.selected ? 1 : 0,
+      );
+    }
     return { success: true };
   }
 
@@ -71,10 +78,24 @@ export class CartController {
   @ApiOperation({ summary: '更新购物车商品选中状态' })
   async updateCheck(
     @Request() req,
-    @Body() data: { cartItemIds: number[]; selected: boolean },
+    @Body() data: { cartIds: number[]; selected: boolean },
   ) {
-    // 简化实现，返回成功
-    return { success: true };
+    if (data.cartIds && data.cartIds.length > 0) {
+      // 批量更新选中状态
+      for (const cartId of data.cartIds) {
+        await this.cartService.updateSelected(
+          req.user.userId,
+          cartId,
+          data.selected ? 1 : 0,
+        );
+      }
+      return { success: true };
+    }
+    // 全选/取消全选
+    return this.cartService.updateAllSelected(
+      req.user.userId,
+      data.selected ? 1 : 0,
+    );
   }
 
   /**
@@ -82,8 +103,8 @@ export class CartController {
    */
   @Post('removeItem')
   @ApiOperation({ summary: '删除购物车商品' })
-  async removeItem(@Request() req, @Body() data: { cartItemId: number }) {
-    return this.cartService.removeItem(req.user.userId, data.cartItemId);
+  async removeItem(@Request() req, @Body() data: { cartId: number }) {
+    return this.cartService.removeItem(req.user.userId, data.cartId);
   }
 
   /**
@@ -101,11 +122,7 @@ export class CartController {
   @Get('getCount')
   @ApiOperation({ summary: '获取购物车商品数量' })
   async getCartCount(@Request() req) {
-    const cart = await this.cartService.getCart(req.user.userId);
-    return {
-      count: cart.totalQuantity,
-      totalPrice: cart.totalPrice,
-    };
+    return this.cartService.getCartCount(req.user.userId);
   }
 
   /**

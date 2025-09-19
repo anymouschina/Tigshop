@@ -143,8 +143,8 @@ export class ProductService {
         take: size,
         orderBy: { [sortField]: sortOrder },
         include: {
-          Brand: true,
-          Category: true,
+          brand: true,
+          category: true,
         },
       }),
       this.prisma.product.count({ where }),
@@ -168,8 +168,8 @@ export class ProductService {
     const product = await this.prisma.product.findUnique({
       where: { productId: id },
       include: {
-        Brand: true,
-        Category: true,
+        brand: true,
+        category: true,
       },
     });
 

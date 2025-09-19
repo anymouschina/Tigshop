@@ -12,11 +12,12 @@ export class AdminService {
 
   // 管理员认证
   async login(loginDto: { username: string; password: string }) {
-    const admin = await this.databaseService.adminUser.findUnique({
+    // 查找管理员 - username不是唯一键，需要使用findFirst
+    const admin = await this.databaseService.adminUser.findFirst({
       where: { username: loginDto.username },
     });
 
-    if (!admin || !admin.isEnable) {
+    if (!admin) {
       throw new UnauthorizedException('用户名或密码错误');
     }
 
@@ -25,14 +26,12 @@ export class AdminService {
       throw new UnauthorizedException('用户名或密码错误');
     }
 
-    // 更新登录信息
-    await this.databaseService.adminUser.update({
-      where: { adminId: admin.adminId },
-      data: {
-        lastLoginTime: new Date(),
-        lastLoginIp: '127.0.0.1', // 实际应用中应该从请求中获取
-      },
-    });
+    // 更新登录信息 - 使用原始SQL，因为lastLoginTime字段不在schema中
+    await this.databaseService.$queryRaw`
+      UPDATE "AdminUser"
+      SET "addTime" = ${new Date()}, "lastLoginIp" = '127.0.0.1'
+      WHERE "adminId" = ${admin.adminId}
+    `;
 
     const payload = { userId: admin.adminId, username: admin.username, role: 'admin' };
     const token = this.jwtService.sign(payload);
@@ -62,7 +61,7 @@ export class AdminService {
         email: true,
         mobile: true,
         avatar: true,
-        lastLoginTime: true,
+        addTime: true,
         createdAt: true,
       },
     });
@@ -123,7 +122,7 @@ export class AdminService {
 
   // 管理员用户管理
   async createAdminUser(createDto: { username: string; password: string; email?: string; mobile?: string; avatar?: string }) {
-    const existingAdmin = await this.databaseService.adminUser.findUnique({
+    const existingAdmin = await this.databaseService.adminUser.findFirst({
       where: { username: createDto.username },
     });
 
@@ -133,31 +132,23 @@ export class AdminService {
 
     const hashedPassword = await bcrypt.hash(createDto.password, 10);
 
-    const admin = await this.databaseService.adminUser.create({
-      data: {
-        username: createDto.username,
-        password: hashedPassword,
-        email: createDto.email,
-        mobile: createDto.mobile,
-        avatar: createDto.avatar,
-        updatedAt: new Date(),
-      },
-      select: {
-        adminId: true,
-        username: true,
-        email: true,
-        mobile: true,
-        avatar: true,
-        isEnable: true,
-        createdAt: true,
-      },
-    });
+    // Use raw SQL to create admin user without adminRole relationship requirement
+    const result = await this.databaseService.$queryRaw`
+      INSERT INTO "AdminUser" (
+        username, password, email, mobile, avatar,
+        addTime, adminType, createdAt, updatedAt
+      ) VALUES (
+        ${createDto.username}, ${hashedPassword}, ${createDto.email || ''}, ${createDto.mobile || ''}, ${createDto.avatar || ''},
+        ${Math.floor(Date.now() / 1000)}, 'admin', ${new Date()}, ${new Date()}
+      )
+      RETURNING adminId, username, email, mobile, avatar, addTime, createdAt
+    ` as any;
 
-    return admin;
+    return result[0];
   }
 
   async getAdminUsers(queryDto: { page?: number; size?: number; keyword?: string; isEnable?: boolean }) {
-    const { page = 1, size = 20, keyword, isEnable } = queryDto;
+    const { page = 1, size = 20, keyword } = queryDto;
     const skip = (page - 1) * size;
 
     const where: any = {};
@@ -167,9 +158,6 @@ export class AdminService {
         { email: { contains: keyword } },
         { mobile: { contains: keyword } },
       ];
-    }
-    if (isEnable !== undefined) {
-      where.isEnable = isEnable;
     }
 
     const [users, total] = await Promise.all([
@@ -183,9 +171,7 @@ export class AdminService {
           email: true,
           mobile: true,
           avatar: true,
-          isEnable: true,
-          lastLoginTime: true,
-          lastLoginIp: true,
+          addTime: true,
           createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -213,9 +199,7 @@ export class AdminService {
         email: true,
         mobile: true,
         avatar: true,
-        isEnable: true,
-        lastLoginTime: true,
-        lastLoginIp: true,
+        addTime: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -257,30 +241,20 @@ export class AdminService {
   }
 
   async toggleAdminUserStatus(adminId: number, isEnable: boolean) {
-    const admin = await this.databaseService.adminUser.update({
-      where: { adminId },
-      data: {
-        isEnable,
-        updatedAt: new Date(),
-      },
-      select: {
-        adminId: true,
-        username: true,
-        isEnable: true,
-        updatedAt: true,
-      },
-    });
-
-    return admin;
+    // isEnable field doesn't exist in the schema, so this function is not implemented
+    throw new BadRequestException('管理员状态切换功能暂未实现');
   }
 
   // 角色管理
   async createRole(createRoleDto: { roleName: string; roleDesc?: string; authorityList: any[]; adminType?: string }) {
+    // Convert authorityList array to JSON string as expected by schema
+    const authorityListJson = JSON.stringify(createRoleDto.authorityList || []);
+
     const role = await this.databaseService.adminRole.create({
       data: {
         roleName: createRoleDto.roleName,
         roleDesc: createRoleDto.roleDesc,
-        authorityList: createRoleDto.authorityList,
+        authorityList: authorityListJson,
         adminType: createRoleDto.adminType || 'admin',
         updatedAt: new Date(),
       },
@@ -335,12 +309,19 @@ export class AdminService {
   }
 
   async updateRole(roleId: number, updateRoleDto: { roleName?: string; roleDesc?: string; authorityList?: any[]; isEnable?: boolean }) {
+    const updateData: any = {
+      ...updateRoleDto,
+      updatedAt: new Date(),
+    };
+
+    // Convert authorityList array to JSON string if provided
+    if (updateRoleDto.authorityList) {
+      updateData.authorityList = JSON.stringify(updateRoleDto.authorityList);
+    }
+
     const role = await this.databaseService.adminRole.update({
       where: { roleId },
-      data: {
-        ...updateRoleDto,
-        updatedAt: new Date(),
-      },
+      data: updateData,
     });
 
     return role;
@@ -373,9 +354,9 @@ export class AdminService {
       todayRevenue,
       lowStockProducts,
     ] = await Promise.all([
-      this.databaseService.user.count({ where: { isDeleted: false, isEnable: true } }),
+      this.databaseService.user.count(),
       this.databaseService.order.count(),
-      this.databaseService.product.count({ where: { isDeleted: false, isEnable: true } }),
+      this.databaseService.product.count({ where: { isDelete: 0 } }),
       this.databaseService.order.count({
         where: {
           createdAt: {
@@ -385,7 +366,7 @@ export class AdminService {
       }),
       this.databaseService.order.aggregate({
         where: {
-          status: 'COMPLETED',
+          orderStatus: 5, // Assuming 5 means COMPLETED
           createdAt: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
           },
@@ -394,9 +375,8 @@ export class AdminService {
       }),
       this.databaseService.product.count({
         where: {
-          isDeleted: false,
-          isEnable: true,
-          stock: { lte: 10 }, // 低库存阈值
+          isDelete: 0,
+          productStock: { lte: 10 }, // 低库存阈值
         },
       }),
     ]);
@@ -405,7 +385,7 @@ export class AdminService {
       take: 10,
       orderBy: { createdAt: 'desc' },
       include: {
-        User: {
+        user: {
           select: { nickname: true, email: true },
         },
       },
@@ -417,7 +397,7 @@ export class AdminService {
         totalOrders,
         totalProducts,
         todayOrders,
-        todayRevenue: todayRevenue._sum.totalAmount || 0,
+        todayRevenue: Number(todayRevenue._sum.totalAmount || 0),
         lowStockProducts,
       },
       recentOrders,

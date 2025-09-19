@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import { IsNumber, IsOptional, IsBoolean, IsEnum, IsString, IsArray } from 'class-validator';
 
 export enum FavoriteType {
   PRODUCT = 'product',
