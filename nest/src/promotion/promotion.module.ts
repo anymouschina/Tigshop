@@ -16,11 +16,21 @@ import { SignInService } from './sign-in.service';
 import { PrismaService } from '../prisma.service';
 import { ProductGiftModule } from './product-gift/product-gift.module';
 import { ProductPromotionModule } from './product-promotion/product-promotion.module';
+import { ProductTeamModule } from './product-team/product-team.module';
+import { RechargeSettingModule } from './recharge-setting/recharge-setting.module';
+import { TimeDiscountModule } from './time-discount/time-discount.module';
+import { WechatLiveModule } from './wechat-live/wechat-live.module';
+import { SignInSettingModule } from './sign-in-setting/sign-in-setting.module';
 
 @Module({
   imports: [
     ProductGiftModule,
     ProductPromotionModule,
+    ProductTeamModule,
+    RechargeSettingModule,
+    TimeDiscountModule,
+    WechatLiveModule,
+    SignInSettingModule,
   ],
   controllers: [
     PromotionController,
@@ -51,6 +61,11 @@ import { ProductPromotionModule } from './product-promotion/product-promotion.mo
     SignInService,
     ProductGiftModule,
     ProductPromotionModule,
+    ProductTeamModule,
+    RechargeSettingModule,
+    TimeDiscountModule,
+    WechatLiveModule,
+    SignInSettingModule,
   ],
 })
 export class PromotionModule {}

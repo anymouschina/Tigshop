@@ -11,10 +11,22 @@ import { ConfigController } from './config.controller';
 import { ConfigService } from './config.service';
 import { PrismaService } from '../prisma.service';
 import { RegionModule } from './region/region.module';
+import { AppVersionModule } from './app-version/app-version.module';
+import { ShippingTplModule } from './shipping-tpl/shipping-tpl.module';
+import { ShippingTypeModule } from './shipping-type/shipping-type.module';
+import { GalleryModule } from './gallery/gallery.module';
+import { FriendLinksModule } from './friend-links/friend-links.module';
+import { LicensedModule } from './licensed/licensed.module';
 
 @Module({
   imports: [
     RegionModule,
+    AppVersionModule,
+    ShippingTplModule,
+    ShippingTypeModule,
+    GalleryModule,
+    FriendLinksModule,
+    LicensedModule,
   ],
   controllers: [
     LogisticsCompanyController,
@@ -38,6 +50,12 @@ import { RegionModule } from './region/region.module';
     MessageTypeService,
     ConfigService,
     RegionModule,
+    AppVersionModule,
+    ShippingTplModule,
+    ShippingTypeModule,
+    GalleryModule,
+    FriendLinksModule,
+    LicensedModule,
   ],
 })
 export class SettingModule {}
