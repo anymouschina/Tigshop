@@ -23,16 +23,21 @@ export enum UserStatus {
   PENDING = 'pending',
 }
 
+export enum RegisterType {
+  MOBILE = 'mobile',
+  EMAIL = 'email',
+}
+
 export class RegisterDto {
-  @IsString()
+  @IsEnum(RegisterType)
   @IsNotEmpty()
+  regist_type: RegisterType;
+
+  @IsOptional()
+  @IsString()
   @MinLength(3)
   @MaxLength(50)
-  username: string;
-
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  username?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -45,26 +50,74 @@ export class RegisterDto {
 
   @IsOptional()
   @IsString()
+  mobile_code?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  email_code?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(50)
   nickname?: string;
 
   @IsOptional()
   @IsString()
   avatar?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  referrer_user_id?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  salesman_id?: number;
+}
+
+export enum LoginType {
+  PASSWORD = 'password',
+  MOBILE = 'mobile',
+  EMAIL = 'email',
 }
 
 export class LoginDto {
-  @IsString()
+  @IsEnum(LoginType)
   @IsNotEmpty()
-  username: string;
-
-  @IsString()
-  @IsNotEmpty()
-  password: string;
+  login_type: LoginType = LoginType.PASSWORD;
 
   @IsOptional()
   @IsString()
-  captcha?: string;
+  username?: string;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
+
+  @IsOptional()
+  @IsString()
+  mobile?: string;
+
+  @IsOptional()
+  @IsString()
+  mobile_code?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  email_code?: string;
+
+  @IsOptional()
+  @IsString()
+  verify_token?: string;
 }
 
 export class ChangePasswordDto {
@@ -101,6 +154,12 @@ export class ResetPasswordDto {
   @IsString()
   @IsNotEmpty()
   confirmPassword: string;
+}
+
+export class RefreshTokenDto {
+  @IsString()
+  @IsNotEmpty()
+  refreshToken: string;
 }
 
 export class UpdateProfileDto {

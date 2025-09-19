@@ -13,7 +13,7 @@ import { AddressService, CreateAddressDto, UpdateAddressDto } from './address.se
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @ApiTags('User Address Management')
-@Controller('user/address')
+@Controller('api/user/address')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class AddressController {

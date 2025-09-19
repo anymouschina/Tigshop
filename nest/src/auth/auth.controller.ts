@@ -18,12 +18,34 @@ import {
   ChangePasswordDto,
   ResetPasswordDto,
   ForgotPasswordDto,
+  RefreshTokenDto,
+  UpdateProfileDto,
 } from './dto/auth.dto';
+import { CsrfService } from './services/csrf.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly csrfService: CsrfService,
+  ) {}
+
+  /**
+   * 获取CSRF Token - 对齐PHP版本行为验证
+   */
+  @Get('csrf-token')
+  @Public()
+  @ApiOperation({ summary: '获取CSRF Token' })
+  async getCsrfToken() {
+    const token = this.csrfService.generateToken();
+    return {
+      status: 'success',
+      data: {
+        token,
+      },
+    };
+  }
 
   /**
    * 用户注册 - 对齐PHP版本 user/register
@@ -99,16 +121,6 @@ export class AuthController {
   @ApiOperation({ summary: '刷新令牌' })
   async refreshToken(@Body() body: { refreshToken: string }) {
     return this.authService.refreshToken(body.refreshToken);
-  }
-
-  /**
-   * 登出 - 对齐PHP版本 user/logout
-   */
-  @Post('logout')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '用户登出' })
-  async logout(@Request() req) {
-    return this.authService.logout(req.user.userId, req.headers.authorization);
   }
 
   /**
@@ -202,5 +214,66 @@ export class AuthController {
   @ApiOperation({ summary: '验证短信验证码' })
   async verifySmsCode(@Body() body: { mobile: string; code: string; type: string }) {
     return this.authService.verifySmsCode(body.mobile, body.code, body.type);
+  }
+
+  /**
+   * 刷新Token
+   */
+  @Post('refresh')
+  @Public()
+  @ApiOperation({ summary: '刷新Token' })
+  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.refreshToken(refreshTokenDto.refreshToken);
+  }
+
+  /**
+   * 获取用户信息
+   */
+  @Get('profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取用户信息' })
+  async getProfile(@Request() req) {
+    return this.authService.getProfile(req.user.userId);
+  }
+
+  /**
+   * 获取用户权限 - 对齐PHP版本 user/permissions
+   */
+  @Get('permissions')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取用户权限' })
+  async getPermissions(@Request() req) {
+    return this.authService.getPermissions(req.user.userId);
+  }
+
+  /**
+   * 用户登出 - 对齐PHP版本 user/logout
+   */
+  @Post('logout')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '用户登出' })
+  async logout(@Request() req) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    return this.authService.logout(req.user.userId, token);
+  }
+
+  /**
+   * 更新用户信息
+   */
+  @Put('profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '更新用户信息' })
+  async updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
+    return this.authService.updateProfile(req.user.userId, updateProfileDto);
+  }
+
+  /**
+   * 修改密码
+   */
+  @Post('change-password')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '修改密码' })
+  async changePassword(@Request() req, @Body() changePasswordDto: ChangePasswordDto) {
+    return this.authService.changePassword(req.user.userId, changePasswordDto);
   }
 }

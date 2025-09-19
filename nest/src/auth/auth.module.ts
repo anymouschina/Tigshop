@@ -7,6 +7,10 @@ import { ConfigModule } from '../config/config.module';
 import { DatabaseService } from "../database/database.service";
 import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from "../database/database.module";
+import { CsrfService } from './services/csrf.service';
+import { CaptchaService } from './services/captcha.service';
+import { UsernameGeneratorService } from './services/username-generator.service';
+import { VerificationCodeService } from './services/verification-code.service';
 
 @Module({
   imports: [
@@ -25,7 +29,7 @@ import { DatabaseModule } from "../database/database.module";
     ConfigModule,
     ScheduleModule.forRoot(),
   ],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, CsrfService, CaptchaService, UsernameGeneratorService, VerificationCodeService],
+  exports: [AuthService, CsrfService, CaptchaService],
 })
 export class AuthModule {} 

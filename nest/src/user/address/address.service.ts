@@ -27,14 +27,14 @@ export class AddressService {
    * 获取用户地址列表 - 对齐PHP版本 user/address/list
    */
   async getAddressList(userId: number, query: any = {}) {
-    const { page = 1, size = 10 } = query;
-    const skip = (page - 1) * size;
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
 
     const [addresses, total] = await Promise.all([
       this.prisma.userAddress.findMany({
         where: { userId },
         skip,
-        take: size,
+        take: limit,
         orderBy: [
           { isDefault: 'desc' },
           { createdAt: 'desc' },
@@ -46,11 +46,16 @@ export class AddressService {
     ]);
 
     return {
-      list: addresses.map(address => this.formatAddressResponse(address)),
-      total,
-      page,
-      size,
-      totalPages: Math.ceil(total / size),
+      status: 'success',
+      data: {
+        list: addresses.map(address => this.formatAddressResponse(address)),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
     };
   }
 
@@ -69,7 +74,10 @@ export class AddressService {
       throw new NotFoundException('地址不存在');
     }
 
-    return this.formatAddressResponse(address);
+    return {
+      status: 'success',
+      data: this.formatAddressResponse(address),
+    };
   }
 
   /**
@@ -98,7 +106,11 @@ export class AddressService {
       },
     });
 
-    return this.formatAddressResponse(newAddress);
+    return {
+      status: 'success',
+      message: '地址添加成功',
+      data: this.formatAddressResponse(newAddress),
+    };
   }
 
   /**
@@ -133,7 +145,11 @@ export class AddressService {
       data: updateAddressDto,
     });
 
-    return this.formatAddressResponse(updatedAddress);
+    return {
+      status: 'success',
+      message: '地址更新成功',
+      data: this.formatAddressResponse(updatedAddress),
+    };
   }
 
   /**

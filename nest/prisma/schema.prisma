@@ -1,1549 +1,2583 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-// ==================== Phase 2: E-commerce Models ====================
-
-// Promotion (促销表)
-model Promotion {
-  promotionId        Int      @id @default(autoincrement()) @map("promotion_id")
-  promotionName      String   @map("promotion_name") @default("")
-  promotionType      Int      @map("promotion_type") @default(0)
-  promotionValue     Decimal  @map("promotion_value") @default(0.00) @db.Decimal(10, 2)
-  promotionCondition Decimal  @map("promotion_condition") @default(0.00) @db.Decimal(10, 2)
-  startTime          DateTime @map("start_time")
-  endTime            DateTime @map("end_time")
-  status             Int      @map("status") @default(1)
-  sort               Int      @map("sort") @default(100)
-  shopId             Int?     @map("shop_id")
-  productId          Int?     @map("product_id")
-  description        String   @map("description") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("promotions")
-}
-
-// TimeDiscount (限时折扣表)
-model TimeDiscount {
-  discountId         Int      @id @default(autoincrement()) @map("discount_id")
-  discountName       String   @map("discount_name") @default("")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  shopId             Int?     @map("shop_id")
-  discountType       Int      @map("discount_type") @default(1)
-  discountValue      Decimal  @map("discount_value") @default(0.00) @db.Decimal(10, 2)
-  startTime          DateTime @map("start_time")
-  endTime            DateTime @map("end_time")
-  stock              Int      @map("stock") @default(0)
-  buyLimit           Int      @map("buy_limit") @default(0)
-  buyCount           Int      @map("buy_count") @default(0)
-  status             Int      @map("status") @default(1)
-  sort               Int      @map("sort") @default(100)
-  description        String   @map("description") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("time_discounts")
-}
-
-// TimeDiscountItem (限时折扣项表)
-model TimeDiscountItem {
-  itemId             Int      @id @default(autoincrement()) @map("item_id")
-  discountId         Int      @map("discount_id")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  discountType       Int      @map("discount_type") @default(1)
-  discountValue      Decimal  @map("discount_value") @default(0.00) @db.Decimal(10, 2)
-  stock              Int      @map("stock") @default(0)
-  buyLimit           Int      @map("buy_limit") @default(0)
-  buyCount           Int      @map("buy_count") @default(0)
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("time_discount_items")
-}
-
-// Seckill (秒杀表)
-model Seckill {
-  seckillId          Int      @id @default(autoincrement()) @map("seckill_id")
-  seckillName        String   @map("seckill_name") @default("")
-  startTime          DateTime @map("start_time")
-  endTime            DateTime @map("end_time")
-  status             Int      @map("status") @default(1)
-  sort               Int      @map("sort") @default(100)
-  shopId             Int?     @map("shop_id")
-  description        String   @map("description") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("seckills")
-}
-
-// SeckillItem (秒杀项表)
-model SeckillItem {
-  itemId             Int      @id @default(autoincrement()) @map("item_id")
-  seckillId          Int      @map("seckill_id")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  seckillPrice       Decimal  @map("seckill_price") @default(0.00) @db.Decimal(10, 2)
-  stock              Int      @map("stock") @default(0)
-  buyLimit           Int      @map("buy_limit") @default(0)
-  buyCount           Int      @map("buy_count") @default(0)
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("seckill_items")
-}
-
-// Bargain (砍价表)
-model Bargain {
-  bargainId          Int      @id @default(autoincrement()) @map("bargain_id")
-  bargainName        String   @map("bargain_name") @default("")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  shopId             Int?     @map("shop_id")
-  originalPrice      Decimal  @map("original_price") @default(0.00) @db.Decimal(10, 2)
-  bargainPrice       Decimal  @map("bargain_price") @default(0.00) @db.Decimal(10, 2)
-  startTime          DateTime @map("start_time")
-  endTime            DateTime @map("end_time")
-  bargainLimit       Int      @map("bargain_limit") @default(0)
-  bargainCount       Int      @map("bargain_count") @default(0)
-  status             Int      @map("status") @default(1)
-  sort               Int      @map("sort") @default(100)
-  description        String   @map("description") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("bargains")
-}
-
-// BargainProduct (砍价商品表)
-model BargainProduct {
-  productId          Int      @id @default(autoincrement()) @map("product_id")
-  bargainId          Int      @map("bargain_id")
-  originalPrice      Decimal  @map("original_price") @default(0.00) @db.Decimal(10, 2)
-  bargainPrice       Decimal  @map("bargain_price") @default(0.00) @db.Decimal(10, 2)
-  bargainLimit       Int      @map("bargain_limit") @default(0)
-  bargainCount       Int      @map("bargain_count") @default(0)
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("bargain_products")
-}
-
-// BargainJoin (砍价参与表)
-model BargainJoin {
-  joinId             Int      @id @default(autoincrement()) @map("join_id")
-  bargainId          Int      @map("bargain_id")
-  userId             Int      @map("user_id")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  originalPrice      Decimal  @map("original_price") @default(0.00) @db.Decimal(10, 2)
-  bargainPrice       Decimal  @map("bargain_price") @default(0.00) @db.Decimal(10, 2)
-  currentPrice       Decimal  @map("current_price") @default(0.00) @db.Decimal(10, 2)
-  bargainCount       Int      @map("bargain_count") @default(0)
-  bargainLimit       Int      @map("bargain_limit") @default(0)
-  status             Int      @map("status") @default(1)
-  finishTime         DateTime? @map("finish_time")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("bargain_joins")
-}
-
-// BargainLog (砍价记录表)
-model BargainLog {
-  logId              Int      @id @default(autoincrement()) @map("log_id")
-  joinId             Int      @map("join_id")
-  userId             Int      @map("user_id")
-  bargainAmount      Decimal  @map("bargain_amount") @default(0.00) @db.Decimal(10, 2)
-  bargainCount       Int      @map("bargain_count") @default(0)
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("bargain_logs")
-}
-
-// Groupon (团购表)
-model Groupon {
-  grouponId          Int      @id @default(autoincrement()) @map("groupon_id")
-  grouponName        String   @map("groupon_name") @default("")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  shopId             Int?     @map("shop_id")
-  originalPrice      Decimal  @map("original_price") @default(0.00) @db.Decimal(10, 2)
-  grouponPrice       Decimal  @map("groupon_price") @default(0.00) @db.Decimal(10, 2)
-  grouponLimit       Int      @map("groupon_limit") @default(0)
-  grouponCount       Int      @map("groupon_count") @default(0)
-  startTime          DateTime @map("start_time")
-  endTime            DateTime @map("end_time")
-  status             Int      @map("status") @default(1)
-  sort               Int      @map("sort") @default(100)
-  description        String   @map("description") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("groupons")
-}
-
-// GrouponItem (团购项表)
-model GrouponItem {
-  itemId             Int      @id @default(autoincrement()) @map("item_id")
-  grouponId          Int      @map("groupon_id")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  originalPrice      Decimal  @map("original_price") @default(0.00) @db.Decimal(10, 2)
-  grouponPrice       Decimal  @map("groupon_price") @default(0.00) @db.Decimal(10, 2)
-  grouponLimit       Int      @map("groupon_limit") @default(0)
-  grouponCount       Int      @map("groupon_count") @default(0)
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("groupon_items")
-}
-
-// GrouponJoin (团购参与表)
-model GrouponJoin {
-  joinId             Int      @id @default(autoincrement()) @map("join_id")
-  grouponId          Int      @map("groupon_id")
-  userId             Int      @map("user_id")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  originalPrice      Decimal  @map("original_price") @default(0.00) @db.Decimal(10, 2)
-  grouponPrice       Decimal  @map("groupon_price") @default(0.00) @db.Decimal(10, 2)
-  grouponLimit       Int      @map("groupon_limit") @default(0)
-  grouponCount       Int      @map("groupon_count") @default(0)
-  status             Int      @map("status") @default(1)
-  finishTime         DateTime? @map("finish_time")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("groupon_joins")
-}
-
-// GrouponGroup (团购组表)
-model GrouponGroup {
-  groupId            Int      @id @default(autoincrement()) @map("group_id")
-  grouponId          Int      @map("groupon_id")
-  userId             Int      @map("user_id")
-  grouponLimit       Int      @map("groupon_limit") @default(0)
-  grouponCount       Int      @map("groupon_count") @default(0)
-  status             Int      @map("status") @default(1)
-  startTime          DateTime @default(now()) @map("start_time")
-  endTime            DateTime? @map("end_time")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("groupon_groups")
-}
-
-// UserInvoice (用户发票表)
-model UserInvoice {
-  invoiceId          Int      @id @default(autoincrement()) @map("invoice_id")
-  userId             Int      @map("user_id")
-  invoiceType        Int      @map("invoice_type") @default(1)
-  invoiceTitle       String   @map("invoice_title") @default("")
-  invoiceContent     String   @map("invoice_content") @default("")
-  taxNumber          String?  @map("tax_number")
-  bankName           String?  @map("bank_name")
-  bankAccount        String?  @map("bank_account")
-  bankBranch         String?  @map("bank_branch")
-  address            String   @map("address") @default("")
-  mobile             String   @map("mobile") @default("")
-  email              String   @map("email") @default("")
-  isDefault          Int      @map("is_default") @default(0)
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("user_invoices")
-}
-
-// UserRecharge (用户充值表)
-model UserRecharge {
-  rechargeId         Int      @id @default(autoincrement()) @map("recharge_id")
-  userId             Int      @map("user_id")
-  rechargeSn         String   @unique @map("recharge_sn")
-  rechargeAmount     Decimal  @map("recharge_amount") @default(0.00) @db.Decimal(10, 2)
-  giveAmount         Decimal  @map("give_amount") @default(0.00) @db.Decimal(10, 2)
-  paymentCode        String?  @map("payment_code")
-  paymentName        String?  @map("payment_name")
-  paymentTime        DateTime? @map("payment_time")
-  status             Int      @map("status") @default(0)
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("user_recharges")
-}
-
-// UserWithdraw (用户提现表)
-model UserWithdraw {
-  withdrawId         Int      @id @default(autoincrement()) @map("withdraw_id")
-  userId             Int      @map("user_id")
-  withdrawSn         String   @unique @map("withdraw_sn")
-  withdrawAmount     Decimal  @map("withdraw_amount") @default(0.00) @db.Decimal(10, 2)
-  fee                Decimal  @map("fee") @default(0.00) @db.Decimal(10, 2)
-  actualAmount       Decimal  @map("actual_amount") @default(0.00) @db.Decimal(10, 2)
-  withdrawType       Int      @map("withdraw_type") @default(1)
-  accountName        String   @map("account_name") @default("")
-  accountNo          String   @map("account_no") @default("")
-  bankName           String   @map("bank_name") @default("")
-  bankBranch         String   @map("bank_branch") @default("")
-  status             Int      @map("status") @default(0)
-  approveTime        DateTime? @map("approve_time")
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("user_withdraws")
-}
-
-// UserRating (用户评价表)
-model UserRating {
-  ratingId           Int      @id @default(autoincrement()) @map("rating_id")
-  userId             Int      @map("user_id")
-  shopId             Int      @map("shop_id")
-  productId          Int      @map("product_id")
-  orderId            Int      @map("order_id")
-  itemId             Int      @map("item_id")
-  rating             Float    @map("rating") @default(5.0)
-  content            String   @map("content") @default("")
-  images             String   @map("images") @default("")
-  reply              String   @map("reply") @default("")
-  replyTime          DateTime? @map("reply_time")
-  isAnonymous        Int      @map("is_anonymous") @default(0)
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("user_ratings")
-}
-
-// ShopCart (购物车表)
-model ShopCart {
-  cartId             Int      @id @default(autoincrement()) @map("cart_id")
-  userId             Int      @map("user_id")
-  shopId             Int      @map("shop_id")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  quantity           Int      @map("quantity") @default(1)
-  price              Decimal  @map("price") @default(0.00) @db.Decimal(10, 2)
-  skuData            String   @map("sku_data")
-  selected           Int      @map("selected") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("shop_carts")
-}
-
-// ProductFavorite (商品收藏表)
-model ProductFavorite {
-  favoriteId         Int      @id @default(autoincrement()) @map("favorite_id")
-  userId             Int      @map("user_id")
-  productId          Int      @map("product_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("product_favorites")
-}
-
-// ShopFavorite (店铺收藏表)
-model ShopFavorite {
-  favoriteId         Int      @id @default(autoincrement()) @map("favorite_id")
-  userId             Int      @map("user_id")
-  shopId             Int      @map("shop_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("shop_favorites")
-}
-
-// UserAddress (用户地址表)
-model UserAddress {
-  addressId          Int      @id @default(autoincrement()) @map("address_id")
-  userId             Int      @map("user_id")
-  addressTag         String   @default("") @map("address_tag")
-  consignee          String   @default("") @map("consignee")
-  email              String   @default("") @map("email")
-  country            Int      @default(0) @map("country")
-  province           Int      @default(0) @map("province")
-  city               Int      @default(0) @map("city")
-  district           Int      @default(0) @map("district")
-  address            String   @default("") @map("address")
-  zipcode            String   @default("") @map("zipcode")
-  mobile             String   @default("") @map("mobile")
-  telephone          String   @default("") @map("telephone")
-  isDefault          Int      @default(0) @map("is_default")
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("user_addresses")
-}
-
-// UserBalanceLog (用户余额日志表)
-model UserBalanceLog {
-  logId              Int      @id @default(autoincrement()) @map("log_id")
-  userId             Int      @map("user_id")
-  amount             Decimal  @map("amount") @default(0.00) @db.Decimal(10, 2)
-  balance            Decimal  @map("balance") @default(0.00) @db.Decimal(10, 2)
-  logType            Int      @map("log_type") @default(0)
-  logInfo            String   @map("log_info") @default("")
-  relatedId          Int?     @map("related_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("user_balance_logs")
-}
-
-// UserPointsLog (用户积分日志表)
-model UserPointsLog {
-  logId              Int      @id @default(autoincrement()) @map("log_id")
-  userId             Int      @map("user_id")
-  points             Int      @map("points") @default(0)
-  balance            Int      @map("balance") @default(0)
-  logType            Int      @map("log_type") @default(0)
-  logInfo            String   @map("log_info") @default("")
-  relatedId          Int?     @map("related_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("user_points_logs")
-}
-
-// UserCoupon (用户优惠券表)
-model UserCoupon {
-  couponId           Int      @id @default(autoincrement()) @map("coupon_id")
-  userId             Int      @map("user_id")
-  couponType         Int      @map("coupon_type") @default(1)
-  couponSn           String   @unique @map("coupon_sn")
-  couponName         String   @map("coupon_name") @default("")
-  couponValue        Decimal  @map("coupon_value") @default(0.00) @db.Decimal(10, 2)
-  minAmount          Decimal  @map("min_amount") @default(0.00) @db.Decimal(10, 2)
-  startTime          DateTime @map("start_time")
-  endTime            DateTime @map("end_time")
-  productId          Int?     @map("product_id")
-  shopId             Int?     @map("shop_id")
-  categoryId         Int?     @map("category_id")
-  status             Int      @map("status") @default(0)
-  useTime            DateTime? @map("use_time")
-  orderId            Int?     @map("order_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("user_coupons")
-}
-
-// ShopComplaint (店铺投诉表)
-model ShopComplaint {
-  complaintId        Int      @id @default(autoincrement()) @map("complaint_id")
-  userId             Int      @map("user_id")
-  shopId             Int      @map("shop_id")
-  orderId            Int?     @map("order_id")
-  complaintType      Int      @map("complaint_type") @default(0)
-  content            String   @map("content") @default("")
-  images             String   @map("images") @default("")
-  reply              String   @map("reply") @default("")
-  replyTime          DateTime? @map("reply_time")
-  status             Int      @map("status") @default(0)
-  handleTime         DateTime? @map("handle_time")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("shop_complaints")
-}
-
-// ProductConsultation (商品咨询表)
-model ProductConsultation {
-  consultationId     Int      @id @default(autoincrement()) @map("consultation_id")
-  userId             Int      @map("user_id")
-  productId          Int      @map("product_id")
-  shopId             Int      @map("shop_id")
-  content            String   @map("content") @default("")
-  reply              String   @map("reply") @default("")
-  replyTime          DateTime? @map("reply_time")
-  isAnonymous        Int      @map("is_anonymous") @default(0)
-  status             Int      @map("status") @default(0)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("product_consultations")
-}
-
-// ShopConsultation (店铺咨询表)
-model ShopConsultation {
-  consultationId     Int      @id @default(autoincrement()) @map("consultation_id")
-  userId             Int      @map("user_id")
-  shopId             Int      @map("shop_id")
-  content            String   @map("content") @default("")
-  reply              String   @map("reply") @default("")
-  replyTime          DateTime? @map("reply_time")
-  isAnonymous        Int      @map("is_anonymous") @default(0)
-  status             Int      @map("status") @default(0)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("shop_consultations")
-}
-
-// OrderInvoice (订单发票表)
-model OrderInvoice {
-  invoiceId          Int      @id @default(autoincrement()) @map("invoice_id")
-  orderId            Int      @map("order_id")
-  invoiceType        Int      @map("invoice_type") @default(1)
-  invoiceTitle       String   @map("invoice_title") @default("")
-  invoiceContent     String   @map("invoice_content") @default("")
-  taxNumber          String?  @map("tax_number")
-  bankName           String?  @map("bank_name")
-  bankAccount        String?  @map("bank_account")
-  bankBranch         String?  @map("bank_branch")
-  address            String   @map("address") @default("")
-  mobile             String   @map("mobile") @default("")
-  email              String   @map("email") @default("")
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("order_invoices")
-}
-
-// OrderLog (订单日志表)
-model OrderLog {
-  logId              Int      @id @default(autoincrement()) @map("log_id")
-  orderId            Int      @map("order_id")
-  userId             Int      @map("user_id")
-  action             String   @map("action") @default("")
-  note               String   @map("note") @default("")
-  data               String?  @map("data")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("order_logs")
-}
-
-// OrderRefund (订单退款表)
-model OrderRefund {
-  refundId           Int      @id @default(autoincrement()) @map("refund_id")
-  orderId            Int      @map("order_id")
-  itemId             Int?     @map("item_id")
-  userId             Int      @map("user_id")
-  shopId             Int      @map("shop_id")
-  refundSn           String   @unique @map("refund_sn")
-  refundType         Int      @map("refund_type") @default(1)
-  refundAmount       Decimal  @map("refund_amount") @default(0.00) @db.Decimal(10, 2)
-  refundReason       String   @map("refund_reason") @default("")
-  refundDesc         String   @map("refund_desc") @default("")
-  refundEvidence     String   @map("refund_evidence") @default("")
-  status             Int      @map("status") @default(0)
-  agreeTime          DateTime? @map("agree_time")
-  refuseReason       String   @map("refuse_reason") @default("")
-  refundTime         DateTime? @map("refund_time")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("order_refunds")
-}
-
-// AfterSale (售后表)
-model AfterSale {
-  saleId             Int      @id @default(autoincrement()) @map("sale_id")
-  orderId            Int      @map("order_id")
-  itemId             Int      @map("item_id")
-  userId             Int      @map("user_id")
-  shopId             Int      @map("shop_id")
-  saleType           Int      @map("sale_type") @default(1)
-  saleReason         String   @map("sale_reason") @default("")
-  saleDesc           String   @map("sale_desc") @default("")
-  saleEvidence       String   @map("sale_evidence") @default("")
-  status             Int      @map("status") @default(0)
-  agreeTime          DateTime? @map("agree_time")
-  refuseReason       String   @map("refuse_reason") @default("")
-  completeTime       DateTime? @map("complete_time")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("after_sales")
-}
-
-// ProductGift (商品赠品表)
-model ProductGift {
-  giftId             Int      @id @default(autoincrement()) @map("gift_id")
-  productId          Int      @map("product_id")
-  giftProductId      Int      @map("gift_product_id")
-  giftQuantity       Int      @map("gift_quantity") @default(1)
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("product_gifts")
-}
-
-// ProductVideo (商品视频表)
-model ProductVideo {
-  videoId            Int      @id @default(autoincrement()) @map("video_id")
-  productId          Int      @map("product_id")
-  videoUrl           String   @map("video_url") @default("")
-  videoCover         String?  @map("video_cover")
-  videoTitle         String   @map("video_title") @default("")
-  videoDesc          String   @map("video_desc") @default("")
-  sort               Int      @map("sort") @default(100)
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("product_videos")
-}
-
-// ProductPackage (商品套餐表)
-model ProductPackage {
-  packageId          Int      @id @default(autoincrement()) @map("package_id")
-  packageName        String   @map("package_name") @default("")
-  packageImage       String?  @map("package_image")
-  packagePrice       Decimal  @map("package_price") @default(0.00) @db.Decimal(10, 2)
-  marketPrice        Decimal  @map("market_price") @default(0.00) @db.Decimal(10, 2)
-  packageDesc        String   @map("package_desc") @default("")
-  status             Int      @map("status") @default(1)
-  sort               Int      @map("sort") @default(100)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("product_packages")
-}
-
-// ProductPackageItem (商品套餐项表)
-model ProductPackageItem {
-  itemId             Int      @id @default(autoincrement()) @map("item_id")
-  packageId          Int      @map("package_id")
-  productId          Int      @map("product_id")
-  skuId              Int?     @map("sku_id")
-  quantity           Int      @map("quantity") @default(1)
-  price              Decimal  @map("price") @default(0.00) @db.Decimal(10, 2)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("product_package_items")
-}
-
-// ==================== Phase 3: Multi-vendor Models ====================
-
-// Vendor (供应商表)
-model Vendor {
-  vendorId           Int      @id @default(autoincrement()) @map("vendor_id")
-  vendorName         String   @map("vendor_name") @default("")
-  vendorCode         String   @map("vendor_code") @default("")
-  contactName        String   @map("contact_name") @default("")
-  contactPhone       String   @map("contact_phone") @default("")
-  contactEmail       String   @map("contact_email") @default("")
-  businessLicense    String?  @map("business_license")
-  address            String   @map("address") @default("")
-  status             Int      @map("status") @default(0)
-  applyTime          DateTime @map("apply_time") @default(now())
-  approveTime        DateTime? @map("approve_time")
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("vendors")
-}
-
-// UserRank (用户等级表)
-model UserRank {
-  rankId             Int      @id @default(autoincrement()) @map("rank_id")
-  rankName           String   @map("rank_name") @default("")
-  rankLevel          Int      @map("rank_level") @default(0)
-  minPoints          Int      @map("min_points") @default(0)
-  maxPoints          Int      @map("max_points") @default(0)
-  discount           Int      @map("discount") @default(100)
-  status             Int      @map("status") @default(1)
-  description        String   @map("description") @default("")
-  icon               String?  @map("icon")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("user_ranks")
-}
-
-// LogisticsCompany (物流公司表)
-model LogisticsCompany {
-  companyId          Int      @id @default(autoincrement()) @map("company_id")
-  companyName        String   @map("company_name") @default("")
-  companyCode        String   @map("company_code") @default("")
-  contactName        String   @map("contact_name") @default("")
-  contactPhone       String   @map("contact_phone") @default("")
-  contactEmail       String   @map("contact_email") @default("")
-  website            String?  @map("website")
-  address            String   @map("address") @default("")
-  status             Int      @map("status") @default(1)
-  sortOrder          Int      @map("sort_order") @default(100)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("logistics_companies")
-}
-
-// Merchant (商户表)
-model Merchant {
-  merchantId         Int      @id @default(autoincrement()) @map("merchant_id")
-  merchantName       String   @map("merchant_name") @default("")
-  merchantCode       String   @map("merchant_code") @default("")
-  contactName        String   @map("contact_name") @default("")
-  contactPhone       String   @map("contact_phone") @default("")
-  contactEmail       String   @map("contact_email") @default("")
-  businessLicense    String?  @map("business_license")
-  address            String   @map("address") @default("")
-  status             Int      @map("status") @default(0)
-  applyTime          DateTime @map("apply_time") @default(now())
-  approveTime        DateTime? @map("approve_time")
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("merchants")
-}
-
-// MerchantAccount (商户账户表)
-model MerchantAccount {
-  accountId          Int      @id @default(autoincrement()) @map("account_id")
-  merchantId         Int      @map("merchant_id")
-  accountType        Int      @map("account_type") @default(1)
-  accountName        String   @map("account_name") @default("")
-  accountNo          String   @map("account_no") @default("")
-  bankName           String   @map("bank_name") @default("")
-  bankBranch         String   @map("bank_branch") @default("")
-  balance            Decimal  @map("balance") @default(0.00) @db.Decimal(10, 2)
-  frozenBalance      Decimal  @map("frozen_balance") @default(0.00) @db.Decimal(10, 2)
-  status             Int      @map("status") @default(1)
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("merchant_accounts")
-}
-
-// MerchantApply (商户申请表)
-model MerchantApply {
-  applyId            Int      @id @default(autoincrement()) @map("apply_id")
-  merchantId         Int      @map("merchant_id")
-  applyType          Int      @map("apply_type") @default(1)
-  applyData          String   @map("apply_data") @default("")
-  status             Int      @map("status") @default(0)
-  applyTime          DateTime @map("apply_time") @default(now())
-  approveTime        DateTime? @map("approve_time")
-  approveNote        String   @map("approve_note") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("merchant_applies")
-}
-
-// MerchantUser (商户用户表)
-model MerchantUser {
-  userId             Int      @id @default(autoincrement()) @map("user_id")
-  merchantId         Int      @map("merchant_id")
-  username           String   @unique @map("username")
-  password           String   @map("password")
-  realName           String   @map("real_name") @default("")
-  mobile             String   @map("mobile") @default("")
-  email              String   @map("email") @default("")
-  avatar             String?  @map("avatar")
-  role               Int      @map("role") @default(1)
-  status             Int      @map("status") @default(1)
-  lastLoginAt        DateTime? @map("last_login_at")
-  lastLoginIp        String?  @map("last_login_ip")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("merchant_users")
-}
-
-// VendorAccount (供应商账户表)
-model VendorAccount {
-  accountId          Int      @id @default(autoincrement()) @map("account_id")
-  vendorId           Int      @map("vendor_id")
-  accountType        Int      @map("account_type") @default(1)
-  accountName        String   @map("account_name") @default("")
-  accountNo          String   @map("account_no") @default("")
-  bankName           String   @map("bank_name") @default("")
-  bankBranch         String   @map("bank_branch") @default("")
-  balance            Decimal  @map("balance") @default(0.00) @db.Decimal(10, 2)
-  frozenBalance      Decimal  @map("frozen_balance") @default(0.00) @db.Decimal(10, 2)
-  status             Int      @map("status") @default(1)
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("vendor_accounts")
-}
-
-// VendorAccountLog (供应商账户日志表)
-model VendorAccountLog {
-  logId              Int      @id @default(autoincrement()) @map("log_id")
-  accountId          Int      @map("account_id")
-  vendorId           Int      @map("vendor_id")
-  amount             Decimal  @map("amount") @default(0.00) @db.Decimal(10, 2)
-  balance            Decimal  @map("balance") @default(0.00) @db.Decimal(10, 2)
-  logType            Int      @map("log_type") @default(0)
-  logInfo            String   @map("log_info") @default("")
-  relatedId          Int?     @map("related_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("vendor_account_logs")
-}
-
-// VendorProduct (供应商商品表)
-model VendorProduct {
-  productId          Int      @id @default(autoincrement()) @map("product_id")
-  vendorId           Int      @map("vendor_id")
-  productName        String   @map("product_name") @default("")
-  productSn          String   @default("") @map("product_sn")
-  categoryId         Int      @map("category_id")
-  brandId            Int?     @map("brand_id")
-  price              Decimal  @default(0.00) @map("price") @db.Decimal(10, 2)
-  marketPrice        Decimal  @default(0.00) @map("market_price") @db.Decimal(10, 2)
-  costPrice          Decimal  @default(0.00) @map("cost_price") @db.Decimal(10, 2)
-  stock              Int      @default(0) @map("stock")
-  warningStock       Int      @default(0) @map("warning_stock")
-  thumb              String?  @map("thumb")
-  images             String   @default("") @map("images")
-  description        String   @default("") @map("description")
-  content            String   @default("") @map("content")
-  keywords           String   @default("") @map("keywords")
-  tags               String   @default("") @map("tags")
-  skuData            String   @default("") @map("sku_data")
-  specData           String   @default("") @map("spec_data")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  auditStatus        Int      @default(0) @map("audit_status")
-  auditTime          DateTime? @map("audit_time")
-  auditNote          String   @default("") @map("audit_note")
-  isRecommend        Int      @default(0) @map("is_recommend")
-  isHot              Int      @default(0) @map("is_hot")
-  isNew              Int      @default(0) @map("is_new")
-  isBest             Int      @default(0) @map("is_best")
-  isDelete           Int      @default(0) @map("is_delete")
-  deletedAt          DateTime? @map("deleted_at")
-  createdAt          DateTime   @default(now()) @map("created_at")
-  updatedAt          DateTime   @updatedAt @map("updated_at")
-
-  @@map("vendor_products")
-}
-
-// VendorProductAuditLog (供应商商品审核日志表)
-model VendorProductAuditLog {
-  logId              Int      @id @default(autoincrement()) @map("log_id")
-  productId          Int      @map("product_id")
-  vendorId           Int      @map("vendor_id")
-  auditStatus        Int      @map("audit_status") @default(0)
-  auditNote          String   @map("audit_note") @default("")
-  auditTime          DateTime @map("audit_time") @default(now())
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("vendor_product_audit_logs")
-}
-
-// VendorProductGallery (供应商商品图库表)
-model VendorProductGallery {
-  galleryId          Int      @id @default(autoincrement()) @map("gallery_id")
-  productId          Int      @map("product_id")
-  vendorId           Int      @map("vendor_id")
-  imageUrl           String   @map("image_url") @default("")
-  imageDesc          String   @default("") @map("image_desc")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("vendor_product_galleries")
-}
-
-// VendorProductSku (供应商商品SKU表)
-model VendorProductSku {
-  skuId              Int      @id @default(autoincrement()) @map("sku_id")
-  productId          Int      @map("product_id")
-  vendorId           Int      @map("vendor_id")
-  skuName            String   @map("sku_name") @default("")
-  skuSn              String   @default("") @map("sku_sn")
-  skuImage           String?  @map("sku_image")
-  skuData            String   @map("sku_data") @default("")
-  price              Decimal  @default(0.00) @map("price") @db.Decimal(10, 2)
-  marketPrice        Decimal  @default(0.00) @map("market_price") @db.Decimal(10, 2)
-  costPrice          Decimal  @default(0.00) @map("cost_price") @db.Decimal(10, 2)
-  stock              Int      @default(0) @map("stock")
-  warningStock       Int      @default(0) @map("warning_stock")
-  sales              Int      @default(0) @map("sales")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("vendor_product_skus")
-}
-
-// VendorProductSkuAttr (供应商商品SKU属性表)
-model VendorProductSkuAttr {
-  attrId             Int      @id @default(autoincrement()) @map("attr_id")
-  skuId              Int      @map("sku_id")
-  productId          Int      @map("product_id")
-  vendorId           Int      @map("vendor_id")
-  attrName           String   @map("attr_name") @default("")
-  attrValue          String   @map("attr_value") @default("")
-  sort               Int      @default(100) @map("sort")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("vendor_product_sku_attrs")
-}
-
-// VendorProductSkuStockLog (供应商商品SKU库存日志表)
-model VendorProductSkuStockLog {
-  logId              Int      @id @default(autoincrement()) @map("log_id")
-  skuId              Int      @map("sku_id")
-  productId          Int      @map("product_id")
-  vendorId           Int      @map("vendor_id")
-  stockChange        Int      @map("stock_change") @default(0)
-  stockBefore        Int      @map("stock_before") @default(0)
-  stockAfter         Int      @map("stock_after") @default(0)
-  logType            Int      @map("log_type") @default(0)
-  logInfo            String   @map("log_info") @default("")
-  relatedId          Int?     @map("related_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("vendor_product_sku_stock_logs")
-}
-
-// VendorProductVideo (供应商商品视频表)
-model VendorProductVideo {
-  videoId            Int      @id @default(autoincrement()) @map("video_id")
-  productId          Int      @map("product_id")
-  vendorId           Int      @map("vendor_id")
-  videoUrl           String   @map("video_url") @default("")
-  videoCover         String?  @map("video_cover")
-  videoTitle         String   @map("video_title") @default("")
-  videoDesc          String   @map("video_desc") @default("")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("vendor_product_videos")
-}
-
-// VendorSettlementOrder (供应商结算订单表)
-model VendorSettlementOrder {
-  orderId            Int      @id @default(autoincrement()) @map("order_id")
-  vendorId           Int      @map("vendor_id")
-  settlementSn       String   @unique @map("settlement_sn")
-  orderAmount        Decimal  @map("order_amount") @default(0.00) @db.Decimal(10, 2)
-  commissionAmount   Decimal  @map("commission_amount") @default(0.00) @db.Decimal(10, 2)
-  settleAmount       Decimal  @map("settle_amount") @default(0.00) @db.Decimal(10, 2)
-  status             Int      @map("status") @default(0)
-  settleTime         DateTime? @map("settle_time")
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("vendor_settlement_orders")
-}
-
-// VendorShopBind (供应商店铺绑定表)
-model VendorShopBind {
-  bindId             Int      @id @default(autoincrement()) @map("bind_id")
-  vendorId           Int      @map("vendor_id")
-  shopId             Int      @map("shop_id")
-  bindType           Int      @map("bind_type") @default(1)
-  status             Int      @map("status") @default(1)
-  bindTime           DateTime @map("bind_time") @default(now())
-  unbindTime         DateTime? @map("unbind_time")
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("vendor_shop_binds")
-}
-
-// VendorWithdraw (供应商提现表)
-model VendorWithdraw {
-  withdrawId         Int      @id @default(autoincrement()) @map("withdraw_id")
-  vendorId           Int      @map("vendor_id")
-  withdrawSn         String   @unique @map("withdraw_sn")
-  withdrawAmount     Decimal  @map("withdraw_amount") @default(0.00) @db.Decimal(10, 2)
-  fee                Decimal  @map("fee") @default(0.00) @db.Decimal(10, 2)
-  actualAmount       Decimal  @map("actual_amount") @default(0.00) @db.Decimal(10, 2)
-  withdrawType       Int      @map("withdraw_type") @default(1)
-  accountName        String   @map("account_name") @default("")
-  accountNo          String   @map("account_no") @default("")
-  bankName           String   @map("bank_name") @default("")
-  bankBranch         String   @map("bank_branch") @default("")
-  status             Int      @map("status") @default(0)
-  approveTime        DateTime? @map("approve_time")
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("vendor_withdraws")
-}
-
-// Salesman (业务员表)
-model Salesman {
-  salesmanId         Int      @id @default(autoincrement()) @map("salesman_id")
-  salesmanName       String   @map("salesman_name") @default("")
-  salesmanCode       String   @map("salesman_code") @default("")
-  mobile             String   @map("mobile") @default("")
-  email              String   @map("email") @default("")
-  avatar             String?  @map("avatar")
-  password           String   @map("password")
-  realName           String   @map("real_name") @default("")
-  gender             Int      @map("gender") @default(0)
-  birthday           DateTime? @map("birthday")
-  idCard             String?  @map("id_card")
-  address            String   @map("address") @default("")
-  status             Int      @map("status") @default(1)
-  lastLoginAt        DateTime? @map("last_login_at")
-  lastLoginIp        String?  @map("last_login_ip")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("salesmen")
-}
-
-// SalesmanConfig (业务员配置表)
-model SalesmanConfig {
-  configId           Int      @id @default(autoincrement()) @map("config_id")
-  configKey          String   @map("config_key") @default("")
-  configValue        String   @map("config_value") @default("")
-  configDesc         String   @map("config_desc") @default("")
-  status             Int      @map("status") @default(1)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("salesman_configs")
-}
-
-// SalesmanContent (业务员内容表)
-model SalesmanContent {
-  contentId          Int      @id @default(autoincrement()) @map("content_id")
-  salesmanId         Int      @map("salesman_id")
-  contentType        Int      @map("content_type") @default(1)
-  title              String   @map("title") @default("")
-  content            String   @map("content") @default("")
-  image              String?  @map("image")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("salesman_contents")
-}
-
-// SalesmanCustomer (业务员客户表)
-model SalesmanCustomer {
-  customerId         Int      @id @default(autoincrement()) @map("customer_id")
-  salesmanId         Int      @map("salesman_id")
-  userId             Int      @map("user_id")
-  customerType       Int      @map("customer_type") @default(1)
-  status             Int      @default(1) @map("status")
-  bindTime           DateTime @map("bind_time") @default(now())
-  unbindTime         DateTime? @map("unbind_time")
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("salesman_customers")
-}
-
-// SalesmanGroup (业务员分组表)
-model SalesmanGroup {
-  groupId            Int      @id @default(autoincrement()) @map("group_id")
-  groupName          String   @map("group_name") @default("")
-  groupDesc          String   @map("group_desc") @default("")
-  parentId           Int?     @map("parent_id")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("salesman_groups")
-}
-
-// SalesmanMaterial (业务员素材表)
-model SalesmanMaterial {
-  materialId         Int      @id @default(autoincrement()) @map("material_id")
-  salesmanId         Int      @map("salesman_id")
-  materialType       Int      @map("material_type") @default(1)
-  title              String   @map("title") @default("")
-  content            String   @map("content") @default("")
-  image              String?  @map("image")
-  fileUrl            String?  @map("file_url")
-  fileSize           Int?     @map("file_size")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("salesman_materials")
-}
-
-// SalesmanMaterialCategory (业务员素材分类表)
-model SalesmanMaterialCategory {
-  categoryId         Int      @id @default(autoincrement()) @map("category_id")
-  categoryName       String   @map("category_name") @default("")
-  categoryDesc       String   @map("category_desc") @default("")
-  parentId           Int?     @map("parent_id")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("salesman_material_categories")
-}
-
-// SalesmanOrder (业务员订单表)
-model SalesmanOrder {
-  orderId            Int      @id @default(autoincrement()) @map("order_id")
-  salesmanId         Int      @map("salesman_id")
-  orderSn            String   @map("order_sn") @default("")
-  orderAmount        Decimal  @map("order_amount") @default(0.00) @db.Decimal(10, 2)
-  commissionRate     Decimal  @map("commission_rate") @default(0.00) @db.Decimal(5, 2)
-  commissionAmount   Decimal  @map("commission_amount") @default(0.00) @db.Decimal(10, 2)
-  status             Int      @map("status") @default(0)
-  settleTime         DateTime? @map("settle_time")
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("salesman_orders")
-}
-
-// SalesmanProduct (业务员商品表)
-model SalesmanProduct {
-  id                 Int      @id @default(autoincrement()) @map("id")
-  salesmanId         Int      @map("salesman_id")
-  productId          Int      @map("product_id")
-  commissionRate     Decimal  @map("commission_rate") @default(0.00) @db.Decimal(5, 2)
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("salesman_products")
-}
-
-// ==================== Core Models (Original but needed) ====================
-
-model AdminUser {
-  adminId     Int      @id @default(autoincrement()) @map("admin_id")
-  username    String   @unique @map("username")
-  password    String   @map("password")
-  email       String?  @unique @map("email")
-  mobile      String?  @unique @map("mobile")
-  realName    String   @default("") @map("real_name")
-  avatar      String?  @map("avatar")
-  role        Int      @default(1) @map("role")
-  status      Int      @default(1) @map("status")
-  lastLoginAt DateTime? @map("last_login_at")
-  lastLoginIp String?  @map("last_login_ip")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@map("admin_users")
-}
-
-model AdminRole {
-  roleId       Int      @id @default(autoincrement()) @map("role_id")
-  roleName     String   @unique @map("role_name")
-  permissions  String   @map("permissions")
-  description  String   @default("") @map("description")
-  status       Int      @default(1) @map("status")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  @@map("admin_roles")
-}
-
-model User {
-  userId        Int        @id @default(autoincrement()) @map("user_id")
-  username      String?    @unique @map("username")
-  password      String     @map("password")
-  email         String?    @unique @map("email")
-  mobile        String?    @unique @map("mobile")
-  realName      String     @default("") @map("real_name")
-  avatar        String?    @map("avatar")
-  nickname      String     @default("") @map("nickname")
-  gender        Int        @default(0) @map("gender")
-  birthday      DateTime?  @map("birthday")
-  status        Int        @default(1) @map("status")
-  lastLoginAt   DateTime?  @map("last_login_at")
-  lastLoginIp   String?    @map("last_login_ip")
-  registerIp    String?    @map("register_ip")
-  registerFrom  String     @default("") @map("register_from")
-  balance       Decimal    @default(0.00) @map("balance") @db.Decimal(10, 2)
-  points        Int        @default(0) @map("points")
-  level         Int        @default(1) @map("level")
-  experience    Int        @default(0) @map("experience")
-  signature     String     @default("") @map("signature")
-  bio           String     @default("") @map("bio")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
-
-  @@map("users")
-}
-
-model Product {
-  productId       Int        @id @default(autoincrement()) @map("product_id")
-  productName     String     @map("product_name")
-  productSn       String     @default("") @map("product_sn")
-  categoryId      Int        @map("category_id")
-  brandId         Int?       @map("brand_id")
-  shopId          Int?       @map("shop_id")
-  vendorId        Int?       @map("vendor_id")
-  supplierId      Int?       @map("supplier_id")
-  price           Decimal    @default(0.00) @map("price") @db.Decimal(10, 2)
-  marketPrice     Decimal    @default(0.00) @map("market_price") @db.Decimal(10, 2)
-  costPrice       Decimal    @default(0.00) @map("cost_price") @db.Decimal(10, 2)
-  wholesalePrice  Decimal    @default(0.00) @map("wholesale_price") @db.Decimal(10, 2)
-  stock           Int        @default(0) @map("stock")
-  warningStock    Int        @default(0) @map("warning_stock")
-  sales           Int        @default(0) @map("sales")
-  virtualSales    Int        @default(0) @map("virtual_sales")
-  thumb           String?    @map("thumb")
-  images          String     @default("") @map("images")
-  video           String?    @map("video")
-  description     String     @default("") @map("description")
-  content         String     @default("") @map("content")
-  keywords        String     @default("") @map("keywords")
-  tags            String     @default("") @map("tags")
-  skuData         String     @default("") @map("sku_data")
-  specData        String     @default("") @map("spec_data")
-  extData         String?    @map("ext_data")
-  sort            Int        @default(100) @map("sort")
-  status          Int        @default(1) @map("status")
-  isRecommend     Int        @default(0) @map("is_recommend")
-  isHot           Int        @default(0) @map("is_hot")
-  isNew           Int        @default(0) @map("is_new")
-  isBest          Int        @default(0) @map("is_best")
-  isVirtual       Int        @default(0) @map("is_virtual")
-  isDelete        Int        @default(0) @map("is_delete")
-  deletedAt       DateTime?  @map("deleted_at")
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
-
-  @@map("products")
-}
-
-model ProductSku {
-  skuId           Int     @id @default(autoincrement()) @map("sku_id")
-  productId       Int     @map("product_id")
-  skuName         String  @map("sku_name") @default("")
-  skuSn           String  @default("") @map("sku_sn")
-  skuImage        String? @map("sku_image")
-  skuData         String  @map("sku_data") @default("")
-  price           Decimal @default(0.00) @map("price") @db.Decimal(10, 2)
-  marketPrice     Decimal @default(0.00) @map("market_price") @db.Decimal(10, 2)
-  costPrice       Decimal @default(0.00) @map("cost_price") @db.Decimal(10, 2)
-  stock           Int     @default(0) @map("stock")
-  warningStock    Int     @default(0) @map("warning_stock")
-  sales           Int     @default(0) @map("sales")
-  sort            Int     @default(100) @map("sort")
-  status          Int     @default(1) @map("status")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  @@map("product_skus")
-}
-
-model ProductAttribute {
-  attributesId Int     @id @default(autoincrement()) @map("attributes_id")
-  productId    Int     @map("product_id")
-  attrName     String  @map("attr_name") @default("")
-  attrValue    String  @map("attr_value") @default("")
-  sort         Int     @default(100) @map("sort")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  @@map("product_attributes")
-}
-
-model ProductGallery {
-  galleryId    Int      @id @default(autoincrement()) @map("gallery_id")
-  productId    Int      @map("product_id")
-  imageUrl     String   @map("image_url") @default("")
-  imageDesc    String   @default("") @map("image_desc")
-  sort         Int      @default(100) @map("sort")
-  status       Int      @default(1) @map("status")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  @@map("product_galleries")
-}
-
-model Category {
-  categoryId   Int      @id @default(autoincrement()) @map("category_id")
-  categoryName String   @map("category_name") @default("")
-  categorySn   String   @default("") @map("category_sn")
-  parentId     Int?     @map("parent_id")
-  image        String?  @map("image")
-  icon         String?  @map("icon")
-  description  String   @default("") @map("description")
-  content      String   @default("") @map("content")
-  keywords     String   @default("") @map("keywords")
-  sort         Int      @default(100) @map("sort")
-  status       Int      @default(1) @map("status")
-  isRecommend  Int      @default(0) @map("is_recommend")
-  isHot        Int      @default(0) @map("is_hot")
-  isNew        Int      @default(0) @map("is_new")
-  isBest       Int      @default(0) @map("is_best")
-  isDelete     Int      @default(0) @map("is_delete")
-  deletedAt    DateTime? @map("deleted_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  @@map("categories")
-}
-
-model Shop {
-  shopId          Int      @id @default(autoincrement()) @map("shop_id")
-  shopName        String   @map("shop_name")
-  shopSn          String   @default("") @map("shop_sn")
-  shopLogo        String?  @map("shop_logo")
-  shopBanner      String?  @map("shop_banner")
-  shopDesc        String   @default("") @map("shop_desc")
-  categoryId      Int      @default(0) @map("category_id")
-  regionId        Int      @default(0) @map("region_id")
-  address         String   @default("") @map("address")
-  contactName     String   @default("") @map("contact_name")
-  contactPhone    String   @default("") @map("contact_phone")
-  contactEmail    String   @default("") @map("contact_email")
-  businessLicense String?  @map("business_license")
-  legalPerson     String   @default("") @map("legal_person")
-  legalIdCard     String?  @map("legal_id_card")
-  bankName        String   @default("") @map("bank_name")
-  bankAccount     String   @default("") @map("bank_account")
-  bankBranch      String   @default("") @map("bank_branch")
-  bankUser        String   @default("") @map("bank_user")
-  balance         Decimal  @default(0.00) @map("balance") @db.Decimal(10, 2)
-  frozenBalance  Decimal  @default(0.00) @map("frozen_balance") @db.Decimal(10, 2)
-  commission      Decimal  @default(0.00) @map("commission") @db.Decimal(10, 2)
-  rating          Float    @default(5.0) @map("rating")
-  ratingCount     Int      @default(0) @map("rating_count")
-  sales           Int      @default(0) @map("sales")
-  productCount    Int      @default(0) @map("product_count")
-  sort            Int      @default(100) @map("sort")
-  status          Int      @default(0) @map("status")
-  applyTime       DateTime @default(now()) @map("apply_time")
-  approveTime     DateTime? @map("approve_time")
-  expireTime      DateTime? @map("expire_time")
-  isRecommend     Int      @default(0) @map("is_recommend")
-  isDelete        Int      @default(0) @map("is_delete")
-  deletedAt       DateTime? @map("deleted_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  @@map("shops")
-}
-
-model Cart {
-  cartId        Int      @id @default(autoincrement()) @map("cart_id")
-  userId        Int      @map("user_id")
-  productId     Int      @map("product_id")
-  skuId         Int?     @map("sku_id")
-  quantity      Int      @default(1) @map("quantity")
-  price         Decimal  @default(0.00) @map("price") @db.Decimal(10, 2)
-  skuData       String   @map("sku_data") @default("")
-  selected      Int      @default(1) @map("selected")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  @@map("carts")
-}
-
-model Order {
-  orderId         Int       @id @default(autoincrement()) @map("order_id")
-  orderSn         String    @unique @map("order_sn")
-  userId          Int       @map("user_id")
-  shopId          Int       @map("shop_id")
-  orderType       Int       @default(1) @map("order_type")
-  orderAmount     Decimal   @default(0.00) @map("order_amount") @db.Decimal(10, 2)
-  goodsAmount     Decimal   @default(0.00) @map("goods_amount") @db.Decimal(10, 2)
-  shippingAmount  Decimal   @default(0.00) @map("shipping_amount") @db.Decimal(10, 2)
-  discountAmount  Decimal   @default(0.00) @map("discount_amount") @db.Decimal(10, 2)
-  couponAmount    Decimal   @default(0.00) @map("coupon_amount") @db.Decimal(10, 2)
-  pointsAmount    Decimal   @default(0.00) @map("points_amount") @db.Decimal(10, 2)
-  balanceAmount   Decimal   @default(0.00) @map("balance_amount") @db.Decimal(10, 2)
-  payAmount       Decimal   @default(0.00) @map("pay_amount") @db.Decimal(10, 2)
-  paymentCode     String?   @map("payment_code")
-  paymentName     String?   @map("payment_name")
-  paymentTime     DateTime? @map("payment_time")
-  shippingCode    String?   @map("shipping_code")
-  shippingName    String?   @map("shipping_name")
-  shippingTime    DateTime? @map("shipping_time")
-  shippingNo      String?   @map("shipping_no")
-  confirmTime     DateTime? @map("confirm_time")
-  finishTime      DateTime? @map("finish_time")
-  orderStatus     Int       @default(0) @map("order_status")
-  shippingStatus  Int       @default(0) @map("shipping_status")
-  payStatus       Int       @default(0) @map("pay_status")
-  reviewStatus    Int       @default(0) @map("review_status")
-  refundStatus    Int       @default(0) @map("refund_status")
-  consignee       String    @default("") @map("consignee")
-  mobile          String    @default("") @map("mobile")
-  email           String    @default("") @map("email")
-  country         Int       @default(0) @map("country")
-  province        Int       @default(0) @map("province")
-  city            Int       @default(0) @map("city")
-  district        Int       @default(0) @map("district")
-  address         String    @default("") @map("address")
-  zipcode         String    @default("") @map("zipcode")
-  remark          String    @default("") @map("remark")
-  promotionData   String?   @map("promotion_data")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  @@map("orders")
-}
-
-model OrderItem {
-  itemId             Int     @id @default(autoincrement()) @map("item_id")
-  orderId            Int     @map("order_id")
-  productId          Int     @map("product_id")
-  skuId              Int?    @map("sku_id")
-  price              Decimal @default(0.00) @map("price") @db.Decimal(10, 2)
-  quantity           Int     @default(1) @map("quantity")
-  goodsAmount        Decimal @default(0.00) @map("goods_amount") @db.Decimal(10, 2)
-  discountAmount     Decimal @default(0.00) @map("discount_amount") @db.Decimal(10, 2)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("order_items")
-}
-
-model Payment {
-  paymentId          Int      @id @default(autoincrement()) @map("payment_id")
-  paymentSn          String   @unique @map("payment_sn")
-  userId             Int      @map("user_id")
-  orderId            Int?     @map("order_id")
-  paymentCode        String   @map("payment_code") @default("")
-  paymentName        String   @map("payment_name") @default("")
-  paymentAmount      Decimal  @default(0.00) @map("payment_amount") @db.Decimal(10, 2)
-  paymentFee         Decimal  @default(0.00) @map("payment_fee") @db.Decimal(10, 2)
-  paymentTime        DateTime? @map("payment_time")
-  status             Int      @default(0) @map("status")
-  tradeNo            String?  @map("trade_no")
-  tradeStatus        String?  @map("trade_status")
-  remark             String   @map("remark") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("payments")
-}
-
-model Coupon {
-  couponId           Int      @id @default(autoincrement()) @map("coupon_id")
-  couponName         String   @map("coupon_name") @default("")
-  couponType         Int      @map("coupon_type") @default(1)
-  couponValue        Decimal  @map("coupon_value") @default(0.00) @db.Decimal(10, 2)
-  minAmount          Decimal  @map("min_amount") @default(0.00) @db.Decimal(10, 2)
-  startTime          DateTime @map("start_time")
-  endTime            DateTime @map("end_time")
-  productId          Int?     @map("product_id")
-  shopId             Int?     @map("shop_id")
-  categoryId         Int?     @map("category_id")
-  totalCount         Int      @default(0) @map("total_count")
-  usedCount          Int      @default(0) @map("used_count")
-  status             Int      @default(1) @map("status")
-  sort               Int      @default(100) @map("sort")
-  description        String   @map("description") @default("")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("coupons")
-}
-
-model Comment {
-  commentId          Int      @id @default(autoincrement()) @map("comment_id")
-  userId             Int      @map("user_id")
-  targetType         Int      @map("target_type") @default(1)
-  targetId           Int      @map("target_id")
-  content            String   @map("content") @default("")
-  images             String   @map("images") @default("")
-  reply              String   @map("reply") @default("")
-  replyTime          DateTime? @map("reply_time")
-  rating             Float    @map("rating") @default(5.0)
-  isAnonymous        Int      @map("is_anonymous") @default(0)
-  status             Int      @default(1) @map("status")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("comments")
-}
-
-model CollectProduct {
-  collectId          Int      @id @default(autoincrement()) @map("collect_id")
-  userId             Int      @map("user_id")
-  productId          Int      @map("product_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("collect_products")
-}
-
-model CollectShop {
-  collectId          Int      @id @default(autoincrement()) @map("collect_id")
-  userId             Int      @map("user_id")
-  shopId             Int      @map("shop_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("collect_shops")
-}
-
-model Brand {
-  brandId            Int      @id @default(autoincrement()) @map("brand_id")
-  brandName          String   @map("brand_name") @default("")
-  brandSn            String   @default("") @map("brand_sn")
-  brandLogo          String?  @map("brand_logo")
-  brandDesc          String   @default("") @map("brand_desc")
-  brandUrl           String?  @map("brand_url")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  isRecommend        Int      @default(0) @map("is_recommend")
-  isHot              Int      @default(0) @map("is_hot")
-  isNew              Int      @default(0) @map("is_new")
-  isBest             Int      @default(0) @map("is_best")
-  isDelete           Int      @default(0) @map("is_delete")
-  deletedAt          DateTime? @map("deleted_at")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("brands")
-}
-
-model Region {
-  regionId           Int      @id @default(autoincrement()) @map("region_id")
-  parentId           Int?     @map("parent_id")
-  regionName         String   @map("region_name") @default("")
-  regionSn           String   @default("") @map("region_sn")
-  regionType         Int      @default(1) @map("region_type")
-  sort               Int      @default(100) @map("sort")
-  status             Int      @default(1) @map("status")
-  isDelete           Int      @default(0) @map("is_delete")
-  deletedAt          DateTime? @map("deleted_at")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-
-  @@map("regions")
-}
-
-model BlacklistedToken {
-  id                 Int      @id @default(autoincrement()) @map("id")
-  token              String   @unique @map("token")
-  expiresAt          DateTime @map("expires_at")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  @@map("blacklisted_tokens")
+model access_log {
+  id            Int     @id @default(autoincrement()) @db.UnsignedInt
+  access_time   Int     @default(0) @db.UnsignedInt
+  ip_address    String  @default("") @db.VarChar(15)
+  product_id    Int     @default(0) @db.UnsignedMediumInt
+  shop_id       Int     @default(0) @db.UnsignedMediumInt
+  user_id       Int     @default(0) @db.UnsignedMediumInt
+  params_id     Int     @default(0) @db.UnsignedMediumInt
+  controller    String? @default("") @db.VarChar(20)
+  access_domain String? @default("") @db.VarChar(100)
+  access_path   String? @default("") @db.VarChar(200)
+
+  @@index([access_time], map: "access_time")
+  @@index([product_id], map: "goods_id")
+  @@index([ip_address], map: "ip_address")
+  @@index([shop_id], map: "shop_id")
+  @@index([user_id], map: "user_id")
+}
+
+model admin_log {
+  log_id     Int    @id @default(autoincrement()) @db.UnsignedInt
+  log_time   Int    @default(0) @db.UnsignedInt
+  user_id    Int    @default(0) @db.UnsignedTinyInt
+  log_info   String @default("") @db.VarChar(255)
+  ip_address String @default("") @db.VarChar(255)
+
+  @@index([log_time], map: "log_time")
+  @@index([user_id], map: "user_id")
+}
+
+model admin_msg {
+  msg_id       Int     @id @default(autoincrement()) @db.UnsignedSmallInt
+  msg_type     Int     @default(0) @db.UnsignedTinyInt
+  send_time    Int     @default(0) @db.UnsignedInt
+  is_readed    Int     @default(0) @db.UnsignedTinyInt
+  shop_id      Int     @default(0) @db.UnsignedInt
+  admin_id     Int     @default(0) @db.UnsignedInt
+  order_id     Int     @default(0) @db.UnsignedInt
+  product_id   Int     @default(0) @db.UnsignedInt
+  title        String  @default("") @db.VarChar(255)
+  content      String  @db.Text
+  msg_link     String? @default("") @db.VarChar(255)
+  related_data String? @db.Text
+  vendor_id    Int?    @default(0)
+
+  @@index([admin_id], map: "admin_id")
+  @@index([product_id], map: "goods_id")
+  @@index([vendor_id], map: "idx_vendor_id")
+  @@index([is_readed], map: "is_readed")
+  @@index([msg_type], map: "msg_type")
+  @@index([order_id], map: "order_id")
+  @@index([shop_id], map: "shop_id")
+}
+
+model admin_role {
+  role_id        Int     @id @default(autoincrement()) @db.UnsignedSmallInt
+  role_name      String  @default("") @db.VarChar(60)
+  role_desc      String? @default("") @db.VarChar(255)
+  authority_list String  @db.Text
+  admin_type     String? @default("admin") @db.VarChar(255)
+  merchant_id    Int     @default(0)
+  shop_id        Int     @default(0)
+  vendor_id      Int     @default(0)
+
+  @@index([role_name], map: "user_name")
+}
+
+model admin_user {
+  admin_id         Int     @id @default(autoincrement()) @db.UnsignedSmallInt
+  username         String  @default("") @db.VarChar(60)
+  admin_type       String  @default("admin") @db.VarChar(60)
+  mobile           String? @default("") @db.VarChar(255)
+  avatar           String? @db.VarChar(255)
+  password         String  @default("") @db.VarChar(80)
+  email            String  @default("") @db.VarChar(60)
+  add_time         Int     @default(0)
+  auth_list        String  @db.Text
+  user_id          Int     @default(0)
+  suppliers_id     Int     @default(0) @db.UnsignedSmallInt
+  role_id          Int     @db.SmallInt
+  merchant_id      Int     @default(0)
+  parent_id        Int     @default(0)
+  menu_tag         String? @db.Text
+  order_export     String? @db.Text
+  extra            String? @db.Text
+  shop_id          Int     @default(0)
+  is_using         Int     @default(0) @db.UnsignedTinyInt
+  initial_password String  @default("") @db.VarChar(80)
+
+  @@index([username], map: "user_name")
+}
+
+model admin_user_shop {
+  id        Int     @id @default(autoincrement()) @db.UnsignedInt
+  admin_id  Int     @default(0) @db.UnsignedInt
+  user_id   Int     @default(0) @db.UnsignedInt
+  shop_id   Int     @default(0) @db.UnsignedInt
+  username  String  @default("") @db.VarChar(32)
+  email     String  @default("") @db.VarChar(32)
+  avatar    String? @default("") @db.VarChar(255)
+  auth_list String? @db.Text
+  is_using  Int     @default(0) @db.UnsignedTinyInt
+  is_admin  Int     @default(0) @db.UnsignedTinyInt
+  add_time  Int?    @db.UnsignedInt
+  role_id   Int     @default(0) @db.UnsignedSmallInt
+}
+
+model admin_user_vendor {
+  id        Int     @id @default(autoincrement())
+  admin_id  Int     @default(0)
+  user_id   Int     @default(0)
+  vendor_id Int     @default(0)
+  username  String  @default("") @db.VarChar(32)
+  email     String  @default("") @db.VarChar(32)
+  avatar    String? @default("") @db.VarChar(255)
+  auth_list String? @db.Text
+  is_using  Int     @default(0) @db.UnsignedTinyInt
+  is_admin  Int     @default(0) @db.UnsignedTinyInt
+  add_time  Int?
+  role_id   Int     @default(0) @db.UnsignedSmallInt
+}
+
+model aftersales {
+  aftersale_id     Int     @id @unique(map: "return_id") @default(autoincrement()) @db.UnsignedMediumInt
+  aftersale_type   Int     @default(0) @db.UnsignedTinyInt
+  status           Int     @default(0) @db.UnsignedTinyInt
+  pics             String  @db.Text
+  description      String  @default("") @db.VarChar(255)
+  reply            String  @default("") @db.VarChar(255)
+  add_time         Int     @default(0) @db.UnsignedInt
+  tracking_no      String  @default("") @db.VarChar(80)
+  logistics_name   String  @default("") @db.VarChar(80)
+  return_address   String? @db.Text
+  aftersale_reason String? @db.VarChar(255)
+  aftersales_sn    String? @db.VarChar(255)
+  order_id         Int?
+  user_id          Int?
+  refund_amount    Decimal @default(0.00) @db.Decimal(10, 2)
+  shop_id          Int     @default(0) @db.UnsignedMediumInt
+  audit_time       Int     @default(0) @db.UnsignedInt
+  deal_time        Int     @default(0) @db.UnsignedInt
+  final_time       Int     @default(0) @db.UnsignedInt
+  return_goods_tip String  @default("") @db.VarChar(255)
+  vendor_id        Int?
+
+  @@index([vendor_id], map: "idx_vendor_id")
+  @@index([order_id], map: "order_id")
+  @@index([shop_id], map: "shop_id")
+  @@index([user_id], map: "user_id")
+}
+
+model aftersales_item {
+  aftersales_item_id Int  @id @default(autoincrement())
+  order_item_id      Int? @default(0)
+  number             Int? @default(0)
+  aftersale_id       Int? @default(0)
+
+  @@index([aftersale_id], map: "aftersale_id")
+}
+
+model aftersales_log {
+  log_id       Int     @id @default(autoincrement()) @db.UnsignedInt
+  aftersale_id Int     @db.UnsignedInt
+  log_info     String  @default("") @db.VarChar(255)
+  add_time     Int     @default(0) @db.UnsignedInt
+  admin_name   String  @default("") @db.VarChar(80)
+  refund_money Decimal @default(0.00) @db.Decimal(8, 2)
+  refund_type  Int     @default(0) @db.UnsignedInt
+  refund_desc  String  @default("") @db.VarChar(255)
+  user_name    String? @default("") @db.VarChar(80)
+  return_pic   String? @db.Text
+
+  @@index([aftersale_id], map: "aftersale_id")
+}
+
+model album {
+  id       Int    @id @default(autoincrement()) @db.UnsignedInt
+  pic_url  String @default("") @db.VarChar(255)
+  pic_name String @default("") @db.VarChar(255)
+  pic_type Int    @default(1) @db.UnsignedTinyInt
+  add_time Int?   @default(0) @db.UnsignedInt
+}
+
+model app_version {
+  id              Int     @id @default(autoincrement())
+  ios_version     String? @default("") @db.VarChar(40)
+  android_version String? @default("") @db.VarChar(40)
+  ios_link        String? @default("") @db.VarChar(120)
+  android_link    String? @default("") @db.VarChar(120)
+}
+
+model area_code {
+  id           Int    @id @default(autoincrement()) @db.UnsignedInt
+  code         String @default("") @db.VarChar(32)
+  name         String @default("") @db.VarChar(50)
+  is_available Int    @default(1) @db.UnsignedTinyInt
+  is_default   Int    @default(0) @db.UnsignedTinyInt
+}
+
+model article {
+  article_id          Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  article_title       String  @default("") @db.VarChar(150)
+  article_category_id Int     @default(0) @db.SmallInt
+  article_sn          String  @default("") @db.VarChar(80)
+  article_thumb       String  @default("") @db.VarChar(255)
+  article_tag         String  @default("") @db.VarChar(30)
+  article_author      String  @default("") @db.VarChar(30)
+  article_type        Int     @default(1) @db.UnsignedTinyInt
+  content             String  @db.LongText
+  description         String? @default("") @db.VarChar(255)
+  keywords            String  @default("") @db.VarChar(255)
+  is_show             Int?    @default(1) @db.UnsignedTinyInt
+  add_time            Int     @default(0) @db.UnsignedInt
+  is_hot              Int     @default(0) @db.UnsignedTinyInt
+  is_top              Int     @default(0) @db.UnsignedTinyInt
+  click_count         Int     @default(0) @db.UnsignedInt
+  link                String  @default("") @db.VarChar(255)
+
+  @@index([article_category_id], map: "cat_id")
+  @@index([is_hot], map: "is_hot")
+  @@index([is_show], map: "is_show")
+  @@index([is_top], map: "is_top")
+}
+
+model article_category {
+  article_category_id   Int    @id @default(autoincrement()) @db.SmallInt
+  article_category_name String @default("") @db.VarChar(255)
+  category_sn           String @default("") @db.VarChar(80)
+  category_type         Int    @default(1) @db.UnsignedMediumInt
+  keywords              String @default("") @db.VarChar(255)
+  description           String @default("") @db.VarChar(255)
+  sort_order            Int    @default(50) @db.UnsignedTinyInt
+  parent_id             Int    @default(0) @db.UnsignedSmallInt
+
+  @@index([category_type], map: "cat_type")
+  @@index([parent_id], map: "parent_id")
+  @@index([sort_order], map: "sort_order")
+}
+
+model authority {
+  authority_id   Int     @id @default(autoincrement()) @db.UnsignedInt
+  authority_sn   String  @default("") @db.VarChar(50)
+  authority_name String  @default("") @db.VarChar(90)
+  parent_id      Int     @default(0) @db.UnsignedInt
+  sort_order     Int     @default(50) @db.UnsignedSmallInt
+  is_show        Int     @default(1) @db.UnsignedTinyInt
+  child_auth     String? @db.Text
+  route_link     String  @default("") @db.VarChar(255)
+  authority_ico  String  @default("") @db.VarChar(80)
+  is_system      Int     @default(0) @db.UnsignedTinyInt
+  admin_type     String  @default("admin") @db.VarChar(10)
+
+  @@index([authority_sn], map: "authority_sn")
+  @@index([is_show], map: "is_show")
+  @@index([parent_id], map: "parent_id")
+  @@index([sort_order], map: "sort_order")
+}
+
+model bargain {
+  bargain_id      Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  bargain_name    String  @db.VarChar(255)
+  bargain_pic     String  @db.VarChar(255)
+  start_time      Int     @db.UnsignedInt
+  end_time        Int     @db.UnsignedInt
+  cut_price_limit Decimal @default(0.00) @db.Decimal(10, 2)
+  cut_num_limit   Int     @default(0)
+  first_cut_range String  @db.VarChar(255)
+  cut_range       String  @db.VarChar(255)
+  product_id      Int     @default(0) @db.UnsignedMediumInt
+  sku_id          Int     @default(0) @db.MediumInt
+  is_show         Int     @default(0) @db.UnsignedTinyInt
+  sort_order      Int     @default(50) @db.UnsignedSmallInt
+  success_type    Int     @default(1) @db.UnsignedTinyInt
+  shop_id         Int     @default(0) @db.UnsignedMediumInt
+
+  @@index([is_show], map: "is_show")
+}
+
+model bargain_group {
+  group_id     Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id      Int     @default(0) @db.UnsignedMediumInt
+  bargain_id   Int     @default(0) @db.UnsignedMediumInt
+  bargain_name String  @db.VarChar(255)
+  product_id   Int     @default(0) @db.UnsignedMediumInt
+  sku_id       Int     @default(0) @db.UnsignedMediumInt
+  status       Int     @default(0) @db.UnsignedTinyInt
+  add_time     Int     @default(0) @db.UnsignedInt
+  price        Decimal @default(0.00) @db.Decimal(8, 2)
+  order_id     Int     @default(0) @db.UnsignedInt
+}
+
+model bargain_log {
+  log_id     Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id    Int     @default(0) @db.UnsignedMediumInt
+  bargain_id Int     @default(0) @db.UnsignedMediumInt
+  product_id Int     @default(0) @db.UnsignedMediumInt
+  sku_id     Int     @default(0) @db.UnsignedMediumInt
+  cut_price  Decimal @default(0.00) @db.Decimal(10, 2)
+  add_time   Int     @db.UnsignedInt
+  group_id   Int     @default(0) @db.UnsignedInt
+}
+
+model brand {
+  brand_id       Int     @id @default(autoincrement()) @db.UnsignedSmallInt
+  brand_name     String  @default("") @db.VarChar(60)
+  brand_logo     String? @default("") @db.VarChar(120)
+  brand_desc     String? @db.Text
+  site_url       String  @default("") @db.VarChar(255)
+  sort_order     Int     @default(50) @db.UnsignedTinyInt
+  is_show        Int     @default(1) @db.UnsignedTinyInt
+  brand_type     String? @default("") @db.VarChar(80)
+  brand_is_hot   Int     @default(0) @db.UnsignedTinyInt
+  first_word     String? @default("") @db.VarChar(11)
+  is_store_brand Int     @default(0) @db.UnsignedTinyInt
+  check_status   Int     @default(0) @db.UnsignedSmallInt
+  brand_en_name  String? @default("") @db.VarChar(80)
+  shop_id        Int     @default(0)
+  status         Boolean @default(false)
+  reject_remark  String? @db.Text
+
+  @@index([first_word], map: "first_word")
+  @@index([is_show], map: "is_show")
+}
+
+model cart {
+  cart_id        Int      @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id        Int      @default(0) @db.UnsignedMediumInt
+  product_id     Int      @default(0) @db.UnsignedMediumInt
+  product_sn     String   @default("") @db.VarChar(60)
+  pic_thumb      String?  @default("") @db.VarChar(255)
+  market_price   Decimal? @default(0.00) @db.Decimal(10, 2)
+  original_price Decimal  @default(0.00) @db.Decimal(10, 2)
+  quantity       Int      @default(0) @db.UnsignedSmallInt
+  sku_id         Int?     @default(0) @db.UnsignedMediumInt
+  sku_data       String?  @db.Text
+  product_type   Int      @default(0) @db.UnsignedTinyInt
+  is_checked     Int      @default(1) @db.UnsignedTinyInt
+  shop_id        Int      @default(0) @db.UnsignedInt
+  type           Int      @default(1) @db.UnsignedSmallInt
+  update_time    Int      @default(0) @db.UnsignedInt
+  salesman_id    Int      @default(0)
+  extra_sku_data String?  @db.Text
+
+  @@index([is_checked], map: "is_checked")
+  @@index([product_id], map: "product_id")
+  @@index([sku_id], map: "sku_id")
+  @@index([shop_id], map: "store_id")
+  @@index([type], map: "type")
+  @@index([user_id], map: "user_id")
+}
+
+model category {
+  category_id     Int    @id @default(autoincrement()) @db.UnsignedSmallInt
+  category_name   String @default("") @db.VarChar(90)
+  keywords        String @default("") @db.VarChar(255)
+  category_desc   String @default("") @db.VarChar(255)
+  parent_id       Int    @default(0) @db.UnsignedSmallInt
+  sort_order      Int    @default(50) @db.UnsignedSmallInt
+  measure_unit    String @default("") @db.VarChar(15)
+  is_show         Int    @default(1) @db.UnsignedTinyInt
+  seo_title       String @default("") @db.VarChar(255)
+  short_name      String @default("") @db.VarChar(80)
+  category_pic    String @default("") @db.VarChar(255)
+  category_ico    String @default("") @db.VarChar(80)
+  is_hot          Int    @default(0) @db.UnsignedTinyInt
+  search_keywords String @default("") @db.VarChar(255)
+
+  @@index([is_hot], map: "is_hot")
+  @@index([is_show], map: "is_show")
+  @@index([parent_id], map: "parent_id")
+  @@index([sort_order], map: "sort_order")
+}
+
+model collect_product {
+  collect_id Int @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id    Int @default(0) @db.UnsignedMediumInt
+  product_id Int @default(0) @db.UnsignedMediumInt
+  add_time   Int @default(0) @db.UnsignedInt
+
+  @@index([product_id], map: "product_id")
+  @@index([user_id], map: "user_id")
+}
+
+model collect_shop {
+  collect_id Int @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id    Int @default(0) @db.UnsignedMediumInt
+  shop_id    Int @default(0) @db.UnsignedMediumInt
+  add_time   Int @default(0) @db.UnsignedInt
+
+  @@index([shop_id], map: "shop_id")
+  @@index([user_id], map: "user_id")
+}
+
+model comment {
+  comment_id    Int     @id @default(autoincrement()) @db.UnsignedInt
+  user_id       Int     @default(0) @db.UnsignedInt
+  username      String  @default("") @db.VarChar(60)
+  avatar        String  @default("") @db.VarChar(255)
+  product_id    Int     @default(0) @db.UnsignedMediumInt
+  order_id      Int     @default(0) @db.UnsignedInt
+  order_item_id Int     @default(0) @db.UnsignedInt
+  comment_rank  Int     @default(0) @db.UnsignedTinyInt
+  content       String  @db.Text
+  add_time      Int     @default(0) @db.UnsignedInt
+  status        Int     @default(0) @db.UnsignedTinyInt
+  parent_id     Int     @default(0) @db.UnsignedInt
+  usefull       Int     @default(0) @db.UnsignedInt
+  useless       Int     @default(0) @db.UnsignedInt
+  comment_tag   String? @db.MediumText
+  show_pics     String? @db.MediumText
+  is_recommend  Int?    @default(0) @db.UnsignedTinyInt
+  is_top        Int     @default(0) @db.UnsignedTinyInt
+  is_showed     Int     @default(0) @db.UnsignedTinyInt
+  is_default    Int     @default(0) @db.UnsignedTinyInt
+  sort_order    Int     @default(50) @db.UnsignedMediumInt
+  shop_id       Int     @default(0) @db.MediumInt
+
+  @@index([is_default], map: "is_default")
+  @@index([is_showed], map: "is_showed")
+  @@index([order_item_id], map: "order_item_id")
+  @@index([parent_id], map: "parent_id")
+  @@index([product_id], map: "product_id")
+  @@index([sort_order], map: "sort_order")
+  @@index([user_id], map: "user_id")
+}
+
+model config {
+  id             BigInt  @id @default(autoincrement())
+  biz_code       String  @db.VarChar(64)
+  biz_val        String? @db.Text
+  create_time    BigInt? @default(0)
+  create_by_id   BigInt? @default(0)
+  create_by_name String? @default("") @db.VarChar(255)
+  update_time    BigInt? @default(0)
+  update_by_id   BigInt? @default(0)
+  update_by_name String? @default("") @db.VarChar(255)
+  is_del         Int?    @default(0) @db.TinyInt
+}
+
+model config_2_2_6 {
+  id   Int    @id @default(autoincrement()) @db.UnsignedSmallInt
+  code String @db.VarChar(80)
+  data String @db.LongText
+
+  @@index([code], map: "code")
+  @@index([id], map: "id")
+  @@map("config_2.2.6")
+}
+
+model coupon {
+  coupon_id         Int      @id @default(autoincrement()) @db.UnsignedSmallInt
+  coupon_name       String   @default("") @db.VarChar(60)
+  coupon_money      Decimal  @default(0.00) @db.Decimal(10, 2)
+  coupon_discount   Decimal  @default(10.0) @db.Decimal(4, 1)
+  coupon_desc       String   @default("") @db.VarChar(255)
+  coupon_type       Int      @default(1) @db.UnsignedTinyInt
+  send_range        Int      @default(0) @db.UnsignedTinyInt
+  send_range_data   String   @db.Text
+  min_order_amount  Decimal  @default(0.00) @db.Decimal(10, 2)
+  send_start_date   Int      @default(0)
+  send_end_date     Int      @default(0)
+  send_type         Int      @default(0) @db.UnsignedTinyInt
+  use_day           Int      @default(30) @db.SmallInt
+  use_start_date    Int      @default(0)
+  use_end_date      Int      @default(0)
+  is_show           Int      @default(0) @db.UnsignedTinyInt
+  is_global         Int      @default(0) @db.UnsignedTinyInt
+  is_new_user       Int      @default(0) @db.UnsignedTinyInt
+  enabled_click_get Int      @default(0) @db.UnsignedTinyInt
+  limit_user_rank   String?  @db.Text
+  shop_id           Int?     @default(0) @db.UnsignedMediumInt
+  is_delete         Boolean? @default(false)
+  limit_num         Int?     @default(0)
+  delay_day         Int      @default(0) @db.UnsignedInt
+  send_num          Int      @default(1) @db.UnsignedInt
+  max_order_amount  Decimal  @default(0.00) @db.Decimal(10, 2)
+  coupon_unit       Int      @default(1) @db.UnsignedTinyInt
+  reduce_type       Int      @default(1) @db.UnsignedTinyInt
+  add_time          Int?     @default(0)
+
+  @@index([add_time], map: "add_time")
+  @@index([is_show], map: "is_show")
+  @@index([send_end_date], map: "send_end_date")
+  @@index([send_start_date], map: "send_start_date")
+  @@index([use_end_date], map: "use_end_date")
+  @@index([use_start_date], map: "use_start_date")
+}
+
+model crons {
+  cron_id       Int     @id @default(autoincrement()) @db.UnsignedTinyInt
+  cron_sn       String  @default("") @db.VarChar(20)
+  cron_name     String  @default("") @db.VarChar(120)
+  cron_desc     String? @db.Text
+  last_runtime  Int     @default(0)
+  next_runtime  Int     @default(0)
+  cron_type     Int     @default(0) @db.TinyInt
+  cron_config   String  @db.Text
+  is_enabled    Boolean @default(true)
+  just_once     Boolean @default(false)
+  white_ip_list String  @default("") @db.VarChar(100)
+
+  @@index([cron_sn], map: "cron_code")
+  @@index([is_enabled], map: "enable")
+  @@index([next_runtime], map: "nextime")
+}
+
+model currency {
+  id         Int    @id @default(autoincrement()) @db.UnsignedInt
+  name       String @default("") @db.VarChar(32)
+  symbol     String @default("") @db.VarChar(32)
+  is_default Int    @default(0) @db.UnsignedTinyInt
+  rate       String @default("") @db.VarChar(32)
+}
+
+model decorate {
+  decorate_id    Int      @id @default(autoincrement())
+  decorate_title String?  @default("") @db.VarChar(120)
+  data           String?  @db.LongText
+  draft_data     String?  @db.LongText
+  decorate_type  Int?     @default(1) @db.TinyInt
+  is_home        Int?     @default(0)
+  shop_id        Int      @default(0) @db.UnsignedMediumInt
+  status         Boolean? @default(false)
+  update_time    Int?     @default(0)
+  locale_id      Int?     @default(0)
+  parent_id      Int?     @default(0)
+
+  @@index([is_home], map: "page_id")
+  @@index([decorate_type], map: "page_type")
+  @@index([status], map: "status")
+  @@index([shop_id], map: "store_id")
+}
+
+model decorate_discrete {
+  id            Int     @id @default(autoincrement()) @db.UnsignedInt
+  decorate_sn   String  @default("") @db.VarChar(80)
+  decorate_name String? @default("") @db.VarChar(255)
+  data          String  @db.Text
+  shop_id       Int     @default(0)
+
+  @@index([shop_id], map: "shop_id")
+}
+
+model decorate_share {
+  share_id    Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  share_sn    String @default("") @db.Char(6)
+  share_token String @default("0") @db.Char(5)
+  decorate_id Int    @default(0)
+  valid_time  Int    @default(0)
+  create_time Int    @default(0)
+  update_time Int    @default(0)
+
+  @@index([decorate_id], map: "decorate_id")
+  @@index([share_sn], map: "share_sn")
+  @@index([share_token], map: "share_token")
+}
+
+model distribution_log {
+  log_id      Int     @id @default(autoincrement()) @db.MediumInt
+  order_id    Int     @default(0) @db.MediumInt
+  add_time    Int     @default(0)
+  level       Int     @default(0) @db.TinyInt
+  user_id     Int     @default(0) @db.MediumInt
+  money       Decimal @default(0.00) @db.Decimal(10, 2)
+  point       Int     @default(0)
+  type        Boolean @default(false)
+  log_desc    String  @db.Text
+  is_returned Int     @default(0) @db.UnsignedTinyInt
+}
+
+model e_card {
+  card_id       Int     @id @default(autoincrement()) @db.UnsignedInt
+  group_id      Int     @db.UnsignedInt
+  card_number   String  @default("") @db.VarChar(255)
+  card_pwd      String  @default("") @db.VarChar(255)
+  is_use        Boolean @default(false)
+  order_id      Int     @default(0)
+  order_item_id Int     @default(0)
+  add_time      Int?    @default(0) @db.UnsignedInt
+  up_time       Int?    @default(0) @db.UnsignedInt
+
+  @@index([group_id], map: "group_id")
+  @@index([order_id], map: "order_id")
+}
+
+model e_card_group {
+  group_id   Int     @id @default(autoincrement()) @db.UnsignedInt
+  group_name String  @default("") @db.VarChar(255)
+  shop_id    Int     @db.UnsignedInt
+  remark     String? @db.Text
+  is_use     Boolean @default(false)
+  add_time   Int?    @default(0) @db.UnsignedInt
+  up_time    Int?    @default(0) @db.UnsignedInt
+}
+
+model example {
+  example_id   Int    @id @default(autoincrement()) @db.UnsignedSmallInt
+  example_name String @default("") @db.VarChar(60)
+  example_pic  String @default("") @db.VarChar(80)
+  example_desc String @db.Text
+  sort_order   Int    @default(50) @db.UnsignedTinyInt
+  is_show      Int    @default(1) @db.UnsignedTinyInt
+  status       Int?   @default(0) @db.TinyInt
+
+  @@index([is_show], map: "is_show")
+}
+
+model feedback {
+  id             Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  parent_id      Int     @default(0) @db.UnsignedMediumInt
+  user_id        Int     @default(0) @db.UnsignedMediumInt
+  username       String  @default("") @db.VarChar(60)
+  email          String? @default("") @db.VarChar(60)
+  mobile         String? @default("") @db.VarChar(20)
+  title          String  @default("") @db.VarChar(200)
+  type           Int     @default(0) @db.UnsignedTinyInt
+  status         Int     @default(0) @db.UnsignedTinyInt
+  content        String  @db.Text
+  add_time       Int     @default(0) @db.UnsignedInt
+  feedback_pics  String? @db.Text
+  product_id     Int?    @default(0) @db.UnsignedInt
+  order_id       Int?    @default(0) @db.UnsignedInt
+  complaint_info String? @db.Text
+  shop_id        Int?    @default(0) @db.UnsignedMediumInt
+
+  @@index([parent_id], map: "parent_id")
+  @@index([user_id], map: "user_id")
+}
+
+model friend_links {
+  link_id    Int    @id @default(autoincrement()) @db.UnsignedSmallInt
+  link_title String @default("") @db.VarChar(255)
+  link_logo  String @default("") @db.VarChar(255)
+  link_url   String @default("") @db.VarChar(255)
+  sort_order Int    @default(50) @db.UnsignedTinyInt
+
+  @@index([sort_order], map: "show_order")
+}
+
+model gallery {
+  gallery_id       Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  parent_id        Int    @default(0) @db.UnsignedMediumInt
+  gallery_admin_id Int    @default(0) @db.UnsignedMediumInt
+  gallery_name     String @default("") @db.VarChar(255)
+  gallery_sort     Int    @default(50) @db.UnsignedMediumInt
+  gallery_thumb    String @default("") @db.VarChar(255)
+  shop_id          Int    @default(0) @db.UnsignedMediumInt
+  vendor_id        Int?   @default(0)
+
+  @@index([parent_id], map: "parent_id")
+  @@index([shop_id], map: "store_id")
+}
+
+model gallery_pic {
+  pic_id      Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  shop_id     Int    @default(0) @db.UnsignedMediumInt
+  gallery_id  Int    @default(0) @db.UnsignedMediumInt
+  pic_ower_id Int    @default(0) @db.UnsignedMediumInt
+  pic_url     String @default("") @db.VarChar(255)
+  pic_name    String @default("") @db.VarChar(255)
+  pic_thumb   String @default("") @db.VarChar(255)
+  add_time    String @default("") @db.VarChar(255)
+  vendor_id   Int    @default(0)
+
+  @@index([gallery_id], map: "gallery_id")
+}
+
+model gallery_video {
+  id          Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  shop_id     Int    @default(0) @db.UnsignedMediumInt
+  parent_id   Int    @default(0) @db.UnsignedMediumInt
+  name        String @default("") @db.VarChar(255)
+  sort        Int    @default(50) @db.UnsignedMediumInt
+  add_time    Int    @default(0)
+  add_user_id Int    @default(1) @db.MediumInt
+  vendor_id   Int    @default(0)
+}
+
+model gallery_video_info {
+  id                Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  shop_id           Int    @default(0) @db.UnsignedMediumInt
+  gallery_id        Int    @default(0) @db.UnsignedMediumInt
+  video_url         String @default("") @db.VarChar(255)
+  video_name        String @default("") @db.VarChar(255)
+  add_time          Int    @default(0)
+  add_user_id       Int    @default(0) @db.UnsignedMediumInt
+  video_cover       String @default("") @db.VarChar(100)
+  format            String @default("") @db.VarChar(20)
+  video_first_frame String @default("") @db.VarChar(255)
+  duration          String @default("") @db.VarChar(100)
+  size              String @default("") @db.VarChar(50)
+  vendor_id         Int    @default(0)
+}
+
+model groupon {
+  groupon_id      Int     @id @default(autoincrement())
+  groupon_name    String? @db.VarChar(255)
+  start_time      Int?
+  end_time        Int?
+  product_id      Int?
+  shop_id         Int?
+  add_time        Int?
+  team_num        Int?
+  limit_num       Int?    @default(0)
+  expiration_time Int?
+}
+
+model groupon_item {
+  groupon_item_id Int      @id @default(autoincrement())
+  groupon_id      Int?
+  product_sku_id  Int?
+  price           Decimal? @db.Decimal(10, 2)
+  product_id      Int?
+  start_time      Int?
+  end_time        Int?
+}
+
+model im_config {
+  id      Int     @id @default(autoincrement()) @db.UnsignedInt
+  code    String  @default("") @db.VarChar(255)
+  data    String? @db.Text
+  shop_id Int     @default(0) @db.UnsignedInt
+}
+
+model im_conversation {
+  id               Int     @id @default(autoincrement())
+  user_id          Int?
+  last_servant_id  Int?    @default(0)
+  add_time         Int?
+  shop_id          Int?
+  user_from        String? @db.VarChar(255)
+  status           Int?    @default(0) @db.TinyInt
+  last_update_time Int?
+  is_delete        Int?    @default(0) @db.TinyInt
+  remark           String  @default("") @db.VarChar(255)
+  summary          String  @default("") @db.VarChar(255)
+}
+
+model im_message {
+  id              Int      @id @default(autoincrement())
+  conversation_id Int?
+  content         String?  @db.Text
+  message_type    String?  @db.VarChar(255)
+  type            Int?     @db.TinyInt
+  user_id         Int?
+  servant_id      Int?
+  send_time       Int?
+  status          Int?     @default(1) @db.TinyInt
+  extend          String?  @db.Text
+  push_status     Int?     @default(0) @db.TinyInt
+  is_read         Boolean? @default(false)
+  shop_id         Int      @default(0)
+  user_from       String?  @db.VarChar(255)
+}
+
+model im_servant {
+  id               Int  @id @default(autoincrement())
+  servant_id       Int?
+  last_update_time Int?
+  add_time         Int?
+  status           Int? @default(1) @db.TinyInt
+  shop_id          Int? @default(0)
+  conversation_num Int? @default(0)
+}
+
+model keywords {
+  date         DateTime @db.Date
+  searchengine String   @default("") @db.VarChar(20)
+  keyword      String   @default("") @db.VarChar(90)
+  count        Int      @default(0) @db.UnsignedMediumInt
+
+  @@id([date, searchengine, keyword])
+  @@index([keyword], map: "keyword")
+}
+
+model locales {
+  id           Int     @id @default(autoincrement())
+  locale_code  String? @default("") @db.VarChar(255)
+  language     String? @default("") @db.VarChar(255)
+  flag_picture String? @default("") @db.VarChar(255)
+  last_updated Int?    @default(0)
+  is_enabled   Int?    @default(1) @db.TinyInt
+  is_default   Int?    @default(0) @db.UnsignedTinyInt
+  currency_id  Int?    @default(0) @db.UnsignedInt
+  sort         Int?
+}
+
+model locales_lang {
+  code    String? @db.VarChar(255)
+  name    String? @db.VarChar(255)
+  id      Int     @id @default(autoincrement())
+  name_en String? @db.VarChar(255)
+}
+
+model locales_relation {
+  id         Int     @id @default(autoincrement())
+  name       String? @db.VarChar(255)
+  code       String? @db.VarChar(255)
+  locales_id Int?
+}
+
+model logistics_api_log {
+  id             Int     @id @default(autoincrement())
+  order_id       Int?    @default(0)
+  order_code     String? @default("") @db.VarChar(120)
+  logistic_code  String? @default("") @db.VarChar(120)
+  add_time       Int?    @default(0)
+  print_template String? @db.LongText
+
+  @@index([logistic_code], map: "logistic_code")
+  @@index([order_code], map: "order_code")
+  @@index([order_id], map: "order_id")
+}
+
+model logistics_company {
+  logistics_id       Int     @id @default(autoincrement()) @db.UnsignedTinyInt
+  logistics_code     String  @default("") @db.VarChar(20)
+  logistics_name     String  @default("") @db.VarChar(120)
+  logistics_desc     String  @default("") @db.VarChar(255)
+  sort_order         Int     @default(50) @db.UnsignedTinyInt
+  is_show            Int     @default(1) @db.UnsignedTinyInt
+  shop_id            Int     @default(0) @db.UnsignedInt
+  customer_name      String? @default("") @db.VarChar(200)
+  customer_pwd       String? @default("") @db.VarChar(200)
+  month_code         String? @default("") @db.VarChar(200)
+  send_site          String? @default("") @db.VarChar(200)
+  send_staff         String? @default("") @db.VarChar(200)
+  exp_type           String? @default("") @db.VarChar(40)
+  api_logistics_code String? @default("") @db.VarChar(20)
+
+  @@index([is_show], map: "is_show")
+  @@index([logistics_code], map: "shipping_code")
+  @@index([shop_id], map: "shop_id")
+}
+
+model mail_log {
+  mail_id   Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id   Int    @default(0) @db.UnsignedMediumInt
+  email     String @db.VarChar(60)
+  send_time Int    @db.UnsignedInt
+  status    Int    @default(0) @db.UnsignedTinyInt
+  content   String @db.Text
+
+  @@index([email], map: "email")
+  @@index([user_id], map: "user_id")
+}
+
+model mail_templates {
+  template_id      Int    @id @default(autoincrement()) @db.UnsignedTinyInt
+  template_code    String @unique(map: "template_code") @default("") @db.VarChar(30)
+  is_html          Int    @default(0) @db.UnsignedTinyInt
+  template_subject String @default("") @db.VarChar(200)
+  template_content String @db.Text
+  last_modify      Int    @default(0) @db.UnsignedInt
+  last_send        Int    @default(0) @db.UnsignedInt
+  type             String @default("") @db.VarChar(10)
+
+  @@index([type], map: "type")
+}
+
+model merchant {
+  merchant_id       Int      @id @default(autoincrement())
+  merchant_apply_id Int?     @default(0)
+  user_id           Int?     @default(0)
+  add_time          Int?     @default(0)
+  base_data         String?  @db.Text
+  shop_data         String?  @db.Text
+  merchant_data     String?  @db.Text
+  status            Int?     @default(1) @db.TinyInt
+  type              Boolean? @default(true)
+  company_name      String?  @default("") @db.VarChar(255)
+  corporate_name    String?  @default("") @db.VarChar(255)
+  settlement_cycle  Int?     @default(15)
+
+  @@index([user_id], map: "user_id")
+}
+
+model merchant_account {
+  account_id   Int     @id @default(autoincrement()) @db.UnsignedInt
+  merchant_id  Int     @default(0) @db.UnsignedMediumInt
+  account_type Int     @default(1) @db.UnsignedTinyInt
+  account_name String  @default("") @db.VarChar(60)
+  account_no   String  @db.Text
+  bank_name    String  @default("") @db.VarChar(255)
+  add_time     Int?    @default(0)
+  bank_branch  String? @default("") @db.VarChar(255)
+  shop_id      Int?
+
+  @@index([account_type], map: "account_type")
+  @@index([merchant_id], map: "merchant_id")
+}
+
+model merchant_apply {
+  merchant_apply_id Int     @id @default(autoincrement())
+  user_id           Int?
+  add_time          Int?    @default(0)
+  shop_title        String? @default("") @db.VarChar(255)
+  status            Int?    @default(1) @db.TinyInt
+  type              Int?    @default(1) @db.TinyInt
+  contact_name      String? @default("") @db.VarChar(255)
+  contact_mobile    String? @default("") @db.VarChar(255)
+  audit_time        Int?    @default(0)
+  shop_data         String? @db.Text
+  base_data         String? @db.Text
+  merchant_data     String? @db.Text
+  company_name      String? @default("") @db.VarChar(255)
+  corporate_name    String? @default("") @db.VarChar(255)
+  audit_remark      String? @default("") @db.VarChar(255)
+}
+
+model merchant_user {
+  merchant_user_id Int  @id @default(autoincrement())
+  user_id          Int? @default(0)
+  admin_user_id    Int? @default(0)
+  merchant_id      Int? @default(0)
+  is_admin         Int? @default(0) @db.TinyInt
+
+  @@index([admin_user_id], map: "admin_user_id")
+  @@index([merchant_id], map: "merchant_id")
+  @@index([user_id], map: "user_id")
+}
+
+model message_template {
+  id            Int      @id @default(autoincrement())
+  message_id    Int?     @default(0)
+  type          Boolean? @default(false)
+  template_name String?  @default("") @db.VarChar(120)
+  to_userid     String?  @default("") @db.VarChar(250)
+  template_id   String?  @default("") @db.VarChar(120)
+  template_num  String?  @default("") @db.VarChar(40)
+  content       String?  @default("") @db.VarChar(800)
+
+  @@index([message_id], map: "message_id")
+}
+
+model message_type {
+  message_id      Int      @id @default(autoincrement())
+  name            String?  @default("") @db.VarChar(100)
+  describe        String?  @default("") @db.VarChar(120)
+  send_type       Boolean? @default(true)
+  is_wechat       Boolean? @default(false)
+  is_mini_program Boolean? @default(false)
+  is_message      Boolean? @default(false)
+  is_msg          Boolean? @default(false)
+  is_app          Boolean? @default(false)
+  is_ding         Boolean? @default(false)
+  add_time        Int?     @default(0)
+}
+
+model mobile_cat_nav {
+  mobile_cat_nav_id Int     @id @default(autoincrement()) @db.UnsignedInt
+  category_id       Int     @default(0) @db.UnsignedInt
+  cat_color         String  @default("") @db.VarChar(80)
+  child_cat_ids     String  @db.Text
+  brand_ids         String  @default("") @db.VarChar(255)
+  is_show           Int     @default(0) @db.UnsignedTinyInt
+  img_url           String  @db.Text
+  sort_order        Int     @default(50) @db.UnsignedSmallInt
+  cat_name_alias    String? @default("") @db.VarChar(255)
+
+  @@index([category_id], map: "category_id")
+}
+
+model order {
+  order_id            Int      @id @default(autoincrement()) @db.UnsignedMediumInt
+  order_sn            String   @unique(map: "order_sn") @default("") @db.VarChar(20)
+  user_id             Int      @default(0) @db.UnsignedMediumInt
+  parent_order_id     Int      @default(0) @db.UnsignedInt
+  parent_order_sn     String   @default("0") @db.VarChar(20)
+  order_status        Int      @default(0) @db.UnsignedTinyInt
+  shipping_status     Int      @default(0) @db.UnsignedTinyInt
+  pay_status          Int      @default(0) @db.UnsignedTinyInt
+  add_time            Int      @default(0) @db.UnsignedInt
+  consignee           String   @default("") @db.VarChar(60)
+  address             String   @db.Text
+  region_ids          String   @db.TinyText
+  region_names        String   @db.TinyText
+  address_data        String?  @db.Text
+  mobile              String   @default("") @db.VarChar(60)
+  email               String   @default("") @db.VarChar(60)
+  buyer_note          String   @default("") @db.VarChar(255)
+  admin_note          String   @default("") @db.VarChar(255)
+  shipping_method     Int      @default(1) @db.UnsignedTinyInt
+  logistics_id        Int      @default(0) @db.UnsignedTinyInt
+  logistics_name      String   @default("") @db.VarChar(120)
+  shipping_type_id    Int      @default(0) @db.UnsignedMediumInt
+  shipping_type_name  String   @default("") @db.VarChar(120)
+  tracking_no         String   @default("") @db.VarChar(255)
+  shipping_time       Int      @default(0) @db.UnsignedInt
+  received_time       Int      @default(0) @db.UnsignedInt
+  pay_type_id         Int      @default(0) @db.UnsignedSmallInt
+  pay_time            Int      @default(0) @db.UnsignedInt
+  use_points          Int      @default(0) @db.UnsignedInt
+  is_need_commisson   Boolean  @default(false)
+  distribution_status Boolean  @default(false)
+  referrer_user_id    Int      @default(0) @db.UnsignedMediumInt
+  is_del              Int      @default(0) @db.UnsignedTinyInt
+  shop_id             Int      @default(0) @db.UnsignedMediumInt
+  is_store_splited    Int      @default(0) @db.UnsignedTinyInt
+  comment_status      Int      @default(0) @db.UnsignedTinyInt
+  total_amount        Decimal  @default(0.00) @db.Decimal(10, 2)
+  paid_amount         Decimal  @default(0.00) @db.Decimal(10, 2)
+  unpaid_amount       Decimal  @default(0.00) @db.Decimal(10, 2)
+  unrefund_amount     Decimal  @default(0.00) @db.Decimal(10, 2)
+  product_amount      Decimal  @default(0.00) @db.Decimal(10, 2)
+  coupon_amount       Decimal  @default(0.00) @db.Decimal(10, 2)
+  points_amount       Decimal  @default(0.00) @db.Decimal(10, 2)
+  discount_amount     Decimal  @default(0.00) @db.Decimal(10, 2)
+  balance             Decimal  @default(0.00) @db.Decimal(10, 2)
+  online_paid_amount  Decimal  @default(0.00) @db.Decimal(10, 2)
+  offline_paid_amount Decimal  @default(0.00) @db.Decimal(10, 2)
+  service_fee         Decimal  @default(0.00) @db.Decimal(10, 2)
+  shipping_fee        Decimal  @default(0.00) @db.Decimal(10, 2)
+  invoice_fee         Decimal  @default(0.00) @db.Decimal(10, 2)
+  order_extension     String   @db.Text
+  order_source        String   @default("") @db.VarChar(80)
+  invoice_data        String?  @db.Text
+  out_trade_no        String?  @default("") @db.VarChar(120)
+  is_settlement       Int?     @default(0) @db.TinyInt
+  is_exchange_order   Boolean? @default(false)
+  order_type          Int?     @default(1) @db.TinyInt
+  mark                Int?     @default(0) @db.TinyInt
+  vendor_id           Int?
+
+  @@index([add_time], map: "add_time")
+  @@index([vendor_id], map: "idx_vendor_id")
+  @@index([is_del], map: "is_del")
+  @@index([is_need_commisson], map: "is_need_commisson")
+  @@index([order_status], map: "order_status")
+  @@index([pay_status], map: "pay_status")
+  @@index([pay_type_id], map: "pay_type_id")
+  @@index([referrer_user_id], map: "referrer_user_id")
+  @@index([logistics_id], map: "shipping_id")
+  @@index([shipping_status], map: "shipping_status")
+  @@index([shop_id], map: "store_id")
+  @@index([user_id], map: "user_id")
+}
+
+model order_amount_detail {
+  order_discount_detail_id Int      @id @default(autoincrement())
+  order_id                 Int?
+  shop_id                  Int?     @default(0)
+  shipping_fee             Decimal? @default(0.00) @db.Decimal(10, 2)
+  discount_amount          Decimal? @default(0.00) @db.Decimal(10, 2)
+  coupon_amount            Decimal? @default(0.00) @db.Decimal(10, 2)
+  time_discount_amount     Decimal? @default(0.00) @db.Decimal(10, 2)
+}
+
+model order_config {
+  id      Int     @id @default(autoincrement()) @db.UnsignedInt
+  shop_id Int     @default(0) @db.UnsignedInt
+  code    String  @default("") @db.VarChar(50)
+  data    String? @db.Text
+}
+
+model order_coupon_detail {
+  order_coupon_detail_id Int      @id @default(autoincrement())
+  order_id               Int?
+  shop_id                Int?     @default(0)
+  coupon_id              Int?     @default(0)
+  coupon_fee             Decimal? @default(0.00) @db.Decimal(10, 2)
+}
+
+model order_invoice {
+  id                 Int     @id @default(autoincrement()) @db.UnsignedInt
+  user_id            Int     @default(0) @db.UnsignedInt
+  order_id           Int     @default(0) @db.UnsignedInt
+  invoice_type       Int     @default(1) @db.UnsignedTinyInt
+  status             Int     @default(0) @db.UnsignedTinyInt
+  apply_reply        String  @default("") @db.VarChar(255)
+  title_type         Int     @default(0) @db.UnsignedTinyInt
+  company_code       String  @default("") @db.VarChar(80)
+  company_name       String  @default("") @db.VarChar(80)
+  company_address    String  @default("") @db.VarChar(120)
+  company_phone      String  @default("") @db.VarChar(80)
+  company_bank       String  @default("") @db.VarChar(80)
+  company_account    String  @default("") @db.VarChar(80)
+  invoice_content    String  @default("商品明细") @db.VarChar(80)
+  invoice_no         String  @default("") @db.VarChar(80)
+  amount             Decimal @default(0.00) @db.Decimal(10, 2)
+  mobile             String  @default("") @db.VarChar(80)
+  email              String  @default("") @db.VarChar(80)
+  add_time           Int     @default(0) @db.UnsignedInt
+  invoice_attachment String? @db.Text
+  invoicing_time     Int     @default(0) @db.UnsignedInt
+
+  @@index([user_id], map: "user_id")
+}
+
+model order_item {
+  item_id               Int      @id @default(autoincrement()) @db.UnsignedMediumInt
+  order_id              Int      @default(0) @db.UnsignedMediumInt
+  order_sn              String   @default("") @db.VarChar(60)
+  user_id               Int      @default(0) @db.UnsignedMediumInt
+  price                 Decimal  @default(0.00) @db.Decimal(10, 2)
+  quantity              Int      @default(1) @db.UnsignedSmallInt
+  product_id            Int      @default(0) @db.UnsignedMediumInt
+  product_name          String   @default("") @db.VarChar(500)
+  product_sn            String   @default("") @db.VarChar(60)
+  pic_thumb             String   @default("") @db.VarChar(255)
+  sku_id                Int      @default(0) @db.UnsignedMediumInt
+  sku_data              String   @db.Text
+  delivery_quantity     Int      @default(0) @db.UnsignedSmallInt
+  product_type          Int      @default(1) @db.UnsignedTinyInt
+  is_gift               Int      @default(0) @db.UnsignedSmallInt
+  shop_id               Int      @default(0) @db.UnsignedMediumInt
+  is_pin                Int      @default(0) @db.UnsignedTinyInt
+  prepay_price          Decimal  @default(0.00) @db.Decimal(8, 2)
+  commission            String?  @default("") @db.VarChar(255)
+  origin_price          Decimal? @default(0.00) @db.Decimal(10, 2)
+  promotion_data        String?  @db.Text
+  is_seckill            Int?     @default(0) @db.TinyInt
+  extra_sku_data        String?  @db.Text
+  suppliers_id          Int?     @default(0) @db.UnsignedInt
+  card_group_name       String   @default("") @db.VarChar(255)
+  vendor_product_id     Int?
+  vendor_product_sku_id Int?
+  vendor_id             Int?
+
+  @@index([product_id], map: "goods_id")
+  @@index([vendor_id], map: "idx_vendor_id")
+  @@index([vendor_product_id], map: "idx_vendor_product_id")
+  @@index([vendor_product_sku_id], map: "idx_vendor_product_sku_id")
+  @@index([order_id], map: "order_id")
+}
+
+model order_log {
+  log_id      Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  order_id    Int    @default(0) @db.UnsignedInt
+  order_sn    String @default("") @db.VarChar(80)
+  admin_id    Int    @default(0) @db.UnsignedMediumInt
+  user_id     Int    @default(0) @db.UnsignedMediumInt
+  description String @default("") @db.VarChar(255)
+  log_time    Int    @default(0) @db.UnsignedInt
+  shop_id     Int    @default(0) @db.UnsignedMediumInt
+
+  @@index([order_id], map: "order_id")
+}
+
+model order_split_log {
+  log_id            Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  parent_order_id   Int     @default(0) @db.UnsignedMediumInt
+  order_id          Int     @default(0) @db.UnsignedMediumInt
+  split_time        Int     @db.UnsignedInt
+  parent_order_data String? @db.Text
+
+  @@index([parent_order_id], map: "add_time")
+  @@index([order_id], map: "order_id")
+}
+
+model paylog {
+  paylog_id      Int     @id @default(autoincrement()) @db.UnsignedInt
+  pay_sn         String  @default("") @db.VarChar(255)
+  pay_name       String  @default("") @db.VarChar(255)
+  order_id       Int     @default(0) @db.UnsignedMediumInt
+  order_sn       String  @default("") @db.VarChar(255)
+  order_amount   Decimal @db.Decimal(10, 2)
+  order_type     Int     @default(0) @db.UnsignedTinyInt
+  pay_amount     Decimal @default(0.00) @db.Decimal(10, 2)
+  pay_status     Int     @default(0) @db.UnsignedTinyInt
+  pay_code       String  @default("") @db.VarChar(255)
+  add_time       Int?    @default(0) @db.UnsignedInt
+  transaction_id String  @default("") @db.VarChar(80)
+  notify_data    String  @db.Text
+  refund_amount  Decimal @default(0.00) @db.Decimal(8, 2)
+  token_code     String  @default("") @db.VarChar(255)
+  appid          String? @db.VarChar(255)
+
+  @@index([order_id], map: "order_id")
+  @@index([pay_status], map: "pay_status")
+}
+
+model paylog_refund {
+  paylog_refund_id Int      @id @default(autoincrement()) @db.UnsignedInt
+  paylog_id        Int?     @default(0) @db.UnsignedInt
+  refund_sn        String?  @default("") @db.VarChar(255)
+  paylog_desc      String   @default("") @db.VarChar(255)
+  order_id         Int      @default(0) @db.UnsignedMediumInt
+  refund_amount    Decimal  @default(0.00) @db.Decimal(10, 2)
+  add_time         Int?     @default(0) @db.UnsignedInt
+  admin_id         Int      @default(0) @db.MediumInt
+  pay_code         String?  @default("") @db.VarChar(255)
+  status           Boolean? @default(false)
+  notify_time      Int?     @default(0)
+
+  @@index([order_id], map: "order_id")
+  @@index([paylog_id], map: "paylog_id")
+}
+
+model pc_cat_floor {
+  cat_floor_id   Int    @id @default(autoincrement()) @db.UnsignedSmallInt
+  cat_floor_name String @default("") @db.VarChar(255)
+  category_ids   String @default("") @db.VarChar(255)
+  category_names String @default("") @db.VarChar(255)
+  floor_ico      String @default("") @db.VarChar(255)
+  hot_cat        String @db.Text
+  is_show        Int    @default(1) @db.UnsignedTinyInt
+  sort_order     Int    @default(50) @db.UnsignedInt
+  floor_ico_font String @default("") @db.VarChar(80)
+  brand_ids      String @default("") @db.VarChar(255)
+
+  @@index([is_show], map: "is_show")
+}
+
+model pc_navigation {
+  id         Int     @id @default(autoincrement()) @db.MediumInt
+  title      String  @default("") @db.VarChar(255)
+  is_show    Boolean @default(false)
+  sort_order Boolean @default(false)
+  is_blank   Boolean @default(false)
+  link       String  @db.Text
+  type       Int     @default(0) @db.TinyInt
+  parent_id  Int     @default(0) @db.UnsignedInt
+  icon       String  @default("") @db.VarChar(255)
+
+  @@index([is_show], map: "is_show")
+  @@index([parent_id], map: "parent_id")
+  @@index([type], map: "type")
+}
+
+model points_exchange {
+  id                     Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  product_id             Int     @default(0) @db.UnsignedMediumInt
+  exchange_integral      Int     @default(0) @db.UnsignedInt
+  points_deducted_amount Decimal @default(0.00) @db.Decimal(8, 2)
+  is_hot                 Int     @default(0) @db.UnsignedTinyInt
+  is_enabled             Int     @default(0) @db.UnsignedTinyInt
+  sku_id                 Int?    @default(0)
+
+  @@index([is_enabled], map: "is_enabled")
+  @@index([is_hot], map: "is_hot")
+  @@index([product_id], map: "product_id")
+}
+
+model price_inquiry {
+  id          Int    @id @default(autoincrement()) @db.UnsignedInt
+  mobile      String @default("") @db.VarChar(50)
+  content     String @default("") @db.VarChar(255)
+  product_id  Int    @default(0) @db.UnsignedInt
+  remark      String @default("") @db.VarChar(255)
+  status      Int    @default(0) @db.UnsignedTinyInt
+  shop_id     Int    @default(0) @db.UnsignedInt
+  create_time Int?   @default(0) @db.UnsignedInt
+}
+
+model print {
+  print_id      Int      @id @default(autoincrement())
+  print_name    String   @db.VarChar(255)
+  print_sn      String   @db.VarChar(255)
+  print_key     String   @db.VarChar(255)
+  third_account String   @db.VarChar(255)
+  third_key     String   @db.VarChar(255)
+  print_number  Int?     @default(0)
+  platform      Boolean? @default(true)
+  shop_id       Int?     @default(0)
+  status        Int?     @default(1) @db.TinyInt
+  add_time      Int?     @default(0)
+  update_time   Int?     @default(0)
+  delete_time   Int?     @default(0)
+  auto_print    Int?     @default(2) @db.TinyInt
+
+  @@index([print_sn], map: "print_sn")
+  @@index([shop_id], map: "shop_id")
+}
+
+model print_config {
+  id          Int      @id @default(autoincrement())
+  print_id    Int
+  template    String   @db.Text
+  type        Boolean? @default(true)
+  add_time    Int?     @default(0)
+  update_time Int?     @default(0)
+
+  @@index([print_id], map: "print_id")
+}
+
+model product {
+  product_id          Int      @default(autoincrement()) @db.UnsignedMediumInt
+  product_name        String   @default("") @db.VarChar(120)
+  product_sn          String   @default("") @db.VarChar(60)
+  product_tsn         String?  @db.VarChar(255)
+  product_stock       Int      @default(0) @db.UnsignedSmallInt
+  product_price       Decimal  @default(0.00) @db.Decimal(10, 2)
+  market_price        Decimal  @default(0.00) @db.Decimal(10, 2)
+  shipping_tpl_id     Int      @default(0) @db.UnsignedMediumInt
+  product_status      Int      @default(1) @db.UnsignedTinyInt
+  product_type        Boolean? @default(true)
+  category_id         Int      @default(0) @db.UnsignedSmallInt
+  brand_id            Int      @default(0) @db.UnsignedSmallInt
+  shop_id             Int      @default(0) @db.UnsignedInt
+  keywords            String?  @default("") @db.VarChar(255)
+  shop_category_id    Int      @default(0) @db.UnsignedInt
+  check_status        Int      @default(1) @db.UnsignedTinyInt
+  check_reason        String   @default("") @db.VarChar(255)
+  click_count         Int      @default(0) @db.UnsignedInt
+  product_weight      Decimal  @default(0.000) @db.Decimal(10, 3)
+  is_promote          Int      @default(0) @db.UnsignedTinyInt
+  is_promote_activity Boolean  @default(false)
+  promote_price       Decimal  @default(0.00) @db.Decimal(10, 2)
+  promote_start_date  Int      @default(0) @db.UnsignedInt
+  promote_end_date    Int      @default(0) @db.UnsignedInt
+  seckill_max_num     Int      @default(0) @db.UnsignedSmallInt
+  product_brief       String   @default("") @db.VarChar(255)
+  product_desc        String?  @db.Text
+  pic_url             String   @default("") @db.VarChar(255)
+  pic_thumb           String   @default("") @db.VarChar(255)
+  pic_original        String   @default("") @db.VarChar(255)
+  comment_tag         String?  @db.VarChar(255)
+  free_shipping       Int      @default(0) @db.UnsignedTinyInt
+  integral            Int      @default(0)
+  add_time            Int      @default(0) @db.UnsignedInt
+  sort_order          Int      @default(100) @db.UnsignedSmallInt
+  store_sort_order    Int      @default(100) @db.UnsignedSmallInt
+  is_delete           Int      @default(0) @db.UnsignedTinyInt
+  is_best             Int      @default(0) @db.UnsignedTinyInt
+  is_new              Int      @default(0) @db.UnsignedTinyInt
+  is_hot              Int      @default(0) @db.UnsignedTinyInt
+  last_update         Int      @default(0) @db.UnsignedInt
+  remark              String   @default("") @db.VarChar(255)
+  give_integral       Int      @default(-1)
+  rank_integral       Int      @default(-1)
+  suppliers_id        Int?     @db.UnsignedSmallInt
+  virtual_sales       Int      @default(0) @db.UnsignedInt
+  limit_number        Int      @default(0) @db.UnsignedInt
+  product_care        String?  @db.Text
+  product_related     String?  @db.Text
+  product_service_ids String?  @db.Text
+  is_support_return   Int      @default(0) @db.UnsignedTinyInt
+  is_support_cod      Int      @default(1) @db.UnsignedTinyInt
+  product_video       String?  @db.Text
+  prepay_price        Decimal? @default(0.00) @db.Decimal(8, 2)
+  card_group_id       Int      @default(0)
+  virtual_sample      String?  @db.Text
+  paid_content        String?  @db.Text
+  no_shipping         Int?     @default(0) @db.TinyInt
+  fixed_shipping_type Int?     @default(2) @db.TinyInt
+  fixed_shipping_fee  Decimal? @default(0.00) @db.Decimal(10, 2)
+  vendor_product_id   Int?
+  vendor_id           Int?
+
+  @@id([product_id, brand_id, product_weight])
+  @@index([brand_id], map: "brand_id")
+  @@index([category_id], map: "cat_id")
+  @@index([virtual_sales], map: "goods_basesell")
+  @@index([product_stock], map: "goods_number")
+  @@index([product_sn], map: "goods_sn")
+  @@index([product_weight], map: "goods_weight")
+  @@index([vendor_id], map: "idx_vendor_id")
+  @@index([vendor_product_id], map: "idx_vendor_product_id")
+  @@index([keywords], map: "keywords")
+  @@index([last_update], map: "last_update")
+  @@index([product_name], map: "product_name")
+  @@index([promote_end_date], map: "promote_end_date")
+  @@index([promote_start_date], map: "promote_start_date")
+  @@index([sort_order], map: "sort_order")
+  @@index([shop_id], map: "store_id")
+}
+
+model product_article {
+  goods_id   Int @default(0) @db.UnsignedMediumInt
+  article_id Int @default(0) @db.UnsignedMediumInt
+
+  @@id([goods_id, article_id])
+  @@index([goods_id], map: "goods_id")
+}
+
+model product_attributes {
+  attributes_id  Int      @id @default(autoincrement()) @db.UnsignedInt
+  product_id     Int      @default(0) @db.UnsignedMediumInt
+  attr_type      Int      @default(0) @db.UnsignedTinyInt
+  attr_name      String   @default("") @db.VarChar(80)
+  attr_value     String   @default("") @db.VarChar(120)
+  attr_price     Decimal? @default(0.00) @db.Decimal(8, 2)
+  attr_color     String?  @default("") @db.VarChar(80)
+  attr_pic       String?  @default("") @db.VarChar(255)
+  attr_pic_thumb String?  @default("") @db.VarChar(255)
+
+  @@index([attr_name], map: "attr_name")
+  @@index([attr_type], map: "attr_type")
+  @@index([attr_value], map: "attr_value")
+  @@index([product_id], map: "goods_id")
+}
+
+model product_attributes_tpl {
+  tpl_id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  tpl_name String @default("") @db.VarChar(80)
+  tpl_data String @db.Text
+  shop_id  Int    @default(0) @db.UnsignedInt
+}
+
+model product_gallery {
+  pic_id       Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  product_id   Int    @default(0) @db.UnsignedMediumInt
+  pic_url      String @default("") @db.VarChar(255)
+  pic_desc     String @default("") @db.VarChar(255)
+  pic_thumb    String @default("") @db.VarChar(255)
+  pic_original String @default("") @db.VarChar(255)
+  pic_large    String @default("") @db.VarChar(255)
+  sort_order   Int    @default(1) @db.UnsignedInt
+
+  @@index([product_id], map: "goods_id")
+}
+
+model product_gift {
+  gift_id    Int    @id @default(autoincrement()) @db.UnsignedInt
+  gift_name  String @default("") @db.VarChar(50)
+  gift_stock Int    @default(0) @db.UnsignedInt
+  product_id Int
+  sku_id     Int    @default(0)
+  shop_id    Int    @default(0)
+}
+
+model product_group {
+  product_group_id          Int     @id @default(autoincrement())
+  product_group_name        String? @default("") @db.VarChar(255)
+  product_group_sn          String? @default("") @db.VarChar(255)
+  product_group_description String? @default("") @db.VarChar(255)
+  product_ids               String? @db.Text
+  add_time                  Int?    @default(0)
+  shop_id                   Int?    @default(0)
+
+  @@index([shop_id], map: "shop_id")
+}
+
+model product_inventory_log {
+  log_id        Int      @id @default(autoincrement())
+  product_id    Int?     @default(0)
+  spec_id       Int?     @default(0)
+  number        Int?     @default(0)
+  add_time      Int?     @default(0)
+  old_number    Int?     @default(0)
+  type          Boolean? @default(true)
+  change_number Int?     @default(0)
+  desc          String?  @default("") @db.VarChar(255)
+  shop_id       Int      @default(0) @db.UnsignedInt
+
+  @@index([product_id], map: "product_id")
+}
+
+model product_member_price {
+  price_id   Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  product_id Int     @default(0) @db.UnsignedMediumInt
+  user_rank  Int     @default(0) @db.TinyInt
+  user_price Decimal @default(0.00) @db.Decimal(10, 2)
+
+  @@index([product_id, user_rank], map: "goods_id")
+}
+
+model product_package {
+  package_id   Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  package_name String @default("") @db.VarChar(255)
+  package_desc String @db.Text
+  package_type Int    @db.UnsignedTinyInt
+  product_id   Int    @db.UnsignedMediumInt
+  start_time   Int    @db.UnsignedInt
+  end_time     Int    @db.UnsignedInt
+  is_finished  Int    @db.UnsignedTinyInt
+  ext_info     String @db.Text
+  store_id     Int    @default(0) @db.UnsignedMediumInt
+
+  @@index([package_name, package_type, product_id], map: "act_name")
+  @@index([store_id], map: "store_id")
+}
+
+model product_promotion {
+  promotion_id        Int     @id @default(autoincrement()) @db.UnsignedSmallInt
+  promotion_name      String  @default("") @db.VarChar(100)
+  start_time          Int     @default(0) @db.UnsignedInt
+  end_time            Int     @default(0) @db.UnsignedInt
+  limit_user_rank     String  @default("") @db.VarChar(255)
+  range               Int     @default(0) @db.UnsignedTinyInt
+  range_data          String  @db.Text
+  min_order_amount    Decimal @default(0.00) @db.Decimal(10, 2)
+  max_order_amount    Decimal @default(0.00) @db.Decimal(10, 2)
+  promotion_type      Int     @default(0) @db.UnsignedTinyInt
+  promotion_type_data String  @db.Text
+  is_available        Int     @default(1) @db.UnsignedTinyInt
+  sort_order          Int     @default(50) @db.UnsignedTinyInt
+  shop_id             Int     @default(0) @db.UnsignedInt
+  rules_type          Int     @default(1) @db.UnsignedTinyInt
+  unit                Int     @default(1) @db.UnsignedTinyInt
+
+  @@index([promotion_name], map: "act_name")
+}
+
+model product_related {
+  product_id         Int @default(0) @db.UnsignedMediumInt
+  related_product_id Int @default(0) @db.UnsignedMediumInt
+
+  @@id([product_id, related_product_id])
+  @@index([product_id], map: "product_id")
+  @@index([related_product_id], map: "related_product_id")
+}
+
+model product_services {
+  product_service_id   Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  product_service_name String @default("") @db.VarChar(120)
+  product_service_desc String @default("") @db.VarChar(255)
+  ico_img              String @default("") @db.VarChar(255)
+  sort_order           Int    @default(50) @db.UnsignedSmallInt
+  default_on           Int    @default(0) @db.UnsignedTinyInt
+  shop_id              Int    @default(0) @db.UnsignedInt
+
+  @@index([shop_id], map: "shop_id")
+}
+
+model product_sku {
+  sku_id                Int      @id @default(autoincrement()) @db.UnsignedMediumInt
+  product_id            Int      @default(0) @db.UnsignedMediumInt
+  sku_value             String   @default("") @db.VarChar(255)
+  sku_data              String?  @db.Text
+  sku_sn                String?  @default("") @db.VarChar(60)
+  sku_stock             Int?     @default(0) @db.UnsignedInt
+  sku_tsn               String?  @default("") @db.VarChar(120)
+  sku_price             Decimal? @default(0.00) @db.Decimal(8, 2)
+  vendor_product_sku_id Int?
+
+  @@index([product_id], map: "product_id")
+}
+
+model product_video {
+  id          Int    @id @default(autoincrement()) @db.UnsignedInt
+  video_id    Int    @db.UnsignedMediumInt
+  product_id  Int    @default(0) @db.UnsignedMediumInt
+  video_url   String @default("") @db.VarChar(255)
+  video_cover String @default("") @db.VarChar(255)
+  format      String @default("") @db.VarChar(100)
+}
+
+model promotion {
+  promotion_id   Int      @id @default(autoincrement()) @db.UnsignedSmallInt
+  promotion_name String   @default("") @db.VarChar(255)
+  start_time     Int      @default(0) @db.UnsignedInt
+  end_time       Int      @default(0) @db.UnsignedInt
+  type           Int      @default(0) @db.UnsignedInt
+  shop_id        Int      @default(0) @db.UnsignedInt
+  relation_id    Int?     @default(0)
+  range          Int?     @default(0) @db.TinyInt
+  range_data     String?  @db.Text
+  sku_ids        String?  @db.Text
+  is_available   Int?     @default(1) @db.TinyInt
+  is_delete      Boolean? @default(false)
+
+  @@index([end_time], map: "end_time")
+  @@index([relation_id], map: "relation_id")
+  @@index([shop_id], map: "shop_id")
+  @@index([start_time], map: "start_time")
+  @@index([type], map: "type")
+}
+
+model rank_growth_log {
+  id            Int  @id @default(autoincrement()) @db.UnsignedInt
+  user_id       Int  @default(0) @db.UnsignedInt
+  type          Int  @default(0) @db.UnsignedTinyInt
+  growth_points Int  @default(0) @db.UnsignedInt
+  change_type   Int  @default(1) @db.UnsignedTinyInt
+  create_time   Int? @default(0) @db.UnsignedInt
+}
+
+model recharge_setting {
+  recharge_id    Int      @id @default(autoincrement()) @db.UnsignedInt
+  money          Decimal? @default(0.00) @db.Decimal(10, 2)
+  discount_money Decimal? @default(0.00) @db.Decimal(10, 2)
+  sort_order     Int?     @default(1) @db.TinyInt
+  is_show        Boolean? @default(true)
+
+  @@index([is_show], map: "is_show")
+}
+
+model refund_apply {
+  refund_id        Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  refund_type      Int     @default(0) @db.UnsignedTinyInt
+  order_id         Int     @default(0) @db.UnsignedInt
+  user_id          Int     @default(0) @db.UnsignedInt
+  aftersale_id     Int     @default(0) @db.UnsignedInt
+  refund_status    Int     @default(0) @db.UnsignedTinyInt
+  add_time         Int     @default(0) @db.UnsignedInt
+  refund_note      String  @default("") @db.VarChar(255)
+  online_balance   Decimal @default(0.00) @db.Decimal(10, 2)
+  offline_balance  Decimal @default(0.00) @db.Decimal(10, 2)
+  refund_balance   Decimal @default(0.00) @db.Decimal(10, 2)
+  is_online        Int     @default(0) @db.UnsignedTinyInt
+  is_offline       Int     @default(0) @db.UnsignedTinyInt
+  is_receive       Int     @default(0) @db.UnsignedTinyInt
+  paylog_refund_id Int     @default(0)
+  shop_id          Int     @default(0) @db.UnsignedMediumInt
+  payment_voucher  String? @db.Text
+
+  @@index([aftersale_id], map: "aftersale_id")
+  @@index([order_id], map: "order_id")
+  @@index([aftersale_id], map: "rec_id")
+  @@index([refund_status], map: "refund_status")
+  @@index([refund_type], map: "refund_type")
+  @@index([user_id], map: "user_id")
+}
+
+model refund_log {
+  log_id          Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  refund_apply_id Int     @default(0) @db.UnsignedMediumInt
+  refund_type     Int     @default(0) @db.UnsignedTinyInt
+  refund_pay_code String  @default("") @db.VarChar(80)
+  transaction_id  String  @default("") @db.VarChar(80)
+  refund_amount   Decimal @default(0.00) @db.Decimal(8, 2)
+  add_time        Int     @default(0) @db.UnsignedInt
+  description     String? @db.Text
+  user_id         Int     @default(0) @db.UnsignedMediumInt
+  order_id        Int     @default(0) @db.UnsignedMediumInt
+
+  @@index([order_id], map: "order_id")
+  @@index([refund_apply_id], map: "refund_id")
+  @@index([user_id], map: "user_id")
+}
+
+model region {
+  region_id   Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  level       Int?   @default(0) @db.UnsignedTinyInt
+  region_name String @default("") @db.VarChar(120)
+  parent_id   Int    @default(0) @db.UnsignedMediumInt
+  is_hot      Int    @default(0) @db.UnsignedTinyInt
+  first_word  String @default("") @db.VarChar(50)
+
+  @@index([level], map: "level")
+  @@index([parent_id], map: "parent_id")
+}
+
+model salesman {
+  salesman_id Int      @id @default(autoincrement())
+  user_id     Int?
+  level       Int?     @default(1)
+  group_id    Int?     @default(0)
+  pid         Int      @default(0)
+  add_time    Int?
+  shop_id     Int?
+  sale_amount Decimal? @default(0.00) @db.Decimal(10, 2)
+}
+
+model salesman_config {
+  id      Int     @id @default(autoincrement())
+  shop_id Int?
+  code    String? @db.VarChar(255)
+  data    String? @db.Text
+}
+
+model salesman_content {
+  id           Int     @id @default(autoincrement()) @db.UnsignedInt
+  title        String  @default("") @db.VarChar(255)
+  img          String  @default("") @db.VarChar(255)
+  start_time   Int     @default(0) @db.UnsignedInt
+  end_time     Int?    @default(0) @db.UnsignedInt
+  describe     String  @default("") @db.VarChar(255)
+  is_top       Int     @default(0) @db.UnsignedTinyInt
+  content      String? @db.Text
+  is_available Int?    @default(1) @db.UnsignedTinyInt
+  shop_id      Int     @default(0) @db.UnsignedInt
+  pics         String? @db.Text
+}
+
+model salesman_customer {
+  salesman_customer_id Int  @id @default(autoincrement())
+  salesman_id          Int?
+  user_id              Int?
+  add_time             Int?
+}
+
+model salesman_group {
+  group_id   Int     @id @default(autoincrement())
+  group_name String? @db.VarChar(255)
+  describe   String? @default("") @db.VarChar(255)
+  add_time   Int?
+  shop_id    Int?
+}
+
+model salesman_material {
+  id           Int     @id @default(autoincrement()) @db.UnsignedInt
+  add_time     Int     @default(0) @db.UnsignedInt
+  is_top       Int     @default(0) @db.UnsignedTinyInt
+  content      String? @db.Text
+  is_available Int?    @default(1) @db.UnsignedTinyInt
+  shop_id      Int     @default(0) @db.UnsignedInt
+  pics         String? @db.Text
+  category_id  Int?
+  share_num    Int?    @default(0)
+  product_id   Int?
+}
+
+model salesman_material_category {
+  category_id   Int     @id @default(autoincrement())
+  category_name String? @db.VarChar(255)
+  add_time      Int?
+  shop_id       Int?
+  sort_order    Int?
+}
+
+model salesman_order {
+  salesman_order_id        Int      @id @default(autoincrement())
+  order_id                 Int?
+  salesman_id              Int?
+  amount                   Decimal? @db.Decimal(10, 2)
+  status                   Int?     @default(0) @db.TinyInt
+  add_time                 Int?
+  item_id                  Int?
+  salesman_product_data    String?  @db.Text
+  order_amount             Decimal? @default(0.00) @db.Decimal(10, 2)
+  salesman_settlement_data String?  @db.Text
+  settlement_time          Int?     @db.UnsignedInt
+  product_id               Int?     @default(0) @db.UnsignedInt
+}
+
+model salesman_product {
+  salesman_product_id Int     @id @default(autoincrement())
+  product_id          Int?
+  is_join             Int?    @default(0) @db.TinyInt
+  commission_type     Int?    @default(1) @db.TinyInt
+  commission_data     String? @db.Text
+  add_time            Int?
+  update_time         Int?
+  shop_id             Int?
+}
+
+model seckill {
+  seckill_id         Int     @id @default(autoincrement())
+  seckill_name       String? @default("") @db.VarChar(255)
+  seckill_start_time Int?    @default(0)
+  seckill_end_time   Int?    @default(0)
+  seckill_limit_num  Int?    @default(0)
+  product_id         Int?    @default(0)
+  shop_id            Int     @default(0)
+
+  @@index([product_id], map: "product_id")
+  @@index([seckill_end_time], map: "seckill_end_time")
+  @@index([seckill_start_time], map: "seckill_start_time")
+}
+
+model seckill_item {
+  rec_id             Int      @id @default(autoincrement())
+  seckill_id         Int?     @default(0) @db.UnsignedInt
+  product_id         Int?     @default(0) @db.UnsignedInt
+  sku_id             Int?     @default(0)
+  seckill_price      Decimal? @default(0.00) @db.Decimal(10, 2)
+  seckill_stock      Int?     @default(0) @db.UnsignedInt
+  seckill_sales      Int?     @default(0) @db.UnsignedInt
+  seckill_start_time Int?     @db.UnsignedInt
+  seckill_end_time   Int?     @db.UnsignedInt
+
+  @@index([product_id], map: "product_id")
+  @@index([seckill_id], map: "seckill_id")
+  @@index([sku_id], map: "sku_id")
+}
+
+model sensitive_words {
+  id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  word String @unique(map: "word") @default("") @db.VarChar(30)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model shipping_tpl {
+  shipping_tpl_id   Int    @default(autoincrement()) @db.UnsignedMediumInt
+  shipping_time     String @default("") @db.VarChar(255)
+  shipping_tpl_name String @default("") @db.VarChar(120)
+  is_free           Int    @default(0) @db.UnsignedTinyInt
+  pricing_type      Int    @default(1) @db.UnsignedInt
+  is_default        Int    @default(0) @db.UnsignedTinyInt
+  shop_id           Int    @default(0) @db.UnsignedMediumInt
+
+  @@index([shipping_tpl_id], map: "shipping_tpl_id")
+  @@index([shop_id], map: "store_id")
+  @@ignore
+}
+
+model shipping_tpl_info {
+  id               Int     @id @default(autoincrement()) @db.UnsignedInt
+  shipping_type_id Int     @default(0) @db.UnsignedInt
+  shipping_tpl_id  Int     @default(0) @db.UnsignedInt
+  is_free          Int     @default(0) @db.UnsignedTinyInt
+  is_default       Int     @default(0) @db.UnsignedTinyInt
+  region_data      String? @db.Text
+  start_number     Decimal @default(0.0) @db.Decimal(10, 1)
+  start_price      Decimal @default(0.00) @db.Decimal(10, 2)
+  add_number       Decimal @default(0.0) @db.Decimal(10, 1)
+  add_price        Decimal @default(0.00) @db.Decimal(10, 2)
+  free_price       Decimal @default(0.00) @db.Decimal(8, 2)
+  pricing_type     Boolean @default(true)
+
+  @@index([is_free], map: "is_free")
+  @@index([shipping_tpl_id], map: "shipping_tpl_id")
+  @@index([shipping_type_id], map: "shipping_type_id")
+}
+
+model shipping_type {
+  shipping_type_id    Int    @id @default(autoincrement()) @db.UnsignedTinyInt
+  shipping_type_name  String @default("") @db.VarChar(120)
+  shipping_default_id Int    @default(0) @db.UnsignedInt
+  shipping_type_desc  String @default("") @db.VarChar(255)
+  shipping_time_desc  String @default("") @db.VarChar(255)
+  is_support_cod      Int    @default(0) @db.UnsignedTinyInt
+  sort_order          Int    @default(50) @db.UnsignedSmallInt
+  shop_id             Int    @default(0) @db.UnsignedMediumInt
+}
+
+model shop {
+  shop_id                     Int      @id @default(autoincrement())
+  shop_title                  String?  @default("") @db.VarChar(255)
+  add_time                    Int?     @default(0)
+  shop_logo                   String?  @default("") @db.VarChar(255)
+  click_count                 Int?     @default(0)
+  status                      Int?     @default(1) @db.TinyInt
+  merchant_id                 Int?     @default(0) @db.UnsignedInt
+  shop_money                  Decimal? @default(0.00) @db.Decimal(10, 2)
+  frozen_money                Decimal? @default(0.00) @db.Decimal(10, 2)
+  contact_mobile              String?  @default("") @db.VarChar(255)
+  description                 String?  @default("") @db.VarChar(255)
+  kefu_phone                  String?  @default("") @db.VarChar(20)
+  kefu_weixin                 String?  @default("") @db.VarChar(30)
+  kefu_link                   String?  @default("") @db.VarChar(255)
+  is_contact_kefu             Int      @default(1) @db.UnsignedTinyInt
+  kefu_inlet                  String?  @db.Text
+  last_login_time             Int      @default(0) @db.UnsignedInt
+  vendor_set_price_type       Int?     @default(3) @db.TinyInt
+  vendor_set_price_auto_value Decimal? @db.Decimal(10, 2)
+  service_fee_rate            Decimal? @db.Decimal(10, 2)
+  fee_rate                    Decimal? @db.Decimal(10, 2)
+}
+
+model shop_account_log {
+  shop_account_log_id Int     @id @default(autoincrement()) @db.UnsignedInt
+  add_time            Int     @default(0) @db.UnsignedInt
+  shop_money          Decimal @default(0.00) @db.Decimal(10, 2)
+  frozen_money        Decimal @default(0.00) @db.Decimal(10, 2)
+  type                String  @default("") @db.VarChar(60)
+  remarks             String? @db.Text
+  new_shop_money      Decimal @default(0.00) @db.Decimal(10, 2)
+  new_frozen_money    Decimal @default(0.00) @db.Decimal(10, 2)
+  shop_id             Int     @default(0) @db.UnsignedInt
+  is_new              Boolean @default(false)
+
+  @@index([shop_id], map: "shop_id")
+  @@index([type], map: "type")
+}
+
+model shop_product_category {
+  category_id   Int    @id @default(autoincrement()) @db.UnsignedSmallInt
+  category_name String @default("") @db.VarChar(90)
+  shop_id       Int    @default(0) @db.UnsignedSmallInt
+  parent_id     Int    @default(0) @db.UnsignedSmallInt
+  sort_order    Int    @default(50) @db.UnsignedTinyInt
+  is_show       Int    @default(1) @db.UnsignedTinyInt
+  add_time      Int?   @default(0)
+
+  @@index([parent_id], map: "parent_id")
+  @@index([shop_id], map: "shop_id")
+}
+
+model shop_withdraw {
+  shop_withdraw_log_id Int     @id @default(autoincrement())
+  shop_id              Int     @default(0) @db.UnsignedMediumInt
+  amount               Decimal @default(0.00) @db.Decimal(10, 2)
+  status               Int     @default(0) @db.UnsignedTinyInt
+  add_time             Int     @db.UnsignedInt
+  remark               String  @db.Text
+  merchant_account_id  Int?
+  account_data         String? @db.Text
+  audit_remark         String? @db.VarChar(255)
+  payment_voucher      String? @db.Text
+  withdraw_sn          String  @db.VarChar(32)
+}
+
+model sign {
+  id       Int  @id @default(autoincrement())
+  user_id  Int? @default(0)
+  add_time Int? @default(0)
+  sign_num Int? @default(0)
+}
+
+model sign_in_setting {
+  id      Int     @id @default(autoincrement())
+  name    String? @default("") @db.VarChar(100)
+  points  Int?    @default(0)
+  day_num Int?    @default(0)
+
+  @@index([day_num], map: "day_num")
+}
+
+model sms_log {
+  sms_id        Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id       Int    @default(0) @db.UnsignedMediumInt
+  mobile        String @default("") @db.VarChar(20)
+  send_time     Int    @default(0) @db.UnsignedInt
+  content       String @db.Text
+  status        Int    @default(0) @db.UnsignedTinyInt
+  batch_mobile  String @db.Text
+  error_content String @default("") @db.VarChar(255)
+
+  @@index([user_id], map: "user_id")
+}
+
+model statement {
+  statement_id      BigInt  @id @default(autoincrement())
+  shop_id           Int?
+  record_id         Int?
+  record_sn         String? @db.VarChar(32)
+  record_time       BigInt?
+  settlement_time   BigInt?
+  vendor_id         Int?
+  account_type      Int?
+  type              Int?
+  entry_type        String  @db.VarChar(50)
+  payment_type      String? @db.VarChar(50)
+  account_balance   Decimal @default(0.00) @db.Decimal(10, 2)
+  amount            Decimal @db.Decimal(10, 2)
+  gmt_create        String? @db.VarChar(64)
+  statement_year    Int?
+  statement_month   Int?
+  statement_day     Int?
+  settlement_status Int?
+}
+
+model statement_download {
+  statement_download_id BigInt  @id @default(autoincrement())
+  vendor_id             BigInt?
+  shop_id               BigInt?
+  gmt_create            BigInt?
+  start_time            BigInt?
+  end_time              BigInt?
+  remark                String? @db.VarChar(255)
+}
+
+model statement_output {
+  statement_output_id BigInt   @id
+  shop_id             Int?
+  vendor_id           Int?
+  income              Decimal? @db.Decimal(10, 2)
+  expenditure         Decimal? @db.Decimal(10, 2)
+  gmt_create          BigInt?
+  record_sn           String?  @db.VarChar(32)
+  record_type         Int?
+  record_id           Int?
+  settlement_status   BigInt?
+}
+
+model statistics_base {
+  id            Int       @id @default(autoincrement())
+  date          DateTime? @db.Date
+  click_count   Int?      @default(0)
+  shop_id       Int?      @default(0)
+  visitor_count Int?      @default(0)
+}
+
+model statistics_log {
+  id               Int     @id @default(autoincrement())
+  access_time      Int?
+  shop_id          Int?    @default(0)
+  product_id       Int?    @default(0)
+  shop_category_id Int     @default(0)
+  user             String? @db.VarChar(50)
+}
+
+model suppliers {
+  suppliers_id    Int      @id @default(autoincrement()) @db.UnsignedSmallInt
+  suppliers_name  String?  @default("") @db.VarChar(255)
+  suppliers_desc  String?  @db.MediumText
+  is_check        Int      @default(1) @db.UnsignedTinyInt
+  country         Int      @default(0) @db.UnsignedInt
+  province        Int      @default(0) @db.UnsignedInt
+  city            Int      @default(0) @db.UnsignedInt
+  district        Int      @default(0) @db.UnsignedInt
+  contact_name    String?  @default("") @db.VarChar(255)
+  contact_phone   String?  @default("") @db.VarChar(255)
+  contact_address String?  @default("") @db.VarChar(255)
+  is_show         Boolean? @default(false)
+  shop_id         Int?     @default(0)
+
+  @@index([is_show], map: "is_show")
+  @@index([shop_id], map: "shop_id")
+}
+
+model time_discount {
+  discount_id    Int    @id @default(autoincrement()) @db.UnsignedSmallInt
+  promotion_name String @default("") @db.VarChar(255)
+  start_time     Int    @default(0) @db.UnsignedInt
+  end_time       Int    @default(0) @db.UnsignedInt
+  shop_id        Int    @default(0) @db.UnsignedInt
+  add_time       Int?   @default(0)
+
+  @@index([end_time], map: "end_time")
+  @@index([shop_id], map: "shop_id")
+  @@index([start_time], map: "start_time")
+}
+
+model time_discount_item {
+  item_id       Int     @id @default(autoincrement()) @db.UnsignedInt
+  discount_id   Int     @default(0) @db.SmallInt
+  start_time    Int     @default(0)
+  end_time      Int     @default(0)
+  product_id    Int     @default(0) @db.UnsignedInt
+  sku_ids       String? @db.Text
+  value         Decimal @default(0.00) @db.Decimal(10, 2)
+  discount_type Int     @default(1) @db.TinyInt
+
+  @@index([discount_id], map: "discount_id")
+  @@index([product_id], map: "product_id")
+}
+
+model translations {
+  id               Int     @id @default(autoincrement())
+  translation_name String? @db.Text
+  translation_key  String? @db.VarChar(255)
+  data_type        Int?    @default(0) @db.TinyInt
+  shop_id          Int     @default(0) @db.UnsignedInt
+}
+
+model translations_data {
+  id                Int     @id @default(autoincrement())
+  locale_id         Int?
+  translation_name  String? @db.Text
+  translation_key   String? @db.VarChar(255)
+  translation_value String? @db.Text
+  data_type         Int?    @default(0) @db.TinyInt
+  data_id           Int?
+
+  @@index([data_id], map: "data_id")
+  @@index([data_type], map: "data_type")
+  @@index([locale_id], map: "locale_id")
+}
+
+model unipush_log {
+  unipush_log_id  Int      @id @default(autoincrement()) @db.UnsignedMediumInt
+  type            String   @default("") @db.VarChar(80)
+  add_time        Int      @default(0) @db.UnsignedInt
+  data            String   @db.Text
+  respond_data    String   @db.Text
+  is_success      Int      @default(0) @db.UnsignedTinyInt
+  user_ids        Int?     @default(0)
+  message_title   String?  @default("") @db.VarChar(255)
+  message_content String?  @db.Text
+  send_user_type  Boolean? @default(false)
+
+  @@index([add_time], map: "add_time")
+}
+
+model user {
+  user_id                    Int       @id @default(autoincrement()) @db.UnsignedMediumInt
+  username                   String    @unique(map: "username") @default("") @db.VarChar(60)
+  avatar                     String    @default("") @db.VarChar(255)
+  mobile                     String    @default("") @db.VarChar(20)
+  mobile_validated           Int       @default(0) @db.UnsignedTinyInt
+  email                      String    @default("") @db.VarChar(60)
+  email_validated            Int       @default(0) @db.UnsignedTinyInt
+  nickname                   String?   @default("") @db.VarChar(80)
+  password                   String    @default("") @db.VarChar(80)
+  birthday                   DateTime? @db.Date
+  balance                    Decimal   @default(0.00) @db.Decimal(10, 2)
+  frozen_balance             Decimal   @default(0.00) @db.Decimal(10, 2)
+  points                     Int       @default(0) @db.UnsignedInt
+  growth_points              Int       @default(0) @db.UnsignedInt
+  address_id                 Int       @default(0) @db.UnsignedMediumInt
+  reg_time                   Int       @default(0) @db.UnsignedInt
+  last_login                 Int       @default(0) @db.UnsignedInt
+  last_ip                    String    @default("") @db.VarChar(15)
+  rank_id                    Int       @default(0) @db.UnsignedTinyInt
+  referrer_user_id           Int       @default(0) @db.MediumInt
+  from_tag                   Int       @default(0) @db.UnsignedTinyInt
+  is_svip                    Boolean?  @default(false)
+  svip_expire_time           Int?      @default(0)
+  order_count                Int       @default(0) @db.MediumInt
+  order_amount               Decimal   @default(0.00) @db.Decimal(10, 2)
+  history_product_ids        String?   @db.Text
+  is_distribution            Boolean?  @default(false)
+  distribution_register_time Int?      @default(0)
+  wechat_img                 String    @default("") @db.VarChar(255)
+  is_company_auth            Int       @default(0) @db.UnsignedTinyInt
+  status                     Int?      @default(1) @db.TinyInt
+
+  @@index([email], map: "email")
+  @@index([is_distribution], map: "is_distribution")
+  @@index([referrer_user_id], map: "parent_id")
+}
+
+model user_address {
+  address_id   Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  address_tag  String  @default("") @db.VarChar(50)
+  user_id      Int     @default(0) @db.UnsignedMediumInt
+  consignee    String  @default("") @db.VarChar(60)
+  email        String? @default("") @db.VarChar(60)
+  region_ids   String  @db.Text
+  region_names String  @db.Text
+  address      String  @default("") @db.VarChar(120)
+  postcode     String? @default("") @db.VarChar(60)
+  telephone    String? @default("") @db.VarChar(60)
+  mobile       String  @default("") @db.VarChar(60)
+  is_default   Int     @default(0) @db.UnsignedTinyInt
+  is_selected  Int     @default(0) @db.UnsignedTinyInt
+
+  @@index([user_id], map: "user_id")
+}
+
+model user_authorize {
+  authorize_id   Int     @id @default(autoincrement()) @db.UnsignedInt
+  authorize_type Int     @default(1) @db.UnsignedTinyInt
+  user_id        Int     @default(0) @db.UnsignedInt
+  open_id        String  @default("") @db.VarChar(255)
+  open_data      String  @db.Text
+  open_name      String  @default("") @db.VarChar(80)
+  open_photo     String  @default("") @db.VarChar(255)
+  unionid        String? @default("") @db.VarChar(200)
+  add_time       Int?    @default(0)
+
+  @@index([authorize_type], map: "authorize_type")
+  @@index([open_id], map: "open_id")
+  @@index([user_id], map: "user_id")
+}
+
+model user_balance_log {
+  log_id             Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id            Int     @default(0) @db.UnsignedMediumInt
+  balance            Decimal @default(0.00) @db.Decimal(10, 2)
+  frozen_balance     Decimal @default(0.00) @db.Decimal(10, 2)
+  new_balance        Decimal @default(0.00) @db.Decimal(10, 2)
+  new_frozen_balance Decimal @default(0.00) @db.Decimal(10, 2)
+  change_time        Int     @default(0) @db.UnsignedInt
+  change_desc        String  @default("") @db.VarChar(255)
+  change_type        Int     @default(0) @db.UnsignedTinyInt
+
+  @@index([change_type], map: "change_type")
+  @@index([user_id], map: "user_id")
+}
+
+model user_company {
+  id             Int     @id @default(autoincrement()) @db.UnsignedInt
+  user_id        Int     @default(0) @db.UnsignedInt
+  type           Int     @default(2) @db.UnsignedTinyInt
+  contact_name   String  @default("") @db.VarChar(80)
+  contact_mobile String  @default("") @db.VarChar(32)
+  company_name   String  @default("") @db.VarChar(255)
+  company_data   String? @db.Text
+  status         Int     @default(1) @db.UnsignedTinyInt
+  audit_remark   String  @default("") @db.VarChar(255)
+  audit_time     Int?    @default(0) @db.UnsignedInt
+  add_time       Int?    @default(0) @db.UnsignedInt
+}
+
+model user_coupon {
+  id         Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  coupon_id  Int    @default(0) @db.UnsignedTinyInt
+  coupon_sn  String @default("") @db.VarChar(80)
+  user_id    Int    @default(0) @db.UnsignedMediumInt
+  used_time  Int    @default(0) @db.UnsignedInt
+  order_id   Int    @default(0) @db.UnsignedMediumInt
+  start_date Int    @default(0)
+  end_date   Int    @default(0)
+
+  @@index([end_date], map: "end_date")
+  @@index([order_id], map: "order_id")
+  @@index([start_date], map: "start_date")
+  @@index([used_time], map: "used_time")
+  @@index([user_id], map: "user_id")
+}
+
+model user_growth_points_log {
+  log_id      Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id     Int    @default(0) @db.UnsignedMediumInt
+  points      Int    @default(0) @db.MediumInt
+  change_time Int    @default(0) @db.UnsignedInt
+  change_desc String @default("") @db.VarChar(255)
+  change_type Int    @default(0) @db.UnsignedTinyInt
+
+  @@index([user_id], map: "user_id")
+}
+
+model user_invoice {
+  invoice_id      Int    @id @default(autoincrement()) @db.UnsignedInt
+  user_id         Int    @default(0) @db.UnsignedInt
+  status          Int    @default(0) @db.UnsignedTinyInt
+  apply_reply     String @default("") @db.VarChar(255)
+  add_time        Int    @default(0) @db.UnsignedInt
+  title_type      Int    @default(1) @db.UnsignedTinyInt
+  company_name    String @default("") @db.VarChar(80)
+  company_code    String @default("") @db.VarChar(80)
+  company_address String @default("") @db.VarChar(120)
+  company_phone   String @default("") @db.VarChar(80)
+  company_bank    String @default("") @db.VarChar(80)
+  company_account String @default("") @db.VarChar(80)
+  mobile          String @default("") @db.VarChar(80)
+  email           String @default("") @db.VarChar(80)
+  invoice_content String @default("商品明细") @db.VarChar(80)
+
+  @@index([user_id, status], map: "user_id")
+}
+
+model user_message {
+  message_id     Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  message_log_id Int    @default(0) @db.UnsignedMediumInt
+  user_id        Int    @default(0) @db.UnsignedMediumInt
+  user_rank      Int    @default(0) @db.UnsignedMediumInt
+  is_read        Int    @default(0) @db.UnsignedTinyInt
+  title          String @default("") @db.VarChar(255)
+  content        String @db.Text
+  link           String @default("") @db.VarChar(255)
+  add_time       Int    @default(0) @db.UnsignedInt
+
+  @@index([message_log_id], map: "message_log_id")
+  @@index([user_id], map: "user_id")
+}
+
+model user_message_log {
+  message_log_id  Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  message_type    Int    @default(0) @db.UnsignedTinyInt
+  send_user_type  Int    @default(0) @db.UnsignedTinyInt
+  user_ids        String @db.Text
+  user_rank       Int    @default(0) @db.UnsignedMediumInt
+  message_title   String @default("") @db.VarChar(255)
+  message_content String @db.Text
+  message_link    String @default("") @db.VarChar(255)
+  send_time       Int    @default(0) @db.UnsignedInt
+  is_recall       Int    @default(0) @db.UnsignedTinyInt
+
+  @@index([send_user_type], map: "send_user_type")
+}
+
+model user_points_log {
+  log_id        Int    @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id       Int    @default(0) @db.UnsignedMediumInt
+  points        Int    @default(0) @db.MediumInt
+  change_time   Int    @default(0) @db.UnsignedInt
+  change_desc   String @default("") @db.VarChar(255)
+  change_type   Int    @default(0) @db.UnsignedTinyInt
+  relation_type Int?   @db.TinyInt
+  relation_id   Int?
+
+  @@index([user_id], map: "user_id")
+}
+
+model user_rank {
+  rank_id           Int     @id @default(autoincrement()) @db.UnsignedTinyInt
+  rank_name         String  @default("") @db.VarChar(30)
+  min_growth_points Int     @default(0) @db.UnsignedInt
+  max_growth_points Int     @default(0) @db.UnsignedInt
+  discount          Decimal @default(0.0) @db.Decimal(4, 1)
+  show_price        Int     @default(1) @db.UnsignedTinyInt
+  rank_type         Int     @default(0) @db.UnsignedTinyInt
+  rank_logo         String  @default("") @db.VarChar(255)
+  rank_ico          String  @default("") @db.VarChar(255)
+  rank_bg           String  @default("") @db.VarChar(255)
+  rank_point        String  @default("0") @db.VarChar(30)
+  free_shipping     Int     @default(0) @db.UnsignedTinyInt
+  rank_card_type    Int     @default(1) @db.UnsignedTinyInt
+  rights            String? @db.Text
+  rank_level        String  @default("") @db.VarChar(30)
+}
+
+model user_rank_config {
+  id        Int     @id @default(autoincrement()) @db.UnsignedInt
+  code      String  @default("") @db.VarChar(30)
+  rank_type Int     @default(1) @db.UnsignedTinyInt
+  data      String? @db.Text
+}
+
+model user_rank_log {
+  id          Int    @id @default(autoincrement()) @db.UnsignedInt
+  user_id     Int    @default(0) @db.UnsignedInt
+  rank_id     Int    @default(0) @db.UnsignedInt
+  rank_type   Int    @default(1) @db.UnsignedTinyInt
+  rank_name   String @default("") @db.VarChar(30)
+  change_time Int?   @default(0) @db.UnsignedInt
+  remark      String @default("") @db.VarChar(255)
+}
+
+model user_recharge_order {
+  order_id       Int      @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id        Int      @default(0) @db.UnsignedMediumInt
+  amount         Decimal  @default(0.00) @db.Decimal(10, 2)
+  discount_money Decimal? @default(0.00) @db.Decimal(10, 2)
+  add_time       Int      @default(0)
+  paid_time      Int      @default(0)
+  postscript     String   @default("") @db.VarChar(255)
+  status         Boolean  @default(false)
+
+  @@index([status], map: "is_paid")
+  @@index([user_id], map: "user_id")
+}
+
+model user_type {
+  user_type_id     Int     @id @default(autoincrement()) @db.UnsignedSmallInt
+  user_type_name   String  @default("") @db.VarChar(30)
+  period           String  @default("") @db.VarChar(10)
+  original_price   Decimal @default(0.00) @db.Decimal(10, 2)
+  favourable_price Decimal @default(0.00) @db.Decimal(10, 2)
+  sort_order       Int     @default(50) @db.UnsignedSmallInt
+  is_on            Int     @default(0) @db.UnsignedTinyInt
+}
+
+model user_type_account {
+  id           Int      @id @default(autoincrement())
+  user_id      Int?     @default(0)
+  user_type_id Int?     @default(0)
+  amount       Decimal? @default(0.00) @db.Decimal(10, 2)
+  status       Boolean? @default(false)
+  pay_time     Int?     @default(0)
+  desc         String?  @default("") @db.VarChar(255)
+  add_time     Int?     @default(0)
+}
+
+model user_withdraw_account {
+  account_id   Int    @id @default(autoincrement()) @db.UnsignedSmallInt
+  user_id      Int    @default(0) @db.UnsignedMediumInt
+  account_type Int    @default(1) @db.UnsignedTinyInt
+  account_name String @default("") @db.VarChar(60)
+  account_no   String @db.Text
+  identity     String @default("") @db.VarChar(60)
+  bank_name    String @default("") @db.VarChar(80)
+
+  @@index([account_type], map: "card_type")
+  @@index([user_id], map: "user_id")
+}
+
+model user_withdraw_apply {
+  id            Int     @id @default(autoincrement()) @db.UnsignedMediumInt
+  user_id       Int     @default(0) @db.UnsignedMediumInt
+  amount        Decimal @default(0.00) @db.Decimal(10, 2)
+  add_time      Int     @default(0)
+  finished_time Int     @default(0)
+  postscript    String  @default("") @db.VarChar(255)
+  status        Boolean @default(false)
+  account_data  String  @db.Text
+
+  @@index([status], map: "is_paid")
+  @@index([user_id], map: "user_id")
+}
+
+model vendor {
+  vendor_id        Int      @id @default(autoincrement())
+  vendor_logo      String?  @default("") @db.VarChar(255)
+  add_time         Int?     @default(0)
+  contact_mobile   String?  @default("") @db.VarChar(255)
+  vendor_data      String?  @db.Text
+  person_data      String?  @db.Text
+  status           Int?     @default(1) @db.TinyInt
+  type             Boolean? @default(true)
+  vendor_name      String?  @default("") @db.VarChar(255)
+  kefu_phone       String?  @default("") @db.VarChar(20)
+  vendor_money     Decimal? @default(0.00) @db.Decimal(10, 2)
+  frozen_money     Decimal? @default(0.00) @db.Decimal(10, 2)
+  description      String?  @db.VarChar(255)
+  last_login_time  Int      @default(0) @db.UnsignedInt
+  service_fee_rate Decimal? @db.Decimal(10, 2)
+  fee_rate         Decimal? @db.Decimal(10, 2)
+}
+
+model vendor_account {
+  account_id   Int     @id @default(autoincrement()) @db.UnsignedInt
+  vendor_id    Int     @default(0) @db.UnsignedMediumInt
+  account_type Int     @default(1) @db.UnsignedTinyInt
+  account_name String  @default("") @db.VarChar(60)
+  account_no   String  @db.Text
+  bank_name    String  @default("") @db.VarChar(255)
+  add_time     Int?    @default(0)
+  bank_branch  String? @default("") @db.VarChar(255)
+
+  @@index([account_type], map: "account_type")
+  @@index([vendor_id], map: "vendor_id")
+}
+
+model vendor_account_log {
+  vendor_account_log_id Int     @id @default(autoincrement()) @db.UnsignedInt
+  add_time              Int     @default(0) @db.UnsignedInt
+  vendor_money          Decimal @default(0.00) @db.Decimal(10, 2)
+  frozen_money          Decimal @default(0.00) @db.Decimal(10, 2)
+  type                  String  @default("") @db.VarChar(60)
+  remarks               String? @db.Text
+  new_vendor_money      Decimal @default(0.00) @db.Decimal(10, 2)
+  new_frozen_money      Decimal @default(0.00) @db.Decimal(10, 2)
+  vendor_id             Int     @default(0) @db.UnsignedInt
+
+  @@index([type], map: "type")
+  @@index([vendor_id], map: "vendor_id")
+}
+
+model vendor_product {
+  id                       Int     @id @default(autoincrement())
+  product_name             String  @db.VarChar(255)
+  product_brand_id         Int?
+  product_category_id      Int
+  product_sn_generate_type Int     @db.TinyInt
+  product_brief            String? @db.VarChar(255)
+  product_state            Int     @db.TinyInt
+  sku_type                 Int     @db.TinyInt
+  product_desc             String? @db.Text
+  audit_state              Int     @db.TinyInt
+  pic_url                  String? @default("") @db.VarChar(255)
+  pic_thumb                String? @default("") @db.VarChar(255)
+  pic_original             String? @default("") @db.VarChar(255)
+  is_recycle               Int?    @default(0) @db.TinyInt
+  vendor_id                Int
+  create_time              BigInt
+  create_by_id             BigInt? @default(0)
+  create_by_name           String? @db.VarChar(255)
+  update_time              BigInt
+  update_by_id             BigInt? @default(0)
+  update_by_name           BigInt?
+  is_del                   Int     @default(0) @db.TinyInt
+}
+
+model vendor_product_audit_log {
+  id                BigInt  @id @default(autoincrement())
+  vendor_product_id BigInt?
+  audit_state       Int?    @db.TinyInt
+  audit_fail_reason String? @db.VarChar(255)
+  vendor_id         Int
+  create_time       BigInt
+  create_by_id      BigInt? @default(0)
+  create_by_name    String? @db.VarChar(255)
+  update_time       BigInt
+  update_by_id      BigInt? @default(0)
+  update_by_name    String? @db.VarChar(255)
+  is_del            Int     @db.TinyInt
+
+  @@index([vendor_product_id], map: "vendor_product_audit_log_vendor_product_id_index")
+}
+
+model vendor_product_gallery {
+  id                Int     @id @default(autoincrement())
+  vendor_product_id Int
+  pic_url           String  @db.Text
+  pic_desc          String  @default("") @db.VarChar(255)
+  pic_thumb         String  @db.Text
+  pic_original      String  @db.Text
+  pic_large         String  @db.Text
+  sort_order        Int
+  vendor_id         Int
+  create_time       BigInt
+  create_by_id      BigInt? @default(0)
+  create_by_name    String? @db.VarChar(255)
+  update_time       BigInt
+  update_by_id      BigInt? @default(0)
+  update_by_name    BigInt?
+  is_del            Int?    @default(0) @db.TinyInt
+
+  @@index([vendor_product_id], map: "vendor_product_gallery_vendor_product_id_index")
+}
+
+model vendor_product_sku {
+  id                      Int     @id @default(autoincrement())
+  vendor_product_id       Int
+  sku_attr_val            String? @default("") @db.VarChar(255)
+  sku_attr_json           Json?
+  sku_sn                  String? @default("") @db.VarChar(60)
+  sku_tsn                 String? @default("") @db.VarChar(120)
+  sku_weight              Int?
+  sku_stock               Int?
+  supply_price            Decimal @db.Decimal(10, 2)
+  supply_price_limit_type Int     @db.TinyInt
+  supply_price_limit_val  Decimal @db.Decimal(10, 2)
+  sales_volume            Int?    @default(0)
+  vendor_id               Int
+  create_time             BigInt
+  create_by_id            BigInt? @default(0)
+  create_by_name          String? @db.VarChar(255)
+  update_time             BigInt
+  update_by_id            BigInt? @default(0)
+  update_by_name          BigInt?
+  is_del                  Int?    @default(0) @db.TinyInt
+
+  @@index([vendor_product_id], map: "vendor_product_sku_vendor_product_id_index")
+}
+
+model vendor_product_sku_attr {
+  id                BigInt   @id @default(autoincrement())
+  vendor_product_id Int
+  attr_type         Int      @db.TinyInt
+  attr_name         String   @db.VarChar(80)
+  attr_value        String   @db.VarChar(120)
+  attr_price        Decimal? @db.Decimal(10, 2)
+  attr_color        String?  @db.VarChar(80)
+  attr_pic          String?  @default("") @db.VarChar(255)
+  attr_pic_thumb    String?  @default("") @db.VarChar(255)
+  vendor_id         Int
+  create_time       BigInt
+  create_by_id      BigInt?
+  create_by_name    String?  @db.VarChar(255)
+  update_time       BigInt
+  update_by_id      BigInt?
+  update_by_name    String?  @db.VarChar(255)
+  is_del            Int?     @default(0) @db.TinyInt
+
+  @@index([vendor_product_id], map: "vendor_product_sku_attr_vendor_product_id_index")
+}
+
+model vendor_product_sku_stock_log {
+  id                    BigInt  @id @default(autoincrement())
+  vendor_product_id     Int
+  vendor_product_sku_id Int
+  operation_type        Int
+  before_stock          Int
+  change_num            Int
+  after_stock           Int
+  biz_type              Int     @db.SmallInt
+  biz_remark            String? @db.VarChar(255)
+  vendor_id             Int
+  create_time           BigInt
+  create_by_id          BigInt? @default(0)
+  create_by_name        String? @db.VarChar(255)
+  update_time           BigInt
+  update_by_id          BigInt? @default(0)
+  update_by_name        String? @db.VarChar(255)
+  is_del                Int?    @default(0) @db.TinyInt
+}
+
+model vendor_product_video {
+  id                BigInt  @id @default(autoincrement())
+  vendor_product_id Int
+  video_url         String  @db.VarChar(255)
+  video_cover       String  @db.VarChar(255)
+  format            String  @db.VarChar(255)
+  vendor_id         Int
+  create_time       BigInt
+  create_by_id      BigInt? @default(0)
+  create_by_name    String? @db.VarChar(255)
+  update_time       BigInt
+  update_by_id      BigInt? @default(0)
+  update_by_name    String? @db.VarChar(255)
+  is_del            Int?    @default(0) @db.TinyInt
+
+  @@index([vendor_product_id], map: "vendor_product_video_vendor_product_id_index")
+}
+
+model vendor_settlement_order {
+  vendor_settlement_order_id Int      @id @default(autoincrement())
+  order_id                   Int?
+  shop_id                    Int?
+  vendor_id                  Int?
+  amount                     Decimal? @db.Decimal(10, 2)
+  add_time                   Int?
+}
+
+model vendor_shop_bind {
+  id        Int  @id @default(autoincrement())
+  vendor_id Int
+  shop_id   Int
+  add_time  Int?
+}
+
+model vendor_withdraw {
+  vendor_withdraw_log_id Int     @id @default(autoincrement())
+  vendor_id              Int     @default(0) @db.UnsignedMediumInt
+  amount                 Decimal @default(0.00) @db.Decimal(10, 2)
+  status                 Int     @default(0) @db.UnsignedTinyInt
+  add_time               Int     @db.UnsignedInt
+  remark                 String  @db.Text
+  vendor_account_id      Int?
+  account_data           String? @db.Text
+  audit_remark           String? @db.VarChar(255)
+  payment_voucher        String? @db.Text
+  withdraw_sn            String? @db.VarChar(32)
+}
+
+model wechat_live {
+  wechat_live_id    Int    @id @default(autoincrement())
+  wechat_live_title String @default("") @db.VarChar(255)
+  wechat_live_data  String @db.Text
+  act_range         Int    @default(0) @db.TinyInt
+  act_range_ext     String @default("") @db.VarChar(255)
+  room_id           Int    @default(0) @db.UnsignedInt
+  share_img         String @default("") @db.VarChar(255)
+  cover_img         String @default("") @db.VarChar(255)
+  anchor_name       String @default("") @db.VarChar(255)
+  anchor_img        String @default("") @db.VarChar(255)
+  live_status       Int    @default(0) @db.UnsignedInt
+  start_time        Int    @default(0) @db.UnsignedInt
+  end_time          Int    @default(0) @db.UnsignedInt
+  last_update_time  Int    @default(0) @db.UnsignedInt
+  product_data      String @db.Text
+  thumb_img         String @default("") @db.VarChar(255)
+  live_sn           String @default("") @db.VarChar(255)
+  shop_id           Int    @default(0) @db.UnsignedInt
 }
