@@ -14,6 +14,7 @@ import { CouponModule } from './coupon/coupon.module';
 import { PromotionModule } from './promotion/promotion.module';
 import { PanelModule } from './panel/panel.module';
 import { MsgModule } from './msg/msg.module';
+import { SettingModule } from './setting/setting.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -41,6 +42,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     PromotionModule,
     PanelModule,
     MsgModule,
+    SettingModule,
     // UploadModule,
     // NotificationModule,
     // AppointmentModule,
