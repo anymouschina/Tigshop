@@ -1,193 +1,370 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { RefundLog } from '../entities/refund-log.entity';
-import { RefundApply } from '../entities/refund-apply.entity';
-import { User } from '../../user/entities/user.entity';
-import { Order } from '../../order/entities/order.entity';
-import { RefundLogQueryDto } from './dto/refund-log.dto';
-import { RefundLogType } from '../entities/refund-log.entity';
+import { PrismaService } from '../../prisma.service';
+import {
+  RefundLogQueryDto,
+  RefundLogDetailDto,
+  CreateRefundLogDto,
+  UpdateRefundLogDto,
+  DeleteRefundLogDto,
+  BatchDeleteRefundLogDto,
+  REFUND_LOG_TYPE,
+  REFUND_LOG_STATUS
+} from './refund-log.dto';
 
 @Injectable()
 export class RefundLogService {
-  constructor(
-    @InjectRepository(RefundLog)
-    private refundLogRepository: Repository<RefundLog>,
-    @InjectRepository(RefundApply)
-    private refundApplyRepository: Repository<RefundApply>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(Order)
-    private orderRepository: Repository<Order>,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  // 构建筛选查询
-  buildFilterQuery(queryDto: RefundLogQueryDto) {
-    const query = this.refundLogRepository.createQueryBuilder('refund_log')
-      .leftJoinAndSelect('refund_log.refund_apply', 'refund_apply')
-      .leftJoinAndSelect('refund_log.user', 'user')
-      .leftJoinAndSelect('refund_log.order', 'order');
+  async findAll(query: RefundLogQueryDto) {
+    const {
+      keyword = '',
+      order_id = 0,
+      user_id = 0,
+      refund_apply_id = 0,
+      refund_type = -1,
+      status = -1,
+      page = 1,
+      size = 15,
+      sort_field = 'id',
+      sort_order = 'desc',
+    } = query;
 
-    if (queryDto.keyword) {
-      query.andWhere('(user.username LIKE :keyword OR user.mobile LIKE :keyword OR order.order_sn LIKE :keyword)', {
-        keyword: `%${queryDto.keyword}%`
-      });
+    const where: any = {};
+
+    if (keyword) {
+      where.OR = [
+        { refund_note: { contains: keyword } },
+        { admin_remark: { contains: keyword } },
+        { payment_voucher: { contains: keyword } },
+        { order: { order_sn: { contains: keyword } } },
+        { user: { nickname: { contains: keyword } } },
+      ];
     }
 
-    if (queryDto.type !== undefined && queryDto.type !== -1) {
-      query.andWhere('refund_log.refund_type = :type', { type: queryDto.type });
+    if (order_id > 0) {
+      where.order_id = order_id;
     }
 
-    if (queryDto.sort_field && queryDto.sort_order) {
-      query.orderBy(`refund_log.${queryDto.sort_field}`, queryDto.sort_order);
+    if (user_id > 0) {
+      where.user_id = user_id;
     }
 
-    return query;
-  }
-
-  // 获取筛选结果
-  async getFilterResult(queryDto: RefundLogQueryDto) {
-    const query = this.buildFilterQuery(queryDto);
-    const skip = (queryDto.page - 1) * queryDto.size;
-    const results = await query.skip(skip).take(queryDto.size).getMany();
-
-    // 添加退款类型名称
-    return results.map(log => ({
-      ...log,
-      refund_type_name: log.getRefundTypeName(),
-    }));
-  }
-
-  // 获取筛选结果数量
-  async getFilterCount(queryDto: RefundLogQueryDto) {
-    const query = this.buildFilterQuery(queryDto);
-    return query.getCount();
-  }
-
-  // 获取退款类型统计
-  async getRefundTypeStatistics() {
-    const results = await this.refundLogRepository
-      .createQueryBuilder('refund_log')
-      .select('refund_log.refund_type', 'type')
-      .addSelect('COUNT(*)', 'count')
-      .addSelect('SUM(refund_log.refund_amount)', 'total_amount')
-      .groupBy('refund_log.refund_type')
-      .getRawMany();
-
-    return results.map(result => ({
-      type: result.type,
-      type_name: this.getRefundTypeName(result.type),
-      count: parseInt(result.count),
-      total_amount: Number(result.total_amount || 0).toFixed(2),
-    }));
-  }
-
-  // 获取退款金额趋势统计
-  async getRefundTrendStatistics(dateRange: string[]) {
-    const query = this.refundLogRepository
-      .createQueryBuilder('refund_log')
-      .select('DATE(refund_log.add_time)', 'date')
-      .addSelect('COUNT(*)', 'count')
-      .addSelect('SUM(refund_log.refund_amount)', 'total_amount')
-      .where('refund_log.add_time BETWEEN :startDate AND :endDate', {
-        startDate: new Date(dateRange[0]),
-        endDate: new Date(dateRange[1]),
-      })
-      .groupBy('DATE(refund_log.add_time)')
-      .orderBy('date', 'ASC')
-      .getRawMany();
-
-    return query.map(result => ({
-      date: result.date,
-      count: parseInt(result.count),
-      total_amount: Number(result.total_amount || 0).toFixed(2),
-    }));
-  }
-
-  // 创建退款日志
-  async createRefundLog(logData: Partial<RefundLog>) {
-    const refundLog = this.refundLogRepository.create(logData);
-    return await this.refundLogRepository.save(refundLog);
-  }
-
-  // 获取退款详情
-  async getDetail(id: number) {
-    const refundLog = await this.refundLogRepository.findOne({
-      where: { log_id: id },
-      relations: [
-        'refund_apply',
-        'refund_apply.aftersales',
-        'user',
-        'order',
-      ],
-    });
-
-    if (!refundLog) {
-      throw new Error('退款日志不存在');
+    if (refund_apply_id > 0) {
+      where.refund_apply_id = refund_apply_id;
     }
 
-    return {
-      ...refundLog,
-      refund_type_name: refundLog.getRefundTypeName(),
-    };
-  }
+    if (refund_type >= 0) {
+      where.refund_type = refund_type;
+    }
 
-  // 获取退款类型名称
-  private getRefundTypeName(type: number): string {
-    const typeMap = {
-      [RefundLogType.ONLINE]: '线上退款',
-      [RefundLogType.BALANCE]: '余额退款',
-      [RefundLogType.OFFLINE]: '线下退款',
-    };
-    return typeMap[type] || '未知类型';
-  }
+    if (status >= 0) {
+      where.status = status;
+    }
 
-  // 获取用户退款历史
-  async getUserRefundHistory(userId: number, page: number = 1, size: number = 10) {
-    const query = this.refundLogRepository.createQueryBuilder('refund_log')
-      .leftJoinAndSelect('refund_log.refund_apply', 'refund_apply')
-      .leftJoinAndSelect('refund_log.order', 'order')
-      .where('refund_log.user_id = :userId', { userId })
-      .orderBy('refund_log.add_time', 'DESC');
+    const orderBy = {};
+    orderBy[sort_field] = sort_order;
 
     const skip = (page - 1) * size;
-    const [results, total] = await query.skip(skip).take(size).getManyAndCount();
+
+    const [items, total] = await Promise.all([
+      this.prisma.refundLog.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              user_id: true,
+              nickname: true,
+              avatar: true,
+              mobile: true,
+            },
+          },
+          order: {
+            select: {
+              order_id: true,
+              order_sn: true,
+              order_amount: true,
+              pay_time: true,
+            },
+          },
+          refund_apply: {
+            select: {
+              id: true,
+              refund_amount: true,
+              refund_reason: true,
+              status: true,
+            },
+          },
+        },
+        orderBy,
+        skip,
+        take: size,
+      }),
+      this.prisma.refundLog.count({ where }),
+    ]);
 
     return {
-      records: results.map(log => ({
-        ...log,
-        refund_type_name: log.getRefundTypeName(),
-      })),
+      items,
       total,
+      page,
+      size,
+      total_pages: Math.ceil(total / size),
     };
   }
 
-  // 获取订单退款日志
-  async getOrderRefundLogs(orderId: number) {
-    const logs = await this.refundLogRepository.find({
-      where: { order_id: orderId },
-      relations: ['refund_apply', 'user'],
-      order: { add_time: 'DESC' },
-    });
-
-    return logs.map(log => ({
-      ...log,
-      refund_type_name: log.getRefundTypeName(),
-    }));
-  }
-
-  // 删除退款日志（仅限管理员）
-  async deleteRefundLog(id: number, adminId: number) {
-    const refundLog = await this.refundLogRepository.findOne({
-      where: { log_id: id },
+  async findOne(id: number) {
+    const refundLog = await this.prisma.refundLog.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            user_id: true,
+            nickname: true,
+            avatar: true,
+            mobile: true,
+            email: true,
+          },
+        },
+        order: {
+          select: {
+            order_id: true,
+            order_sn: true,
+            order_amount: true,
+            pay_time: true,
+            shipping_time: true,
+            confirm_time: true,
+          },
+        },
+        refund_apply: {
+          select: {
+            id: true,
+            refund_amount: true,
+            refund_reason: true,
+            status: true,
+            create_time: true,
+          },
+        },
+      },
     });
 
     if (!refundLog) {
-      throw new Error('退款日志不存在');
+      throw new Error('退款记录不存在');
     }
 
-    // 记录删除操作
-    await this.refundLogRepository.remove(refundLog);
+    return refundLog;
+  }
+
+  async create(data: CreateRefundLogDto) {
+    // 检查订单是否存在
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: data.order_id },
+    });
+
+    if (!order) {
+      throw new Error('订单不存在');
+    }
+
+    // 检查用户是否存在
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: data.user_id },
+    });
+
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+
+    // 检查退款申请是否存在（如果提供了）
+    if (data.refund_apply_id > 0) {
+      const refundApply = await this.prisma.refundApply.findUnique({
+        where: { id: data.refund_apply_id },
+      });
+
+      if (!refundApply) {
+        throw new Error('退款申请不存在');
+      }
+    }
+
+    // 检查退款金额不能为负数
+    if (data.refund_amount < 0) {
+      throw new Error('退款金额不能为负数');
+    }
+
+    const refundLog = await this.prisma.refundLog.create({
+      data: {
+        ...data,
+        create_time: new Date(),
+        update_time: new Date(),
+        status: 0, // 默认待处理
+      },
+    });
+
+    return refundLog;
+  }
+
+  async update(data: UpdateRefundLogDto) {
+    const refundLog = await this.prisma.refundLog.findUnique({
+      where: { id: data.id },
+    });
+
+    if (!refundLog) {
+      throw new Error('退款记录不存在');
+    }
+
+    // 状态变更检查
+    if (data.status !== undefined && data.status !== refundLog.status) {
+      // 只有待处理状态可以变为退款成功、退款失败或已取消
+      if (refundLog.status === 0) {
+        if (data.status === 1 || data.status === 2 || data.status === 3) {
+          // 允许状态变更
+        } else {
+          throw new Error('无效的状态变更');
+        }
+      }
+      // 其他状态不允许变更
+      else {
+        throw new Error('当前状态不允许变更');
+      }
+    }
+
+    const updateData: any = {
+      ...data,
+      update_time: new Date(),
+    };
+
+    // 移除id字段，不允许更新ID
+    delete updateData.id;
+
+    const updatedRefundLog = await this.prisma.refundLog.update({
+      where: { id: data.id },
+      data: updateData,
+    });
+
+    return updatedRefundLog;
+  }
+
+  async remove(id: number) {
+    const refundLog = await this.prisma.refundLog.findUnique({
+      where: { id },
+    });
+
+    if (!refundLog) {
+      throw new Error('退款记录不存在');
+    }
+
+    // 只有待处理状态可以删除
+    if (refundLog.status !== 0) {
+      throw new Error('只有待处理状态的退款记录可以删除');
+    }
+
+    await this.prisma.refundLog.delete({
+      where: { id },
+    });
+
     return true;
+  }
+
+  async batchRemove(ids: number[]) {
+    // 检查是否都是待处理状态
+    const refundLogs = await this.prisma.refundLog.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+        status: 0, // 只有待处理状态可以删除
+      },
+    });
+
+    if (refundLogs.length !== ids.length) {
+      throw new Error('只能删除待处理状态的退款记录');
+    }
+
+    await this.prisma.refundLog.deleteMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+    });
+
+    return true;
+  }
+
+  async getRefundLogStats() {
+    const stats = await this.prisma.refundLog.groupBy({
+      by: ['status'],
+      _count: {
+        status: true,
+      },
+    });
+
+    const result = {};
+    for (let i = 0; i <= 3; i++) {
+      result[i] = 0;
+    }
+
+    stats.forEach(stat => {
+      result[stat.status] = stat._count.status;
+    });
+
+    return result;
+  }
+
+  async getRefundLogByOrder(orderId: number) {
+    return await this.prisma.refundLog.findMany({
+      where: { order_id: orderId },
+      include: {
+        user: {
+          select: {
+            user_id: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: { create_time: 'desc' },
+    });
+  }
+
+  async getRefundLogByUser(userId: number) {
+    return await this.prisma.refundLog.findMany({
+      where: { user_id: userId },
+      include: {
+        order: {
+          select: {
+            order_id: true,
+            order_sn: true,
+            order_amount: true,
+          },
+        },
+      },
+      orderBy: { create_time: 'desc' },
+    });
+  }
+
+  async getRefundAmountStats(dateRange?: [Date, Date]) {
+    const where: any = {
+      status: 1, // 退款成功
+    };
+
+    if (dateRange && dateRange.length === 2) {
+      where.create_time = {
+        gte: dateRange[0],
+        lte: dateRange[1],
+      };
+    }
+
+    const result = await this.prisma.refundLog.aggregate({
+      where,
+      _sum: {
+        refund_amount: true,
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    return {
+      total_amount: result._sum.refund_amount || 0,
+      total_count: result._count._all || 0,
+    };
   }
 }
