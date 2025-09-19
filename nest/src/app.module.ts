@@ -13,6 +13,7 @@ import { PaymentModule } from './payment/payment.module';
 import { CouponModule } from './coupon/coupon.module';
 import { PromotionModule } from './promotion/promotion.module';
 import { PanelModule } from './panel/panel.module';
+import { MsgModule } from './msg/msg.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -39,6 +40,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     CouponModule,
     PromotionModule,
     PanelModule,
+    MsgModule,
     // UploadModule,
     // NotificationModule,
     // AppointmentModule,
