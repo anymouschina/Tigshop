@@ -1,0 +1,479 @@
+// ========================================
+// PHASE 5: System Features
+// ========================================
+
+// Config (系统配置表)
+model Config {
+  configId              Int      @id @default(autoincrement()) @map("config_id")
+  key                   String   @unique @map("key") @default("")
+  value                 String   @map("value") @default("")
+  description           String   @map("description") @default("")
+  groupId               Int      @map("group_id") @default(0)
+  sortOrder             Int      @map("sort_order") @default(100)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Crons (定时任务表)
+model Crons {
+  cronId                Int      @id @default(autoincrement()) @map("cron_id")
+  cronName              String   @map("cron_name") @default("")
+  cronExpression        String   @map("cron_expression") @default("")
+  cronCommand           String   @map("cron_command") @default("")
+  cronDesc              String   @map("cron_desc") @default("")
+  status                Int      @map("status") @default(1)
+  lastRunTime           DateTime? @map("last_run_time")
+  nextRunTime           DateTime? @map("next_run_time")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Currency (货币表)
+model Currency {
+  currencyId            Int      @id @default(autoincrement()) @map("currency_id")
+  currencyCode          String   @map("currency_code") @default("")
+  currencyName          String   @map("currency_name") @default("")
+  currencySymbol        String   @map("currency_symbol") @default("")
+  exchangeRate          Decimal  @map("exchange_rate") @db.Decimal(10, 4) @default(1.0000)
+  status                Int      @map("status") @default(1)
+  isDefault             Int      @map("is_default") @default(0)
+  sortOrder             Int      @map("sort_order") @default(100)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// AreaCode (地区代码表)
+model AreaCode {
+  areaId                Int      @id @default(autoincrement()) @map("area_id")
+  countryCode           String   @map("country_code") @default("")
+  areaCode              String   @map("area_code") @default("")
+  areaName              String   @map("area_name") @default("")
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Print (打印配置表)
+model Print {
+  printId               Int      @id @default(autoincrement()) @map("print_id")
+  printName             String   @map("print_name") @default("")
+  printType             Int      @map("print_type") @default(0)
+  printContent          String   @map("print_content") @default("")
+  printTemplate        String   @map("print_template") @default("")
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// PrintConfig (打印设置表)
+model PrintConfig {
+  configId              Int      @id @default(autoincrement()) @map("config_id")
+  key                   String   @map("key") @default("")
+  value                 String   @map("value") @default("")
+  description           String   @map("description") @default("")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// SensitiveWords (敏感词表)
+model SensitiveWords {
+  wordId                Int      @id @default(autoincrement()) @map("word_id")
+  word                  String   @unique @map("word") @default("")
+  replaceWord           String   @map("replace_word") @default("***")
+  wordType              Int      @map("word_type") @default(0)
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Suppliers (供应商表 - 基础信息)
+model Suppliers {
+  suppliersId           Int      @id @default(autoincrement()) @map("suppliers_id")
+  suppliersName        String   @map("suppliers_name") @default("")
+  suppliersDesc        String   @map("suppliers_desc") @default("")
+  contactName           String   @map("contact_name") @default("")
+  contactPhone          String   @map("contact_phone") @default("")
+  contactEmail          String   @map("contact_email") @default("")
+  address               String   @map("address") @default("")
+  status                Int      @map("status") @default(1)
+  addTime               DateTime @map("add_time") @default(now())
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Locales (本地化表)
+model Locales {
+  localeId              Int      @id @default(autoincrement()) @map("locale_id")
+  localeCode            String   @unique @map("locale_code") @default("")
+  localeName            String   @map("locale_name") @default("")
+  nativeName            String   @map("native_name") @default("")
+  status                Int      @map("status") @default(1)
+  isDefault             Int      @map("is_default") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  localesLangs          LocalesLang[]
+  localesRelations      LocalesRelation[]
+}
+
+// LocalesLang (本地化语言表)
+model LocalesLang {
+  langId                Int      @id @default(autoincrement()) @map("lang_id")
+  localeId              Int      @map("locale_id")
+  langCode              String   @map("lang_code") @default("")
+  langName              String   @map("lang_name") @default("")
+  nativeName            String   @map("native_name") @default("")
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  locale                Locales @relation(fields: [localeId], references: [localeId], onDelete: Cascade)
+}
+
+// LocalesRelation (本地化关系表)
+model LocalesRelation {
+  relationId            Int      @id @default(autoincrement()) @map("relation_id")
+  localeId              Int      @map("locale_id")
+  relatedLocaleId       Int      @map("related_locale_id")
+  relationType          Int      @map("relation_type") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  locale                Locales  @relation("LocalesRelationMain", fields: [localeId], references: [localeId])
+  relatedLocale         Locales  @relation("LocalesRelationRelated", fields: [relatedLocaleId], references: [localeId])
+}
+
+// Translations (翻译表)
+model Translations {
+  translationId         Int      @id @default(autoincrement()) @map("translation_id")
+  key                   String   @map("key") @default("")
+  localeCode            String   @map("locale_code") @default("")
+  translation           String   @map("translation") @default("")
+  module                String   @map("module") @default("")
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  translationsData      TranslationsData[]
+}
+
+// TranslationsData (翻译数据表)
+model TranslationsData {
+  dataId                Int      @id @default(autoincrement()) @map("data_id")
+  translationId         Int      @map("translation_id")
+  dataKey               String   @map("data_key") @default("")
+  dataValue             String   @map("data_value") @default("")
+  dataType              String   @map("data_type") @default("string")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  translation           Translations @relation(fields: [translationId], references: [translationId], onDelete: Cascade)
+}
+
+// MessageTemplate (消息模板表)
+model MessageTemplate {
+  templateId            Int      @id @default(autoincrement()) @map("template_id")
+  templateName          String   @map("template_name") @default("")
+  templateCode          String   @unique @map("template_code") @default("")
+  templateType          Int      @map("template_type") @default(0)
+  templateContent       String   @map("template_content") @default("")
+  templateParams        String?  @map("template_params") // JSON
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// MessageType (消息类型表)
+model MessageType {
+  typeId                Int      @id @default(autoincrement()) @map("type_id")
+  typeName              String   @map("type_name") @default("")
+  typeCode              String   @unique @map("type_code") @default("")
+  typeDesc              String   @map("type_desc") @default("")
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// MailTemplates (邮件模板表)
+model MailTemplates {
+  templateId            Int      @id @default(autoincrement()) @map("template_id")
+  templateName          String   @map("template_name") @default("")
+  templateCode          String   @unique @map("template_code") @default("")
+  templateSubject       String   @map("template_subject") @default("")
+  templateContent       String   @map("template_content") @default("")
+  templateParams        String?  @map("template_params") // JSON
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// MailLog (邮件日志表)
+model MailLog {
+  logId                 Int      @id @default(autoincrement()) @map("log_id")
+  toEmail               String   @map("to_email") @default("")
+  subject               String   @map("subject") @default("")
+  content               String   @map("content") @default("")
+  status                Int      @map("status") @default(0)
+  sendTime              DateTime @map("send_time") @default(now())
+  errorMessage          String?  @map("error_message")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// SmsLog (短信日志表)
+model SmsLog {
+  logId                 Int      @id @default(autoincrement()) @map("log_id")
+  toPhone               String   @map("to_phone") @default("")
+  content               String   @map("content") @default("")
+  templateCode          String   @map("template_code") @default("")
+  status                Int      @map("status") @default(0)
+  sendTime              DateTime @map("send_time") @default(now())
+  errorMessage          String?  @map("error_message")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// UnipushLog (推送日志表)
+model UnipushLog {
+  logId                 Int      @id @default(autoincrement()) @map("log_id")
+  userId                Int      @map("user_id")
+  title                 String   @map("title") @default("")
+  content               String   @map("content") @default("")
+  pushType              Int      @map("push_type") @default(0)
+  status                Int      @map("status") @default(0)
+  pushTime              DateTime @map("push_time") @default(now())
+  errorMessage          String?  @map("error_message")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  user                  User? @relation(fields: [userId], references: [userId])
+}
+
+// ImConfig (即时通讯配置表)
+model ImConfig {
+  configId              Int      @id @default(autoincrement()) @map("config_id")
+  key                   String   @map("key") @default("")
+  value                 String   @map("value") @default("")
+  description           String   @map("description") @default("")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// ImConversation (即时通讯会话表)
+model ImConversation {
+  conversationId        Int      @id @default(autoincrement()) @map("conversation_id")
+  userId                Int      @map("user_id")
+  targetType            Int      @map("target_type") @default(0)
+  targetId              Int      @map("target_id") @default(0)
+  lastMessage           String   @map("last_message") @default("")
+  lastMessageTime       DateTime @map("last_message_time") @default(now())
+  unreadCount           Int      @map("unread_count") @default(0)
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  user                  User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  imMessages            ImMessage[]
+}
+
+// ImMessage (即时通讯消息表)
+model ImMessage {
+  messageId            Int      @id @default(autoincrement()) @map("message_id")
+  conversationId        Int      @map("conversation_id")
+  fromUserId            Int      @map("from_user_id")
+  toUserId              Int      @map("to_user_id")
+  messageType           Int      @map("message_type") @default(0)
+  content               String   @map("content") @default("")
+  status                Int      @map("status") @default(1)
+  sendTime              DateTime @map("send_time") @default(now())
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  conversation          ImConversation @relation(fields: [conversationId], references: [conversationId], onDelete: Cascade)
+  fromUser              User           @relation("ImMessageFromUser", fields: [fromUserId], references: [userId])
+  toUser                User           @relation("ImMessageToUser", fields: [toUserId], references: [userId])
+}
+
+// ImServant (即时通讯客服表)
+model ImServant {
+  servantId             Int      @id @default(autoincrement()) @map("servant_id")
+  servantName           String   @map("servant_name") @default("")
+  servantAvatar         String   @map("servant_avatar") @default("")
+  servantType           Int      @map("servant_type") @default(0)
+  status                Int      @map("status") @default(1)
+  sortOrder             Int      @map("sort_order") @default(100)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// LogisticsApiLog (物流API日志表)
+model LogisticsApiLog {
+  logId                 Int      @id @default(autoincrement()) @map("log_id")
+  companyId             Int      @map("company_id")
+  apiType               Int      @map("api_type") @default(0)
+  trackingNo            String   @map("tracking_no") @default("")
+  requestParams         String?  @map("request_params") // JSON
+  responseData          String?  @map("response_data") // JSON
+  status                Int      @map("status") @default(0)
+  requestTime           DateTime @map("request_time") @default(now())
+  responseTime          DateTime? @map("response_time")
+  errorMessage          String?  @map("error_message")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  logisticsCompany      LogisticsCompany @relation(fields: [companyId], references: [companyId])
+}
+
+// ShippingType (配送方式表)
+model ShippingType {
+  typeId                Int      @id @default(autoincrement()) @map("type_id")
+  typeName              String   @map("type_name") @default("")
+  typeCode              String   @unique @map("type_code") @default("")
+  typeDesc              String   @map("type_desc") @default("")
+  status                Int      @map("status") @default(1)
+  sortOrder             Int      @map("sort_order") @default(100)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Statement (对账单表)
+model Statement {
+  statementId           Int      @id @default(autoincrement()) @map("statement_id")
+  statementNo           String   @unique @map("statement_no") @default("")
+  statementType         Int      @map("statement_type") @default(0)
+  targetType            Int      @map("target_type") @default(0)
+  targetId              Int      @map("target_id") @default(0)
+  startDate             DateTime @map("start_date") @default(now())
+  endDate               DateTime @map("end_date") @default(now())
+  totalAmount           Decimal  @map("total_amount") @db.Decimal(10, 2) @default(0.00)
+  settledAmount         Decimal  @map("settled_amount") @db.Decimal(10, 2) @default(0.00)
+  status                Int      @map("status") @default(0)
+  statementTime         DateTime @map("statement_time") @default(now())
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  statementDownloads    StatementDownload[]
+  statementOutputs      StatementOutput[]
+}
+
+// StatementDownload (对账单下载表)
+model StatementDownload {
+  downloadId            Int      @id @default(autoincrement()) @map("download_id")
+  statementId           Int      @map("statement_id")
+  downloadUrl           String   @map("download_url") @default("")
+  downloadTime           DateTime @map("download_time") @default(now())
+  downloadIp            String   @map("download_ip") @default("")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  statement             Statement @relation(fields: [statementId], references: [statementId], onDelete: Cascade)
+}
+
+// StatementOutput (对账单输出表)
+model StatementOutput {
+  outputId              Int      @id @default(autoincrement()) @map("output_id")
+  statementId           Int      @map("statement_id")
+  outputType            Int      @map("output_type") @default(0)
+  outputFile            String   @map("output_file") @default("")
+  outputTime            DateTime @map("output_time") @default(now())
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  statement             Statement @relation(fields: [statementId], references: [statementId], onDelete: Cascade)
+}
+
+// Example (示例数据表)
+model Example {
+  exampleId             Int      @id @default(autoincrement()) @map("example_id")
+  exampleName           String   @map("example_name") @default("")
+  exampleDesc           String   @map("example_desc") @default("")
+  exampleData           String?  @map("example_data") // JSON
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Config_2_2_6 (2.2.6版本配置表)
+model Config_2_2_6 {
+  configId              Int      @id @default(autoincrement()) @map("config_id")
+  key                   String   @map("key") @default("")
+  value                 String   @map("value") @default("")
+  description           String   @map("description") @default("")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// Paylog (支付日志表)
+model Paylog {
+  paylogId              Int      @id @default(autoincrement()) @map("paylog_id")
+  paySn                 String   @unique @map("pay_sn") @default("")
+  payName               String   @map("pay_name") @default("")
+  payAmount             Decimal  @map("pay_amount") @db.Decimal(10, 2) @default(0.00)
+  payStatus             Int      @map("pay_status") @default(0)
+  payCode               String   @map("pay_code") @default("")
+  addTime               DateTime @map("add_time") @default(now())
+  transactionId         String   @map("transaction_id") @default("")
+  notifyData            String   @map("notify_data") @default("")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// PaylogRefund (支付退款日志表)
+model PaylogRefund {
+  refundId              Int      @id @default(autoincrement()) @map("refund_id")
+  paylogId              Int      @map("paylog_id")
+  refundAmount          Decimal  @map("refund_amount") @db.Decimal(10, 2) @default(0.00)
+  refundStatus          Int      @map("refund_status") @default(0)
+  refundTime            DateTime? @map("refund_time")
+  transactionId         String   @map("transaction_id") @default("")
+  remark                String   @map("remark") @default("")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  paylog                Paylog @relation(fields: [paylogId], references: [paylogId], onDelete: Cascade)
+}

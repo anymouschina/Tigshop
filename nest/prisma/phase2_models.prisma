@@ -1,0 +1,440 @@
+// ========================================
+// PHASE 2: E-commerce Features
+// ========================================
+
+// Promotion (促销活动表)
+model Promotion {
+  promotionId          Int      @id @default(autoincrement()) @map("promotion_id")
+  promotionName        String   @map("promotion_name") @default("")
+  promotionType        Int      @map("promotion_type") @default(0)
+  promotionDesc        String   @map("promotion_desc") @default("")
+  startTime            DateTime @map("start_time") @default(now())
+  endTime              DateTime @map("end_time") @default(now())
+  status               Int      @map("status") @default(1)
+  isShow               Int      @map("is_show") @default(1)
+  sortOrder            Int      @map("sort_order") @default(100)
+  shopId               Int      @map("shop_id") @default(0)
+  productId            Int      @map("product_id") @default(0)
+  categoryId           Int      @map("category_id") @default(0)
+  rules                String?  @map("rules") // JSON
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relationships
+  shop                 Shop?     @relation(fields: [shopId], references: [shopId])
+  product              Product?  @relation(fields: [productId], references: [productId])
+}
+
+// TimeDiscount (限时折扣表)
+model TimeDiscount {
+  discountId           Int      @id @default(autoincrement()) @map("discount_id")
+  discountName         String   @map("discount_name") @default("")
+  productId            Int      @map("product_id")
+  skuId                Int      @map("sku_id") @default(0)
+  discount             Int      @map("discount") @default(0)
+  discountAmount       Decimal  @map("discount_amount") @db.Decimal(10, 2) @default(0.00)
+  startTime            DateTime @map("start_time") @default(now())
+  endTime              DateTime @map("end_time") @default(now())
+  status               Int      @map("status") @default(1)
+  shopId               Int      @map("shop_id") @default(0)
+  sortOrder            Int      @map("sort_order") @default(100)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relationships
+  product              Product   @relation(fields: [productId], references: [productId])
+  productSku           ProductSku? @relation(fields: [skuId], references: [skuId])
+  shop                 Shop?     @relation(fields: [shopId], references: [shopId])
+}
+
+// TimeDiscountItem (限时折扣项表)
+model TimeDiscountItem {
+  itemId               Int      @id @default(autoincrement()) @map("item_id")
+  discountId           Int      @map("discount_id")
+  productId            Int      @map("product_id")
+  skuId                Int      @map("sku_id") @default(0)
+  discount             Int      @map("discount") @default(0)
+  discountAmount       Decimal  @map("discount_amount") @db.Decimal(10, 2) @default(0.00)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relationships
+  timeDiscount         TimeDiscount @relation(fields: [discountId], references: [discountId], onDelete: Cascade)
+  product              Product      @relation(fields: [productId], references: [productId])
+  productSku           ProductSku?  @relation(fields: [skuId], references: [skuId])
+}
+
+// Seckill (秒杀活动表)
+model Seckill {
+  seckillId             Int      @id @default(autoincrement()) @map("seckill_id")
+  seckillName           String   @map("seckill_name") @default("")
+  startTime             DateTime @map("start_time") @default(now())
+  endTime               DateTime @map("end_time") @default(now())
+  status                Int      @map("status") @default(1)
+  isShow                Int      @map("is_show") @default(1)
+  sortOrder             Int      @map("sort_order") @default(100)
+  shopId                Int      @map("shop_id") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  shop                  Shop?           @relation(fields: [shopId], references: [shopId])
+  seckillItems          SeckillItem[]
+}
+
+// SeckillItem (秒杀项表)
+model SeckillItem {
+  itemId                Int      @id @default(autoincrement()) @map("item_id")
+  seckillId             Int      @map("seckill_id")
+  productId             Int      @map("product_id")
+  skuId                 Int      @map("sku_id") @default(0)
+  seckillPrice          Decimal  @map("seckill_price") @db.Decimal(10, 2) @default(0.00)
+  seckillStock          Int      @map("seckill_stock") @default(0)
+  seckillLimit          Int      @map("seckill_limit") @default(0)
+  seckillSales          Int      @map("seckill_sales") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  seckill               Seckill     @relation(fields: [seckillId], references: [seckillId], onDelete: Cascade)
+  product               Product     @relation(fields: [productId], references: [productId])
+  productSku            ProductSku? @relation(fields: [skuId], references: [skuId])
+}
+
+// Bargain (砍价活动表)
+model Bargain {
+  bargainId             Int      @id @default(autoincrement()) @map("bargain_id")
+  bargainName           String   @map("bargain_name") @default("")
+  productId             Int      @map("product_id")
+  skuId                 Int      @map("sku_id") @default(0)
+  originalPrice         Decimal  @map("original_price") @db.Decimal(10, 2) @default(0.00)
+  floorPrice            Decimal  @map("floor_price") @db.Decimal(10, 2) @default(0.00)
+  startTime             DateTime @map("start_time") @default(now())
+  endTime               DateTime @map("end_time") @default(now())
+  status                Int      @map("status") @default(1)
+  isShow                Int      @map("is_show") @default(1)
+  shopId                Int      @map("shop_id") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  product               Product     @relation(fields: [productId], references: [productId])
+  productSku            ProductSku? @relation(fields: [skuId], references: [skuId])
+  shop                  Shop?       @relation(fields: [shopId], references: [shopId])
+  bargainGroups         BargainGroup[]
+  bargainLogs           BargainLog[]
+}
+
+// BargainGroup (砍价团表)
+model BargainGroup {
+  groupId               Int      @id @default(autoincrement()) @map("group_id")
+  bargainId             Int      @map("bargain_id")
+  userId                Int      @map("user_id")
+  currentPrice          Decimal  @map("current_price") @db.Decimal(10, 2) @default(0.00)
+  startTime             DateTime @map("start_time") @default(now())
+  endTime               DateTime @map("end_time") @default(now())
+  status                Int      @map("status") @default(0)
+  participantCount      Int      @map("participant_count") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  bargain               Bargain @relation(fields: [bargainId], references: [bargainId], onDelete: Cascade)
+  user                  User     @relation(fields: [userId], references: [userId])
+  bargainLogs           BargainLog[]
+}
+
+// BargainLog (砍价日志表)
+model BargainLog {
+  logId                 Int      @id @default(autoincrement()) @map("log_id")
+  bargainId             Int      @map("bargain_id")
+  groupId               Int      @map("group_id") @default(0)
+  userId                Int      @map("user_id")
+  helpUserId            Int      @map("help_user_id") @default(0)
+  bargainAmount         Decimal  @map("bargain_amount") @db.Decimal(10, 2) @default(0.00)
+  currentPrice          Decimal  @map("current_price") @db.Decimal(10, 2) @default(0.00)
+  bargainTime           DateTime @map("bargain_time") @default(now())
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  bargain               Bargain      @relation(fields: [bargainId], references: [bargainId], onDelete: Cascade)
+  bargainGroup          BargainGroup? @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+  user                  User         @relation(fields: [userId], references: [userId])
+  helpUser              User?        @relation("BargainHelpUser", fields: [helpUserId], references: [userId])
+}
+
+// Groupon (团购表)
+model Groupon {
+  grouponId             Int      @id @default(autoincrement()) @map("groupon_id")
+  grouponName           String   @map("groupon_name") @default("")
+  productId             Int      @map("product_id")
+  skuId                 Int      @map("sku_id") @default(0)
+  grouponPrice          Decimal  @map("groupon_price") @db.Decimal(10, 2) @default(0.00)
+  originalPrice         Decimal  @map("original_price") @db.Decimal(10, 2) @default(0.00)
+  minPeople             Int      @map("min_people") @default(2)
+  maxPeople             Int      @map("max_people") @default(0)
+  startTime             DateTime @map("start_time") @default(now())
+  endTime               DateTime @map("end_time") @default(now())
+  status                Int      @map("status") @default(1)
+  isShow                Int      @map("is_show") @default(1)
+  shopId                Int      @map("shop_id") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  product               Product     @relation(fields: [productId], references: [productId])
+  productSku            ProductSku? @relation(fields: [skuId], references: [skuId])
+  shop                  Shop?       @relation(fields: [shopId], references: [shopId])
+  grouponItems          GrouponItem[]
+}
+
+// GrouponItem (团购项表)
+model GrouponItem {
+  itemId                Int      @id @default(autoincrement()) @map("item_id")
+  grouponId             Int      @map("groupon_id")
+  userId                Int      @map("user_id")
+  orderId               Int      @map("order_id") @default(0)
+  joinTime              DateTime @map("join_time") @default(now())
+  status                Int      @map("status") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  groupon               Groupon @relation(fields: [grouponId], references: [grouponId], onDelete: Cascade)
+  user                  User     @relation(fields: [userId], references: [userId])
+  order                 Order?   @relation(fields: [orderId], references: [orderId])
+}
+
+// PointsExchange (积分兑换表)
+model PointsExchange {
+  exchangeId            Int      @id @default(autoincrement()) @map("exchange_id")
+  exchangeName          String   @map("exchange_name") @default("")
+  exchangeDesc          String   @map("exchange_desc") @default("")
+  productId             Int      @map("product_id") @default(0)
+  points                Int      @map("points") @default(0)
+  stock                 Int      @map("stock") @default(0)
+  exchangeCount         Int      @map("exchange_count") @default(0)
+  startTime             DateTime @map("start_time") @default(now())
+  endTime               DateTime @map("end_time") @default(now())
+  status                Int      @map("status") @default(1)
+  isShow                Int      @map("is_show") @default(1)
+  sortOrder             Int      @map("sort_order") @default(100)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  product               Product? @relation(fields: [productId], references: [productId])
+}
+
+// Sign (签到表)
+model Sign {
+  signId                Int      @id @default(autoincrement()) @map("sign_id")
+  userId                Int      @map("user_id")
+  signDate              DateTime @map("sign_date") @default(now())
+  signPoints            Int      @map("sign_points") @default(0)
+  consecutiveDays       Int      @map("consecutive_days") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  user                  User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([userId, signDate])
+}
+
+// SignSetting (签到设置表)
+model SignSetting {
+  settingId             Int      @id @default(autoincrement()) @map("setting_id")
+  key                   String   @map("key") @default("")
+  value                 String   @map("value") @default("")
+  description           String   @map("description") @default("")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// ProductGift (商品赠品表)
+model ProductGift {
+  giftId                Int      @id @default(autoincrement()) @map("gift_id")
+  productId             Int      @map("product_id")
+  giftProductId         Int      @map("gift_product_id")
+  giftQuantity          Int      @map("gift_quantity") @default(1)
+  startTime             DateTime @map("start_time") @default(now())
+  endTime               DateTime @map("end_time") @default(now())
+  status                Int      @map("status") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  product               Product @relation("ProductGiftMain", fields: [productId], references: [productId])
+  giftProduct           Product @relation("ProductGiftItem", fields: [giftProductId], references: [productId])
+}
+
+// ProductVideo (商品视频表)
+model ProductVideo {
+  videoId               Int      @id @default(autoincrement()) @map("video_id")
+  productId             Int      @map("product_id")
+  videoUrl              String   @map("video_url") @default("")
+  videoCover            String   @map("video_cover") @default("")
+  videoTitle            String   @map("video_title") @default("")
+  videoDesc             String   @map("video_desc") @default("")
+  sortOrder             Int      @map("sort_order") @default(100)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  product               Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
+}
+
+// ProductGroup (商品分组表)
+model ProductGroup {
+  groupId               Int      @id @default(autoincrement()) @map("group_id")
+  groupName             String   @map("group_name") @default("")
+  groupDesc             String   @map("group_desc") @default("")
+  groupImage            String   @map("group_image") @default("")
+  sortOrder             Int      @map("sort_order") @default(100)
+  isShow                Int      @map("is_show") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// ProductPackage (商品套餐表)
+model ProductPackage {
+  packageId             Int      @id @default(autoincrement()) @map("package_id")
+  packageName           String   @map("package_name") @default("")
+  packageDesc           String   @map("package_desc") @default("")
+  packagePrice          Decimal  @map("package_price") @db.Decimal(10, 2) @default(0.00)
+  marketPrice           Decimal  @map("market_price") @db.Decimal(10, 2) @default(0.00)
+  startTime             DateTime @map("start_time") @default(now())
+  endTime               DateTime @map("end_time") @default(now())
+  status                Int      @map("status") @default(1)
+  isShow                Int      @map("is_show") @default(1)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// ProductServices (商品服务表)
+model ProductServices {
+  serviceId             Int      @id @default(autoincrement()) @map("service_id")
+  productId             Int      @map("product_id")
+  serviceName           String   @map("service_name") @default("")
+  serviceDesc           String   @map("service_desc") @default("")
+  serviceIcon           String   @map("service_icon") @default("")
+  sortOrder             Int      @map("sort_order") @default(100)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  product               Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
+}
+
+// ProductRelated (相关商品表)
+model ProductRelated {
+  relatedId             Int      @id @default(autoincrement()) @map("related_id")
+  productId             Int      @map("product_id")
+  relatedProductId      Int      @map("related_product_id")
+  sortOrder             Int      @map("sort_order") @default(100)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  product               Product @relation("ProductRelatedMain", fields: [productId], references: [productId])
+  relatedProduct        Product @relation("ProductRelatedItem", fields: [relatedProductId], references: [productId])
+}
+
+// UserInvoice (用户发票表)
+model UserInvoice {
+  invoiceId             Int      @id @default(autoincrement()) @map("invoice_id")
+  userId                Int      @map("user_id")
+  invoiceType           Int      @map("invoice_type") @default(0)
+  invoiceTitle          String   @map("invoice_title") @default("")
+  taxNumber             String   @map("tax_number") @default("")
+  bankName              String   @map("bank_name") @default("")
+  bankAccount           String   @map("bank_account") @default("")
+  address               String   @map("address") @default("")
+  phone                 String   @map("phone") @default("")
+  isDefault             Int      @map("is_default") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  user                  User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+// UserRechargeOrder (用户充值订单表)
+model UserRechargeOrder {
+  rechargeId            Int      @id @default(autoincrement()) @map("recharge_id")
+  userId                Int      @map("user_id")
+  rechargeSn            String   @unique @map("recharge_sn") @default("")
+  rechargeAmount        Decimal  @map("recharge_amount") @db.Decimal(10, 2) @default(0.00)
+  payAmount             Decimal  @map("pay_amount") @db.Decimal(10, 2) @default(0.00)
+  payType               Int      @map("pay_type") @default(0)
+  payStatus             Int      @map("pay_status") @default(0)
+  payTime               DateTime? @map("pay_time")
+  addTime               DateTime @map("add_time") @default(now())
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  user                  User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+// UserWithdrawAccount (用户提现账户表)
+model UserWithdrawAccount {
+  accountId             Int      @id @default(autoincrement()) @map("account_id")
+  userId                Int      @map("user_id")
+  accountType           Int      @map("account_type") @default(0)
+  accountName           String   @map("account_name") @default("")
+  accountNumber         String   @map("account_number") @default("")
+  bankName              String   @map("bank_name") @default("")
+  bankBranch            String   @map("bank_branch") @default("")
+  isDefault             Int      @map("is_default") @default(0)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  user                  User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+// UserWithdrawApply (用户提现申请表)
+model UserWithdrawApply {
+  applyId               Int      @id @default(autoincrement()) @map("apply_id")
+  userId                Int      @map("user_id")
+  withdrawAmount        Decimal  @map("withdraw_amount") @db.Decimal(10, 2) @default(0.00)
+  fee                   Decimal  @map("fee") @db.Decimal(10, 2) @default(0.00)
+  actualAmount          Decimal  @map("actual_amount") @db.Decimal(10, 2) @default(0.00)
+  accountId             Int      @map("account_id")
+  status                Int      @map("status") @default(0)
+  applyTime             DateTime @map("apply_time") @default(now())
+  approveTime           DateTime? @map("approve_time")
+  remark                String   @map("remark") @default("")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  user                  User               @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  withdrawAccount       UserWithdrawAccount @relation(fields: [accountId], references: [accountId])
+}

@@ -9,662 +9,662 @@ datasource db {
 
 // AdminUser (后台用户表)
 model AdminUser {
-  adminId        Int      @id @default(autoincrement()) @map("admin_id")
-  username       String   @map("username") @default("")
-  adminType      String   @map("admin_type") @default("admin")
-  mobile         String   @map("mobile") @default("")
-  avatar         String?  @map("avatar")
-  password       String   @map("password") @default("")
-  email          String   @map("email") @default("")
-  addTime        Int      @map("add_time") @default(0)
-  authList       String   @map("auth_list") @default("") // JSON
-  userId         Int      @map("user_id") @default(0)
-  suppliersId    Int      @map("suppliers_id") @default(0)
-  roleId         Int      @map("role_id")
-  merchantId     Int      @map("merchant_id") @default(0)
-  parentId       Int      @map("parent_id") @default(0)
-  menuTag        String?  @map("menu_tag") // JSON
-  orderExport    String?  @map("order_export") // JSON
-  extra          String?  @map("extra") // JSON
-  shopId         Int      @map("shop_id") @default(0)
-  isUsing        Int      @map("is_using") @default(0)
-  initialPassword String   @map("initial_password") @default("")
+  adminId         Int     @id @default(autoincrement()) @map("admin_id")
+  username        String  @default("") @map("username")
+  adminType       String  @default("admin") @map("admin_type")
+  mobile          String  @default("") @map("mobile")
+  avatar          String? @map("avatar")
+  password        String  @default("") @map("password")
+  email           String  @default("") @map("email")
+  addTime         Int     @default(0) @map("add_time")
+  authList        String  @default("") @map("auth_list") // JSON
+  userId          Int     @default(0) @map("user_id")
+  suppliersId     Int     @default(0) @map("suppliers_id")
+  roleId          Int     @map("role_id")
+  merchantId      Int     @default(0) @map("merchant_id")
+  parentId        Int     @default(0) @map("parent_id")
+  menuTag         String? @map("menu_tag") // JSON
+  orderExport     String? @map("order_export") // JSON
+  extra           String? @map("extra") // JSON
+  shopId          Int     @default(0) @map("shop_id")
+  isUsing         Int     @default(0) @map("is_using")
+  initialPassword String  @default("") @map("initial_password")
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  adminRole      AdminRole @relation(fields: [roleId], references: [roleId])
+  adminRole AdminRole @relation(fields: [roleId], references: [roleId])
 }
 
 // AdminRole (后台角色表)
 model AdminRole {
-  roleId         Int      @id @default(autoincrement()) @map("role_id")
-  roleName       String   @map("role_name") @default("")
-  roleDesc       String   @map("role_desc") @default("")
-  authorityList  String   @map("authority_list") @default("") // JSON
-  adminType      String   @map("admin_type") @default("admin")
-  merchantId     Int      @map("merchant_id") @default(0)
-  shopId         Int      @map("shop_id") @default(0)
-  vendorId       Int      @map("vendor_id") @default(0)
+  roleId        Int    @id @default(autoincrement()) @map("role_id")
+  roleName      String @default("") @map("role_name")
+  roleDesc      String @default("") @map("role_desc")
+  authorityList String @default("") @map("authority_list") // JSON
+  adminType     String @default("admin") @map("admin_type")
+  merchantId    Int    @default(0) @map("merchant_id")
+  shopId        Int    @default(0) @map("shop_id")
+  vendorId      Int    @default(0) @map("vendor_id")
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  adminUsers     AdminUser[]
+  adminUsers AdminUser[]
 }
 
 // User (用户表)
 model User {
-  userId                Int      @id @default(autoincrement()) @map("user_id")
-  username              String   @unique @map("username") @default("")
-  avatar                String   @map("avatar") @default("")
-  mobile                String   @unique @map("mobile") @default("")
-  mobileValidated       Int      @map("mobile_validated") @default(0)
-  email                 String   @unique @map("email") @default("")
-  emailValidated        Int      @map("email_validated") @default(0)
-  nickname              String   @map("nickname") @default("")
-  password              String   @map("password") @default("")
-  birthday              DateTime? @map("birthday")
-  balance               Decimal  @map("balance") @db.Decimal(10, 2) @default(0.00)
-  frozenBalance         Decimal  @map("frozen_balance") @db.Decimal(10, 2) @default(0.00)
-  points                Int      @map("points") @default(0)
-  growthPoints          Int      @map("growth_points") @default(0)
-  addressId             Int      @map("address_id") @default(0)
-  regTime               DateTime @map("reg_time") @default(now())
-  lastLogin             DateTime @map("last_login") @default(now())
-  lastIp                String   @map("last_ip") @default("")
-  rankId                Int      @map("rank_id") @default(0)
-  referrerUserId        Int      @map("referrer_user_id") @default(0)
-  fromTag               Int      @map("from_tag") @default(0)
-  isSvip                Int      @map("is_svip") @default(0)
-  svipExpireTime        DateTime @map("svip_expire_time") @default(now())
-  orderCount            Int      @map("order_count") @default(0)
-  orderAmount           Decimal  @map("order_amount") @db.Decimal(10, 2) @default(0.00)
-  historyProductIds     String?  @map("history_product_ids") // JSON array
-  isDistribution        Int      @map("is_distribution") @default(0)
+  userId                   Int       @id @default(autoincrement()) @map("user_id")
+  username                 String    @unique @default("") @map("username")
+  avatar                   String    @default("") @map("avatar")
+  mobile                   String    @unique @default("") @map("mobile")
+  mobileValidated          Int       @default(0) @map("mobile_validated")
+  email                    String    @unique @default("") @map("email")
+  emailValidated           Int       @default(0) @map("email_validated")
+  nickname                 String    @default("") @map("nickname")
+  password                 String    @default("") @map("password")
+  birthday                 DateTime? @map("birthday")
+  balance                  Decimal   @default(0.00) @map("balance") @db.Decimal(10, 2)
+  frozenBalance            Decimal   @default(0.00) @map("frozen_balance") @db.Decimal(10, 2)
+  points                   Int       @default(0) @map("points")
+  growthPoints             Int       @default(0) @map("growth_points")
+  addressId                Int       @default(0) @map("address_id")
+  regTime                  DateTime  @default(now()) @map("reg_time")
+  lastLogin                DateTime  @default(now()) @map("last_login")
+  lastIp                   String    @default("") @map("last_ip")
+  rankId                   Int       @default(0) @map("rank_id")
+  referrerUserId           Int       @default(0) @map("referrer_user_id")
+  fromTag                  Int       @default(0) @map("from_tag")
+  isSvip                   Int       @default(0) @map("is_svip")
+  svipExpireTime           DateTime  @default(now()) @map("svip_expire_time")
+  orderCount               Int       @default(0) @map("order_count")
+  orderAmount              Decimal   @default(0.00) @map("order_amount") @db.Decimal(10, 2)
+  historyProductIds        String?   @map("history_product_ids") // JSON array
+  isDistribution           Int       @default(0) @map("is_distribution")
   distributionRegisterTime DateTime? @map("distribution_register_time")
-  wechatImg             String   @map("wechat_img") @default("")
-  isCompanyAuth         Int      @map("is_company_auth") @default(0)
-  status                Int      @map("status") @default(1)
+  wechatImg                String    @default("") @map("wechat_img")
+  isCompanyAuth            Int       @default(0) @map("is_company_auth")
+  status                   Int       @default(1) @map("status")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  userAddresses         UserAddress[]
-  cartItems             Cart[]
-  orders                Order[]
-  userCoupons           UserCoupon[]
-  comments              Comment[]
-  collectProducts       CollectProduct[]
-  collectShops          CollectShop[]
-  blacklistedTokens     BlacklistedToken[]
-  }
+  userAddresses     UserAddress[]
+  cartItems         Cart[]
+  orders            Order[]
+  userCoupons       UserCoupon[]
+  comments          Comment[]
+  collectProducts   CollectProduct[]
+  collectShops      CollectShop[]
+  blacklistedTokens BlacklistedToken[]
+}
 
 // User Address (用户地址表)
 model UserAddress {
-  addressId            Int      @id @default(autoincrement()) @map("address_id")
-  addressTag           String   @map("address_tag") @default("")
-  userId               Int      @map("user_id")
-  consignee            String   @map("consignee") @default("")
-  email                String   @map("email") @default("")
-  regionIds            String   @map("region_ids") // JSON array
-  regionNames          String   @map("region_names") // JSON array
-  address              String   @map("address") @default("")
-  postcode             String   @map("postcode") @default("")
-  telephone            String   @map("telephone") @default("")
-  mobile               String   @map("mobile") @default("")
-  isDefault            Int      @map("is_default") @default(0)
-  isSelected           Int      @map("is_selected") @default(0)
+  addressId   Int    @id @default(autoincrement()) @map("address_id")
+  addressTag  String @default("") @map("address_tag")
+  userId      Int    @map("user_id")
+  consignee   String @default("") @map("consignee")
+  email       String @default("") @map("email")
+  regionIds   String @map("region_ids") // JSON array
+  regionNames String @map("region_names") // JSON array
+  address     String @default("") @map("address")
+  postcode    String @default("") @map("postcode")
+  telephone   String @default("") @map("telephone")
+  mobile      String @default("") @map("mobile")
+  isDefault   Int    @default(0) @map("is_default")
+  isSelected  Int    @default(0) @map("is_selected")
 
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  user                 User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 }
 
 // Product (商品表)
 model Product {
-  productId             Int      @id @default(autoincrement()) @map("product_id")
-  productName           String   @map("product_name") @default("")
-  productSn             String   @map("product_sn") @default("")
-  productTsn            String?  @map("product_tsn")
-  productStock          Int      @map("product_stock") @default(0)
-  productPrice          Decimal  @map("product_price") @db.Decimal(10, 2) @default(0.00)
-  marketPrice           Decimal  @map("market_price") @db.Decimal(10, 2) @default(0.00)
-  shippingTplId         Int      @map("shipping_tpl_id") @default(0)
-  productStatus         Int      @map("product_status") @default(1)
-  productType           Int      @map("product_type") @default(1)
-  categoryId            Int      @map("category_id")
-  brandId               Int      @map("brand_id") @default(0)
-  shopId                Int      @map("shop_id") @default(0)
-  keywords              String   @map("keywords") @default("")
-  shopCategoryId        Int      @map("shop_category_id") @default(0)
-  checkStatus           Int      @map("check_status") @default(1)
-  checkReason           String   @map("check_reason") @default("")
-  clickCount            Int      @map("click_count") @default(0)
-  productWeight         Decimal  @map("product_weight") @db.Decimal(10, 3) @default(0.000)
-  isPromote             Int      @map("is_promote") @default(0)
-  isPromoteActivity     Int      @map("is_promote_activity") @default(0)
-  promotePrice          Decimal  @map("promote_price") @db.Decimal(10, 2) @default(0.00)
-  promoteStartDate      DateTime @map("promote_start_date") @default(now())
-  promoteEndDate        DateTime @map("promote_end_date") @default(now())
-  seckillMaxNum         Int      @map("seckill_max_num") @default(0)
-  productBrief          String   @map("product_brief") @default("")
-  productDesc           String?  @map("product_desc")
-  picUrl                String   @map("pic_url") @default("")
-  picThumb              String   @map("pic_thumb") @default("")
-  picOriginal           String   @map("pic_original") @default("")
-  commentTag            String?  @map("comment_tag")
-  freeShipping          Int      @map("free_shipping") @default(0)
-  integral              Int      @map("integral") @default(0)
-  addTime               DateTime @map("add_time") @default(now())
-  sortOrder             Int      @map("sort_order") @default(100)
-  storeSortOrder        Int      @map("store_sort_order") @default(100)
-  isDelete              Int      @map("is_delete") @default(0)
-  isBest                Int      @map("is_best") @default(0)
-  isNew                 Int      @map("is_new") @default(0)
-  isHot                 Int      @map("is_hot") @default(0)
-  lastUpdate            DateTime @map("last_update") @default(now())
-  remark                String   @map("remark") @default("")
-  giveIntegral          Int      @map("give_integral") @default(-1)
-  rankIntegral          Int      @map("rank_integral") @default(-1)
-  suppliersId           Int?     @map("suppliers_id")
-  virtualSales          Int      @map("virtual_sales") @default(0)
-  limitNumber           Int      @map("limit_number") @default(0)
-  productCare           String?  @map("product_care")
-  productRelated        String?  @map("product_related") // JSON array
-  productServiceIds     String?  @map("product_service_ids") // JSON array
+  productId         Int      @id @default(autoincrement()) @map("product_id")
+  productName       String   @default("") @map("product_name")
+  productSn         String   @default("") @map("product_sn")
+  productTsn        String?  @map("product_tsn")
+  productStock      Int      @default(0) @map("product_stock")
+  productPrice      Decimal  @default(0.00) @map("product_price") @db.Decimal(10, 2)
+  marketPrice       Decimal  @default(0.00) @map("market_price") @db.Decimal(10, 2)
+  shippingTplId     Int      @default(0) @map("shipping_tpl_id")
+  productStatus     Int      @default(1) @map("product_status")
+  productType       Int      @default(1) @map("product_type")
+  categoryId        Int      @map("category_id")
+  brandId           Int      @default(0) @map("brand_id")
+  shopId            Int      @default(0) @map("shop_id")
+  keywords          String   @default("") @map("keywords")
+  shopCategoryId    Int      @default(0) @map("shop_category_id")
+  checkStatus       Int      @default(1) @map("check_status")
+  checkReason       String   @default("") @map("check_reason")
+  clickCount        Int      @default(0) @map("click_count")
+  productWeight     Decimal  @default(0.000) @map("product_weight") @db.Decimal(10, 3)
+  isPromote         Int      @default(0) @map("is_promote")
+  isPromoteActivity Int      @default(0) @map("is_promote_activity")
+  promotePrice      Decimal  @default(0.00) @map("promote_price") @db.Decimal(10, 2)
+  promoteStartDate  DateTime @default(now()) @map("promote_start_date")
+  promoteEndDate    DateTime @default(now()) @map("promote_end_date")
+  seckillMaxNum     Int      @default(0) @map("seckill_max_num")
+  productBrief      String   @default("") @map("product_brief")
+  productDesc       String?  @map("product_desc")
+  picUrl            String   @default("") @map("pic_url")
+  picThumb          String   @default("") @map("pic_thumb")
+  picOriginal       String   @default("") @map("pic_original")
+  commentTag        String?  @map("comment_tag")
+  freeShipping      Int      @default(0) @map("free_shipping")
+  integral          Int      @default(0) @map("integral")
+  addTime           DateTime @default(now()) @map("add_time")
+  sortOrder         Int      @default(100) @map("sort_order")
+  storeSortOrder    Int      @default(100) @map("store_sort_order")
+  isDelete          Int      @default(0) @map("is_delete")
+  isBest            Int      @default(0) @map("is_best")
+  isNew             Int      @default(0) @map("is_new")
+  isHot             Int      @default(0) @map("is_hot")
+  lastUpdate        DateTime @default(now()) @map("last_update")
+  remark            String   @default("") @map("remark")
+  giveIntegral      Int      @default(-1) @map("give_integral")
+  rankIntegral      Int      @default(-1) @map("rank_integral")
+  suppliersId       Int?     @map("suppliers_id")
+  virtualSales      Int      @default(0) @map("virtual_sales")
+  limitNumber       Int      @default(0) @map("limit_number")
+  productCare       String?  @map("product_care")
+  productRelated    String?  @map("product_related") // JSON array
+  productServiceIds String?  @map("product_service_ids") // JSON array
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  category              Category @relation(fields: [categoryId], references: [categoryId])
-  brand                 Brand?   @relation(fields: [brandId], references: [brandId])
-  shop                  Shop?    @relation(fields: [shopId], references: [shopId])
-  productSku            ProductSku[]
-  productAttributes     ProductAttribute[]
-  productGallery        ProductGallery[]
-  cartItems             Cart[]
-  orderItems            OrderItem[]
-  comments              Comment[]
-  collectProducts       CollectProduct[]
-  }
+  category          Category           @relation(fields: [categoryId], references: [categoryId])
+  brand             Brand?             @relation(fields: [brandId], references: [brandId])
+  shop              Shop?              @relation(fields: [shopId], references: [shopId])
+  productSku        ProductSku[]
+  productAttributes ProductAttribute[]
+  productGallery    ProductGallery[]
+  cartItems         Cart[]
+  orderItems        OrderItem[]
+  comments          Comment[]
+  collectProducts   CollectProduct[]
+}
 
 // Product SKU (商品SKU表)
 model ProductSku {
-  skuId                 Int      @id @default(autoincrement()) @map("sku_id")
-  productId             Int      @map("product_id")
-  skuValue              String   @map("sku_value") @default("")
-  skuData               String?  @map("sku_data") // JSON data
-  skuSn                 String   @map("sku_sn") @default("")
-  skuStock              Int      @map("sku_stock") @default(0)
-  skuTsn                String   @map("sku_tsn") @default("")
-  skuPrice              Decimal  @map("sku_price") @db.Decimal(10, 2) @default(0.00)
-  skuPromotePrice       Decimal  @map("sku_promote_price") @db.Decimal(10, 2) @default(0.00)
-  skuMarketPrice        Decimal  @map("sku_market_price") @db.Decimal(10, 2) @default(0.00)
-  skuPic                String   @map("sku_pic") @default("")
-  skuPicThumb           String   @map("sku_pic_thumb") @default("")
-  skuWeight             Decimal  @map("sku_weight") @db.Decimal(10, 3) @default(0.000)
-  skuVolume             Decimal  @map("sku_volume") @db.Decimal(10, 3) @default(0.000)
-  skuCode               String   @map("sku_code") @default("")
-  supplierId            Int      @map("supplier_id") @default(0)
-  supplierSkuId         Int      @map("supplier_sku_id") @default(0)
+  skuId           Int     @id @default(autoincrement()) @map("sku_id")
+  productId       Int     @map("product_id")
+  skuValue        String  @default("") @map("sku_value")
+  skuData         String? @map("sku_data") // JSON data
+  skuSn           String  @default("") @map("sku_sn")
+  skuStock        Int     @default(0) @map("sku_stock")
+  skuTsn          String  @default("") @map("sku_tsn")
+  skuPrice        Decimal @default(0.00) @map("sku_price") @db.Decimal(10, 2)
+  skuPromotePrice Decimal @default(0.00) @map("sku_promote_price") @db.Decimal(10, 2)
+  skuMarketPrice  Decimal @default(0.00) @map("sku_market_price") @db.Decimal(10, 2)
+  skuPic          String  @default("") @map("sku_pic")
+  skuPicThumb     String  @default("") @map("sku_pic_thumb")
+  skuWeight       Decimal @default(0.000) @map("sku_weight") @db.Decimal(10, 3)
+  skuVolume       Decimal @default(0.000) @map("sku_volume") @db.Decimal(10, 3)
+  skuCode         String  @default("") @map("sku_code")
+  supplierId      Int     @default(0) @map("supplier_id")
+  supplierSkuId   Int     @default(0) @map("supplier_sku_id")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  product               Product  @relation(fields: [productId], references: [productId], onDelete: Cascade)
-  cartItems             Cart[]
-  orderItems            OrderItem[]
+  product    Product     @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  cartItems  Cart[]
+  orderItems OrderItem[]
 }
 
 // Product Attributes (商品属性表)
 model ProductAttribute {
-  attributesId          Int      @id @default(autoincrement()) @map("attributes_id")
-  productId             Int      @map("product_id")
-  attrType              Int      @map("attr_type") @default(0)
-  attrName              String   @map("attr_name") @default("")
-  attrValue             String   @map("attr_value") @default("")
-  attrPrice             Decimal  @map("attr_price") @db.Decimal(8, 2) @default(0.00)
-  attrColor             String   @map("attr_color") @default("")
-  attrPic               String   @map("attr_pic") @default("")
-  attrPicThumb          String   @map("attr_pic_thumb") @default("")
+  attributesId Int     @id @default(autoincrement()) @map("attributes_id")
+  productId    Int     @map("product_id")
+  attrType     Int     @default(0) @map("attr_type")
+  attrName     String  @default("") @map("attr_name")
+  attrValue    String  @default("") @map("attr_value")
+  attrPrice    Decimal @default(0.00) @map("attr_price") @db.Decimal(8, 2)
+  attrColor    String  @default("") @map("attr_color")
+  attrPic      String  @default("") @map("attr_pic")
+  attrPicThumb String  @default("") @map("attr_pic_thumb")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  product               Product  @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
 }
 
 // Product Gallery (商品图片表)
 model ProductGallery {
-  picId                 Int      @id @default(autoincrement()) @map("pic_id")
-  productId             Int      @map("product_id")
-  picUrl                String   @map("pic_url") @default("")
-  picDesc               String   @map("pic_desc") @default("")
-  picThumb              String   @map("pic_thumb") @default("")
-  picOriginal           String   @map("pic_original") @default("")
-  picLarge              String   @map("pic_large") @default("")
-  sortOrder             Int      @map("sort_order") @default(1)
+  picId       Int    @id @default(autoincrement()) @map("pic_id")
+  productId   Int    @map("product_id")
+  picUrl      String @default("") @map("pic_url")
+  picDesc     String @default("") @map("pic_desc")
+  picThumb    String @default("") @map("pic_thumb")
+  picOriginal String @default("") @map("pic_original")
+  picLarge    String @default("") @map("pic_large")
+  sortOrder   Int    @default(1) @map("sort_order")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  product               Product  @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
 }
 
 // Category (分类表)
 model Category {
-  categoryId            Int      @id @default(autoincrement()) @map("category_id")
-  categoryName          String   @map("category_name") @default("")
-  keywords              String   @map("keywords") @default("")
-  categoryDesc          String   @map("category_desc") @default("")
-  parentId              Int      @map("parent_id") @default(0)
-  sortOrder             Int      @map("sort_order") @default(50)
-  measureUnit           String   @map("measure_unit") @default("")
-  isShow                Int      @map("is_show") @default(1)
-  seoTitle              String   @map("seo_title") @default("")
-  shortName             String   @map("short_name") @default("")
-  categoryPic           String   @map("category_pic") @default("")
-  categoryIco           String   @map("category_ico") @default("")
-  isHot                 Int      @map("is_hot") @default(0)
-  searchKeywords        String   @map("search_keywords") @default("")
+  categoryId     Int    @id @default(autoincrement()) @map("category_id")
+  categoryName   String @default("") @map("category_name")
+  keywords       String @default("") @map("keywords")
+  categoryDesc   String @default("") @map("category_desc")
+  parentId       Int    @default(0) @map("parent_id")
+  sortOrder      Int    @default(50) @map("sort_order")
+  measureUnit    String @default("") @map("measure_unit")
+  isShow         Int    @default(1) @map("is_show")
+  seoTitle       String @default("") @map("seo_title")
+  shortName      String @default("") @map("short_name")
+  categoryPic    String @default("") @map("category_pic")
+  categoryIco    String @default("") @map("category_ico")
+  isHot          Int    @default(0) @map("is_hot")
+  searchKeywords String @default("") @map("search_keywords")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  parentCategory         Category? @relation("CategoryHierarchy", fields: [parentId], references: [categoryId])
-  childCategories        Category[] @relation("CategoryHierarchy")
-  products              Product[]
-  }
+  parentCategory  Category?  @relation("CategoryHierarchy", fields: [parentId], references: [categoryId])
+  childCategories Category[] @relation("CategoryHierarchy")
+  products        Product[]
+}
 
 // Shop (店铺表)
 model Shop {
-  shopId                Int      @id @default(autoincrement()) @map("shop_id")
-  shopTitle             String   @map("shop_title") @default("")
-  addTime               DateTime @map("add_time") @default(now())
-  shopLogo              String   @map("shop_logo") @default("")
-  clickCount            Int      @map("click_count") @default(0)
-  status                Int      @map("status") @default(1)
-  merchantId            Int      @map("merchant_id") @default(0)
-  shopMoney             Decimal  @map("shop_money") @db.Decimal(10, 2) @default(0.00)
-  frozenMoney           Decimal  @map("frozen_money") @db.Decimal(10, 2) @default(0.00)
-  contactMobile         String   @map("contact_mobile") @default("")
-  description           String   @map("description") @default("")
-  kefuPhone             String   @map("kefu_phone") @default("")
-  kefuWeixin            String   @map("kefu_weixin") @default("")
-  kefuLink              String   @map("kefu_link") @default("")
-  isContactKefu         Int      @map("is_contact_kefu") @default(1)
-  kefuInlet             String?  @map("kefu_inlet") // JSON data
-  lastLoginTime         DateTime @map("last_login_time") @default(now())
-  vendorSetPriceType    Int      @map("vendor_set_price_type") @default(3)
+  shopId                  Int      @id @default(autoincrement()) @map("shop_id")
+  shopTitle               String   @default("") @map("shop_title")
+  addTime                 DateTime @default(now()) @map("add_time")
+  shopLogo                String   @default("") @map("shop_logo")
+  clickCount              Int      @default(0) @map("click_count")
+  status                  Int      @default(1) @map("status")
+  merchantId              Int      @default(0) @map("merchant_id")
+  shopMoney               Decimal  @default(0.00) @map("shop_money") @db.Decimal(10, 2)
+  frozenMoney             Decimal  @default(0.00) @map("frozen_money") @db.Decimal(10, 2)
+  contactMobile           String   @default("") @map("contact_mobile")
+  description             String   @default("") @map("description")
+  kefuPhone               String   @default("") @map("kefu_phone")
+  kefuWeixin              String   @default("") @map("kefu_weixin")
+  kefuLink                String   @default("") @map("kefu_link")
+  isContactKefu           Int      @default(1) @map("is_contact_kefu")
+  kefuInlet               String?  @map("kefu_inlet") // JSON data
+  lastLoginTime           DateTime @default(now()) @map("last_login_time")
+  vendorSetPriceType      Int      @default(3) @map("vendor_set_price_type")
   vendorSetPriceAutoValue Decimal? @map("vendor_set_price_auto_value") @db.Decimal(10, 2)
-  serviceFeeRate        Decimal? @map("service_fee_rate") @db.Decimal(10, 2)
-  feeRate               Decimal? @map("fee_rate") @db.Decimal(10, 2)
+  serviceFeeRate          Decimal? @map("service_fee_rate") @db.Decimal(10, 2)
+  feeRate                 Decimal? @map("fee_rate") @db.Decimal(10, 2)
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  products              Product[]
-    orders                Order[]
-  orderItems            OrderItem[]
-  collectShops          CollectShop[]
+  products     Product[]
+  orders       Order[]
+  orderItems   OrderItem[]
+  collectShops CollectShop[]
 }
 
 // Cart (购物车表)
 model Cart {
-  cartId                Int      @id @default(autoincrement()) @map("cart_id")
-  userId                Int      @map("user_id")
-  productId             Int      @map("product_id")
-  productSn             String   @map("product_sn") @default("")
-  picThumb              String   @map("pic_thumb") @default("")
-  marketPrice           Decimal  @map("market_price") @db.Decimal(10, 2) @default(0.00)
-  originalPrice         Decimal  @map("original_price") @db.Decimal(10, 2) @default(0.00)
-  quantity              Int      @map("quantity") @default(0)
-  skuId                 Int      @map("sku_id") @default(0)
-  skuData               String?  @map("sku_data") // JSON data
-  productType           Int      @map("product_type") @default(0)
-  isChecked             Int      @map("is_checked") @default(1)
-  shopId                Int      @map("shop_id") @default(0)
-  type                  Int      @map("type") @default(1)
-  updateTime            DateTime @map("update_time") @default(now())
-  salesmanId            Int      @map("salesman_id") @default(0)
-  extraSkuData          String?  @map("extra_sku_data") // JSON data
+  cartId        Int      @id @default(autoincrement()) @map("cart_id")
+  userId        Int      @map("user_id")
+  productId     Int      @map("product_id")
+  productSn     String   @default("") @map("product_sn")
+  picThumb      String   @default("") @map("pic_thumb")
+  marketPrice   Decimal  @default(0.00) @map("market_price") @db.Decimal(10, 2)
+  originalPrice Decimal  @default(0.00) @map("original_price") @db.Decimal(10, 2)
+  quantity      Int      @default(0) @map("quantity")
+  skuId         Int      @default(0) @map("sku_id")
+  skuData       String?  @map("sku_data") // JSON data
+  productType   Int      @default(0) @map("product_type")
+  isChecked     Int      @default(1) @map("is_checked")
+  shopId        Int      @default(0) @map("shop_id")
+  type          Int      @default(1) @map("type")
+  updateTime    DateTime @default(now()) @map("update_time")
+  salesmanId    Int      @default(0) @map("salesman_id")
+  extraSkuData  String?  @map("extra_sku_data") // JSON data
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  user                  User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  product               Product  @relation(fields: [productId], references: [productId])
-  productSku            ProductSku? @relation(fields: [skuId], references: [skuId])
+  user       User        @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  product    Product     @relation(fields: [productId], references: [productId])
+  productSku ProductSku? @relation(fields: [skuId], references: [skuId])
 }
 
 // Order (订单表)
 model Order {
-  orderId               Int      @id @default(autoincrement()) @map("order_id")
-  orderSn               String   @unique @map("order_sn") @default("")
-  userId                Int      @map("user_id")
-  parentOrderId         Int      @map("parent_order_id") @default(0)
-  parentOrderSn         String   @map("parent_order_sn") @default("")
-  orderStatus           Int      @map("order_status") @default(0)
-  shippingStatus        Int      @map("shipping_status") @default(0)
-  payStatus             Int      @map("pay_status") @default(0)
-  addTime               DateTime @map("add_time") @default(now())
-  consignee             String   @map("consignee") @default("")
-  address               String   @map("address") @default("")
-  regionIds             String   @map("region_ids") // JSON array
-  regionNames           String   @map("region_names") // JSON array
-  addressData           String?  @map("address_data") // JSON data
-  mobile                String   @map("mobile") @default("")
-  email                 String   @map("email") @default("")
-  buyerNote             String   @map("buyer_note") @default("")
-  adminNote             String   @map("admin_note") @default("")
-  shippingMethod        Int      @map("shipping_method") @default(1)
-  logisticsId           Int      @map("logistics_id") @default(0)
-  logisticsName         String   @map("logistics_name") @default("")
-  shippingTypeId        Int      @map("shipping_type_id") @default(0)
-  shippingTypeName      String   @map("shipping_type_name") @default("")
-  trackingNo            String   @map("tracking_no") @default("")
-  shippingTime          DateTime @map("shipping_time") @default(now())
-  receivedTime          DateTime @map("received_time") @default(now())
-  payTypeId             Int      @map("pay_type_id") @default(0)
-  payTime               DateTime @map("pay_time") @default(now())
-  usePoints             Int      @map("use_points") @default(0)
-  isNeedCommisson       Int      @map("is_need_commisson") @default(0)
-  distributionStatus    Int      @map("distribution_status") @default(0)
-  referrerUserId        Int      @map("referrer_user_id") @default(0)
-  isDel                 Int      @map("is_del") @default(0)
-  shopId                Int      @map("shop_id") @default(0)
-  isStoreSplited        Int      @map("is_store_splited") @default(0)
-  commentStatus         Int      @map("comment_status") @default(0)
-  totalAmount           Decimal  @map("total_amount") @db.Decimal(10, 2) @default(0.00)
-  paidAmount            Decimal  @map("paid_amount") @db.Decimal(10, 2) @default(0.00)
-  unpaidAmount          Decimal  @map("unpaid_amount") @db.Decimal(10, 2) @default(0.00)
-  unrefundAmount        Decimal  @map("unrefund_amount") @db.Decimal(10, 2) @default(0.00)
-  productAmount         Decimal  @map("product_amount") @db.Decimal(10, 2) @default(0.00)
-  couponAmount          Decimal  @map("coupon_amount") @db.Decimal(10, 2) @default(0.00)
-  pointsAmount          Decimal  @map("points_amount") @db.Decimal(10, 2) @default(0.00)
-  discountAmount        Decimal  @map("discount_amount") @db.Decimal(10, 2) @default(0.00)
-  balance               Decimal  @map("balance") @db.Decimal(10, 2) @default(0.00)
-  onlinePaidAmount      Decimal  @map("online_paid_amount") @db.Decimal(10, 2) @default(0.00)
-  offlinePaidAmount     Decimal  @map("offline_paid_amount") @db.Decimal(10, 2) @default(0.00)
-  serviceFee            Decimal  @map("service_fee") @db.Decimal(10, 2) @default(0.00)
-  shippingFee           Decimal  @map("shipping_fee") @db.Decimal(10, 2) @default(0.00)
-  invoiceFee            Decimal  @map("invoice_fee") @db.Decimal(10, 2) @default(0.00)
+  orderId            Int      @id @default(autoincrement()) @map("order_id")
+  orderSn            String   @unique @default("") @map("order_sn")
+  userId             Int      @map("user_id")
+  parentOrderId      Int      @default(0) @map("parent_order_id")
+  parentOrderSn      String   @default("") @map("parent_order_sn")
+  orderStatus        Int      @default(0) @map("order_status")
+  shippingStatus     Int      @default(0) @map("shipping_status")
+  payStatus          Int      @default(0) @map("pay_status")
+  addTime            DateTime @default(now()) @map("add_time")
+  consignee          String   @default("") @map("consignee")
+  address            String   @default("") @map("address")
+  regionIds          String   @map("region_ids") // JSON array
+  regionNames        String   @map("region_names") // JSON array
+  addressData        String?  @map("address_data") // JSON data
+  mobile             String   @default("") @map("mobile")
+  email              String   @default("") @map("email")
+  buyerNote          String   @default("") @map("buyer_note")
+  adminNote          String   @default("") @map("admin_note")
+  shippingMethod     Int      @default(1) @map("shipping_method")
+  logisticsId        Int      @default(0) @map("logistics_id")
+  logisticsName      String   @default("") @map("logistics_name")
+  shippingTypeId     Int      @default(0) @map("shipping_type_id")
+  shippingTypeName   String   @default("") @map("shipping_type_name")
+  trackingNo         String   @default("") @map("tracking_no")
+  shippingTime       DateTime @default(now()) @map("shipping_time")
+  receivedTime       DateTime @default(now()) @map("received_time")
+  payTypeId          Int      @default(0) @map("pay_type_id")
+  payTime            DateTime @default(now()) @map("pay_time")
+  usePoints          Int      @default(0) @map("use_points")
+  isNeedCommisson    Int      @default(0) @map("is_need_commisson")
+  distributionStatus Int      @default(0) @map("distribution_status")
+  referrerUserId     Int      @default(0) @map("referrer_user_id")
+  isDel              Int      @default(0) @map("is_del")
+  shopId             Int      @default(0) @map("shop_id")
+  isStoreSplited     Int      @default(0) @map("is_store_splited")
+  commentStatus      Int      @default(0) @map("comment_status")
+  totalAmount        Decimal  @default(0.00) @map("total_amount") @db.Decimal(10, 2)
+  paidAmount         Decimal  @default(0.00) @map("paid_amount") @db.Decimal(10, 2)
+  unpaidAmount       Decimal  @default(0.00) @map("unpaid_amount") @db.Decimal(10, 2)
+  unrefundAmount     Decimal  @default(0.00) @map("unrefund_amount") @db.Decimal(10, 2)
+  productAmount      Decimal  @default(0.00) @map("product_amount") @db.Decimal(10, 2)
+  couponAmount       Decimal  @default(0.00) @map("coupon_amount") @db.Decimal(10, 2)
+  pointsAmount       Decimal  @default(0.00) @map("points_amount") @db.Decimal(10, 2)
+  discountAmount     Decimal  @default(0.00) @map("discount_amount") @db.Decimal(10, 2)
+  balance            Decimal  @default(0.00) @map("balance") @db.Decimal(10, 2)
+  onlinePaidAmount   Decimal  @default(0.00) @map("online_paid_amount") @db.Decimal(10, 2)
+  offlinePaidAmount  Decimal  @default(0.00) @map("offline_paid_amount") @db.Decimal(10, 2)
+  serviceFee         Decimal  @default(0.00) @map("service_fee") @db.Decimal(10, 2)
+  shippingFee        Decimal  @default(0.00) @map("shipping_fee") @db.Decimal(10, 2)
+  invoiceFee         Decimal  @default(0.00) @map("invoice_fee") @db.Decimal(10, 2)
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  user                  User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  shop                  Shop?    @relation(fields: [shopId], references: [shopId])
-  orderItems            OrderItem[]
-  payments              Payment[]
-  userCoupons           UserCoupon[]
+  user        User         @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  shop        Shop?        @relation(fields: [shopId], references: [shopId])
+  orderItems  OrderItem[]
+  payments    Payment[]
+  userCoupons UserCoupon[]
 }
 
 // Order Item (订单项表)
 model OrderItem {
-  itemId                Int      @id @default(autoincrement()) @map("item_id")
-  orderId               Int      @map("order_id")
-  orderSn               String   @map("order_sn") @default("")
-  userId                Int      @map("user_id")
-  price                 Decimal  @map("price") @db.Decimal(10, 2) @default(0.00)
-  quantity              Int      @map("quantity") @default(1)
-  productId             Int      @map("product_id")
-  productName           String   @map("product_name") @default("")
-  productSn             String   @map("product_sn") @default("")
-  picThumb              String   @map("pic_thumb") @default("")
-  skuId                 Int      @map("sku_id") @default(0)
-  skuData               String   @map("sku_data") // JSON data
-  deliveryQuantity      Int      @map("delivery_quantity") @default(0)
-  productType           Int      @map("product_type") @default(1)
-  isGift                Int      @map("is_gift") @default(0)
-  shopId                Int      @map("shop_id") @default(0)
-  isPin                 Int      @map("is_pin") @default(0)
-  prepayPrice           Decimal  @map("prepay_price") @db.Decimal(8, 2) @default(0.00)
-  commission            String   @map("commission") @default("")
-  originPrice           Decimal  @map("origin_price") @db.Decimal(10, 2) @default(0.00)
-  promotionData         String?  @map("promotion_data") // JSON data
-  isSeckill             Int      @map("is_seckill") @default(0)
-  extraSkuData          String?  @map("extra_sku_data") // JSON data
-  suppliersId           Int      @map("suppliers_id") @default(0)
-  cardGroupName         String   @map("card_group_name") @default("")
-  vendorProductId       Int?     @map("vendor_product_id")
-  vendorProductSkuId    Int?     @map("vendor_product_sku_id")
-  vendorId              Int?     @map("vendor_id")
+  itemId             Int     @id @default(autoincrement()) @map("item_id")
+  orderId            Int     @map("order_id")
+  orderSn            String  @default("") @map("order_sn")
+  userId             Int     @map("user_id")
+  price              Decimal @default(0.00) @map("price") @db.Decimal(10, 2)
+  quantity           Int     @default(1) @map("quantity")
+  productId          Int     @map("product_id")
+  productName        String  @default("") @map("product_name")
+  productSn          String  @default("") @map("product_sn")
+  picThumb           String  @default("") @map("pic_thumb")
+  skuId              Int     @default(0) @map("sku_id")
+  skuData            String  @map("sku_data") // JSON data
+  deliveryQuantity   Int     @default(0) @map("delivery_quantity")
+  productType        Int     @default(1) @map("product_type")
+  isGift             Int     @default(0) @map("is_gift")
+  shopId             Int     @default(0) @map("shop_id")
+  isPin              Int     @default(0) @map("is_pin")
+  prepayPrice        Decimal @default(0.00) @map("prepay_price") @db.Decimal(8, 2)
+  commission         String  @default("") @map("commission")
+  originPrice        Decimal @default(0.00) @map("origin_price") @db.Decimal(10, 2)
+  promotionData      String? @map("promotion_data") // JSON data
+  isSeckill          Int     @default(0) @map("is_seckill")
+  extraSkuData       String? @map("extra_sku_data") // JSON data
+  suppliersId        Int     @default(0) @map("suppliers_id")
+  cardGroupName      String  @default("") @map("card_group_name")
+  vendorProductId    Int?    @map("vendor_product_id")
+  vendorProductSkuId Int?    @map("vendor_product_sku_id")
+  vendorId           Int?    @map("vendor_id")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  order                 Order     @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
-  product               Product   @relation(fields: [productId], references: [productId])
-  productSku            ProductSku? @relation(fields: [skuId], references: [skuId])
-  shop                  Shop?     @relation(fields: [shopId], references: [shopId])
+  order      Order       @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  product    Product     @relation(fields: [productId], references: [productId])
+  productSku ProductSku? @relation(fields: [skuId], references: [skuId])
+  shop       Shop?       @relation(fields: [shopId], references: [shopId])
 }
 
 // Payment (支付表)
 model Payment {
-  paylogId              Int      @id @default(autoincrement()) @map("paylog_id")
-  paySn                 String   @unique @map("pay_sn") @default("")
-  payName               String   @map("pay_name") @default("")
-  orderId               Int      @map("order_id")
-  orderSn               String   @map("order_sn") @default("")
-  orderAmount           Decimal  @map("order_amount") @db.Decimal(10, 2)
-  orderType             Int      @map("order_type") @default(0)
-  payAmount             Decimal  @map("pay_amount") @db.Decimal(10, 2) @default(0.00)
-  payStatus             Int      @map("pay_status") @default(0)
-  payCode               String   @map("pay_code") @default("")
-  addTime               DateTime @map("add_time") @default(now())
-  transactionId         String   @map("transaction_id") @default("")
-  notifyData            String   @map("notify_data") @default("")
-  refundAmount          Decimal  @map("refund_amount") @db.Decimal(8, 2) @default(0.00)
-  tokenCode             String   @map("token_code") @default("")
-  appid                 String?  @map("appid")
+  paylogId      Int      @id @default(autoincrement()) @map("paylog_id")
+  paySn         String   @unique @default("") @map("pay_sn")
+  payName       String   @default("") @map("pay_name")
+  orderId       Int      @map("order_id")
+  orderSn       String   @default("") @map("order_sn")
+  orderAmount   Decimal  @map("order_amount") @db.Decimal(10, 2)
+  orderType     Int      @default(0) @map("order_type")
+  payAmount     Decimal  @default(0.00) @map("pay_amount") @db.Decimal(10, 2)
+  payStatus     Int      @default(0) @map("pay_status")
+  payCode       String   @default("") @map("pay_code")
+  addTime       DateTime @default(now()) @map("add_time")
+  transactionId String   @default("") @map("transaction_id")
+  notifyData    String   @default("") @map("notify_data")
+  refundAmount  Decimal  @default(0.00) @map("refund_amount") @db.Decimal(8, 2)
+  tokenCode     String   @default("") @map("token_code")
+  appid         String?  @map("appid")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  order                 Order     @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
 }
 
 // Coupon (优惠券表)
 model Coupon {
-  couponId              Int      @id @default(autoincrement()) @map("coupon_id")
-  couponName            String   @map("coupon_name") @default("")
-  couponMoney           Decimal  @map("coupon_money") @db.Decimal(10, 2) @default(0.00)
-  couponDiscount        Decimal  @map("coupon_discount") @db.Decimal(4, 1) @default(10.0)
-  couponDesc            String   @map("coupon_desc") @default("")
-  couponType            Int      @map("coupon_type") @default(1)
-  sendRange             Int      @map("send_range") @default(0)
-  sendRangeData         String   @map("send_range_data") @default("") // JSON data
-  minOrderAmount        Decimal  @map("min_order_amount") @db.Decimal(10, 2) @default(0.00)
-  sendStartDate         DateTime @map("send_start_date") @default(now())
-  sendEndDate           DateTime @map("send_end_date") @default(now())
-  sendType              Int      @map("send_type") @default(0)
-  useDay                Int      @map("use_day") @default(30)
-  useStartDate          DateTime @map("use_start_date") @default(now())
-  useEndDate            DateTime @map("use_end_date") @default(now())
-  isShow                Int      @map("is_show") @default(0)
-  isGlobal              Int      @map("is_global") @default(0)
-  isNewUser             Int      @map("is_new_user") @default(0)
-  enabledClickGet       Int      @map("enabled_click_get") @default(0)
-  limitUserRank         String?  @map("limit_user_rank") // JSON data
-  shopId                Int      @map("shop_id") @default(0)
-  isDelete              Int      @map("is_delete") @default(0)
-  limitNum              Int      @map("limit_num") @default(0)
-  delayDay              Int      @map("delay_day") @default(0)
-  sendNum               Int      @map("send_num") @default(1)
-  maxOrderAmount        Decimal  @map("max_order_amount") @db.Decimal(10, 2) @default(0.00)
-  couponUnit            Int      @map("coupon_unit") @default(1)
-  reduceType            Int      @map("reduce_type") @default(1)
-  addTime               DateTime @map("add_time") @default(now())
+  couponId        Int      @id @default(autoincrement()) @map("coupon_id")
+  couponName      String   @default("") @map("coupon_name")
+  couponMoney     Decimal  @default(0.00) @map("coupon_money") @db.Decimal(10, 2)
+  couponDiscount  Decimal  @default(10.0) @map("coupon_discount") @db.Decimal(4, 1)
+  couponDesc      String   @default("") @map("coupon_desc")
+  couponType      Int      @default(1) @map("coupon_type")
+  sendRange       Int      @default(0) @map("send_range")
+  sendRangeData   String   @default("") @map("send_range_data") // JSON data
+  minOrderAmount  Decimal  @default(0.00) @map("min_order_amount") @db.Decimal(10, 2)
+  sendStartDate   DateTime @default(now()) @map("send_start_date")
+  sendEndDate     DateTime @default(now()) @map("send_end_date")
+  sendType        Int      @default(0) @map("send_type")
+  useDay          Int      @default(30) @map("use_day")
+  useStartDate    DateTime @default(now()) @map("use_start_date")
+  useEndDate      DateTime @default(now()) @map("use_end_date")
+  isShow          Int      @default(0) @map("is_show")
+  isGlobal        Int      @default(0) @map("is_global")
+  isNewUser       Int      @default(0) @map("is_new_user")
+  enabledClickGet Int      @default(0) @map("enabled_click_get")
+  limitUserRank   String?  @map("limit_user_rank") // JSON data
+  shopId          Int      @default(0) @map("shop_id")
+  isDelete        Int      @default(0) @map("is_delete")
+  limitNum        Int      @default(0) @map("limit_num")
+  delayDay        Int      @default(0) @map("delay_day")
+  sendNum         Int      @default(1) @map("send_num")
+  maxOrderAmount  Decimal  @default(0.00) @map("max_order_amount") @db.Decimal(10, 2)
+  couponUnit      Int      @default(1) @map("coupon_unit")
+  reduceType      Int      @default(1) @map("reduce_type")
+  addTime         DateTime @default(now()) @map("add_time")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  userCoupons           UserCoupon[]
+  userCoupons UserCoupon[]
 }
 
 // User Coupon (用户优惠券表)
 model UserCoupon {
-  id                    Int      @id @default(autoincrement())
-  couponId              Int      @map("coupon_id")
-  couponSn              String   @map("coupon_sn") @default("")
-  userId                Int      @map("user_id")
-  usedTime              DateTime? @map("used_time")
-  orderId               Int      @map("order_id") @default(0)
-  startDate             DateTime @map("start_date") @default(now())
-  endDate               DateTime @map("end_date") @default(now())
+  id        Int       @id @default(autoincrement())
+  couponId  Int       @map("coupon_id")
+  couponSn  String    @default("") @map("coupon_sn")
+  userId    Int       @map("user_id")
+  usedTime  DateTime? @map("used_time")
+  orderId   Int       @default(0) @map("order_id")
+  startDate DateTime  @default(now()) @map("start_date")
+  endDate   DateTime  @default(now()) @map("end_date")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  coupon                Coupon    @relation(fields: [couponId], references: [couponId], onDelete: Cascade)
-  user                  User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  order                 Order?    @relation(fields: [orderId], references: [orderId])
+  coupon Coupon @relation(fields: [couponId], references: [couponId], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  order  Order? @relation(fields: [orderId], references: [orderId])
 }
 
 // Comment (评论表)
 model Comment {
-  commentId             Int      @id @default(autoincrement()) @map("comment_id")
-  userId                Int      @map("user_id")
-  username              String   @map("username") @default("")
-  avatar                String   @map("avatar") @default("")
-  productId             Int      @map("product_id")
-  orderId               Int      @map("order_id") @default(0)
-  orderItemId           Int      @map("order_item_id") @default(0)
-  commentRank           Int      @map("comment_rank") @default(0)
-  content               String   @map("content") @default("")
-  addTime               DateTime @map("add_time") @default(now())
-  status                Int      @map("status") @default(0)
-  parentId              Int      @map("parent_id") @default(0)
-  usefull               Int      @map("usefull") @default(0)
-  useless               Int      @map("useless") @default(0)
-  commentTag            String?  @map("comment_tag") // JSON data
-  showPics              String?  @map("show_pics") // JSON data
-  isRecommend           Int      @map("is_recommend") @default(0)
-  isTop                 Int      @map("is_top") @default(0)
-  isShowed              Int      @map("is_showed") @default(0)
-  isDefault             Int      @map("is_default") @default(0)
-  sortOrder             Int      @map("sort_order") @default(50)
-  shopId                Int      @map("shop_id") @default(0)
+  commentId   Int      @id @default(autoincrement()) @map("comment_id")
+  userId      Int      @map("user_id")
+  username    String   @default("") @map("username")
+  avatar      String   @default("") @map("avatar")
+  productId   Int      @map("product_id")
+  orderId     Int      @default(0) @map("order_id")
+  orderItemId Int      @default(0) @map("order_item_id")
+  commentRank Int      @default(0) @map("comment_rank")
+  content     String   @default("") @map("content")
+  addTime     DateTime @default(now()) @map("add_time")
+  status      Int      @default(0) @map("status")
+  parentId    Int      @default(0) @map("parent_id")
+  usefull     Int      @default(0) @map("usefull")
+  useless     Int      @default(0) @map("useless")
+  commentTag  String?  @map("comment_tag") // JSON data
+  showPics    String?  @map("show_pics") // JSON data
+  isRecommend Int      @default(0) @map("is_recommend")
+  isTop       Int      @default(0) @map("is_top")
+  isShowed    Int      @default(0) @map("is_showed")
+  isDefault   Int      @default(0) @map("is_default")
+  sortOrder   Int      @default(50) @map("sort_order")
+  shopId      Int      @default(0) @map("shop_id")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  user                  User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  product               Product  @relation(fields: [productId], references: [productId], onDelete: Cascade)
-  parentComment         Comment?  @relation("CommentHierarchy", fields: [parentId], references: [commentId])
-  replies               Comment[] @relation("CommentHierarchy")
+  user          User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  product       Product   @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  parentComment Comment?  @relation("CommentHierarchy", fields: [parentId], references: [commentId])
+  replies       Comment[] @relation("CommentHierarchy")
 }
 
 // Favorite/Collect Product (收藏表)
 model CollectProduct {
-  collectId             Int      @id @default(autoincrement()) @map("collect_id")
-  userId                Int      @map("user_id")
-  productId             Int      @map("product_id")
-  addTime               DateTime @map("add_time") @default(now())
+  collectId Int      @id @default(autoincrement()) @map("collect_id")
+  userId    Int      @map("user_id")
+  productId Int      @map("product_id")
+  addTime   DateTime @default(now()) @map("add_time")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  user                  User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  product               Product  @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
 
   @@unique([userId, productId])
 }
 
 // CollectShop (收藏店铺表)
 model CollectShop {
-  collectId             Int      @id @default(autoincrement()) @map("collect_id")
-  userId                Int      @map("user_id")
-  shopId                Int      @map("shop_id")
-  addTime               DateTime @map("add_time") @default(now())
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  collectId Int      @id @default(autoincrement()) @map("collect_id")
+  userId    Int      @map("user_id")
+  shopId    Int      @map("shop_id")
+  addTime   DateTime @default(now()) @map("add_time")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   // Relationships
-  user                  User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  shop                  Shop     @relation(fields: [shopId], references: [shopId], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  shop      Shop     @relation(fields: [shopId], references: [shopId], onDelete: Cascade)
+
   @@unique([userId, shopId])
 }
 
 // Brand (品牌表)
 model Brand {
-  brandId               Int      @id @default(autoincrement()) @map("brand_id")
-  brandName             String   @map("brand_name") @default("")
-  brandLogo             String   @map("brand_logo") @default("")
-  brandDesc             String?  @map("brand_desc")
-  siteUrl               String   @map("site_url") @default("")
-  sortOrder             Int      @map("sort_order") @default(50)
-  isShow                Int      @map("is_show") @default(1)
-  brandType             String   @map("brand_type") @default("")
-  brandIsHot            Int      @map("brand_is_hot") @default(0)
-  firstWord             String   @map("first_word") @default("")
-  isStoreBrand          Int      @map("is_store_brand") @default(0)
-  checkStatus           Int      @map("check_status") @default(0)
-  brandEnName           String   @map("brand_en_name") @default("")
-  shopId                Int      @map("shop_id") @default(0)
-  status                Int      @map("status") @default(0)
-  rejectRemark          String?  @map("reject_remark")
+  brandId      Int     @id @default(autoincrement()) @map("brand_id")
+  brandName    String  @default("") @map("brand_name")
+  brandLogo    String  @default("") @map("brand_logo")
+  brandDesc    String? @map("brand_desc")
+  siteUrl      String  @default("") @map("site_url")
+  sortOrder    Int     @default(50) @map("sort_order")
+  isShow       Int     @default(1) @map("is_show")
+  brandType    String  @default("") @map("brand_type")
+  brandIsHot   Int     @default(0) @map("brand_is_hot")
+  firstWord    String  @default("") @map("first_word")
+  isStoreBrand Int     @default(0) @map("is_store_brand")
+  checkStatus  Int     @default(0) @map("check_status")
+  brandEnName  String  @default("") @map("brand_en_name")
+  shopId       Int     @default(0) @map("shop_id")
+  status       Int     @default(0) @map("status")
+  rejectRemark String? @map("reject_remark")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  products              Product[]
+  products Product[]
 }
 
 // BlacklistedToken (黑名单令牌表)
 model BlacklistedToken {
-  id                    Int      @id @default(autoincrement())
-  token                 String   @unique
-  userId                Int      @map("user_id")
-  expiresAt             DateTime @map("expires_at")
-  createdAt             DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now())
 
   // Relationships
-  user                  User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("blacklisted_token")
 }
 
 // Article (文章表)
 model Article {
-  articleId             Int      @id @default(autoincrement()) @map("article_id")
-  title                 String   @map("title") @default("")
-  content               String   @map("content") @default("")
-  image                 String?  @map("image")
-  categoryId            Int      @map("category_id") @default(0)
-  author                String   @map("author") @default("")
-  source                String   @map("source") @default("")
-  keywords              String   @map("keywords") @default("")
-  description           String   @map("description") @default("")
-  clickCount            Int      @map("click_count") @default(0)
-  isShow                Int      @map("is_show") @default(1)
-  sortOrder             Int      @map("sort_order") @default(100)
-  addTime               DateTime @map("add_time") @default(now())
+  articleId   Int      @id @default(autoincrement()) @map("article_id")
+  title       String   @default("") @map("title")
+  content     String   @default("") @map("content")
+  image       String?  @map("image")
+  categoryId  Int      @default(0) @map("category_id")
+  author      String   @default("") @map("author")
+  source      String   @default("") @map("source")
+  keywords    String   @default("") @map("keywords")
+  description String   @default("") @map("description")
+  clickCount  Int      @default(0) @map("click_count")
+  isShow      Int      @default(1) @map("is_show")
+  sortOrder   Int      @default(100) @map("sort_order")
+  addTime     DateTime @default(now()) @map("add_time")
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("article")
 }
-

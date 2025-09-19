@@ -1,0 +1,73 @@
+// Missing base models that are referenced but not defined
+
+// Vendor (供应商表)
+model Vendor {
+  vendorId              Int      @id @default(autoincrement()) @map("vendor_id")
+  vendorName            String   @map("vendor_name") @default("")
+  vendorCode            String   @map("vendor_code") @default("")
+  contactName           String   @map("contact_name") @default("")
+  contactPhone          String   @map("contact_phone") @default("")
+  contactEmail          String   @map("contact_email") @default("")
+  businessLicense       String?  @map("business_license")
+  address               String   @map("address") @default("")
+  status                Int      @map("status") @default(0)
+  applyTime             DateTime @map("apply_time") @default(now())
+  approveTime           DateTime? @map("approve_time")
+  remark                String   @map("remark") @default("")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  vendorAccounts        VendorAccount[]
+  vendorAccountLogs     VendorAccountLog[]
+  vendorProducts        VendorProduct[]
+  vendorProductAuditLogs VendorProductAuditLog[]
+  vendorProductGalleries VendorProductGallery[]
+  vendorProductSkus     VendorProductSku[]
+  vendorProductSkuAttrs VendorProductSkuAttr[]
+  vendorProductSkuStockLogs VendorProductSkuStockLog[]
+  vendorProductVideos   VendorProductVideo[]
+  vendorSettlementOrders VendorSettlementOrder[]
+  vendorShopBinds       VendorShopBind[]
+  vendorWithdraws       VendorWithdraw[]
+}
+
+// UserRank (用户等级表)
+model UserRank {
+  rankId                Int      @id @default(autoincrement()) @map("rank_id")
+  rankName              String   @map("rank_name") @default("")
+  rankLevel             Int      @map("rank_level") @default(0)
+  minPoints             Int      @map("min_points") @default(0)
+  maxPoints             Int      @map("max_points") @default(0)
+  discount              Int      @map("discount") @default(100)
+  status                Int      @map("status") @default(1)
+  description           String   @map("description") @default("")
+  icon                  String?  @map("icon")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  users                 User[]
+}
+
+// LogisticsCompany (物流公司表)
+model LogisticsCompany {
+  companyId             Int      @id @default(autoincrement()) @map("company_id")
+  companyName           String   @map("company_name") @default("")
+  companyCode           String   @map("company_code") @default("")
+  contactName           String   @map("contact_name") @default("")
+  contactPhone          String   @map("contact_phone") @default("")
+  contactEmail          String   @map("contact_email") @default("")
+  website               String?  @map("website")
+  address               String   @map("address") @default("")
+  status                Int      @map("status") @default(1)
+  sortOrder             Int      @map("sort_order") @default(100)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relationships
+  shippingTypes         ShippingType[]
+}
