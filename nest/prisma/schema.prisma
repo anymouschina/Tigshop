@@ -100,6 +100,7 @@ model User {
   comments              Comment[]
   collectProducts       CollectProduct[]
   collectShops          CollectShop[]
+  blacklistedTokens     BlacklistedToken[]
   }
 
 // User Address (用户地址表)
@@ -639,6 +640,9 @@ model BlacklistedToken {
   expiresAt             DateTime @map("expires_at")
   createdAt             DateTime @default(now())
 
+  // Relationships
+  user                  User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
   @@map("blacklisted_token")
 }
 
@@ -663,3 +667,4 @@ model Article {
 
   @@map("article")
 }
+
