@@ -10,8 +10,12 @@ import { MessageTypeService } from './message-type.service';
 import { ConfigController } from './config.controller';
 import { ConfigService } from './config.service';
 import { PrismaService } from '../prisma.service';
+import { RegionModule } from './region/region.module';
 
 @Module({
+  imports: [
+    RegionModule,
+  ],
   controllers: [
     LogisticsCompanyController,
     MessageTemplateController,
@@ -33,6 +37,7 @@ import { PrismaService } from '../prisma.service';
     MailTemplateService,
     MessageTypeService,
     ConfigService,
+    RegionModule,
   ],
 })
 export class SettingModule {}

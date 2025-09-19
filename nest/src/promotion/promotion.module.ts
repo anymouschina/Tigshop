@@ -14,10 +14,43 @@ import { BargainService } from './bargain.service';
 import { PointsExchangeService } from './points-exchange.service';
 import { SignInService } from './sign-in.service';
 import { PrismaService } from '../prisma.service';
+import { ProductGiftModule } from './product-gift/product-gift.module';
+import { ProductPromotionModule } from './product-promotion/product-promotion.module';
 
 @Module({
-  controllers: [PromotionController, CouponController, SeckillController, GrouponController, BargainController, PointsExchangeController, SignInController],
-  providers: [PromotionService, CouponService, SeckillService, GrouponService, BargainService, PointsExchangeService, SignInService, PrismaService],
-  exports: [PromotionService, CouponService, SeckillService, GrouponService, BargainService, PointsExchangeService, SignInService],
+  imports: [
+    ProductGiftModule,
+    ProductPromotionModule,
+  ],
+  controllers: [
+    PromotionController,
+    CouponController,
+    SeckillController,
+    GrouponController,
+    BargainController,
+    PointsExchangeController,
+    SignInController,
+  ],
+  providers: [
+    PromotionService,
+    CouponService,
+    SeckillService,
+    GrouponService,
+    BargainService,
+    PointsExchangeService,
+    SignInService,
+    PrismaService,
+  ],
+  exports: [
+    PromotionService,
+    CouponService,
+    SeckillService,
+    GrouponService,
+    BargainService,
+    PointsExchangeService,
+    SignInService,
+    ProductGiftModule,
+    ProductPromotionModule,
+  ],
 })
 export class PromotionModule {}
