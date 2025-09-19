@@ -9,6 +9,10 @@ import { UserCompanyModule } from './user-company/user-company.module';
 import { UserRankModule } from './user-rank/user-rank.module';
 import { UserPointsLogModule } from './user-points-log/user-points-log.module';
 import { UserMessageLogModule } from './user-message-log/user-message-log.module';
+import { UserAuthModule } from './auth/auth.module';
+import { UserCollectModule } from './collect/collect.module';
+import { UserCouponModule } from './coupon/coupon.module';
+import { UserHistoryModule } from './history/history.module';
 
 @Module({
   imports: [
@@ -20,6 +24,10 @@ import { UserMessageLogModule } from './user-message-log/user-message-log.module
     UserRankModule,
     UserPointsLogModule,
     UserMessageLogModule,
+    UserAuthModule,
+    UserCollectModule,
+    UserCouponModule,
+    UserHistoryModule,
   ],
   controllers: [UserController],
   providers: [UserService],
