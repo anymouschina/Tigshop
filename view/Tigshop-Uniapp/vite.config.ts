@@ -6,11 +6,13 @@ export default defineConfig({
         port: 3000,
         host: "0.0.0.0",
         proxy: {
-            // "": {
-            //     target: "", //接口地址
-            //     changeOrigin: true,
-            //     rewrite: (path) => path.replace(RegExp(`^`), "")
-            // }
+            // 匹配所有请求
+            "/api": {
+                target: "http://localhost:3001/api", // 转发到3001端口
+                changeOrigin: true // 开启跨域
+                // 不需要重写路径，因为我们要转发所有请求
+                // rewrite: (path) => path.replace(/^\/api/, '')
+            }
         }
     },
     build: {
@@ -23,3 +25,4 @@ export default defineConfig({
         sourcemap: false
     }
 });
+    
