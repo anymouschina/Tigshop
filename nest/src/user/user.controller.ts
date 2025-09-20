@@ -174,4 +174,54 @@ export class UserController {
   async checkPasswordChangeCode(@Request() req, @Body() body: { mobile: string; code: string }) {
     return this.userService.checkPasswordChangeCode(req.user.userId, body.mobile, body.code);
   }
+
+  /**
+   * 账户金额变动列表 - 对齐PHP版本 user/Account/list
+   */
+  @Get('user/account/list')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '账户金额变动列表' })
+  async getBalanceLogList(@Request() req, @Query() query: { page?: number; size?: number; sort_field?: string; sort_order?: string }) {
+    return this.userService.getBalanceLogList(req.user.userId, query);
+  }
+
+  /**
+   * 获取用户等级列表 - 对齐PHP版本 user/user/levelList
+   */
+  @Get('user/user/levelList')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取用户等级列表' })
+  async getLevelList() {
+    return this.userService.getLevelList();
+  }
+
+  /**
+   * 获取用户等级信息 - 对齐PHP版本 user/user/levelInfo
+   */
+  @Get('user/user/levelInfo')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取用户等级信息' })
+  async getLevelInfo(@Query('rank_id') rankId: number) {
+    return this.userService.getLevelInfo(rankId);
+  }
+
+  /**
+   * 注销账户 - 对齐PHP版本 user/user/close
+   */
+  @Post('user/user/close')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '注销账户' })
+  async closeAccount(@Request() req) {
+    return this.userService.closeAccount(req.user.userId);
+  }
+
+  /**
+   * 获取用户OpenId - 对齐PHP版本 user/user/userOpenId
+   */
+  @Get('user/user/userOpenId')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取用户OpenId' })
+  async getUserOpenId(@Request() req) {
+    return this.userService.getUserOpenId(req.user.userId);
+  }
 }

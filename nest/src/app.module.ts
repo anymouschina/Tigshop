@@ -17,6 +17,7 @@ import { MsgModule } from './msg/msg.module';
 import { SettingModule } from './setting/setting.module';
 import { FinanceModule } from './finance/finance.module';
 import { ContentModule } from './content/content.module';
+import { ApiModule } from './api/api.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -47,6 +48,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     SettingModule,
     FinanceModule,
     ContentModule,
+    ApiModule,
     // UploadModule,
     // NotificationModule,
     // AppointmentModule,

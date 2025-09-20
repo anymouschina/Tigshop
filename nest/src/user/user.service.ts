@@ -461,4 +461,116 @@ export class UserService {
       message: '验证码验证成功',
     };
   }
+
+  /**
+   * 获取账户金额变动列表
+   */
+  async getBalanceLogList(userId: number, query: any) {
+    const page = query.page || 1;
+    const size = query.size || 15;
+    const skip = (page - 1) * size;
+    const sortField = query.sort_field || 'log_id';
+    const sortOrder = query.sort_order || 'DESC';
+
+    const [balanceLogs, total] = await Promise.all([
+      this.databaseService.userBalanceLog.findMany({
+        where: { userId },
+        orderBy: { [sortField]: sortOrder },
+        skip,
+        take: size,
+      }),
+      this.databaseService.userBalanceLog.count({
+        where: { userId },
+      }),
+    ]);
+
+    return {
+      status: 'success',
+      data: {
+        records: balanceLogs,
+        total,
+        page,
+        size,
+        totalPages: Math.ceil(total / size),
+      },
+    };
+  }
+
+  /**
+   * 获取用户等级列表
+   */
+  async getLevelList() {
+    const userRanks = await this.databaseService.userRank.findMany({
+      orderBy: { minPoints: 'asc' },
+    });
+
+    // 获取等级配置和成长配置
+    const rankConfig = {}; // 从配置服务获取
+    const growConfig = {}; // 从配置服务获取
+
+    return {
+      status: 'success',
+      data: {
+        item: userRanks,
+        rank_config: rankConfig,
+        grow_config: growConfig,
+      },
+    };
+  }
+
+  /**
+   * 获取用户等级信息
+   */
+  async getLevelInfo(rankId: number) {
+    const userRank = await this.databaseService.userRank.findUnique({
+      where: { rankId },
+    });
+
+    if (!userRank) {
+      throw new NotFoundException('用户等级不存在');
+    }
+
+    return {
+      status: 'success',
+      data: userRank,
+    };
+  }
+
+  /**
+   * 注销账户
+   */
+  async closeAccount(userId: number) {
+    await this.findById(userId);
+
+    // 更新用户状态为已注销
+    await this.databaseService.user.update({
+      where: { userId },
+      data: {
+        status: 2, // 假设2表示已注销
+        deletedAt: new Date(),
+      },
+    });
+
+    return {
+      status: 'success',
+      message: '账户注销成功',
+    };
+  }
+
+  /**
+   * 获取用户OpenId
+   */
+  async getUserOpenId(userId: number) {
+    const userAuthorize = await this.databaseService.userAuthorize.findFirst({
+      where: { userId },
+      select: { openId: true },
+    });
+
+    return {
+      status: 'success',
+      data: {
+        openid: userAuthorize?.openId || null,
+      },
+    };
+  }
 }
