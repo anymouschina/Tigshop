@@ -201,7 +201,7 @@ export class HomeService {
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where: {
-          product_status: 1,
+          product_status: 1 as any,
           is_delete: 0,
           product_stock: { gt: 0 } as any,
           is_hot: 1,
