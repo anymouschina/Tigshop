@@ -34,6 +34,7 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { MicroservicesModule } from "./microservices/microservices.module";
 import { SmsModule } from "../common/sms/sms.module";
 import { EmailModule } from "../common/email/email.module";
+import { DecorateModule } from "./common/decorate/decorate.module";
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { EmailModule } from "../common/email/email.module";
     RedisModule,
     SmsModule,
     EmailModule,
+    DecorateModule,
   ],
   controllers: [],
   providers: [

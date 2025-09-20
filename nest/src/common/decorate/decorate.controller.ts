@@ -23,14 +23,14 @@ import {
   DECORATE_STATUS,
   DECORATE_PLATFORM,
 } from "./decorate.dto";
-import { Roles } from "../auth/decorators/roles.decorator";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+// import { Roles } from "../auth/decorators/roles.decorator";
+// import { RolesGuard } from "../auth/guards/roles.guard";
+// import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("通用-页面装修")
 @Controller("admin/decorate")
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin")
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles("admin")
 export class DecorateController {
   constructor(private readonly decorateService: DecorateService) {}
 

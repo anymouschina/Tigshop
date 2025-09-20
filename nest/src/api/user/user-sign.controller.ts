@@ -132,4 +132,34 @@ export class UserSignController {
       data,
     };
   }
+
+  @Get("index")
+  @ApiOperation({ summary: "获取签到首页数据" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({ status: 200, description: "获取成功" })
+  async getSignIndex(@Request() req) {
+    const userId = req.user.userId;
+    const data = await this.userSignService.getSignIndex(userId);
+    return {
+      code: 200,
+      message: "获取成功",
+      data,
+    };
+  }
+
+  @Post("sign")
+  @ApiOperation({ summary: "用户签到" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiResponse({ status: 200, description: "签到成功" })
+  async signIn(@Request() req) {
+    const userId = req.user.userId;
+    const data = await this.userSignService.signIn(userId);
+    return {
+      code: 200,
+      message: data.message,
+      data,
+    };
+  }
 }
