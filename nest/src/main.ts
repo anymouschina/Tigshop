@@ -22,6 +22,18 @@ async function bootstrap() {
       logger: ["error", "warn", "log", "debug", "verbose"],
     });
 
+    // 配置静态资源服务
+    const uploadsPath = path.join(process.cwd(), "uploads");
+    app.useStaticAssets(uploadsPath, {
+      prefix: "/uploads/",
+    });
+
+    // 配置public目录为静态资源
+    const publicPath = path.join(process.cwd(), "static");
+    app.useStaticAssets(publicPath, {
+      prefix: "/",
+    });
+
     // 设置全局API前缀
     app.setGlobalPrefix("api");
 
@@ -39,12 +51,6 @@ async function bootstrap() {
         port: redisPort,
         ...(redisPassword ? { password: redisPassword } : {}),
       },
-    });
-
-    // 配置静态资源服务
-    const uploadsPath = path.join(process.cwd(), "uploads");
-    app.useStaticAssets(uploadsPath, {
-      prefix: "/uploads/",
     });
 
     const options = new DocumentBuilder()

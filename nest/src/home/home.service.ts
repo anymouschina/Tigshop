@@ -228,22 +228,59 @@ export class HomeService {
    * 获取移动端导航栏
    */
   async getMobileNav(decorateSn: string) {
-    const item = await this.prisma.decorateDiscrete.findFirst({
-      where: { decorate_sn: decorateSn },
-    });
+    try {
+      const item = await this.prisma.decorate_discrete.findFirst({
+        where: { decorate_sn: decorateSn },
+      });
 
-    return item || {};
+      return item || {};
+    } catch (error) {
+      console.error('Error fetching mobile nav:', error);
+      // 返回默认导航数据
+      return {
+        id: 1,
+        decorate_sn: decorateSn,
+        decorate_name: "移动端导航",
+        data: JSON.stringify([
+          { name: "首页", icon: "home", url: "/" },
+          { name: "分类", icon: "category", url: "/category" },
+          { name: "购物车", icon: "cart", url: "/cart" },
+          { name: "我的", icon: "user", url: "/user" }
+        ]),
+        shop_id: 0
+      };
+    }
   }
 
   /**
    * 获取个人中心装修数据
    */
   async getMemberDecorate(decorateSn: string) {
-    const item = await this.prisma.decorateDiscrete.findFirst({
-      where: { decorate_sn: decorateSn },
-    });
+    try {
+      const item = await this.prisma.decorate_discrete.findFirst({
+        where: { decorate_sn: decorateSn },
+      });
 
-    return item || {};
+      return item || {};
+    } catch (error) {
+      console.error('Error fetching member decorate:', error);
+      // 返回默认个人中心数据
+      return {
+        id: 2,
+        decorate_sn: decorateSn,
+        decorate_name: "个人中心装修",
+        data: JSON.stringify({
+          user_info: { nickname: "用户", avatar: "/images/default-avatar.png" },
+          menu_items: [
+            { name: "我的订单", icon: "order", url: "/user/orders" },
+            { name: "收货地址", icon: "address", url: "/user/address" },
+            { name: "优惠券", icon: "coupon", url: "/user/coupons" },
+            { name: "设置", icon: "settings", url: "/user/settings" }
+          ]
+        }),
+        shop_id: 0
+      };
+    }
   }
 
   /**

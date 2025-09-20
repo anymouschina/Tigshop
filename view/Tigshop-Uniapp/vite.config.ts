@@ -13,6 +13,12 @@ export default defineConfig({
                 changeOrigin: true // 开启跨域
                 // 不需要重写路径，因为我们要转发所有请求
                 // rewrite: (path) => path.replace(/^\/api/, "")
+            },
+            "/static": {
+                target: "http://localhost:3001", // 转发到3001端口
+                changeOrigin: true // 开启跨域
+                // 不需要重写路径，因为我们要转发所有请求
+                // rewrite: (path) => path.replace(/^\/api/, "")
             }
         }
     },

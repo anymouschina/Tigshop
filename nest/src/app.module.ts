@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
 import { UserModule } from "./user/user.module";
 import { ConfigModule } from "./config/config.module";
@@ -37,6 +38,7 @@ import { EmailModule } from "../common/email/email.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
 import { CommonModule } from "./common/common.module";
 import { HomeModule } from "./home/home.module";
+import * as path from 'path'
 
 @Module({
   imports: [
