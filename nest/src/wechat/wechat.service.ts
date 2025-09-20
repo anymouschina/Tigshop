@@ -4,10 +4,10 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { AppConfigService } from "../config/config.service";
+import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { catchError, firstValueFrom, map } from "rxjs";
-import { DatabaseService } from "../database/database.service";
+import { PrismaService } from "../prisma.service";
 import * as fs from "fs";
 import * as path from "path";
 import { AppLoggerService } from "../common/logger/app-logger.service";
@@ -17,9 +17,9 @@ export class WechatService {
   private readonly logger: AppLoggerService;
 
   constructor(
-    private readonly configService: AppConfigService,
+    private readonly configService: ConfigService,
     private readonly httpService: HttpService,
-    private readonly databaseService: DatabaseService,
+    private readonly prisma: PrismaService,
   ) {
     this.logger = new AppLoggerService(WechatService.name);
   }
@@ -29,8 +29,8 @@ export class WechatService {
    * @returns 返回access_token
    */
   private async getAccessToken(): Promise<string> {
-    const appId = this.configService.wechatAppId;
-    const appSecret = this.configService.wechatAppSecret;
+    const appId = this.configService.get<string>('WECHAT_APP_ID');
+    const appSecret = this.configService.get<string>('WECHAT_APP_SECRET');
 
     if (!appId || !appSecret) {
       this.logger.error("WeChat configuration is missing");

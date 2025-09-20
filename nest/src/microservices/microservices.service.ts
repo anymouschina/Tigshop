@@ -5,7 +5,7 @@ import {
   ClientProxyFactory,
   Transport,
 } from "@nestjs/microservices";
-import { ConfigService } from "../config/config.service";
+import { ConfigService } from "@nestjs/config";
 
 export enum MicroserviceType {
   USER = "user",
@@ -57,9 +57,9 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   }
 
   private getMicroserviceConfigs(): MicroserviceConfig[] {
-    const rabbitmqUrl = this.configService.get("RABBITMQ_URL");
-    const redisUrl = this.configService.get("REDIS_URL");
-    const kafkaBrokers = this.configService.get("KAFKA_BROKERS");
+    const rabbitmqUrl = this.configService.get("RABBITMQ_URL") || "amqp://localhost:5672";
+    const redisUrl = this.configService.get("REDIS_URL") || "redis://localhost:6379";
+    const kafkaBrokers = this.configService.get("KAFKA_BROKERS") || "localhost:9092";
 
     return [
       {

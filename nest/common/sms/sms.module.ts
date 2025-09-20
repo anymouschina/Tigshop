@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { RedisModule } from '../../src/redis/redis.module';
 import { SmsService } from './sms.service';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [RedisModule],
   providers: [SmsService],
   exports: [SmsService],
 })

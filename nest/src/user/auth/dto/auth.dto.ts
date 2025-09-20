@@ -8,6 +8,7 @@ import {
   MinLength,
   MaxLength,
   IsMobilePhone,
+  IsNumber,
 } from "class-validator";
 
 export enum LoginType {

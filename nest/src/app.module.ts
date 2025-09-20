@@ -1,22 +1,9 @@
 import { Module } from "@nestjs/common";
 import { APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
-// import { UserModule } from './user/user.module';
+import { UserModule } from "./user/user.module";
 import { ConfigModule } from "./config/config.module";
 import { DatabaseModule } from "./database/database.module";
-// import { AuthModule } from './auth/auth.module';
-// import { AdminModule } from './admin/admin.module';
 import { LoggerModule } from "./common/logger/logger.module";
-// import { ProductModule } from './product/product.module';
-// import { CartModule } from './cart/cart.module';
-// import { OrderModule } from './order/order.module';
-// import { PaymentModule } from './payment/payment.module';
-// import { CouponModule } from './coupon/coupon.module';
-// import { PromotionModule } from './promotion/promotion.module';
-// import { PanelModule } from './panel/panel.module';
-// import { MsgModule } from './msg/msg.module';
-// import { SettingModule } from './setting/setting.module';
-// import { FinanceModule } from './finance/finance.module';
-// import { ContentModule } from './content/content.module';
 import { ApiModule } from "./api/api.module";
 import { UserCouponModule } from "./user/coupon/coupon.module";
 import { LoginModule } from "./user/login/login.module";
@@ -44,12 +31,9 @@ import { RedisModule } from "./redis/redis.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
-// import { UploadModule } from './upload/upload.module';
-// import { NotificationModule } from './notification/notification.module';
-// import { AppointmentModule } from './appointment/appointment.module';
-// import { MicroservicesModule } from './microservices/microservices.module';
-// import { WechatModule } from './wechat/wechat.module';
-// import { RedisModule } from './redis/redis.module';
+import { MicroservicesModule } from "./microservices/microservices.module";
+import { SmsModule } from "../common/sms/sms.module";
+import { EmailModule } from "../common/email/email.module";
 
 @Module({
   imports: [
@@ -58,6 +42,7 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
     LoggerModule,
     ScheduleModule.forRoot(),
     // Re-enabled module after fixing Prisma field names
+    UserModule,
     UserCouponModule,
     LoginModule,
     AddressModule,
@@ -80,9 +65,11 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
     UploadModule,
     NotificationModule,
     AppointmentModule,
-    // MicroservicesModule, // microservices opt-in
+    MicroservicesModule, // microservices
     WechatModule,
     RedisModule,
+    SmsModule,
+    EmailModule,
   ],
   controllers: [],
   providers: [

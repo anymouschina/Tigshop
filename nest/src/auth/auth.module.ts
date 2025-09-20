@@ -12,6 +12,7 @@ import { CsrfService } from "./services/csrf.service";
 import { CaptchaService } from "./services/captcha.service";
 import { UsernameGeneratorService } from "./services/username-generator.service";
 import { VerificationCodeService } from "./services/verification-code.service";
+import { WechatOAuthService } from "./services/wechat-oauth.service";
 
 @Module({
   imports: [
@@ -37,7 +38,8 @@ import { VerificationCodeService } from "./services/verification-code.service";
     CaptchaService,
     UsernameGeneratorService,
     VerificationCodeService,
+    WechatOAuthService,
   ],
-  exports: [AuthService, CsrfService, CaptchaService],
+  exports: [AuthService, CsrfService, CaptchaService, VerificationCodeService, WechatOAuthService],
 })
 export class AuthModule {}

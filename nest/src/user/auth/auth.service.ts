@@ -11,7 +11,7 @@ import { AuthService } from "../../auth/auth.service";
 import { VerificationCodeService } from "../../auth/services/verification-code.service";
 import { CaptchaService } from "../../auth/services/captcha.service";
 import { WechatOAuthService } from "../../auth/services/wechat-oauth.service";
-import { SmsService } from "../../auth/services/sms.service";
+import { SmsService } from "../../../common/sms/sms.service";
 import { EmailService } from "../../mail/mail.service";
 import {
   LoginDto,
@@ -42,7 +42,7 @@ export class UserAuthService {
     private readonly captchaService: CaptchaService,
     private readonly wechatOAuthService: WechatOAuthService,
     private readonly smsService: SmsService,
-    private readonly emailService: EmailService,
+    // private readonly emailService: EmailService,
     private readonly configService: ConfigService,
   ) {}
 
