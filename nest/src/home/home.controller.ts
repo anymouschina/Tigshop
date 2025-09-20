@@ -84,10 +84,7 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取移动端导航栏" })
   async mobileNav(@Query("decorate_sn") decorateSn: string = "mobileNav") {
-    const data = await this.homeService.getMobileNav(decorateSn);
-    return {
-      data
-    }
+    return this.homeService.getMobileNav(decorateSn);
   }
 
   /**

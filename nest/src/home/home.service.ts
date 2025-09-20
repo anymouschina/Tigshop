@@ -232,32 +232,11 @@ export class HomeService {
       const item = await this.prisma.decorate_discrete.findFirst({
         where: { decorate_sn: decorateSn },
       });
-
       if (item) {
         const parsedData = JSON.parse(item.data || '[]');
-
-        // 转换数据结构以匹配PHP版本的期望格式
-        const convertedNavList = parsedData.map((navItem: any) => ({
-          picId: navItem.picId || navItem.id || 0,
-          picName: navItem.picName || navItem.name || '',
-          picTitle: navItem.picTitle || navItem.title || navItem.text || '',
-          picThumb: navItem.picThumb || navItem.icon || navItem.image || '/images/nav/default.png',
-          picActiveThumb: navItem.picActiveThumb || navItem.activeIcon || navItem.icon || navItem.image || '/images/nav/default.png',
-          picLink: navItem.picLink || navItem.url || navItem.link || '',
-          sort: navItem.sort || 0
-        }));
-
         return {
-          id: item.id,
-          decorate_sn: item.decorate_sn,
-          decorate_name: item.decorate_name,
-          data: {
-            data: {
-              navList: convertedNavList
-            }
-          },
-          navList: convertedNavList,
-          shop_id: item.shop_id
+         ...item,
+         data:parsedData
         };
       }
 

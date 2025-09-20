@@ -56,7 +56,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   private getMicroserviceConfigs(): MicroserviceConfig[] {
     const rabbitmqUrl = this.configService.get("RABBITMQ_URL") || "amqp://localhost:5672";
     const redisUrl = this.configService.get("REDIS_URL") || "redis://localhost:6379";
-    const kafkaBrokers = this.configService.get("KAFKA_BROKERS")?.split(",") || ["127.0.0.1:9092"];
+    // const kafkaBrokers = this.configService.get("KAFKA_BROKERS")?.split(",") || ["127.0.0.1:9092"];
 
     return [
       // RabbitMQ 微服务
@@ -70,19 +70,19 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         },
       })),
       // Kafka 微服务
-      {
-        type: MicroserviceType.ANALYTICS,
-        transport: Transport.KAFKA,
-        options: {
-          client: {
-            clientId: "analytics_client",
-            brokers: kafkaBrokers,
-          },
-          consumer: {
-            groupId: "analytics_group",
-          },
-        },
-      },
+      // {
+      //   type: MicroserviceType.ANALYTICS,
+      //   transport: Transport.KAFKA,
+      //   options: {
+      //     client: {
+      //       clientId: "analytics_client",
+      //       brokers: kafkaBrokers,
+      //     },
+      //     consumer: {
+      //       groupId: "analytics_group",
+      //     },
+      //   },
+      // },
       // Redis 微服务
       {
         type: MicroserviceType.SEARCH,
