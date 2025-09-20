@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { IsString, IsNumber, IsEnum, IsOptional, Min, MaxLength } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsOptional, Min, MaxLength, MinLength } from 'class-validator';
 
 export class BalanceQueryDto {
   @IsOptional()

@@ -3,7 +3,7 @@ import { Injectable, BadRequestException, ConflictException, UnauthorizedExcepti
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { UserRegistService } from '../user-regist.service';
+import { UserRegistService } from './user-regist.service';
 import { OAuthCallbackDto, OAuthProvider, OAuthUserInfoDto } from './dto/user-oauth.dto';
 import * as bcrypt from 'bcrypt';
 import { HttpService } from '@nestjs/axios';

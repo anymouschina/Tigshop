@@ -5,8 +5,8 @@ import { UserRegistService } from './user-regist.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { SmsModule } from '../../common/sms/sms.module';
-import { EmailModule } from '../../common/email/email.module';
+import { SmsModule } from '../../../common/sms/sms.module';
+import { EmailModule } from '../../../common/email/email.module';
 
 @Module({
   imports: [

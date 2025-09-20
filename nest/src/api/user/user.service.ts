@@ -4,9 +4,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto, UpdatePasswordDto, UpdateMobileDto, UpdateEmailDto, UploadAvatarDto, UserQueryDto } from './dto/user.dto';
-import { SmsService } from '../../common/sms/sms.service';
-import { EmailService } from '../../common/email/email.service';
-import { UserOauthService } from '../user-oauth.service';
+import { SmsService } from '../../../common/sms/sms.service';
+import { EmailService } from '../../../common/email/email.service';
+import { UserOauthService } from './user-oauth.service';
 
 @Injectable()
 export class UserService {

@@ -18,8 +18,8 @@ import { UserSignModule } from './user/user-sign.module';
 import { UserCommentModule } from './user/user-comment.module';
 import { UserMessageModule } from './user/user-message.module';
 import { UserCouponModule } from './user/user-coupon.module';
-import { UserPointsLogModule } from './user/user-points-log.module';
-import { UserCompanyModule } from './user/user-company.module';
+import { UserPointsLogModule } from '../user/user-points-log/user-points-log.module';
+import { UserCompanyModule } from '../user/user-company/user-company.module';
 import { UserAftersalesModule } from './user/user-aftersales.module';
 
 @Module({

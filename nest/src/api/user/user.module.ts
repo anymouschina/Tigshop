@@ -4,9 +4,9 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigModule } from '@nestjs/config';
-import { SmsModule } from '../../common/sms/sms.module';
-import { EmailModule } from '../../common/email/email.module';
-import { UserOauthModule } from '../user-oauth.module';
+import { SmsModule } from '../../../common/sms/sms.module';
+import { EmailModule } from '../../../common/email/email.module';
+import { UserOauthModule } from './user-oauth.module';
 
 @Module({
   imports: [

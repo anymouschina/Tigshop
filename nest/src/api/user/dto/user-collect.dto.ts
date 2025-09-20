@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { IsOptional, IsNumber, IsString, IsArray, IsEnum } from 'class-validator';
+import { IsOptional, IsNumber, IsString, IsArray, IsEnum, Min, Max } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export enum CollectSortField {

@@ -5,7 +5,7 @@ import { UserOauthService } from './user-oauth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { UserRegistModule } from '../user-regist.module';
+import { UserRegistModule } from './user-regist.module';
 import { HttpModule } from '@nestjs/axios';
 
 @Module({

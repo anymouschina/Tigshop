@@ -65,7 +65,8 @@ export class HomeService {
   }
 
   async getHotProducts(query: { page?: number; size?: number }) {
-    const products = await this.getHotProductsData(query);
+    const validatedQuery = { page: query.page || 1, size: query.size || 8 };
+    const products = await this.getHotProductsData(validatedQuery);
     return {
       code: 200,
       message: '获取成功',
@@ -74,7 +75,8 @@ export class HomeService {
   }
 
   async getNewProducts(query: { page?: number; size?: number }) {
-    const products = await this.getNewProductsData(query);
+    const validatedQuery = { page: query.page || 1, size: query.size || 8 };
+    const products = await this.getNewProductsData(validatedQuery);
     return {
       code: 200,
       message: '获取成功',
@@ -83,7 +85,8 @@ export class HomeService {
   }
 
   async getRecommendProducts(userId: number, query: { page?: number; size?: number }) {
-    const products = await this.getRecommendProductsData(userId, query);
+    const validatedQuery = { page: query.page || 1, size: query.size || 8 };
+    const products = await this.getRecommendProductsData(userId, validatedQuery);
     return {
       code: 200,
       message: '获取成功',
@@ -101,7 +104,8 @@ export class HomeService {
   }
 
   async getAvailableCoupons(query: { page?: number; size?: number }) {
-    const coupons = await this.getAvailableCouponsData(query);
+    const validatedQuery = { page: query.page || 1, size: query.size || 5 };
+    const coupons = await this.getAvailableCouponsData(validatedQuery);
     return {
       code: 200,
       message: '获取成功',
@@ -137,7 +141,8 @@ export class HomeService {
   }
 
   async getRecommendShops(query: { page?: number; size?: number }) {
-    const shops = await this.getRecommendShopsData(query);
+    const validatedQuery = { page: query.page || 1, size: query.size || 6 };
+    const shops = await this.getRecommendShopsData(validatedQuery);
     return {
       code: 200,
       message: '获取成功',
@@ -146,7 +151,8 @@ export class HomeService {
   }
 
   async getNewsList(query: { page?: number; size?: number; category_id?: number }) {
-    const news = await this.getNewsListData(query);
+    const validatedQuery = { page: query.page || 1, size: query.size || 10, category_id: query.category_id };
+    const news = await this.getNewsListData(validatedQuery);
     return {
       code: 200,
       message: '获取成功',
@@ -242,9 +248,9 @@ export class HomeService {
       }),
       this.prisma.product.count({
         where: {
-          is_show: 1,
+          product_status: 1,
           is_delete: 0,
-          stock: { gt: 0 },
+          product_stock: { gt: 0 } as any,
           is_new: 1,
         },
       }),

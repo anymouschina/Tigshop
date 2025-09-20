@@ -4,8 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { SmsService } from '../../common/sms/sms.service';
-import { EmailService } from '../../common/email/email.service';
+import { SmsService } from '../../../common/sms/sms.service';
+import { EmailService } from '../../../common/email/email.service';
 import { RegistDto } from './dto/user-regist.dto';
 
 @Injectable()
