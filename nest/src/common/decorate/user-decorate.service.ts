@@ -11,20 +11,12 @@ export class UserDecorateService {
    */
   async getOpenAdvertising(platform: string = "h5", position: string = "open") {
     try {
-      // Since advertisement model doesn't exist in schema, return empty array with proper structure
+      // Since advertisement model doesn't exist in schema, return empty array
       // This can be enhanced later when the advertisement model is added to the schema
-      return {
-        code: 0,
-        data: [],
-        message: "success",
-      };
+      return [];
     } catch (error) {
       console.error("获取开屏广告失败:", error);
-      return {
-        code: 500,
-        data: [],
-        message: "获取失败",
-      };
+      throw new Error("获取失败");
     }
   }
 
@@ -33,19 +25,11 @@ export class UserDecorateService {
    */
   async getBanner(platform: string = "h5", position: string = "home") {
     try {
-      // Since advertisement model doesn't exist in schema, return empty array with proper structure
-      return {
-        code: 0,
-        data: [],
-        message: "success",
-      };
+      // Since advertisement model doesn't exist in schema, return empty array
+      return [];
     } catch (error) {
       console.error("获取轮播图失败:", error);
-      return {
-        code: 500,
-        data: [],
-        message: "获取失败",
-      };
+      throw new Error("获取失败");
     }
   }
 
@@ -65,24 +49,46 @@ export class UserDecorateService {
         },
       });
 
-      return {
-        code: 0,
-        data: navigation.map(nav => ({
-          id: nav.id,
-          name: nav.name,
-          icon: nav.icon,
-          link_url: nav.link_url,
-          sort: nav.sort,
-        })),
-        message: "success",
-      };
+      return navigation.map(nav => ({
+        id: nav.id,
+        name: nav.name,
+        icon: nav.icon,
+        link_url: nav.link_url,
+        sort: nav.sort,
+      }));
     } catch (error) {
       console.error("获取导航菜单失败:", error);
-      return {
-        code: 500,
-        data: [],
-        message: "获取失败",
-      };
+      // 如果navigation表不存在或出错，返回默认导航数据
+      return [
+        {
+          id: 1,
+          name: "首页",
+          icon: "/images/nav/home.png",
+          link_url: "/pages/index/index",
+          sort: 1,
+        },
+        {
+          id: 2,
+          name: "分类",
+          icon: "/images/nav/category.png",
+          link_url: "/pages/category/index",
+          sort: 2,
+        },
+        {
+          id: 3,
+          name: "购物车",
+          icon: "/images/nav/cart.png",
+          link_url: "/pages/cart/index",
+          sort: 3,
+        },
+        {
+          id: 4,
+          name: "我的",
+          icon: "/images/nav/user.png",
+          link_url: "/pages/user/index",
+          sort: 4,
+        },
+      ];
     }
   }
 
@@ -91,19 +97,11 @@ export class UserDecorateService {
    */
   async getFloatAd(platform: string = "h5", position: string = "float") {
     try {
-      // Since advertisement model doesn't exist in schema, return empty array with proper structure
-      return {
-        code: 0,
-        data: [],
-        message: "success",
-      };
+      // Since advertisement model doesn't exist in schema, return empty array
+      return [];
     } catch (error) {
       console.error("获取浮动广告失败:", error);
-      return {
-        code: 500,
-        data: [],
-        message: "获取失败",
-      };
+      throw new Error("获取失败");
     }
   }
 
@@ -112,19 +110,11 @@ export class UserDecorateService {
    */
   async getPopupAd(platform: string = "h5", position: string = "popup") {
     try {
-      // Since advertisement model doesn't exist in schema, return empty array with proper structure
-      return {
-        code: 0,
-        data: [],
-        message: "success",
-      };
+      // Since advertisement model doesn't exist in schema, return empty array
+      return [];
     } catch (error) {
       console.error("获取弹窗广告失败:", error);
-      return {
-        code: 500,
-        data: [],
-        message: "获取失败",
-      };
+      throw new Error("获取失败");
     }
   }
 
@@ -146,30 +136,55 @@ export class UserDecorateService {
 
       if (!decorate) {
         return {
-          code: 0,
-          data: {
-            components: [],
-          },
-          message: "success",
+          components: [],
         };
       }
 
       return {
-        code: 0,
-        data: {
-          id: decorate.id,
-          name: decorate.name,
-          config: decorate.config,
-          components: decorate.components,
-        },
-        message: "success",
+        id: decorate.id,
+        name: decorate.name,
+        config: decorate.config,
+        components: decorate.components,
       };
     } catch (error) {
       console.error("获取首页装修配置失败:", error);
+      // 如果decorate表不存在或出错，返回默认首页配置
       return {
-        code: 500,
-        data: null,
-        message: "获取失败",
+        components: [
+          {
+            type: "search",
+            id: "search-1",
+            config: {
+              placeholder: "搜索商品",
+              backgroundColor: "#ffffff",
+            },
+          },
+          {
+            type: "banner",
+            id: "banner-1",
+            config: {
+              images: [
+                "/images/banner1.jpg",
+                "/images/banner2.jpg",
+              ],
+              autoPlay: true,
+              interval: 3000,
+            },
+          },
+          {
+            type: "nav",
+            id: "nav-1",
+            config: {
+              columns: 4,
+              items: [
+                { name: "新品", icon: "/images/nav/new.png", url: "/pages/list/new" },
+                { name: "热卖", icon: "/images/nav/hot.png", url: "/pages/list/hot" },
+                { name: "优惠", icon: "/images/nav/sale.png", url: "/pages/list/sale" },
+                { name: "品牌", icon: "/images/nav/brand.png", url: "/pages/list/brand" },
+              ],
+            },
+          },
+        ],
       };
     }
   }
@@ -190,22 +205,14 @@ export class UserDecorateService {
         },
       });
 
-      return {
-        code: 0,
-        data: decorate ? {
-          id: decorate.id,
-          config: decorate.config,
-          components: decorate.components,
-        } : { components: [] },
-        message: "success",
-      };
+      return decorate ? {
+        id: decorate.id,
+        config: decorate.config,
+        components: decorate.components,
+      } : { components: [] };
     } catch (error) {
       console.error("获取分类页装修配置失败:", error);
-      return {
-        code: 500,
-        data: null,
-        message: "获取失败",
-      };
+      throw new Error("获取失败");
     }
   }
 
@@ -225,22 +232,14 @@ export class UserDecorateService {
         },
       });
 
-      return {
-        code: 0,
-        data: decorate ? {
-          id: decorate.id,
-          config: decorate.config,
-          components: decorate.components,
-        } : { components: [] },
-        message: "success",
-      };
+      return decorate ? {
+        id: decorate.id,
+        config: decorate.config,
+        components: decorate.components,
+      } : { components: [] };
     } catch (error) {
       console.error("获取购物车页装修配置失败:", error);
-      return {
-        code: 500,
-        data: null,
-        message: "获取失败",
-      };
+      throw new Error("获取失败");
     }
   }
 
@@ -260,22 +259,14 @@ export class UserDecorateService {
         },
       });
 
-      return {
-        code: 0,
-        data: decorate ? {
-          id: decorate.id,
-          config: decorate.config,
-          components: decorate.components,
-        } : { components: [] },
-        message: "success",
-      };
+      return decorate ? {
+        id: decorate.id,
+        config: decorate.config,
+        components: decorate.components,
+      } : { components: [] };
     } catch (error) {
       console.error("获取用户中心页装修配置失败:", error);
-      return {
-        code: 500,
-        data: null,
-        message: "获取失败",
-      };
+      throw new Error("获取失败");
     }
   }
 
@@ -295,22 +286,14 @@ export class UserDecorateService {
         },
       });
 
-      return {
-        code: 0,
-        data: decorate ? {
-          id: decorate.id,
-          config: decorate.config,
-          components: decorate.components,
-        } : { components: [] },
-        message: "success",
-      };
+      return decorate ? {
+        id: decorate.id,
+        config: decorate.config,
+        components: decorate.components,
+      } : { components: [] };
     } catch (error) {
       console.error("获取商品详情页装修配置失败:", error);
-      return {
-        code: 500,
-        data: null,
-        message: "获取失败",
-      };
+      throw new Error("获取失败");
     }
   }
 
@@ -331,18 +314,10 @@ export class UserDecorateService {
         },
       });
 
-      return {
-        code: 0,
-        data: null,
-        message: "success",
-      };
+      return null; // 成功返回null，由拦截器包装
     } catch (error) {
       console.error("跟踪广告点击失败:", error);
-      return {
-        code: 500,
-        data: null,
-        message: "记录失败",
-      };
+      throw new Error("记录失败");
     }
   }
 
@@ -362,18 +337,10 @@ export class UserDecorateService {
         },
       });
 
-      return {
-        code: 0,
-        data: null,
-        message: "success",
-      };
+      return null; // 成功返回null，由拦截器包装
     } catch (error) {
       console.error("跟踪广告曝光失败:", error);
-      return {
-        code: 500,
-        data: null,
-        message: "记录失败",
-      };
+      throw new Error("记录失败");
     }
   }
 }
