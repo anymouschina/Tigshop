@@ -45,6 +45,8 @@ export const useTabbarStore = defineStore("tabbar", () => {
                     text: item.picTitle
                 };
             });
+           
+
         } catch (error) {
             tabbarList.value = [
                 {

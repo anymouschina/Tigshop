@@ -29,6 +29,7 @@ export const useTabbarStore = defineStore("tabbar", () => {
     async function getTabbarList() {
         try {
             const result = await getMobileNav();
+            console.error(result,'????22')
             formatTabarList.value = result.data.navList.map((item) => {
                 return urlFormat(item.picLink).split("?")[0];
             });
@@ -40,6 +41,7 @@ export const useTabbarStore = defineStore("tabbar", () => {
                     text: item.picTitle
                 };
             });
+            console.log(tabbarList.value,'tabbarList.value')
         }
         catch (error) {
             tabbarList.value = [

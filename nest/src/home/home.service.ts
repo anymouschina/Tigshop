@@ -233,22 +233,136 @@ export class HomeService {
         where: { decorate_sn: decorateSn },
       });
 
-      return item || {};
-    } catch (error) {
-      console.error('Error fetching mobile nav:', error);
-      // 返回默认导航数据
+      if (item) {
+        const parsedData = JSON.parse(item.data || '[]');
+
+        // 转换数据结构以匹配PHP版本的期望格式
+        const convertedNavList = parsedData.map((navItem: any) => ({
+          picId: navItem.picId || navItem.id || 0,
+          picName: navItem.picName || navItem.name || '',
+          picTitle: navItem.picTitle || navItem.title || navItem.text || '',
+          picThumb: navItem.picThumb || navItem.icon || navItem.image || '/images/nav/default.png',
+          picActiveThumb: navItem.picActiveThumb || navItem.activeIcon || navItem.icon || navItem.image || '/images/nav/default.png',
+          picLink: navItem.picLink || navItem.url || navItem.link || '',
+          sort: navItem.sort || 0
+        }));
+
+        return {
+          id: item.id,
+          decorate_sn: item.decorate_sn,
+          decorate_name: item.decorate_name,
+          data: {
+            data: {
+              navList: convertedNavList
+            }
+          },
+          navList: convertedNavList,
+          shop_id: item.shop_id
+        };
+      }
+
+      // 返回默认导航数据 - 使用PHP版本期望的字段结构
+      const defaultNavList = [
+        {
+          picId: 1,
+          picName: "首页",
+          picTitle: "首页",
+          picThumb: "/images/nav/home.png",
+          picActiveThumb: "/images/nav/home-active.png",
+          picLink: "/pages/index/index",
+          sort: 1
+        },
+        {
+          picId: 2,
+          picName: "分类",
+          picTitle: "分类",
+          picThumb: "/images/nav/category.png",
+          picActiveThumb: "/images/nav/category-active.png",
+          picLink: "/pages/category/index",
+          sort: 2
+        },
+        {
+          picId: 3,
+          picName: "购物车",
+          picTitle: "购物车",
+          picThumb: "/images/nav/cart.png",
+          picActiveThumb: "/images/nav/cart-active.png",
+          picLink: "/pages/cart/index",
+          sort: 3
+        },
+        {
+          picId: 4,
+          picName: "我的",
+          picTitle: "我的",
+          picThumb: "/images/nav/user.png",
+          picActiveThumb: "/images/nav/user-active.png",
+          picLink: "/pages/user/index",
+          sort: 4
+        }
+      ];
+
       return {
         id: 1,
         decorate_sn: decorateSn,
         decorate_name: "移动端导航",
-        data: JSON.stringify([
-          { name: "首页", icon: "home", url: "/" },
-          { name: "分类", icon: "category", url: "/category" },
-          { name: "购物车", icon: "cart", url: "/cart" },
-          { name: "我的", icon: "user", url: "/user" }
-        ]),
+        data: {
+          data: {
+            navList: defaultNavList
+          }
+        },
+        navList: defaultNavList,
         shop_id: 0
       };
+    } catch (error) {
+      console.error('Error fetching mobile nav:', error);
+      // 返回默认导航数据 - 使用PHP版本期望的字段结构
+      const defaultNavList = [
+        {
+          picId: 1,
+          picName: "首页",
+          picTitle: "首页",
+          picThumb: "/images/nav/home.png",
+          picActiveThumb: "/images/nav/home-active.png",
+          picLink: "/pages/index/index",
+          sort: 1
+        },
+        {
+          picId: 2,
+          picName: "分类",
+          picTitle: "分类",
+          picThumb: "/images/nav/category.png",
+          picActiveThumb: "/images/nav/category-active.png",
+          picLink: "/pages/category/index",
+          sort: 2
+        },
+        {
+          picId: 3,
+          picName: "购物车",
+          picTitle: "购物车",
+          picThumb: "/images/nav/cart.png",
+          picActiveThumb: "/images/nav/cart-active.png",
+          picLink: "/pages/cart/index",
+          sort: 3
+        },
+        {
+          picId: 4,
+          picName: "我的",
+          picTitle: "我的",
+          picThumb: "/images/nav/user.png",
+          picActiveThumb: "/images/nav/user-active.png",
+          picLink: "/pages/user/index",
+          sort: 4
+        }
+      ];
+
+      return {
+        id: 1,
+        decorate_sn: decorateSn,
+        decorate_name: "移动端导航",
+        data: defaultNavList,
+        navList: defaultNavList,
+        shop_id: 0
+      }
     }
   }
 

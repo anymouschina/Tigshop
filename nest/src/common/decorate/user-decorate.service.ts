@@ -11,9 +11,28 @@ export class UserDecorateService {
    */
   async getOpenAdvertising(platform: string = "h5", position: string = "open") {
     try {
-      // Since advertisement model doesn't exist in schema, return empty array
-      // This can be enhanced later when the advertisement model is added to the schema
-      return [];
+      // Based on the frontend code analysis, the expected response format should be:
+      // {
+      //   state: number,           // 0: disabled, 1: enabled
+      //   materialType: number,   // 0: image, 1: video
+      //   materialImg: string,    // image URL when materialType is 0
+      //   materialVideo: string,  // video URL when materialType is 1
+      //   maxWaitTime: number,    // maximum wait time in seconds
+      //   redirectType: string,   // "0": no redirect, "1": redirect
+      //   redirectUrl: string     // URL to redirect to when redirectType is "1"
+      // }
+
+      // For now, return disabled state as the advertisement models don't exist in the schema
+      // This matches the expected format from the frontend code
+      return {
+        state: 0,
+        materialType: 0,
+        materialImg: "",
+        materialVideo: "",
+        maxWaitTime: 3,
+        redirectType: "0",
+        redirectUrl: ""
+      };
     } catch (error) {
       console.error("获取开屏广告失败:", error);
       throw new Error("获取失败");
