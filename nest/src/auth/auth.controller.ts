@@ -119,7 +119,7 @@ export class AuthController {
   @Post('refresh-token')
   @Public()
   @ApiOperation({ summary: '刷新令牌' })
-  async refreshToken(@Body() body: { refreshToken: string }) {
+  async refreshTokenV1(@Body() body: { refreshToken: string }) {
     return this.authService.refreshToken(body.refreshToken);
   }
 
@@ -222,7 +222,7 @@ export class AuthController {
   @Post('refresh')
   @Public()
   @ApiOperation({ summary: '刷新Token' })
-  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+  async refreshTokenV2(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.refreshToken(refreshTokenDto.refreshToken);
   }
 
@@ -232,7 +232,7 @@ export class AuthController {
   @Get('profile')
   @ApiBearerAuth()
   @ApiOperation({ summary: '获取用户信息' })
-  async getProfile(@Request() req) {
+  async getProfileAlias(@Request() req) {
     return this.authService.getProfile(req.user.userId);
   }
 
@@ -273,7 +273,7 @@ export class AuthController {
   @Post('change-password')
   @ApiBearerAuth()
   @ApiOperation({ summary: '修改密码' })
-  async changePassword(@Request() req, @Body() changePasswordDto: ChangePasswordDto) {
+  async changePasswordAlias(@Request() req, @Body() changePasswordDto: ChangePasswordDto) {
     return this.authService.changePassword(req.user.userId, changePasswordDto);
   }
 }

@@ -7,6 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Token tables to support auth flows in Nest implementation
+model blacklistedToken {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  token     String   @unique @db.VarChar(512)
+  userId    Int      @db.UnsignedInt
+  expiresAt DateTime
+
+  @@index([userId], map: "idx_blacklisted_token_user_id")
+}
+
+model passwordResetToken {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  token     String   @unique @db.VarChar(512)
+  email     String   @db.VarChar(255)
+  userId    Int      @db.UnsignedInt
+  expiresAt DateTime
+
+  @@index([userId], map: "idx_password_reset_user_id")
+  @@index([email], map: "idx_password_reset_email")
+}
+
+model emailVerificationToken {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  token     String   @unique @db.VarChar(512)
+  email     String   @db.VarChar(255)
+  userId    Int      @db.UnsignedInt
+  expiresAt DateTime
+
+  @@index([userId], map: "idx_email_verification_user_id")
+  @@index([email], map: "idx_email_verification_email")
+}
+
 model access_log {
   id            Int     @id @default(autoincrement()) @db.UnsignedInt
   access_time   Int     @default(0) @db.UnsignedInt

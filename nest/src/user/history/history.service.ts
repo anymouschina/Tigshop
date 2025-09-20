@@ -38,11 +38,22 @@ export class UserHistoryService {
 
     // 首先获取用户的浏览历史ID列表
     const userInfo = await this.databaseService.user.findUnique({
-      where: { userId },
-      select: { historyProductIds: true },
+      where: { user_id: userId },
+      select: { history_product_ids: true },
     });
 
-    if (!userInfo || !userInfo.historyProductIds || userInfo.historyProductIds.length === 0) {
+    const historyIds: number[] = (() => {
+      const raw = userInfo?.history_product_ids;
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n)) : [];
+      } catch {
+        return [];
+      }
+    })();
+
+    if (historyIds.length === 0) {
       return {
         records: [],
         total: 0,
@@ -54,11 +65,11 @@ export class UserHistoryService {
 
     // 构建商品查询条件
     const productWhere: any = {
-      productId: { in: userInfo.historyProductIds },
+      product_id: { in: historyIds },
     };
 
     if (keyword) {
-      productWhere.productName = {
+      productWhere.product_name = {
         contains: keyword,
       };
     }
@@ -70,17 +81,17 @@ export class UserHistoryService {
         take: size,
         orderBy: [
           // 按照历史记录中的顺序排序
-          { productId: 'desc' }, // 临时排序，需要在应用层重新排序
+          { product_id: 'desc' }, // 临时排序，需要在应用层重新排序
         ],
         select: {
-          productId: true,
-          productName: true,
-          productImage: true,
-          productPrice: true,
-          marketPrice: true,
-          isOnSale: true,
-          stock: true,
-          salesCount: true,
+          product_id: true,
+          product_name: true,
+          pic_url: true,
+          product_price: true,
+          market_price: true,
+          product_status: true,
+          product_stock: true,
+          virtual_sales: true,
         },
       }),
       this.databaseService.product.count({
@@ -90,22 +101,22 @@ export class UserHistoryService {
 
     // 根据历史记录ID列表重新排序
     const orderedProducts = products.sort((a, b) => {
-      const aIndex = userInfo.historyProductIds.indexOf(a.productId);
-      const bIndex = userInfo.historyProductIds.indexOf(b.productId);
+      const aIndex = historyIds.indexOf(a.product_id);
+      const bIndex = historyIds.indexOf(b.product_id);
       return bIndex - aIndex; // 降序排列，最新的在前面
     });
 
     // 格式化商品信息
     const formattedProducts = orderedProducts.map((product, index) => ({
-      id: product.productId,
-      product_id: product.productId,
-      product_name: product.productName,
-      product_image: product.productImage,
-      product_price: Number(product.productPrice),
-      market_price: Number(product.marketPrice),
-      is_on_sale: product.isOnSale,
-      stock: product.stock,
-      sales_count: product.salesCount,
+      id: product.product_id,
+      product_id: product.product_id,
+      product_name: product.product_name,
+      product_image: product.pic_url,
+      product_price: Number(product.product_price),
+      market_price: Number(product.market_price),
+      is_on_sale: product.product_status === 1,
+      stock: product.product_stock,
+      sales_count: product.virtual_sales,
       view_time: new Date().toISOString(), // 需要从实际历史记录中获取
       view_duration: 0, // 需要从实际历史记录中获取
       view_count: index + 1, // 浏览顺序
@@ -137,8 +148,8 @@ export class UserHistoryService {
 
     // 获取用户当前的历史记录
     const userInfo = await this.databaseService.user.findUnique({
-      where: { userId },
-      select: { historyProductIds: true },
+      where: { user_id: userId },
+      select: { history_product_ids: true },
     });
 
     let historyProductIds = userInfo?.historyProductIds || [];
@@ -311,7 +322,16 @@ export class UserHistoryService {
       select: { historyProductIds: true },
     });
 
-    const historyProductIds = userInfo?.historyProductIds || [];
+    const historyProductIds: number[] = (() => {
+      const raw = userInfo?.history_product_ids;
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n)) : [];
+      } catch {
+        return [];
+      }
+    })();
 
     // 计算基础统计
     const totalViews = historyProductIds.length;
@@ -357,15 +377,15 @@ export class UserHistoryService {
     if (historyProductIds.length === 0) {
       // 如果没有浏览历史，返回热门商品
       return this.databaseService.product.findMany({
-        where: { isOnSale: true },
-        orderBy: { salesCount: 'desc' },
+        where: { product_status: 1 },
+        orderBy: { virtual_sales: 'desc' },
         take: limit,
         select: {
-          productId: true,
-          productName: true,
-          productImage: true,
-          productPrice: true,
-          marketPrice: true,
+          product_id: true,
+          product_name: true,
+          pic_url: true,
+          product_price: true,
+          market_price: true,
         },
       });
     }
@@ -374,27 +394,27 @@ export class UserHistoryService {
     // 这里可以基于商品分类、标签等进行推荐
     // 简化实现：获取用户浏览过的商品的同类商品
     const viewedProducts = await this.databaseService.product.findMany({
-      where: { productId: { in: historyProductIds.slice(0, 5) } }, // 取最近浏览的5个商品
-      select: { categoryId: true },
+      where: { product_id: { in: historyProductIds.slice(0, 5) } }, // 取最近浏览的5个商品
+      select: { category_id: true },
     });
 
-    const categoryIds = [...new Set(viewedProducts.map(p => p.categoryId).filter(Boolean))];
+    const categoryIds = [...new Set(viewedProducts.map(p => p.category_id).filter(Boolean))];
 
     if (categoryIds.length === 0) {
       // 如果没有分类信息，返回热门商品
       return this.databaseService.product.findMany({
         where: {
-          isOnSale: true,
-          productId: { notIn: historyProductIds }, // 排除已浏览过的商品
+          product_status: 1,
+          product_id: { notIn: historyProductIds }, // 排除已浏览过的商品
         },
-        orderBy: { salesCount: 'desc' },
+        orderBy: { virtual_sales: 'desc' },
         take: limit,
         select: {
-          productId: true,
-          productName: true,
-          productImage: true,
-          productPrice: true,
-          marketPrice: true,
+          product_id: true,
+          product_name: true,
+          pic_url: true,
+          product_price: true,
+          market_price: true,
         },
       });
     }
@@ -402,18 +422,18 @@ export class UserHistoryService {
     // 获取同类商品
     const recommendedProducts = await this.databaseService.product.findMany({
       where: {
-        categoryId: { in: categoryIds },
-        isOnSale: true,
-        productId: { notIn: historyProductIds }, // 排除已浏览过的商品
+        category_id: { in: categoryIds },
+        product_status: 1,
+        product_id: { notIn: historyProductIds }, // 排除已浏览过的商品
       },
-      orderBy: { salesCount: 'desc' },
+      orderBy: { virtual_sales: 'desc' },
       take: limit,
       select: {
-        productId: true,
-        productName: true,
-        productImage: true,
-        productPrice: true,
-        marketPrice: true,
+        product_id: true,
+        product_name: true,
+        pic_url: true,
+        product_price: true,
+        market_price: true,
       },
     });
 
@@ -426,11 +446,20 @@ export class UserHistoryService {
   async batchAddHistory(userId: number, products: AddHistoryDto[]): Promise<SuccessResponse> {
     // 获取用户当前的历史记录
     const userInfo = await this.databaseService.user.findUnique({
-      where: { userId },
-      select: { historyProductIds: true },
+      where: { user_id: userId },
+      select: { history_product_ids: true },
     });
 
-    let historyProductIds = userInfo?.historyProductIds || [];
+    let historyProductIds: number[] = (() => {
+      const raw = userInfo?.history_product_ids;
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n)) : [];
+      } catch {
+        return [];
+      }
+    })();
 
     // 处理每个商品
     products.forEach(({ product_id }) => {
@@ -453,8 +482,8 @@ export class UserHistoryService {
 
     // 更新用户的历史记录
     await this.databaseService.user.update({
-      where: { userId },
-      data: { historyProductIds },
+      where: { user_id: userId },
+      data: { history_product_ids: JSON.stringify(historyProductIds) },
     });
 
     return {

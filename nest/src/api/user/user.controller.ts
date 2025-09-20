@@ -6,8 +6,10 @@ import { UpdateUserDto, UpdatePasswordDto, UpdateMobileDto, UpdateEmailDto, Uplo
 
 @ApiTags('用户端用户信息')
 @Controller('api/user/user')
+import { PrismaService } from '../../prisma.service';
+
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService, private readonly prisma: PrismaService) {}
 
   @Get('detail')
   @ApiOperation({ summary: '获取用户详细信息' })
@@ -172,8 +174,8 @@ export class UserController {
   async deleteUser(@Param('userId') userId: number) {
     // 这里需要有权限检查，确保只有管理员可以删除用户
     await this.prisma.user.update({
-      where: { user_id: userId },
-      data: { is_using: 0 }, // 软删除
+      where: { user_id: Number(userId) },
+      data: { is_using: 0 },
     });
     return {
       code: 200,

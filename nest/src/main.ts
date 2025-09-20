@@ -23,12 +23,16 @@ async function bootstrap() {
     });
     
     // 创建微服务
+    const redisHost = process.env.REDIS_HOST || 'localhost';
+    const redisPort = process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379;
+    const redisPassword = process.env.REDIS_PASSWORD; // only pass when provided
+
     app.connectMicroservice<MicroserviceOptions>({
       transport: Transport.REDIS,
       options: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379,
-        password: process.env.REDIS_PASSWORD || '123456',
+        host: redisHost,
+        port: redisPort,
+        ...(redisPassword ? { password: redisPassword } : {}),
       },
     });
   
@@ -70,7 +74,7 @@ async function bootstrap() {
   
     // 启动微服务
     await app.startAllMicroservices();
-    logger.log(`Microservice is running on Redis at ${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`);
+    logger.log(`Microservice is running on Redis at ${redisHost}:${redisPort}`);
   
     // 启动HTTP服务
     await app.listen(Config.PORT);
