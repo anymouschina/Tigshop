@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { DatabaseService } from '../../database/database.service';
 import {
   AdminRoleQueryDto,
   AdminRoleDetailDto,
@@ -12,7 +12,7 @@ import {
 
 @Injectable()
 export class AdminRoleService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private databaseService: DatabaseService) {}
 
   async findAll(query: AdminRoleQueryDto) {
     const {
@@ -43,22 +43,13 @@ export class AdminRoleService {
     const skip = (page - 1) * size;
 
     const [items, total] = await Promise.all([
-      this.prisma.adminRole.findMany({
+      this.databaseService.admin_role.findMany({
         where,
-        include: {
-          admins: {
-            select: {
-              admin_id: true,
-              username: true,
-              nickname: true,
-            },
-          },
-        },
         orderBy,
         skip,
         take: size,
       }),
-      this.prisma.adminRole.count({ where }),
+      this.databaseService.admin_role.count({ where }),
     ]);
 
     return {
@@ -71,60 +62,52 @@ export class AdminRoleService {
   }
 
   async findOne(id: number) {
-    const adminRole = await this.prisma.adminRole.findUnique({
-      where: { id },
-      include: {
-        admins: {
-          select: {
-            admin_id: true,
-            username: true,
-            nickname: true,
-            avatar: true,
-            status: true,
-          },
-        },
-      },
+    const admin_role = await this.databaseService.admin_role.findUnique({
+      where: { role_id: id },
     });
 
-    if (!adminRole) {
+    if (!admin_role) {
       throw new Error('角色不存在');
     }
 
-    return adminRole;
+    return admin_role;
   }
 
   async create(data: CreateAdminRoleDto) {
-    const existingRole = await this.prisma.adminRole.findFirst({
-      where: { name: data.name },
+    const existingRole = await this.databaseService.admin_role.findFirst({
+      where: { role_name: data.name },
     });
 
     if (existingRole) {
       throw new Error('角色名称已存在');
     }
 
-    const adminRole = await this.prisma.adminRole.create({
+    const admin_role = await this.databaseService.admin_role.create({
       data: {
-        ...data,
-        create_time: new Date(),
-        update_time: new Date(),
+        role_name: data.name,
+        role_desc: data.description,
+        authority_list: JSON.stringify(data.permissions || []),
+        status: data.status ?? 1,
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
 
-    return adminRole;
+    return admin_role;
   }
 
   async update(data: UpdateAdminRoleDto) {
-    const adminRole = await this.prisma.adminRole.findUnique({
-      where: { id: data.id },
+    const admin_role = await this.databaseService.admin_role.findUnique({
+      where: { role_id: data.id },
     });
 
-    if (!adminRole) {
+    if (!admin_role) {
       throw new Error('角色不存在');
     }
 
-    if (data.name && data.name !== adminRole.name) {
-      const existingRole = await this.prisma.adminRole.findFirst({
-        where: { name: data.name },
+    if (data.name && data.name !== admin_role.role_name) {
+      const existingRole = await this.databaseService.admin_role.findFirst({
+        where: { role_name: data.name },
       });
 
       if (existingRole) {
@@ -133,14 +116,14 @@ export class AdminRoleService {
     }
 
     const updateData: any = {
-      ...data,
-      update_time: new Date(),
+      role_name: data.name,
+      role_desc: data.description,
+      status: data.status,
+      updated_at: new Date(),
     };
 
-    delete updateData.id;
-
-    const updatedAdminRole = await this.prisma.adminRole.update({
-      where: { id: data.id },
+    const updatedAdminRole = await this.databaseService.admin_role.update({
+      where: { role_id: data.id },
       data: updateData,
     });
 
@@ -148,15 +131,15 @@ export class AdminRoleService {
   }
 
   async remove(id: number) {
-    const adminRole = await this.prisma.adminRole.findUnique({
-      where: { id },
+    const admin_role = await this.databaseService.admin_role.findUnique({
+      where: { role_id: id },
     });
 
-    if (!adminRole) {
+    if (!admin_role) {
       throw new Error('角色不存在');
     }
 
-    const adminCount = await this.prisma.admin.count({
+    const adminCount = await this.databaseService.admin_user.count({
       where: { role_id: id },
     });
 
@@ -164,8 +147,8 @@ export class AdminRoleService {
       throw new Error('该角色下还有管理员，无法删除');
     }
 
-    await this.prisma.adminRole.delete({
-      where: { id },
+    await this.databaseService.admin_role.delete({
+      where: { role_id: id },
     });
 
     return true;
@@ -173,7 +156,7 @@ export class AdminRoleService {
 
   async batchRemove(ids: number[]) {
     for (const id of ids) {
-      const adminCount = await this.prisma.admin.count({
+      const adminCount = await this.databaseService.admin_user.count({
         where: { role_id: id },
       });
 
@@ -182,9 +165,9 @@ export class AdminRoleService {
       }
     }
 
-    await this.prisma.adminRole.deleteMany({
+    await this.databaseService.admin_role.deleteMany({
       where: {
-        id: {
+        role_id: {
           in: ids,
         },
       },
@@ -194,41 +177,41 @@ export class AdminRoleService {
   }
 
   async updateStatus(id: number, status: number) {
-    const adminRole = await this.prisma.adminRole.findUnique({
-      where: { id },
+    const admin_role = await this.databaseService.admin_role.findUnique({
+      where: { role_id: id },
     });
 
-    if (!adminRole) {
+    if (!admin_role) {
       throw new Error('角色不存在');
     }
 
-    if (!Object.values(ROLE_STATUS).includes(status)) {
+    if (!Object.keys(ROLE_STATUS).includes(status.toString())) {
       throw new Error('无效的状态值');
     }
 
-    const updatedAdminRole = await this.prisma.adminRole.update({
-      where: { id },
-      data: { status, update_time: new Date() },
+    const updatedAdminRole = await this.databaseService.admin_role.update({
+      where: { role_id: id },
+      data: { status, updated_at: new Date() },
     });
 
     return updatedAdminRole;
   }
 
   async getAllRoles() {
-    return await this.prisma.adminRole.findMany({
+    return await this.databaseService.admin_role.findMany({
       where: { status: 1 },
       select: {
-        id: true,
-        name: true,
-        description: true,
-        permissions: true,
+        role_id: true,
+        role_name: true,
+        role_desc: true,
+        authority_list: true,
       },
-      orderBy: { id: 'asc' },
+      orderBy: { role_id: 'asc' },
     });
   }
 
   async getRoleStats() {
-    const result = await this.prisma.adminRole.groupBy({
+    const result = await this.databaseService.admin_role.groupBy({
       by: ['status'],
       _count: {
         _all: true,

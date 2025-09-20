@@ -38,10 +38,13 @@ export class UserBalanceLogService {
         { admin_remark: { contains: keyword } },
         { related_id: { contains: keyword } },
         { order: { order_sn: { contains: keyword } } },
-        { user: { nickname: { contains: keyword } },
-          { username: { contains: keyword } },
-          { mobile: { contains: keyword } },
-        },
+        { user: {
+          OR: [
+            { nickname: { contains: keyword } },
+            { username: { contains: keyword } },
+            { mobile: { contains: keyword } },
+          ]
+        } },
       ];
     }
 

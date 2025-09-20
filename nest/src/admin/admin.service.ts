@@ -13,7 +13,7 @@ export class AdminService {
   // 管理员认证
   async login(loginDto: { username: string; password: string }) {
     // 查找管理员 - username不是唯一键，需要使用findFirst
-    const admin = await this.databaseService.adminUser.findFirst({
+    const admin = await this.databaseService.admin_user.findFirst({
       where: { username: loginDto.username },
     });
 
@@ -28,18 +28,18 @@ export class AdminService {
 
     // 更新登录信息 - 使用原始SQL，因为lastLoginTime字段不在schema中
     await this.databaseService.$queryRaw`
-      UPDATE "AdminUser"
-      SET "addTime" = ${new Date()}, "lastLoginIp" = '127.0.0.1'
-      WHERE "adminId" = ${admin.adminId}
+      UPDATE "admin_user"
+      SET "add_time" = ${Math.floor(Date.now() / 1000)}, "last_login_ip" = '127.0.0.1'
+      WHERE "admin_id" = ${admin.admin_id}
     `;
 
-    const payload = { userId: admin.adminId, username: admin.username, role: 'admin' };
+    const payload = { userId: admin.admin_id, username: admin.username, role: 'admin' };
     const token = this.jwtService.sign(payload);
 
     return {
       token,
       user: {
-        adminId: admin.adminId,
+        adminId: admin.admin_id,
         username: admin.username,
         email: admin.email,
         avatar: admin.avatar,
@@ -53,16 +53,16 @@ export class AdminService {
   }
 
   async getAdminProfile(userId: number) {
-    const admin = await this.databaseService.adminUser.findUnique({
-      where: { adminId: userId },
+    const admin = await this.databaseService.admin_user.findUnique({
+      where: { admin_id: userId },
       select: {
-        adminId: true,
+        admin_id: true,
         username: true,
         email: true,
         mobile: true,
         avatar: true,
-        addTime: true,
-        createdAt: true,
+        add_time: true,
+        created_at: true,
       },
     });
 
@@ -74,19 +74,19 @@ export class AdminService {
   }
 
   async updateAdminProfile(userId: number, updateDto: { email?: string; mobile?: string; avatar?: string }) {
-    const admin = await this.databaseService.adminUser.update({
-      where: { adminId: userId },
+    const admin = await this.databaseService.admin_user.update({
+      where: { admin_id: userId },
       data: {
         ...updateDto,
-        updatedAt: new Date(),
+        updated_at: new Date(),
       },
       select: {
-        adminId: true,
+        admin_id: true,
         username: true,
         email: true,
         mobile: true,
         avatar: true,
-        updatedAt: true,
+        updated_at: true,
       },
     });
 
@@ -94,8 +94,8 @@ export class AdminService {
   }
 
   async changePassword(userId: number, passwordDto: { oldPassword: string; newPassword: string }) {
-    const admin = await this.databaseService.adminUser.findUnique({
-      where: { adminId: userId },
+    const admin = await this.databaseService.admin_user.findUnique({
+      where: { admin_id: userId },
     });
 
     if (!admin) {
@@ -109,11 +109,11 @@ export class AdminService {
 
     const hashedPassword = await bcrypt.hash(passwordDto.newPassword, 10);
 
-    await this.databaseService.adminUser.update({
-      where: { adminId: userId },
+    await this.databaseService.admin_user.update({
+      where: { admin_id: userId },
       data: {
         password: hashedPassword,
-        updatedAt: new Date(),
+        updated_at: new Date(),
       },
     });
 
@@ -122,7 +122,7 @@ export class AdminService {
 
   // 管理员用户管理
   async createAdminUser(createDto: { username: string; password: string; email?: string; mobile?: string; avatar?: string }) {
-    const existingAdmin = await this.databaseService.adminUser.findFirst({
+    const existingAdmin = await this.databaseService.admin_user.findFirst({
       where: { username: createDto.username },
     });
 
@@ -134,14 +134,14 @@ export class AdminService {
 
     // Use raw SQL to create admin user without adminRole relationship requirement
     const result = await this.databaseService.$queryRaw`
-      INSERT INTO "AdminUser" (
+      INSERT INTO "admin_user" (
         username, password, email, mobile, avatar,
-        addTime, adminType, createdAt, updatedAt
+        add_time, admin_type, created_at, updated_at
       ) VALUES (
         ${createDto.username}, ${hashedPassword}, ${createDto.email || ''}, ${createDto.mobile || ''}, ${createDto.avatar || ''},
         ${Math.floor(Date.now() / 1000)}, 'admin', ${new Date()}, ${new Date()}
       )
-      RETURNING adminId, username, email, mobile, avatar, addTime, createdAt
+      RETURNING admin_id, username, email, mobile, avatar, add_time, created_at
     ` as any;
 
     return result[0];
@@ -161,22 +161,22 @@ export class AdminService {
     }
 
     const [users, total] = await Promise.all([
-      this.databaseService.adminUser.findMany({
+      this.databaseService.admin_user.findMany({
         where,
         skip,
         take: size,
         select: {
-          adminId: true,
+          admin_id: true,
           username: true,
           email: true,
           mobile: true,
           avatar: true,
-          addTime: true,
-          createdAt: true,
+          add_time: true,
+          created_at: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
-      this.databaseService.adminUser.count({ where }),
+      this.databaseService.admin_user.count({ where }),
     ]);
 
     return {
@@ -191,17 +191,17 @@ export class AdminService {
   }
 
   async getAdminUser(adminId: number) {
-    const admin = await this.databaseService.adminUser.findUnique({
-      where: { adminId },
+    const admin = await this.databaseService.admin_user.findUnique({
+      where: { admin_id: adminId },
       select: {
-        adminId: true,
+        admin_id: true,
         username: true,
         email: true,
         mobile: true,
         avatar: true,
-        addTime: true,
-        createdAt: true,
-        updatedAt: true,
+        add_time: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
@@ -213,19 +213,19 @@ export class AdminService {
   }
 
   async updateAdminUser(adminId: number, updateDto: { email?: string; mobile?: string; avatar?: string }) {
-    const admin = await this.databaseService.adminUser.update({
-      where: { adminId },
+    const admin = await this.databaseService.admin_user.update({
+      where: { admin_id: adminId },
       data: {
         ...updateDto,
-        updatedAt: new Date(),
+        updated_at: new Date(),
       },
       select: {
-        adminId: true,
+        admin_id: true,
         username: true,
         email: true,
         mobile: true,
         avatar: true,
-        updatedAt: true,
+        updated_at: true,
       },
     });
 
@@ -233,8 +233,8 @@ export class AdminService {
   }
 
   async deleteAdminUser(adminId: number) {
-    await this.databaseService.adminUser.delete({
-      where: { adminId },
+    await this.databaseService.admin_user.delete({
+      where: { admin_id: adminId },
     });
 
     return { message: '删除成功' };
@@ -250,13 +250,13 @@ export class AdminService {
     // Convert authorityList array to JSON string as expected by schema
     const authorityListJson = JSON.stringify(createRoleDto.authorityList || []);
 
-    const role = await this.databaseService.adminRole.create({
+    const role = await this.databaseService.admin_role.create({
       data: {
-        roleName: createRoleDto.roleName,
-        roleDesc: createRoleDto.roleDesc,
-        authorityList: authorityListJson,
-        adminType: createRoleDto.adminType || 'admin',
-        updatedAt: new Date(),
+        role_name: createRoleDto.roleName,
+        role_desc: createRoleDto.roleDesc,
+        authority_list: authorityListJson,
+        admin_type: createRoleDto.adminType || 'admin',
+        updated_at: new Date(),
       },
     });
 
@@ -276,13 +276,13 @@ export class AdminService {
     }
 
     const [roles, total] = await Promise.all([
-      this.databaseService.adminRole.findMany({
+      this.databaseService.admin_role.findMany({
         where,
         skip,
         take: size,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
-      this.databaseService.adminRole.count({ where }),
+      this.databaseService.admin_role.count({ where }),
     ]);
 
     return {
@@ -297,8 +297,8 @@ export class AdminService {
   }
 
   async getRole(roleId: number) {
-    const role = await this.databaseService.adminRole.findUnique({
-      where: { roleId },
+    const role = await this.databaseService.admin_role.findUnique({
+      where: { role_id: roleId },
     });
 
     if (!role) {
@@ -316,11 +316,11 @@ export class AdminService {
 
     // Convert authorityList array to JSON string if provided
     if (updateRoleDto.authorityList) {
-      updateData.authorityList = JSON.stringify(updateRoleDto.authorityList);
+      updateData.authority_list = JSON.stringify(updateRoleDto.authorityList);
     }
 
-    const role = await this.databaseService.adminRole.update({
-      where: { roleId },
+    const role = await this.databaseService.admin_role.update({
+      where: { role_id: roleId },
       data: updateData,
     });
 
@@ -328,8 +328,8 @@ export class AdminService {
   }
 
   async deleteRole(roleId: number) {
-    await this.databaseService.adminRole.delete({
-      where: { roleId },
+    await this.databaseService.admin_role.delete({
+      where: { role_id: roleId },
     });
 
     return { message: '删除成功' };
@@ -356,34 +356,34 @@ export class AdminService {
     ] = await Promise.all([
       this.databaseService.user.count(),
       this.databaseService.order.count(),
-      this.databaseService.product.count({ where: { isDelete: 0 } }),
+      this.databaseService.product.count({ where: { is_delete: 0 } }),
       this.databaseService.order.count({
         where: {
-          createdAt: {
+          created_at: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
           },
         },
       }),
       this.databaseService.order.aggregate({
         where: {
-          orderStatus: 5, // Assuming 5 means COMPLETED
-          createdAt: {
+          order_status: 5, // Assuming 5 means COMPLETED
+          created_at: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
           },
         },
-        _sum: { totalAmount: true },
+        _sum: { total_amount: true },
       }),
       this.databaseService.product.count({
         where: {
-          isDelete: 0,
-          productStock: { lte: 10 }, // 低库存阈值
+          is_delete: 0,
+          product_stock: { lte: 10 }, // 低库存阈值
         },
       }),
     ]);
 
     const recentOrders = await this.databaseService.order.findMany({
       take: 10,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
       include: {
         user: {
           select: { nickname: true, email: true },
@@ -397,7 +397,7 @@ export class AdminService {
         totalOrders,
         totalProducts,
         todayOrders,
-        todayRevenue: Number(todayRevenue._sum.totalAmount || 0),
+        todayRevenue: Number(todayRevenue._sum.total_amount || 0),
         lowStockProducts,
       },
       recentOrders,

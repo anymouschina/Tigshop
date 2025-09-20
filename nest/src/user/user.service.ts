@@ -16,7 +16,7 @@ export class UserService {
    */
   async findById(id: number) {
     const user = await this.databaseService.user.findUnique({
-      where: { userId: id },
+      where: { user_id: id },
     });
 
     if (!user) {
@@ -30,7 +30,7 @@ export class UserService {
    * 根据邮箱查找用户
    */
   async findByEmail(email: string) {
-    return this.databaseService.user.findUnique({
+    return this.databaseService.user.findFirst({
       where: { email },
     });
   }
@@ -39,7 +39,7 @@ export class UserService {
    * 根据手机号查找用户
    */
   async findByMobile(mobile: string) {
-    return this.databaseService.user.findUnique({
+    return this.databaseService.user.findFirst({
       where: { mobile },
     });
   }
@@ -88,7 +88,7 @@ export class UserService {
     await this.findById(id);
 
     return this.databaseService.user.update({
-      where: { userId: id },
+      where: { user_id: id },
       data: updateData,
     });
   }
@@ -105,7 +105,7 @@ export class UserService {
     // }
 
     return this.databaseService.user.update({
-      where: { userId: id },
+      where: { user_id: id },
       data: { password: newPassword }, // 实际应该加密
     });
   }
@@ -115,7 +115,7 @@ export class UserService {
    */
   async updateLoginInfo(id: number, ip: string) {
     return this.databaseService.user.update({
-      where: { userId: id },
+      where: { user_id: id },
       data: {
         lastLogin: new Date(),
         // lastLoginIp field doesn't exist in the User model
@@ -154,8 +154,8 @@ export class UserService {
   /**
    * 获取用户详情
    */
-  async getUserDetail(userId: number) {
-    const user = await this.findById(userId);
+  async getUserDetail(user_id: number) {
+    const user = await this.findById(user_id);
 
     // 移除敏感信息
     const { password, ...userDetails } = user;
@@ -169,13 +169,13 @@ export class UserService {
   /**
    * 更新用户信息
    */
-  async updateInformation(userId: number, updateData: any) {
-    await this.findById(userId);
+  async updateInformation(user_id: number, updateData: any) {
+    await this.findById(user_id);
 
     // 如果更新邮箱，需要验证
     if (updateData.email) {
       const existingUser = await this.findByEmail(updateData.email);
-      if (existingUser && existingUser.userId !== userId) {
+      if (existingUser && existingUser.user_id !== user_id) {
         throw new ConflictException('邮箱已被使用');
       }
     }
@@ -183,13 +183,13 @@ export class UserService {
     // 如果更新手机号，需要验证
     if (updateData.mobile) {
       const existingUser = await this.findByMobile(updateData.mobile);
-      if (existingUser && existingUser.userId !== userId) {
+      if (existingUser && existingUser.user_id !== user_id) {
         throw new ConflictException('手机号已被使用');
       }
     }
 
     const updatedUser = await this.databaseService.user.update({
-      where: { userId },
+      where: { user_id },
       data: updateData,
     });
 
@@ -205,8 +205,8 @@ export class UserService {
   /**
    * 修改密码
    */
-  async modifyPassword(userId: number, oldPassword: string, newPassword: string) {
-    const user = await this.findById(userId);
+  async modifyPassword(user_id: number, oldPassword: string, newPassword: string) {
+    const user = await this.findById(user_id);
 
     // 验证旧密码
     const isValidPassword = await this.authService.validatePassword(oldPassword, user.password);
@@ -218,7 +218,7 @@ export class UserService {
     const hashedPassword = await this.authService.hashPassword(newPassword);
 
     await this.databaseService.user.update({
-      where: { userId },
+      where: { user_id },
       data: { password: hashedPassword },
     });
 
@@ -231,7 +231,7 @@ export class UserService {
   /**
    * 修改手机号
    */
-  async modifyMobile(userId: number, mobile: string, code: string) {
+  async modifyMobile(user_id: number, mobile: string, code: string) {
     // 验证短信验证码
     const isValidCode = await this.verificationCodeService.validateMobileCode(mobile, code);
     if (!isValidCode) {
@@ -240,15 +240,15 @@ export class UserService {
 
     // 检查手机号是否已被使用
     const existingUser = await this.findByMobile(mobile);
-    if (existingUser && existingUser.userId !== userId) {
+    if (existingUser && existingUser.user_id !== user_id) {
       throw new ConflictException('手机号已被使用');
     }
 
     await this.databaseService.user.update({
-      where: { userId },
+      where: { user_id },
       data: {
         mobile,
-        mobileValidated: 1,
+        mobile_validated: 1,
       },
     });
 
@@ -261,7 +261,7 @@ export class UserService {
   /**
    * 修改邮箱
    */
-  async modifyEmail(userId: number, email: string, code: string) {
+  async modifyEmail(user_id: number, email: string, code: string) {
     // 验证邮箱验证码
     const isValidCode = await this.verificationCodeService.validateEmailCode(email, code);
     if (!isValidCode) {
@@ -270,15 +270,15 @@ export class UserService {
 
     // 检查邮箱是否已被使用
     const existingUser = await this.findByEmail(email);
-    if (existingUser && existingUser.userId !== userId) {
+    if (existingUser && existingUser.user_id !== user_id) {
       throw new ConflictException('邮箱已被使用');
     }
 
     await this.databaseService.user.update({
-      where: { userId },
+      where: { user_id },
       data: {
         email,
-        emailValidated: 1,
+        email_validated: 1,
       },
     });
 
@@ -291,37 +291,37 @@ export class UserService {
   /**
    * 获取用户中心数据
    */
-  async getMemberCenter(userId: number) {
-    const user = await this.findById(userId);
+  async getMemberCenter(user_id: number) {
+    const user = await this.findById(user_id);
 
     // 获取用户统计数据
     const orderCount = await this.databaseService.order.count({
-      where: { userId },
+      where: { user_id },
     });
 
-    const favoriteCount = await this.databaseService.collectProduct.count({
-      where: { userId },
+    const favoriteCount = await this.databaseService.collect_product.count({
+      where: { user_id },
     });
 
-    const couponCount = await this.databaseService.userCoupon.count({
-      where: { userId },
+    const couponCount = await this.databaseService.user_coupon.count({
+      where: { user_id },
     });
 
     return {
       status: 'success',
       data: {
         userInfo: {
-          userId: user.userId,
+          user_id: user.user_id,
           username: user.username,
           nickname: user.nickname,
           avatar: user.avatar,
           email: user.email,
           mobile: user.mobile,
-          emailValidated: user.emailValidated,
-          mobileValidated: user.mobileValidated,
+          emailValidated: user.email_validated,
+          mobileValidated: user.mobile_validated,
           balance: user.balance,
           points: user.points,
-          growthPoints: user.growthPoints,
+          growthPoints: user.growth_points,
         },
         statistics: {
           orderCount,
@@ -335,7 +335,7 @@ export class UserService {
   /**
    * 获取用户浏览历史
    */
-  async getHistoryProduct(userId: number, page: number = 1, limit: number = 10) {
+  async getHistoryProduct(user_id: number, page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
 
     // 这里需要实现浏览历史功能，暂时返回空列表
@@ -358,7 +358,7 @@ export class UserService {
   /**
    * 删除浏览历史
    */
-  async deleteHistoryProduct(userId: number, productIds: number[]) {
+  async deleteHistoryProduct(user_id: number, productIds: number[]) {
     // 这里需要实现删除浏览历史功能
     // 实际应该更新用户的history_product_ids字段或浏览历史表
 
@@ -371,7 +371,7 @@ export class UserService {
   /**
    * 上传用户头像
    */
-  async uploadAvatar(userId: number, file: Express.Multer.File) {
+  async uploadAvatar(user_id: number, file: any) {
     if (!file) {
       throw new BadRequestException('请选择要上传的文件');
     }
@@ -381,7 +381,7 @@ export class UserService {
     const avatarUrl = `/uploads/avatar/${file.filename}`;
 
     await this.databaseService.user.update({
-      where: { userId },
+      where: { user_id },
       data: { avatar: avatarUrl },
     });
 
@@ -395,9 +395,9 @@ export class UserService {
   /**
    * 修改头像
    */
-  async modifyAvatar(userId: number, avatar: string) {
+  async modifyAvatar(user_id: number, avatar: string) {
     await this.databaseService.user.update({
-      where: { userId },
+      where: { user_id },
       data: { avatar },
     });
 
@@ -410,7 +410,7 @@ export class UserService {
   /**
    * 用户退出登录
    */
-  async logout(userId: number) {
+  async logout(user_id: number) {
     // 这里可以实现退出登录的逻辑，如清理session等
     return {
       status: 'success',
@@ -421,8 +421,8 @@ export class UserService {
   /**
    * 发送修改密码验证码
    */
-  async sendPasswordChangeCode(userId: number, mobile: string) {
-    const user = await this.findById(userId);
+  async sendPasswordChangeCode(user_id: number, mobile: string) {
+    const user = await this.findById(user_id);
 
     // 验证手机号是否属于当前用户
     if (user.mobile !== mobile) {
@@ -442,8 +442,8 @@ export class UserService {
   /**
    * 验证修改密码验证码
    */
-  async checkPasswordChangeCode(userId: number, mobile: string, code: string) {
-    const user = await this.findById(userId);
+  async checkPasswordChangeCode(user_id: number, mobile: string, code: string) {
+    const user = await this.findById(user_id);
 
     // 验证手机号是否属于当前用户
     if (user.mobile !== mobile) {
@@ -465,7 +465,7 @@ export class UserService {
   /**
    * 获取账户金额变动列表
    */
-  async getBalanceLogList(userId: number, query: any) {
+  async getBalanceLogList(user_id: number, query: any) {
     const page = query.page || 1;
     const size = query.size || 15;
     const skip = (page - 1) * size;
@@ -473,14 +473,14 @@ export class UserService {
     const sortOrder = query.sort_order || 'DESC';
 
     const [balanceLogs, total] = await Promise.all([
-      this.databaseService.userBalanceLog.findMany({
-        where: { userId },
+      this.databaseService.user_balance_log.findMany({
+        where: { user_id },
         orderBy: { [sortField]: sortOrder },
         skip,
         take: size,
       }),
-      this.databaseService.userBalanceLog.count({
-        where: { userId },
+      this.databaseService.user_balance_log.count({
+        where: { user_id },
       }),
     ]);
 
@@ -500,8 +500,8 @@ export class UserService {
    * 获取用户等级列表
    */
   async getLevelList() {
-    const userRanks = await this.databaseService.userRank.findMany({
-      orderBy: { minPoints: 'asc' },
+    const user_ranks = await this.databaseService.user_rank.findMany({
+      orderBy: { min_growth_points: 'asc' },
     });
 
     // 获取等级配置和成长配置
@@ -511,7 +511,7 @@ export class UserService {
     return {
       status: 'success',
       data: {
-        item: userRanks,
+        item: user_ranks,
         rank_config: rankConfig,
         grow_config: growConfig,
       },
@@ -522,32 +522,31 @@ export class UserService {
    * 获取用户等级信息
    */
   async getLevelInfo(rankId: number) {
-    const userRank = await this.databaseService.userRank.findUnique({
-      where: { rankId },
+    const user_rank = await this.databaseService.user_rank.findUnique({
+      where: { rank_id: rankId },
     });
 
-    if (!userRank) {
+    if (!user_rank) {
       throw new NotFoundException('用户等级不存在');
     }
 
     return {
       status: 'success',
-      data: userRank,
+      data: user_rank,
     };
   }
 
   /**
    * 注销账户
    */
-  async closeAccount(userId: number) {
-    await this.findById(userId);
+  async closeAccount(user_id: number) {
+    await this.findById(user_id);
 
     // 更新用户状态为已注销
     await this.databaseService.user.update({
-      where: { userId },
+      where: { user_id },
       data: {
         status: 2, // 假设2表示已注销
-        deletedAt: new Date(),
       },
     });
 
@@ -560,16 +559,16 @@ export class UserService {
   /**
    * 获取用户OpenId
    */
-  async getUserOpenId(userId: number) {
-    const userAuthorize = await this.databaseService.userAuthorize.findFirst({
-      where: { userId },
-      select: { openId: true },
+  async getUserOpenId(user_id: number) {
+    const user_authorize = await this.databaseService.user_authorize.findFirst({
+      where: { user_id },
+      select: { open_id: true },
     });
 
     return {
       status: 'success',
       data: {
-        openid: userAuthorize?.openId || null,
+        openid: user_authorize?.open_id || null,
       },
     };
   }

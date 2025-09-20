@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { DatabaseService } from '../../database/database.service';
 import {
   AdminLogQueryDto,
   AdminLogDetailDto,
@@ -12,7 +12,7 @@ import {
 
 @Injectable()
 export class AdminLogService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private databaseService: DatabaseService) {}
 
   async findAll(query: AdminLogQueryDto) {
     const {
@@ -24,46 +24,33 @@ export class AdminLogService {
       end_date = '',
       page = 1,
       size = 15,
-      sort_field = 'id',
+      sort_field = 'log_id',
       sort_order = 'desc',
     } = query;
 
     const where: any = {};
 
     if (keyword) {
-      where.OR = [
-        { description: { contains: keyword } },
-        { ip: { contains: keyword } },
-        { user_agent: { contains: keyword } },
-        { admin: { username: { contains: keyword } } },
-        { admin: { nickname: { contains: keyword } } },
-      ];
+      where.log_info = { contains: keyword };
     }
 
     if (admin_id > 0) {
-      where.admin_id = admin_id;
+      where.user_id = admin_id;
     }
 
-    if (type >= 0) {
-      where.type = type;
-    }
-
-    if (module >= 0) {
-      where.module = module;
-    }
-
+    // 时间范围过滤
     if (start_date && end_date) {
-      where.create_time = {
-        gte: new Date(start_date),
-        lte: new Date(end_date),
+      where.log_time = {
+        gte: Math.floor(new Date(start_date).getTime() / 1000),
+        lte: Math.floor(new Date(end_date).getTime() / 1000),
       };
     } else if (start_date) {
-      where.create_time = {
-        gte: new Date(start_date),
+      where.log_time = {
+        gte: Math.floor(new Date(start_date).getTime() / 1000),
       };
     } else if (end_date) {
-      where.create_time = {
-        lte: new Date(end_date),
+      where.log_time = {
+        lte: Math.floor(new Date(end_date).getTime() / 1000),
       };
     }
 
@@ -73,24 +60,13 @@ export class AdminLogService {
     const skip = (page - 1) * size;
 
     const [items, total] = await Promise.all([
-      this.prisma.adminLog.findMany({
+      this.databaseService.admin_log.findMany({
         where,
-        include: {
-          admin: {
-            select: {
-              admin_id: true,
-              username: true,
-              nickname: true,
-              avatar: true,
-              role: true,
-            },
-          },
-        },
         orderBy,
         skip,
         take: size,
       }),
-      this.prisma.adminLog.count({ where }),
+      this.databaseService.admin_log.count({ where }),
     ]);
 
     return {
@@ -103,19 +79,8 @@ export class AdminLogService {
   }
 
   async findOne(id: number) {
-    const adminLog = await this.prisma.adminLog.findUnique({
-      where: { id },
-      include: {
-        admin: {
-          select: {
-            admin_id: true,
-            username: true,
-            nickname: true,
-            avatar: true,
-            role: true,
-          },
-        },
-      },
+    const adminLog = await this.databaseService.admin_log.findUnique({
+      where: { log_id: id },
     });
 
     if (!adminLog) {
@@ -126,10 +91,12 @@ export class AdminLogService {
   }
 
   async create(data: CreateAdminLogDto) {
-    const adminLog = await this.prisma.adminLog.create({
+    const adminLog = await this.databaseService.admin_log.create({
       data: {
-        ...data,
-        create_time: new Date(),
+        user_id: data.admin_id,
+        log_info: data.description,
+        ip_address: data.ip || '',
+        log_time: Math.floor(Date.now() / 1000),
       },
     });
 
@@ -137,25 +104,25 @@ export class AdminLogService {
   }
 
   async remove(id: number) {
-    const adminLog = await this.prisma.adminLog.findUnique({
-      where: { id },
+    const adminLog = await this.databaseService.admin_log.findUnique({
+      where: { log_id: id },
     });
 
     if (!adminLog) {
       throw new Error('日志不存在');
     }
 
-    await this.prisma.adminLog.delete({
-      where: { id },
+    await this.databaseService.admin_log.delete({
+      where: { log_id: id },
     });
 
     return true;
   }
 
   async batchRemove(ids: number[]) {
-    await this.prisma.adminLog.deleteMany({
+    await this.databaseService.admin_log.deleteMany({
       where: {
-        id: {
+        log_id: {
           in: ids,
         },
       },
@@ -167,18 +134,18 @@ export class AdminLogService {
   async getOperationStats(adminId?: number, startDate?: string, endDate?: string) {
     const where: any = {};
     if (adminId && adminId > 0) {
-      where.admin_id = adminId;
+      where.user_id = adminId;
     }
 
     if (startDate && endDate) {
-      where.create_time = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+      where.log_time = {
+        gte: Math.floor(new Date(startDate).getTime() / 1000),
+        lte: Math.floor(new Date(endDate).getTime() / 1000),
       };
     }
 
-    const result = await this.prisma.adminLog.groupBy({
-      by: ['type', 'module'],
+    const result = await this.databaseService.admin_log.groupBy({
+      by: ['user_id'],
       where,
       _count: {
         _all: true,
@@ -189,13 +156,12 @@ export class AdminLogService {
   }
 
   async getActiveAdminsStats(days: number = 30) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    const startDate = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000);
 
-    const result = await this.prisma.adminLog.groupBy({
-      by: ['admin_id'],
+    const result = await this.databaseService.admin_log.groupBy({
+      by: ['user_id'],
       where: {
-        create_time: {
+        log_time: {
           gte: startDate,
         },
       },
@@ -204,7 +170,7 @@ export class AdminLogService {
       },
       orderBy: {
         _count: {
-          admin_id: 'desc',
+          user_id: 'desc',
         },
       },
     });
@@ -223,18 +189,14 @@ export class AdminLogService {
     method: string = '',
     params: string = '',
   ) {
-    return await this.prisma.adminLog.create({
+    const logInfo = `${ADMIN_LOG_MODULE[module] || '未知模块'} - ${ADMIN_LOG_TYPE[type] || '未知操作'} - ${description}`;
+
+    return await this.databaseService.admin_log.create({
       data: {
-        admin_id: adminId,
-        type,
-        module,
-        description,
-        ip,
-        user_agent: userAgent,
-        url,
-        method,
-        params,
-        create_time: new Date(),
+        user_id: adminId,
+        log_info: logInfo,
+        ip_address: ip,
+        log_time: Math.floor(Date.now() / 1000),
       },
     });
   }
