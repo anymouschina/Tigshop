@@ -23,7 +23,7 @@ import {
 } from "./dto/order-check.dto";
 
 @ApiTags("用户端订单结算")
-@Controller("api/order/check")
+@Controller("order/check")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class OrderCheckController {

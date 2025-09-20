@@ -32,7 +32,7 @@ import {
 } from "./dto/user.dto";
 
 @ApiTags("用户端用户信息")
-@Controller("api/user/user")
+@Controller("user/user")
 export class UserController {
   constructor(
     private readonly userService: UserService,

@@ -24,7 +24,7 @@ import { UserCouponService } from "./user-coupon.service";
 import { CouponQueryDto, ReceiveCouponDto } from "./dto/user-coupon.dto";
 
 @ApiTags("用户端优惠券")
-@Controller("api/user/coupon")
+@Controller("user/coupon")
 export class UserCouponController {
   constructor(private readonly userCouponService: UserCouponService) {}
 

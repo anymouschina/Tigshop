@@ -21,7 +21,7 @@ import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { CategoryService } from "./category.service";
 
 @ApiTags("用户端商品分类")
-@Controller("api/category")
+@Controller("category")
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 

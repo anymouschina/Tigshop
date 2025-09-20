@@ -5,7 +5,7 @@ import { UserRegistService } from "./user-regist.service";
 import { RegistDto, SendEmailCodeDto } from "./dto/user-regist.dto";
 
 @ApiTags("用户端注册")
-@Controller("api/user/regist")
+@Controller("user/regist")
 export class UserRegistController {
   constructor(private readonly userRegistService: UserRegistService) {}
 

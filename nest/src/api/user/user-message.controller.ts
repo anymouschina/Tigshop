@@ -24,7 +24,7 @@ import { UserMessageService } from "./user-message.service";
 import { MessageQueryDto, MessageBatchDto } from "./dto/user-message.dto";
 
 @ApiTags("用户端消息")
-@Controller("api/user/message")
+@Controller("user/message")
 export class UserMessageController {
   constructor(private readonly userMessageService: UserMessageService) {}
 

@@ -25,7 +25,7 @@ import {
 } from "./dto/user-collect.dto";
 
 @ApiTags("用户端商品收藏")
-@Controller("api/user/collectProduct")
+@Controller("user/collectProduct")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserCollectController {

@@ -28,7 +28,7 @@ import {
 } from "./dto/user-address.dto";
 
 @ApiTags("用户端收货地址")
-@Controller("api/user/address")
+@Controller("user/address")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserAddressController {

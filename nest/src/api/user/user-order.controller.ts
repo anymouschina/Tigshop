@@ -27,7 +27,7 @@ import {
 } from "./dto/user-order.dto";
 
 @ApiTags("用户端订单管理")
-@Controller("api/user/order")
+@Controller("user/order")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserOrderController {

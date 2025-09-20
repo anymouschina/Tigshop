@@ -35,6 +35,8 @@ import { MicroservicesModule } from "./microservices/microservices.module";
 import { SmsModule } from "../common/sms/sms.module";
 import { EmailModule } from "../common/email/email.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
+import { CommonModule } from "./common/common.module";
+import { HomeModule } from "./home/home.module";
 
 @Module({
   imports: [
@@ -72,6 +74,8 @@ import { DecorateModule } from "./common/decorate/decorate.module";
     SmsModule,
     EmailModule,
     DecorateModule,
+    CommonModule,
+    HomeModule,
   ],
   controllers: [],
   providers: [

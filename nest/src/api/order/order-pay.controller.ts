@@ -19,7 +19,7 @@ import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { OrderPayService } from "./order-pay.service";
 
 @ApiTags("用户端订单支付")
-@Controller("api/order/pay")
+@Controller("order/pay")
 export class OrderPayController {
   constructor(private readonly orderPayService: OrderPayService) {}
 

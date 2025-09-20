@@ -31,7 +31,7 @@ import {
 } from "./dto/auth.dto";
 
 @ApiTags("User Authentication")
-@Controller("api/user")
+@Controller("user")
 export class UserAuthController {
   constructor(private readonly userAuthService: UserAuthService) {}
 

@@ -22,6 +22,9 @@ async function bootstrap() {
       logger: ["error", "warn", "log", "debug", "verbose"],
     });
 
+    // 设置全局API前缀
+    app.setGlobalPrefix("api");
+
     // 创建微服务
     const redisHost = process.env.REDIS_HOST || "localhost";
     const redisPort = process.env.REDIS_PORT

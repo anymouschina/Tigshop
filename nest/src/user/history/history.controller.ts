@@ -26,7 +26,7 @@ import {
 } from "./dto/history.dto";
 
 @ApiTags("User History Management")
-@Controller("api/user/history")
+@Controller("user/history")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class UserHistoryController {

@@ -36,7 +36,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 
 @ApiTags("后台管理")
-@Controller("api/admin")
+@Controller("admin")
 @ApiBearerAuth()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}

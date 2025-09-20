@@ -25,7 +25,7 @@ import {
 } from "./dto/user-recharge-order.dto";
 
 @ApiTags("用户充值订单")
-@Controller("api/user/recharge-order")
+@Controller("user/recharge-order")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserRechargeOrderController {

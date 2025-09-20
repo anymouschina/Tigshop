@@ -26,7 +26,7 @@ import {
 } from "./dto/coupon.dto";
 
 @ApiTags("User Coupon Management")
-@Controller("api/user/coupon")
+@Controller("user/coupon")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class UserCouponController {

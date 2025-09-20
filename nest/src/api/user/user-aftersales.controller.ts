@@ -29,7 +29,7 @@ import {
 @ApiTags("用户端-售后服务")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller("api/user/aftersales")
+@Controller("user/aftersales")
 export class UserAftersalesController {
   constructor(private readonly userAftersalesService: UserAftersalesService) {}
 

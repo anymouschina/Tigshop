@@ -26,7 +26,7 @@ import {
 } from "./dto/share.dto";
 
 @ApiTags("用户端分享功能")
-@Controller("api/home/share")
+@Controller("home/share")
 export class ShareController {
   constructor(private readonly shareService: ShareService) {}
 

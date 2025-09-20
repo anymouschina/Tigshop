@@ -20,7 +20,7 @@ import { UserSignService } from "./user-sign.service";
 import { SignQueryDto } from "./dto/user-sign.dto";
 
 @ApiTags("用户端签到")
-@Controller("api/user/sign")
+@Controller("user/sign")
 export class UserSignController {
   constructor(private readonly userSignService: UserSignService) {}
 

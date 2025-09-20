@@ -5,7 +5,7 @@ import { HomeService } from "./home.service";
 import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Home Page")
-@Controller("api")
+@Controller()
 export class HomeController {
   constructor(private readonly homeService: HomeService) {}
 

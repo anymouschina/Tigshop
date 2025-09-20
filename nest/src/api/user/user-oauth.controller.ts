@@ -25,7 +25,7 @@ import {
 } from "./dto/user-oauth.dto";
 
 @ApiTags("用户端OAuth认证")
-@Controller("api/user/oauth")
+@Controller("user/oauth")
 export class UserOauthController {
   constructor(private readonly userOauthService: UserOauthService) {}
 

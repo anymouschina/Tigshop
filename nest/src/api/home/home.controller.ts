@@ -19,7 +19,7 @@ import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { HomeService } from "./home.service";
 
 @ApiTags("用户端首页")
-@Controller("api/home")
+@Controller("home")
 export class HomeController {
   constructor(private readonly homeService: HomeService) {}
 

@@ -28,7 +28,7 @@ import {
 } from "./dto/user-comment.dto";
 
 @ApiTags("用户端评论")
-@Controller("api/user/comment")
+@Controller("user/comment")
 export class UserCommentController {
   constructor(private readonly userCommentService: UserCommentService) {}
 

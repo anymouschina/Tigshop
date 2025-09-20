@@ -31,7 +31,7 @@ import {
 } from "./dto/user-login.dto";
 
 @ApiTags("用户端登录")
-@Controller("api/user/login")
+@Controller("user/login")
 export class UserLoginController {
   constructor(private readonly userLoginService: UserLoginService) {}
 

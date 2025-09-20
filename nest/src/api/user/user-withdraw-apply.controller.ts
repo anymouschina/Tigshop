@@ -29,7 +29,7 @@ import {
 } from "./dto/user-withdraw-apply.dto";
 
 @ApiTags("用户提现申请")
-@Controller("api/user/withdraw")
+@Controller("user/withdraw")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserWithdrawApplyController {

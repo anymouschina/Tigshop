@@ -5,13 +5,14 @@ export default defineConfig({
     server: {
         port: 3000,
         host: "0.0.0.0",
+        strictPort: true,
         proxy: {
             // 匹配所有请求
             "/api": {
-                target: "http://localhost:3001/api", // 转发到3001端口
+                target: "http://localhost:3001", // 转发到3001端口
                 changeOrigin: true // 开启跨域
                 // 不需要重写路径，因为我们要转发所有请求
-                // rewrite: (path) => path.replace(/^\/api/, '')
+                // rewrite: (path) => path.replace(/^\/api/, "")
             }
         }
     },

@@ -22,7 +22,7 @@ import { CompanyApplyDto, CompanyQueryDto } from "./dto/user-company.dto";
 @ApiTags("用户端-企业认证")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller("api/user/company")
+@Controller("user/company")
 export class UserCompanyController {
   constructor(private readonly userCompanyService: UserCompanyService) {}
 

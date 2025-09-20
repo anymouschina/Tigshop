@@ -27,7 +27,7 @@ import {
 } from "./dto/user-account.dto";
 
 @ApiTags("用户端账户管理")
-@Controller("api/user/account")
+@Controller("user/account")
 export class UserAccountController {
   constructor(private readonly userAccountService: UserAccountService) {}
 
