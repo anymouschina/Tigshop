@@ -1,12 +1,14 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
-import { UserCompanyService } from './user-company.service';
+// NOTE: this controller file duplicates the nested module under user-company/.
+// Adjust imports to point to the nested service/DTO to avoid build errors.
+import { UserCompanyService } from './user-company/user-company.service';
 import {
   UserCompanyQueryDto,
   CreateUserCompanyDto,
   UpdateUserCompanyDto,
   ApproveUserCompanyDto,
   RejectUserCompanyDto
-} from './dto/user-company.dto';
+} from './user-company/dto/user-company.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';

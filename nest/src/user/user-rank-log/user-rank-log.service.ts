@@ -58,8 +58,7 @@ export class UserRankLogService {
       const result = await this.prisma.user_rank_log.create({
         data: {
           ...createData,
-          created_at: new Date(),
-          updated_at: new Date(),
+          change_time: Math.floor(Date.now() / 1000),
         },
       });
       return result;
@@ -75,7 +74,7 @@ export class UserRankLogService {
         where: { id },
         data: {
           ...updateData,
-          updated_at: new Date(),
+          change_time: Math.floor(Date.now() / 1000),
         },
       });
       return result;
@@ -120,8 +119,8 @@ export class UserRankLogService {
       today.setHours(0, 0, 0, 0);
       const todayCount = await this.prisma.user_rank_log.count({
         where: {
-          created_at: {
-            gte: today,
+          change_time: {
+            gte: Math.floor(today.getTime() / 1000),
           },
         },
       });

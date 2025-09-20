@@ -1,5 +1,5 @@
 import { ApiTags, ApiOperation, ApiQuery, ApiParam } from '@nestjs/swagger';
-import { Controller, Get, Post, Delete, Query, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Put, Query, Param, Body, UseGuards } from '@nestjs/common';
 import { UserMessageLogService } from './user-message-log.service';
 import { CreateUserMessageLogDto, BatchDeleteDto } from './dto/user-message-log.dto';
 import { AdminAuthGuard } from '../../../common/guards/admin-auth.guard';

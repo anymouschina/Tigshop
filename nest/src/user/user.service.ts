@@ -117,7 +117,7 @@ export class UserService {
     return this.databaseService.user.update({
       where: { user_id: id },
       data: {
-        lastLogin: new Date(),
+        last_login: Math.floor(Date.now() / 1000),
         // lastLoginIp field doesn't exist in the User model
       },
     });

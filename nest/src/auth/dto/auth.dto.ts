@@ -7,6 +7,8 @@ import {
   IsOptional,
   IsEnum,
   IsPhoneNumber,
+  IsNumber,
+  Min,
   Matches,
 } from 'class-validator';
 

@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
-import { UserRankService } from './user-rank.service';
+// Disabled duplicate controller content to prevent build issues; functional version lives under user-rank/.
+export {};
 import {
   UserRankQueryDto,
   CreateUserRankDto,

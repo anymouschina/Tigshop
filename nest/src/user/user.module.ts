@@ -10,7 +10,7 @@ import { UserRankModule } from './user-rank/user-rank.module';
 import { UserPointsLogModule } from './user-points-log/user-points-log.module';
 import { UserMessageLogModule } from './user-message-log/user-message-log.module';
 import { UserAuthModule } from './auth/auth.module';
-import { UserCollectModule } from './collect/collect.module';
+import { CollectModule } from './collect/collect.module';
 import { UserCouponModule } from './coupon/coupon.module';
 import { UserHistoryModule } from './history/history.module';
 
@@ -25,7 +25,7 @@ import { UserHistoryModule } from './history/history.module';
     UserPointsLogModule,
     UserMessageLogModule,
     UserAuthModule,
-    UserCollectModule,
+    CollectModule,
     UserCouponModule,
     UserHistoryModule,
   ],

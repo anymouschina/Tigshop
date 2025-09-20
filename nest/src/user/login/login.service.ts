@@ -191,8 +191,8 @@ export class LoginService {
     await this.prisma.user.update({
       where: { user_id: userId },
       data: {
-        last_login_time: new Date(),
-        last_login_ip: clientIp,
+        last_login: Math.floor(Date.now() / 1000),
+        last_ip: clientIp || '',
       },
     });
   }
@@ -402,7 +402,7 @@ export class LoginService {
         data: {
           username: `User_${Date.now()}`,
           password: await bcrypt.hash(Math.random().toString(36), 10),
-          reg_time: new Date(),
+          reg_time: Math.floor(Date.now() / 1000),
           status: 1,
         },
       });
@@ -544,7 +544,7 @@ export class LoginService {
       username: `User_${Date.now()}`,
       password: hashedPassword,
       mobile,
-      reg_time: new Date(),
+      reg_time: Math.floor(Date.now() / 1000),
       status: 1,
     };
 
@@ -568,7 +568,7 @@ export class LoginService {
         username: `User_${Date.now()}`,
         password,
         email,
-        reg_time: new Date(),
+        reg_time: Math.floor(Date.now() / 1000),
         status: 1,
       },
     });
@@ -670,7 +670,7 @@ export class LoginService {
     };
 
     if (!res.code) {
-      throw new HttpException(res.msg || '授权失败，请稍后再试~', HttpStatus.BAD_REQUEST);
+      throw new HttpException('授权失败，请稍后再试~', HttpStatus.BAD_REQUEST);
     }
 
     // 注册用户

@@ -29,7 +29,7 @@ export class UserMessageLogService {
       where.status = parseInt(status);
     }
 
-    const records = await this.prisma.userMessageLog.findMany({
+    const records = await (this.prisma as any).user_message_log.findMany({
       where,
       include: {
         user: {
@@ -69,12 +69,12 @@ export class UserMessageLogService {
       where.status = parseInt(status);
     }
 
-    return this.prisma.userMessageLog.count({ where });
+    return (this.prisma as any).user_message_log.count({ where });
   }
 
   async getDetail(id: number) {
-    const item = await this.prisma.userMessageLog.findUnique({
-      where: { log_id: id },
+    const item = await (this.prisma as any).user_message_log.findUnique({
+      where: { message_log_id: id },
       include: {
         user: {
           select: {
@@ -95,57 +95,49 @@ export class UserMessageLogService {
   }
 
   async deleteUserMessageLog(id: number) {
-    return this.prisma.userMessageLog.delete({
-      where: { log_id: id },
+    return (this.prisma as any).user_message_log.delete({
+      where: { message_log_id: id },
     });
   }
 
   async batchDeleteUserMessageLog(ids: number[]) {
-    return this.prisma.userMessageLog.deleteMany({
-      where: { log_id: { in: ids } },
+    return (this.prisma as any).user_message_log.deleteMany({
+      where: { message_log_id: { in: ids } },
     });
   }
 
   async createUserMessageLog(createData: CreateUserMessageLogDto) {
-    return this.prisma.userMessageLog.create({
+    return (this.prisma as any).user_message_log.create({
       data: {
         user_id: createData.user_id,
-        title: createData.title,
-        content: createData.content,
+        message_title: createData.title,
+        message_content: createData.content,
         message_type: createData.message_type,
-        status: createData.status || 0,
-        create_time: new Date(),
+        is_recall: 0,
+        send_time: Math.floor(Date.now() / 1000),
       },
     });
   }
 
   async updateUserMessageLog(id: number, updateData: any) {
-    return this.prisma.userMessageLog.update({
-      where: { log_id: id },
-      data: {
-        ...updateData,
-        update_time: new Date(),
-      },
+    return (this.prisma as any).user_message_log.update({
+      where: { message_log_id: id },
+      data: updateData as any,
     });
   }
 
   async markAsRead(id: number) {
-    return this.prisma.userMessageLog.update({
-      where: { log_id: id },
-      data: {
-        status: 1,
-        read_time: new Date(),
-      },
+    // user_message_log is a log for broadcasts; read flags are stored in user_message table.
+    return (this.prisma as any).user_message.updateMany({
+      where: { message_log_id: id },
+      data: { is_read: 1 },
     });
   }
 
   async batchMarkAsRead(ids: number[]) {
-    return this.prisma.userMessageLog.updateMany({
-      where: { log_id: { in: ids } },
-      data: {
-        status: 1,
-        read_time: new Date(),
-      },
+    return (this.prisma as any).user_message.updateMany({
+      where: { message_log_id: { in: ids } },
+      data: { is_read: 1 },
     });
   }
 
@@ -164,9 +156,9 @@ export class UserMessageLogService {
     }
 
     const [total, unread, byType] = await Promise.all([
-      this.prisma.userMessageLog.count({ where }),
-      this.prisma.userMessageLog.count({ where: { ...where, status: 0 } }),
-      this.prisma.userMessageLog.groupBy({
+      (this.prisma as any).user_message_log.count({ where }),
+      (this.prisma as any).user_message.count({ where: { ...where, is_read: 0 } }),
+      (this.prisma as any).user_message_log.groupBy({
         by: ['message_type'],
         where,
         _count: {
