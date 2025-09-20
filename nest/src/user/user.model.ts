@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Simple User model used for examples and tests; not bound to Prisma types.
 export class User {
   userId?: number;

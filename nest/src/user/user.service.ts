@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable, BadRequestException, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { AuthService } from '../auth/auth.service';

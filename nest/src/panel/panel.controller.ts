@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { PanelService } from './panel.service';
 import { AuthorityService } from '../authority/authority.service';

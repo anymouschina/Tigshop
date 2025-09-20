@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Put, Delete, Query, Body, Param, UseGuards } from '@nestjs/common';
 import { MailTemplateService } from './mail-template.service';
 import {

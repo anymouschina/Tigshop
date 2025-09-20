@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const OrderMicroservicePatterns = {
   FIND_ALL: 'order.findAll',
   FIND_ONE: 'order.findOne',

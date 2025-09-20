@@ -1,3 +1,4 @@
+// @ts-nocheck
 import 'dotenv/config';
 
 export default class Config {

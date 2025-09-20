@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IsAlphanumeric, IsInt, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 export class ApplyCouponDto {

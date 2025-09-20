@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MessageQueryDto, MessageBatchDto } from './dto/user-message.dto';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Standard API response interface
  */

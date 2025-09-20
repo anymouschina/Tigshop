@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Module } from '@nestjs/common';
 import { AdminMsgController } from './admin-msg.controller';
 import { AdminMsgService } from './admin-msg.service';

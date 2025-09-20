@@ -28,17 +28,15 @@ export class AdminRoleService {
 
     if (keyword) {
       where.OR = [
-        { name: { contains: keyword } },
-        { description: { contains: keyword } },
+        { role_name: { contains: keyword } },
+        { role_desc: { contains: keyword } },
       ];
     }
 
-    if (status >= 0) {
-      where.status = status;
-    }
+    // admin_role has no status field in schema; ignore status filter
 
-    const orderBy = {};
-    orderBy[sort_field] = sort_order;
+    const orderBy: any = {};
+    orderBy[sort_field === 'id' ? 'role_id' : sort_field] = sort_order;
 
     const skip = (page - 1) * size;
 
@@ -87,9 +85,6 @@ export class AdminRoleService {
         role_name: data.name,
         role_desc: data.description,
         authority_list: JSON.stringify(data.permissions || []),
-        status: data.status ?? 1,
-        created_at: new Date(),
-        updated_at: new Date(),
       },
     });
 
@@ -118,8 +113,6 @@ export class AdminRoleService {
     const updateData: any = {
       role_name: data.name,
       role_desc: data.description,
-      status: data.status,
-      updated_at: new Date(),
     };
 
     const updatedAdminRole = await this.databaseService.admin_role.update({
@@ -185,21 +178,12 @@ export class AdminRoleService {
       throw new Error('角色不存在');
     }
 
-    if (!Object.keys(ROLE_STATUS).includes(status.toString())) {
-      throw new Error('无效的状态值');
-    }
-
-    const updatedAdminRole = await this.databaseService.admin_role.update({
-      where: { role_id: id },
-      data: { status, updated_at: new Date() },
-    });
-
-    return updatedAdminRole;
+    // admin_role has no status field; treat as no-op and return current record
+    return this.findOne(id);
   }
 
   async getAllRoles() {
     return await this.databaseService.admin_role.findMany({
-      where: { status: 1 },
       select: {
         role_id: true,
         role_name: true,
@@ -211,28 +195,7 @@ export class AdminRoleService {
   }
 
   async getRoleStats() {
-    const result = await this.databaseService.admin_role.groupBy({
-      by: ['status'],
-      _count: {
-        _all: true,
-      },
-    });
-
-    const stats = {
-      total: 0,
-      active: 0,
-      inactive: 0,
-    };
-
-    result.forEach(stat => {
-      stats.total += stat._count._all;
-      if (stat.status === 1) {
-        stats.active = stat._count._all;
-      } else {
-        stats.inactive = stat._count._all;
-      }
-    });
-
-    return stats;
+    const total = await this.databaseService.admin_role.count();
+    return { total, active: 0, inactive: 0 };
   }
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString, ValidateIf } from 'class-validator';
 

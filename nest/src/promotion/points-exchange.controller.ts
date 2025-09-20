@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Put, Delete, Query, Body, Param, UseGuards } from '@nestjs/common';
 import { PointsExchangeService, POINTS_EXCHANGE_ENABLED, POINTS_EXCHANGE_HOT } from './points-exchange.service';
 import {

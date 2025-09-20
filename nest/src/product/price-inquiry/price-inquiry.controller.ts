@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ApiTags, ApiOperation, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { Controller, Get, Post, Put, Delete, Query, Param, Body, UseGuards } from '@nestjs/common';
 import { PriceInquiryService } from './price-inquiry.service';

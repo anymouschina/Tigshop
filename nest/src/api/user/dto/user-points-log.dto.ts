@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IsString, IsNumber, IsEnum, IsOptional, IsDateString } from 'class-validator';
 
 export class PointsLogQueryDto {

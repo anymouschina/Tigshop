@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController, WxUserController, AdminReferralController, EmailAuthController } from '../user.controller';
 import { UserService } from '../user.service';

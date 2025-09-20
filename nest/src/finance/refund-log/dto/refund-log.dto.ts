@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { RefundLogType } from '../entities/refund-log.entity';

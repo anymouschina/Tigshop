@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const Config = {
   PORT: process.env.PORT || 3000,
   DATABASE_URL: process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/tigshop',

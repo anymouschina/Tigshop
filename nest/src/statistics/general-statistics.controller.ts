@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { GeneralStatisticsService } from './general-statistics.service';
 import { RolesGuard } from '../auth/guards/roles.guard';

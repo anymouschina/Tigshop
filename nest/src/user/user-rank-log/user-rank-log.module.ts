@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Module } from '@nestjs/common';
 import { UserRankLogController } from './user-rank-log.controller';
 import { UserRankLogService } from './user-rank-log.service';

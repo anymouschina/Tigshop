@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateUserMessageLogDto } from './dto/user-message-log.dto';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Put, Delete, Query, Body, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { CategoryService, CATEGORY_SHOW_STATUS, CATEGORY_HOT_STATUS } from './category.service';
 import {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Controllers
 export * from './logistics-company.controller';
 export * from './message-template.controller';

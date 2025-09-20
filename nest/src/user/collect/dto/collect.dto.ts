@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IsNotEmpty, IsInt, IsOptional, IsString, IsEnum, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';

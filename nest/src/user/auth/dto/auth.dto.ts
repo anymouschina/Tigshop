@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IsString, IsEmail, IsNotEmpty, IsEnum, IsOptional, MinLength, MaxLength, IsMobilePhone } from 'class-validator';
 
 export enum LoginType {

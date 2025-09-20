@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IsString, IsEmail, IsEnum, IsOptional } from 'class-validator';
 
 export enum OAuthProvider {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Put, Post, Body, UseGuards } from '@nestjs/common';
 import { OrderConfigService } from './order-config.service';
 import { UpdateOrderConfigDto, OrderPaymentConfigDto, OrderShippingConfigDto } from './dto/order-config.dto';

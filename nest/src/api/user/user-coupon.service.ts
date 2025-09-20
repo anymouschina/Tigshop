@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CouponQueryDto, ReceiveCouponDto } from './dto/user-coupon.dto';

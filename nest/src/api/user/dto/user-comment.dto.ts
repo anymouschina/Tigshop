@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IsString, IsNumber, IsEnum, IsOptional, IsArray, ArrayNotEmpty, ArrayMinSize } from 'class-validator';
 
 export class CreateCommentDto {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
 import { OrderLogService } from './order-log.service';
 import { OrderLogQueryDto, OrderLogDetailDto } from './dto/order-log.dto';

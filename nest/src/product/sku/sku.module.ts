@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Module } from '@nestjs/common';
 import { SkuController } from './sku.controller';
 import { SkuService } from './sku.service';

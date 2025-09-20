@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Body, Param, Delete, Query, Put, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CsrfService } from './csrf.service';

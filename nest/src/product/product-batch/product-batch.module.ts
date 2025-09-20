@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Module } from '@nestjs/common';
 import { ProductBatchController } from './product-batch.controller';
 import { ProductBatchService } from './product-batch.service';

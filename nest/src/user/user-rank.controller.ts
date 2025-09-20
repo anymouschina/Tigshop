@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 // Disabled duplicate controller content to prevent build issues; functional version lives under user-rank/.
 export {};

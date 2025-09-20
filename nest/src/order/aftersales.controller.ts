@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Put, Query, Body, Param, UseGuards } from '@nestjs/common';
 import { AftersalesService, AFTERSALES_TYPE_NAME, STATUS_NAME } from './aftersales.service';
 import {

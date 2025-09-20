@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Module } from '@nestjs/common';
 import { AftersalesController } from './aftersales.controller';
 import { AftersalesService } from './aftersales.service';

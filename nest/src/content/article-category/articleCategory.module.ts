@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Module } from '@nestjs/common';
 import { ArticleCategoryService } from './articleCategory.service';
 import { ArticleCategoryController } from './articleCategory.controller';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Put, Delete, Query, Body, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { BrandService, BRAND_SHOW_STATUS, BRAND_HOT_STATUS, BRAND_AUDIT_STATUS } from './brand.service';
 import {

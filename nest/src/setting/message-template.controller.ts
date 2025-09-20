@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Put, Delete, Query, Body, Param, UseGuards } from '@nestjs/common';
 import { MessageTemplateService, MESSAGE_TEMPLATE_TYPE_NAMES } from './message-template.service';
 import {

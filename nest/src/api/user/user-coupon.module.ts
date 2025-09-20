@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Module } from '@nestjs/common';
 import { UserCouponController } from './user-coupon.controller';
 import { UserCouponService } from './user-coupon.service';

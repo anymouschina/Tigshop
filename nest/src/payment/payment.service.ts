@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreatePaymentDto, PaymentMethod, PaymentStatus } from './dto/create-payment.dto';

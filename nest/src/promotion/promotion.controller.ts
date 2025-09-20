@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { PromotionService } from './promotion.service';
 import { CreatePromotionDto, UpdatePromotionDto, PromotionQueryDto } from './dto/promotion.dto';

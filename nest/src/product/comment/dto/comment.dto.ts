@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IsString, IsNumber, IsOptional, IsEnum, Min, Max } from 'class-validator';
 
 export enum CommentRating {

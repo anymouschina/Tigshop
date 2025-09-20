@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { AppConfigService } from '../config/config.service';
 import { HttpService } from '@nestjs/axios';

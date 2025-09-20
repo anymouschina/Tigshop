@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { UserRegistService } from './user-regist.service';

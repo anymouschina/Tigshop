@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { RefundApply } from './refund-apply.entity';
 

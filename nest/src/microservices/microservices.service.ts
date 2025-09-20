@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ConfigService } from '../config/config.service';

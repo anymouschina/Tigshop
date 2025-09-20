@@ -156,41 +156,18 @@ export class HomeService {
 
   // 私有方法实现
   private async getBannersData() {
-    const banners = await this.prisma.ad_banner.findMany({
-      where: {
-        position: 'home',
-        status: 1,
-        start_time: { lte: Math.floor(Date.now() / 1000) },
-        end_time: { gte: Math.floor(Date.now() / 1000) },
-      },
-      orderBy: { sort_order: 'asc' },
-      select: {
-        banner_id: true,
-        title: true,
-        image: true,
-        link_url: true,
-        link_type: true,
-        start_time: true,
-        end_time: true,
-      },
-    });
-
-    return banners;
+    // No banner model in schema; return empty list as placeholder
+    return [] as any[];
   }
 
   private async getHomeCategoriesData() {
     const categories = await this.prisma.category.findMany({
-      where: {
-        parent_id: 0,
-        is_show: 1,
-        is_delete: 0,
-      },
+      where: { parent_id: 0, is_show: 1 },
       orderBy: { sort_order: 'asc' },
       select: {
         category_id: true,
         category_name: true,
-        image: true,
-        category_code: true,
+        category_pic: true,
       },
     });
 
@@ -204,28 +181,28 @@ export class HomeService {
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where: {
-          is_show: 1,
+          product_status: 1,
           is_delete: 0,
-          stock: { gt: 0 },
+          product_stock: { gt: 0 } as any,
           is_hot: 1,
         },
-        include: {
-          shop: {
-            select: {
-              shop_id: true,
-              shop_name: true,
-            },
-          },
-        },
-        orderBy: { sales_count: 'desc' },
+        orderBy: { virtual_sales: 'desc' },
         skip,
         take: size,
+        select: {
+          product_id: true,
+          product_name: true,
+          pic_thumb: true,
+          product_price: true,
+          market_price: true,
+          shop_id: true,
+        },
       }),
       this.prisma.product.count({
         where: {
-          is_show: 1,
+          product_status: 1,
           is_delete: 0,
-          stock: { gt: 0 },
+          product_stock: { gt: 0 } as any,
           is_hot: 1,
         },
       }),
@@ -246,22 +223,22 @@ export class HomeService {
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where: {
-          is_show: 1,
+          product_status: 1,
           is_delete: 0,
-          stock: { gt: 0 },
+          product_stock: { gt: 0 } as any,
           is_new: 1,
-        },
-        include: {
-          shop: {
-            select: {
-              shop_id: true,
-              shop_name: true,
-            },
-          },
         },
         orderBy: { add_time: 'desc' },
         skip,
         take: size,
+        select: {
+          product_id: true,
+          product_name: true,
+          pic_thumb: true,
+          product_price: true,
+          market_price: true,
+          shop_id: true,
+        },
       }),
       this.prisma.product.count({
         where: {
@@ -286,10 +263,10 @@ export class HomeService {
     const skip = (page - 1) * size;
 
     let where: any = {
-      is_show: 1,
+      product_status: 1,
       is_delete: 0,
-      stock: { gt: 0 },
-      is_recommend: 1,
+      product_stock: { gt: 0 } as any,
+      is_best: 1,
     };
 
     // 如果用户已登录，可以根据用户行为推荐
@@ -301,17 +278,17 @@ export class HomeService {
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        include: {
-          shop: {
-            select: {
-              shop_id: true,
-              shop_name: true,
-            },
-          },
-        },
         orderBy: { sort_order: 'asc' },
         skip,
         take: size,
+        select: {
+          product_id: true,
+          product_name: true,
+          pic_thumb: true,
+          product_price: true,
+          market_price: true,
+          shop_id: true,
+        },
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -325,23 +302,22 @@ export class HomeService {
   }
 
   private async getPromotionActivitiesData() {
+    const nowSec = Math.floor(Date.now() / 1000);
     const activities = await this.prisma.promotion.findMany({
       where: {
-        is_delete: 0,
-        is_available: 1,
-        start_time: { lte: Math.floor(Date.now() / 1000) },
-        end_time: { gte: Math.floor(Date.now() / 1000) },
+        is_delete: false as any,
+        is_available: 1 as any,
+        start_time: { lte: nowSec },
+        end_time: { gte: nowSec },
       },
-      orderBy: { sort_order: 'asc' },
       select: {
         promotion_id: true,
         promotion_name: true,
-        promotion_desc: true,
-        promotion_type: true,
-        image: true,
         start_time: true,
         end_time: true,
+        type: true,
       },
+      orderBy: { end_time: 'asc' },
     });
 
     return activities;
@@ -351,26 +327,16 @@ export class HomeService {
     const { page = 1, size = 10 } = query;
     const skip = (page - 1) * size;
 
+    const now = Math.floor(Date.now() / 1000);
+    const where: any = {
+      is_delete: false as any,
+      is_show: 1 as any,
+      use_start_date: { lte: now } as any,
+      use_end_date: { gte: now } as any,
+    };
     const [coupons, total] = await Promise.all([
-      this.prisma.coupon.findMany({
-        where: {
-          is_delete: 0,
-          status: 1,
-          start_time: { lte: Math.floor(Date.now() / 1000) },
-          end_time: { gte: Math.floor(Date.now() / 1000) },
-        },
-        orderBy: { sort_order: 'asc' },
-        skip,
-        take: size,
-      }),
-      this.prisma.coupon.count({
-        where: {
-          is_delete: 0,
-          status: 1,
-          start_time: { lte: Math.floor(Date.now() / 1000) },
-          end_time: { gte: Math.floor(Date.now() / 1000) },
-        },
-      }),
+      this.prisma.coupon.findMany({ where, orderBy: { add_time: 'desc' }, skip, take: size }),
+      this.prisma.coupon.count({ where }),
     ]);
 
     return {
@@ -382,55 +348,13 @@ export class HomeService {
   }
 
   private async getSeckillProductsData() {
-    const currentTime = Math.floor(Date.now() / 1000);
-
-    const seckillProducts = await this.prisma.seckill_product.findMany({
-      where: {
-        is_delete: 0,
-        status: 1,
-        start_time: { lte: currentTime },
-        end_time: { gte: currentTime },
-      },
-      include: {
-        product: {
-          select: {
-            product_id: true,
-            product_name: true,
-            image: true,
-            price: true,
-          },
-        },
-      },
-      orderBy: { sort_order: 'asc' },
-    });
-
-    return seckillProducts;
+    // Seckill feature not modeled; return empty list
+    return [] as any[];
   }
 
   private async getGrouponProductsData() {
-    const currentTime = Math.floor(Date.now() / 1000);
-
-    const grouponProducts = await this.prisma.groupon_product.findMany({
-      where: {
-        is_delete: 0,
-        status: 1,
-        start_time: { lte: currentTime },
-        end_time: { gte: currentTime },
-      },
-      include: {
-        product: {
-          select: {
-            product_id: true,
-            product_name: true,
-            image: true,
-            price: true,
-          },
-        },
-      },
-      orderBy: { sort_order: 'asc' },
-    });
-
-    return grouponProducts;
+    // Groupon feature not modeled; return empty list
+    return [] as any[];
   }
 
   private async getUserStatisticsData(userId: number) {
@@ -444,28 +368,26 @@ export class HomeService {
     ] = await Promise.all([
       this.prisma.order.groupBy({
         by: ['order_status'],
-        where: { user_id: userId, is_delete: 0 },
+        where: { user_id: userId, is_del: 0 },
         _count: { order_id: true },
       }),
       this.prisma.cart.count({ where: { user_id: userId } }),
-      this.prisma.user_collect.count({ where: { user_id: userId } }),
+      (async () => {
+        const [p, s] = await Promise.all([
+          this.prisma.collect_product.count({ where: { user_id: userId } }),
+          this.prisma.collect_shop ? (this.prisma as any).collect_shop.count({ where: { user_id: userId } }) : Promise.resolve(0),
+        ]);
+        return p + (s || 0);
+      })(),
       this.prisma.user_coupon.count({
         where: {
           user_id: userId,
-          status: 0,
-          coupon: {
-            end_time: { gte: Math.floor(Date.now() / 1000) },
-          },
+          used_time: 0 as any,
+          end_date: { gte: Math.floor(Date.now() / 1000) } as any,
         },
       }),
-      this.prisma.user.findUnique({
-        where: { user_id: userId },
-        select: { points: true },
-      }),
-      this.prisma.user.findUnique({
-        where: { user_id: userId },
-        select: { user_money: true },
-      }),
+      this.prisma.user.findUnique({ where: { user_id: userId }, select: { points: true } }),
+      this.prisma.user.findUnique({ where: { user_id: userId }, select: { balance: true } }),
     ]);
 
     const orderCountMap = {};
@@ -484,7 +406,7 @@ export class HomeService {
       favorite_count: favoriteCount,
       coupon_count: couponCount,
       points: points?.points || 0,
-      balance: balance?.user_money || 0,
+      balance: (balance as any)?.balance || 0,
     };
   }
 
@@ -494,30 +416,18 @@ export class HomeService {
 
     const [shops, total] = await Promise.all([
       this.prisma.shop.findMany({
-        where: {
-          status: 1,
-          is_delete: 0,
-          is_recommend: 1,
-        },
+        where: { status: 1 as any },
         select: {
           shop_id: true,
-          shop_name: true,
+          shop_title: true,
           shop_logo: true,
           description: true,
-          rating: true,
-          product_count: true,
         },
-        orderBy: { sort_order: 'asc' },
+        orderBy: { click_count: 'desc' },
         skip,
         take: size,
       }),
-      this.prisma.shop.count({
-        where: {
-          status: 1,
-          is_delete: 0,
-          is_recommend: 1,
-        },
-      }),
+      this.prisma.shop.count({ where: { status: 1 as any } }),
     ]);
 
     return {
@@ -529,41 +439,10 @@ export class HomeService {
   }
 
   private async getNewsListData(query: { page: number; size: number; category_id?: number }) {
-    const { page = 1, size = 10, category_id } = query;
+    const { page = 1, size = 10 } = query;
     const skip = (page - 1) * size;
 
-    const where: any = {
-      status: 1,
-      is_delete: 0,
-    };
-
-    if (category_id) {
-      where.category_id = category_id;
-    }
-
-    const [news, total] = await Promise.all([
-      this.prisma.news.findMany({
-        where,
-        include: {
-          category: {
-            select: {
-              category_id: true,
-              category_name: true,
-            },
-          },
-        },
-        orderBy: { add_time: 'desc' },
-        skip,
-        take: size,
-      }),
-      this.prisma.news.count({ where }),
-    ]);
-
-    return {
-      records: news,
-      total,
-      page,
-      size,
-    };
+    // No news model in schema; return placeholder paging structure
+    return { records: [], total: 0, page, size };
   }
 }

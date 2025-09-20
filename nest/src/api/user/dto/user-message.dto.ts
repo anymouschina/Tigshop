@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IsString, IsNumber, IsEnum, IsOptional, IsArray, ArrayNotEmpty } from 'class-validator';
 
 export class MessageQueryDto {

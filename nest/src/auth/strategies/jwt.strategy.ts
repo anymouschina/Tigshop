@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';

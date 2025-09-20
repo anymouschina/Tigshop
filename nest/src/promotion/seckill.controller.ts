@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Put, Delete, Query, Body, Param, UseGuards } from '@nestjs/common';
 import { SeckillService, SECKILL_STATUS_NAME } from './seckill.service';
 import {

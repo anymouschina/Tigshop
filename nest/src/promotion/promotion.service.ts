@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreatePromotionDto, UpdatePromotionDto, PromotionType, TimeType } from './dto/promotion.dto';

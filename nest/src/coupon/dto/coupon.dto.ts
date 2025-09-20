@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IsEnum, IsNumber, IsString, IsOptional, IsBoolean, Min, Max } from 'class-validator';
 
 export enum CouponType {

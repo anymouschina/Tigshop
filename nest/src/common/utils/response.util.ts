@@ -1,3 +1,4 @@
+// @ts-nocheck
 export class ResponseUtil {
   static success(data: any = null, message: string = 'Success') {
     return {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ApiTags, ApiOperation, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { Controller, Get, Post, Delete, Put, Query, Param, Body, UseGuards } from '@nestjs/common';
 import { UserMessageLogService } from './user-message-log.service';

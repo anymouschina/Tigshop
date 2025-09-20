@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ConsoleLogger, Injectable, LogLevel, Scope } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';

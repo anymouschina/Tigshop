@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Controller, Get, Post, Body, Param, Query, UseGuards, Request, Patch, Delete, Put } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import {

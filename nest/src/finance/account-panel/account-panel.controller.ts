@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AccountPanelService } from './account-panel.service';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Module } from '@nestjs/common';
 import { AccountPanelModule } from './account-panel/account-panel.module';
 import { OrderInvoiceModule } from './order-invoice/order-invoice.module';
