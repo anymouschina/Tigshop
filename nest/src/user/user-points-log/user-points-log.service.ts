@@ -21,18 +21,8 @@ export class UserPointsLogService {
       ],
     } : {};
 
-    const records = await this.prisma.userPointsLog.findMany({
+    const records = await (this.prisma as any).user_points_log.findMany({
       where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            mobile: true,
-            email: true,
-          },
-        },
-      },
       skip,
       take: size,
       orderBy,
@@ -53,14 +43,14 @@ export class UserPointsLogService {
       ],
     } : {};
 
-    return this.prisma.userPointsLog.count({ where });
+    return (this.prisma as any).user_points_log.count({ where });
   }
 
   async getUserById(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await (this.prisma as any).user.findUnique({
+      where: { user_id: userId },
       select: {
-        id: true,
+        user_id: true,
         username: true,
         points: true,
       },
@@ -74,13 +64,13 @@ export class UserPointsLogService {
   }
 
   async deleteUserPointsLog(id: number) {
-    return this.prisma.userPointsLog.delete({
+    return (this.prisma as any).user_points_log.delete({
       where: { log_id: id },
     });
   }
 
   async batchDeleteUserPointsLog(ids: number[]) {
-    return this.prisma.userPointsLog.deleteMany({
+    return (this.prisma as any).user_points_log.deleteMany({
       where: { log_id: { in: ids } },
     });
   }
@@ -91,23 +81,21 @@ export class UserPointsLogService {
     // 开启事务
     const result = await this.prisma.$transaction(async (prisma) => {
       // 更新用户积分
-      const updatedUser = await prisma.user.update({
-        where: { id: user_id },
+      await (prisma as any).user.update({
+        where: { user_id },
         data: {
-          points: {
-            increment: points,
-          },
+          points: { increment: points },
         },
       });
 
       // 创建积分日志
-      const pointsLog = await prisma.userPointsLog.create({
+      const pointsLog = await (prisma as any).user_points_log.create({
         data: {
           user_id,
           points,
-          type,
-          remark,
-          create_time: new Date(),
+          change_type: type,
+          change_desc: remark,
+          change_time: Math.floor(Date.now() / 1000),
         },
       });
 
@@ -118,18 +106,8 @@ export class UserPointsLogService {
   }
 
   async getDetail(id: number) {
-    const item = await this.prisma.userPointsLog.findUnique({
+    const item = await (this.prisma as any).user_points_log.findUnique({
       where: { log_id: id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            mobile: true,
-            email: true,
-          },
-        },
-      },
     });
 
     if (!item) {
@@ -144,17 +122,17 @@ export class UserPointsLogService {
 
     const where: any = {};
     if (start_date && end_date) {
-      where.create_time = {
-        gte: new Date(start_date),
-        lte: new Date(end_date),
+      where.change_time = {
+        gte: Math.floor(new Date(start_date).getTime() / 1000),
+        lte: Math.floor(new Date(end_date).getTime() / 1000),
       };
     }
     if (user_id) {
       where.user_id = user_id;
     }
 
-    const summary = await this.prisma.userPointsLog.groupBy({
-      by: ['type'],
+    const summary = await (this.prisma as any).user_points_log.groupBy({
+      by: ['change_type'],
       where,
       _sum: {
         points: true,

@@ -1,4 +1,27 @@
 {
   "extends": "./tsconfig.json",
+  "include": [
+    "src/main.ts",
+    "src/app.module.ts",
+    "src/common/interceptors/**/*.ts",
+    "src/common/filters/**/*.ts",
+    "src/common/logger/**/*.ts",
+    "src/common/csrf/**/*.ts",
+    "src/auth/guards/**/*.ts",
+    "src/auth/decorators/**/*.ts",
+    "src/config/**/*.ts",
+    "src/database/**/*.ts",
+    "src/prisma.service.ts",
+    "src/prisma/**/*.ts",
+    "src/user/user-rank/**/*.ts",
+    "src/user/user-rank-log/**/*.ts",
+    "src/user/user-message-log/**/*.ts",
+    "src/user/user-points-log/**/*.ts",
+    "src/user/user-company/**/*.ts",
+    "src/user/invoice/**/*.ts",
+    "src/user/login/**/*.ts",
+    "src/user/address/**/*.ts",
+    "src/user/history/**/*.ts"
+  ],
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }

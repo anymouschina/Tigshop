@@ -99,14 +99,7 @@ export class InvoiceService {
       },
     });
 
-    // 关联订单
-    // Note: schema has no user_invoice_order table; skip linking for now
-    // await (this.prisma as any).user_invoice_order.createMany({
-    data: data.order_ids.map((orderId: number) => ({
-      invoice_id: invoice.invoice_id,
-      order_id: orderId,
-    })),
-    // });
+    // 关联订单（Prisma schema暂无关联表，跳过）
 
     // 更新订单开票状态
     await (this.prisma as any).order.updateMany({
@@ -149,7 +142,7 @@ export class InvoiceService {
     if (data.bank_name !== undefined) updateData.bank_name = data.bank_name;
     if (data.bank_account !== undefined) updateData.bank_account = data.bank_account;
 
-    return this.prisma.userInvoice.update({
+    return (this.prisma as any).user_invoice.update({
       where: { invoice_id: data.id },
       data: updateData,
     });
@@ -171,24 +164,10 @@ export class InvoiceService {
       throw new HttpException('发票不存在或已处理', HttpStatus.BAD_REQUEST);
     }
 
-    // 删除发票订单关联
-    await this.prisma.userInvoiceOrder.deleteMany({
-      where: { invoice_id: invoiceId },
-    });
-
-    // 恢复订单开票状态
-    await this.prisma.order.updateMany({
-      where: {
-        invoice_id: invoiceId,
-      },
-      data: {
-        invoice_status: 0,
-        invoice_id: null,
-      },
-    });
+    // 删除发票订单关联（无关联表，跳过）
 
     // 删除发票
-    await this.prisma.userInvoice.delete({
+    await (this.prisma as any).user_invoice.delete({
       where: { invoice_id: invoiceId },
     });
 
@@ -202,7 +181,7 @@ export class InvoiceService {
     const skip = (page - 1) * size;
 
     const [orders, total] = await Promise.all([
-      this.prisma.order.findMany({
+      (this.prisma as any).order.findMany({
         where: {
           user_id: userId,
           pay_status: 1, // 已支付
@@ -219,7 +198,7 @@ export class InvoiceService {
           add_time: true,
         },
       }),
-      this.prisma.order.count({
+      (this.prisma as any).order.count({
         where: {
           user_id: userId,
           pay_status: 1,

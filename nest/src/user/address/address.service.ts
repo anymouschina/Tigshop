@@ -29,14 +29,14 @@ export class AddressService {
     const skip = (page - 1) * size;
 
     const [addresses, total] = await Promise.all([
-      this.databaseService.userAddress.findMany({
-        where: { userId },
+      (this.databaseService as any).user_address.findMany({
+        where: { user_id: userId },
         skip,
         take: size,
-        orderBy: { isDefault: 'desc' },
+        orderBy: { is_default: 'desc' },
       }),
-      this.databaseService.userAddress.count({
-        where: { userId },
+      (this.databaseService as any).user_address.count({
+        where: { user_id: userId },
       }),
     ]);
 
@@ -52,10 +52,10 @@ export class AddressService {
   async getAddressDetail(userId: number, addressDetailDto: AddressDetailDto): Promise<AddressResponse> {
     const { id } = addressDetailDto;
 
-    const address = await this.databaseService.userAddress.findFirst({
+    const address = await (this.databaseService as any).user_address.findFirst({
       where: {
-        id,
-        userId,
+        address_id: id,
+        user_id: userId,
       },
     });
 
@@ -92,32 +92,32 @@ export class AddressService {
 
     // 如果设置为默认地址，先将其他地址设为非默认
     if (is_default === 1) {
-      await this.databaseService.userAddress.updateMany({
-        where: { userId },
-        data: { isDefault: 0 },
+      await (this.databaseService as any).user_address.updateMany({
+        where: { user_id: userId },
+        data: { is_default: 0 },
       });
     }
 
     // 创建地址
-    const newAddress = await this.databaseService.userAddress.create({
+    const newAddress = await (this.databaseService as any).user_address.create({
       data: {
-        userId,
+        user_id: userId,
         consignee,
         mobile,
         telephone,
-        regionIds: region_ids.join(','),
-        regionNames: region_names.join(','),
+        region_ids: region_ids.join(','),
+        region_names: region_names.join(','),
         address,
         postcode,
         email,
-        addressTag: address_tag,
-        isDefault: is_default,
+        address_tag,
+        is_default: is_default,
       },
     });
 
     return {
       message: '收货地址添加成功',
-      address_id: newAddress.id,
+      address_id: newAddress.address_id,
     };
   }
 
@@ -140,10 +140,10 @@ export class AddressService {
     } = updateAddressDto;
 
     // 验证地址是否存在
-    const existingAddress = await this.databaseService.userAddress.findFirst({
+    const existingAddress = await (this.databaseService as any).user_address.findFirst({
       where: {
-        id,
-        userId,
+        address_id: id,
+        user_id: userId,
       },
     });
 
@@ -157,33 +157,33 @@ export class AddressService {
     }
 
     // 如果设置为默认地址，先将其他地址设为非默认
-    if (is_default === 1 && existingAddress.isDefault !== 1) {
-      await this.databaseService.userAddress.updateMany({
-        where: { userId },
-        data: { isDefault: 0 },
+    if (is_default === 1 && existingAddress.is_default !== 1) {
+      await (this.databaseService as any).user_address.updateMany({
+        where: { user_id: userId },
+        data: { is_default: 0 },
       });
     }
 
     // 更新地址
-    const updatedAddress = await this.databaseService.userAddress.update({
-      where: { id },
+    const updatedAddress = await (this.databaseService as any).user_address.update({
+      where: { address_id: id },
       data: {
         consignee,
         mobile,
         telephone,
-        regionIds: region_ids.join(','),
-        regionNames: region_names.join(','),
+        region_ids: region_ids.join(','),
+        region_names: region_names.join(','),
         address,
         postcode,
         email,
-        addressTag: address_tag,
-        isDefault: is_default,
+        address_tag,
+        is_default: is_default,
       },
     });
 
     return {
       message: '收货地址更新成功',
-      address_id: updatedAddress.id,
+      address_id: updatedAddress.address_id,
     };
   }
 
@@ -194,10 +194,10 @@ export class AddressService {
     const { id } = deleteAddressDto;
 
     // 验证地址是否存在
-    const existingAddress = await this.databaseService.userAddress.findFirst({
+    const existingAddress = await (this.databaseService as any).user_address.findFirst({
       where: {
-        id,
-        userId,
+        address_id: id,
+        user_id: userId,
       },
     });
 
@@ -206,8 +206,8 @@ export class AddressService {
     }
 
     // 删除地址
-    await this.databaseService.userAddress.delete({
-      where: { id },
+    await (this.databaseService as any).user_address.delete({
+      where: { address_id: id },
     });
 
     return {
@@ -241,15 +241,15 @@ export class AddressService {
     }
 
     // 先将其他地址设为非默认
-    await this.databaseService.userAddress.updateMany({
-      where: { userId },
-      data: { isDefault: 0 },
+    await (this.databaseService as any).user_address.updateMany({
+      where: { user_id: userId },
+      data: { is_default: 0 },
     });
 
     // 设置指定地址为默认
-    await this.databaseService.userAddress.update({
-      where: { id },
-      data: { isDefault: 1 },
+    await (this.databaseService as any).user_address.update({
+      where: { address_id: id },
+      data: { is_default: 1 },
     });
 
     return {
@@ -261,18 +261,18 @@ export class AddressService {
    * 获取用户默认地址
    */
   async getDefaultAddress(userId: number): Promise<AddressResponse | null> {
-    const defaultAddress = await this.databaseService.userAddress.findFirst({
+    const defaultAddress = await (this.databaseService as any).user_address.findFirst({
       where: {
-        userId,
-        isDefault: 1,
+        user_id: userId,
+        is_default: 1,
       },
     });
 
     if (!defaultAddress) {
       // 如果没有默认地址，返回第一个地址
-      const firstAddress = await this.databaseService.userAddress.findFirst({
-        where: { userId },
-        orderBy: { createdAt: 'asc' },
+      const firstAddress = await (this.databaseService as any).user_address.findFirst({
+        where: { user_id: userId },
+        orderBy: { address_id: 'asc' },
       });
 
       return firstAddress ? {
@@ -289,8 +289,8 @@ export class AddressService {
    * 获取地址数量
    */
   async getAddressCount(userId: number): Promise<number> {
-    return this.databaseService.userAddress.count({
-      where: { userId },
+    return (this.databaseService as any).user_address.count({
+      where: { user_id: userId },
     });
   }
 
@@ -299,10 +299,10 @@ export class AddressService {
    */
   async batchDeleteAddresses(userId: number, addressIds: number[]): Promise<SuccessResponse> {
     // 验证地址是否存在
-    const existingAddresses = await this.databaseService.userAddress.findMany({
+    const existingAddresses = await (this.databaseService as any).user_address.findMany({
       where: {
-        id: { in: addressIds },
-        userId,
+        address_id: { in: addressIds },
+        user_id: userId,
       },
     });
 
@@ -311,10 +311,10 @@ export class AddressService {
     }
 
     // 删除地址
-    await this.databaseService.userAddress.deleteMany({
+    await (this.databaseService as any).user_address.deleteMany({
       where: {
-        id: { in: addressIds },
-        userId,
+        address_id: { in: addressIds },
+        user_id: userId,
       },
     });
 
@@ -328,19 +328,17 @@ export class AddressService {
    */
   private formatAddressResponse(address: any) {
     return {
-      id: address.id,
+      id: address.address_id,
       consignee: address.consignee,
       mobile: address.mobile,
       telephone: address.telephone,
-      region_ids: address.regionIds ? address.regionIds.split(',').map(id => parseInt(id)) : [],
-      region_names: address.regionNames ? address.regionNames.split(',') : [],
+      region_ids: address.region_ids ? address.region_ids.split(',').map((id: string) => parseInt(id)) : [],
+      region_names: address.region_names ? address.region_names.split(',') : [],
       address: address.address,
       postcode: address.postcode,
       email: address.email,
-      address_tag: address.addressTag,
-      is_default: address.isDefault === 1,
-      created_at: address.createdAt,
-      updated_at: address.updatedAt,
+      address_tag: address.address_tag,
+      is_default: address.is_default === 1,
     };
   }
 }

@@ -628,7 +628,7 @@ export class LoginService {
         data: {
           username: `User_${Date.now()}`,
           password: await bcrypt.hash(Math.random().toString(36), 10),
-          reg_time: new Date(),
+          reg_time: Math.floor(Date.now() / 1000),
           status: 1,
         },
       });

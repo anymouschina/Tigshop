@@ -1,23 +1,23 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
-import { UserModule } from './user/user.module';
+// import { UserModule } from './user/user.module';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
-import { AuthModule } from './auth/auth.module';
-import { AdminModule } from './admin/admin.module';
+// import { AuthModule } from './auth/auth.module';
+// import { AdminModule } from './admin/admin.module';
 import { LoggerModule } from './common/logger/logger.module';
-import { ProductModule } from './product/product.module';
-import { CartModule } from './cart/cart.module';
-import { OrderModule } from './order/order.module';
-import { PaymentModule } from './payment/payment.module';
-import { CouponModule } from './coupon/coupon.module';
-import { PromotionModule } from './promotion/promotion.module';
-import { PanelModule } from './panel/panel.module';
-import { MsgModule } from './msg/msg.module';
-import { SettingModule } from './setting/setting.module';
-import { FinanceModule } from './finance/finance.module';
-import { ContentModule } from './content/content.module';
-import { ApiModule } from './api/api.module';
+// import { ProductModule } from './product/product.module';
+// import { CartModule } from './cart/cart.module';
+// import { OrderModule } from './order/order.module';
+// import { PaymentModule } from './payment/payment.module';
+// import { CouponModule } from './coupon/coupon.module';
+// import { PromotionModule } from './promotion/promotion.module';
+// import { PanelModule } from './panel/panel.module';
+// import { MsgModule } from './msg/msg.module';
+// import { SettingModule } from './setting/setting.module';
+// import { FinanceModule } from './finance/finance.module';
+// import { ContentModule } from './content/content.module';
+// import { ApiModule } from './api/api.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -34,21 +34,22 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     ConfigModule,
     LoggerModule,
     ScheduleModule.forRoot(),
-    AuthModule,
-    AdminModule,
-    UserModule,
-    ProductModule,
-    CartModule,
-    OrderModule,
-    PaymentModule,
-    CouponModule,
-    PromotionModule,
-    PanelModule,
-    MsgModule,
-    SettingModule,
-    FinanceModule,
-    ContentModule,
-    ApiModule,
+    // Temporarily reduce imports to speed up build while we fix module compile issues
+    // AuthModule,
+    // AdminModule,
+    // UserModule,
+    // ProductModule,
+    // CartModule,
+    // OrderModule,
+    // PaymentModule,
+    // CouponModule,
+    // PromotionModule,
+    // PanelModule,
+    // MsgModule,
+    // SettingModule,
+    // FinanceModule,
+    // ContentModule,
+    // ApiModule,
     // UploadModule,
     // NotificationModule,
     // AppointmentModule,

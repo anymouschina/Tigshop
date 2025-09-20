@@ -129,11 +129,14 @@ export class UserHistoryController {
   @ApiOperation({ summary: '获取浏览历史数量' })
   async getHistoryCount(@Request() req): Promise<{ count: number }> {
     const userInfo = await this.userHistoryService['databaseService'].user.findUnique({
-      where: { userId: req.user.userId },
-      select: { historyProductIds: true },
+      where: { user_id: req.user.userId },
+      select: { history_product_ids: true },
     });
-
-    const count = userInfo?.historyProductIds?.length || 0;
+    const count = (() => {
+      const raw = userInfo?.history_product_ids;
+      if (!raw) return 0;
+      try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr.length : 0; } catch { return 0; }
+    })();
     return { count };
   }
 
@@ -144,11 +147,13 @@ export class UserHistoryController {
   @ApiOperation({ summary: '获取最近浏览的商品ID列表' })
   async getRecentProductIds(@Request() req, @Query('limit') limit?: number): Promise<{ product_ids: number[] }> {
     const userInfo = await this.userHistoryService['databaseService'].user.findUnique({
-      where: { userId: req.user.userId },
-      select: { historyProductIds: true },
+      where: { user_id: req.user.userId },
+      select: { history_product_ids: true },
     });
-
-    let productIds = userInfo?.historyProductIds || [];
+    let productIds: number[] = (() => {
+      const raw = userInfo?.history_product_ids; if (!raw) return [];
+      try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch { return []; }
+    })();
     const limitNum = limit ? Number(limit) : 20;
 
     if (productIds.length > limitNum) {
@@ -168,14 +173,16 @@ export class UserHistoryController {
     @Query('product_id') productId: number,
   ): Promise<{ in_history: boolean; view_count?: number }> {
     const userInfo = await this.userHistoryService['databaseService'].user.findUnique({
-      where: { userId: req.user.userId },
-      select: { historyProductIds: true },
+      where: { user_id: req.user.userId },
+      select: { history_product_ids: true },
     });
-
-    const historyProductIds = userInfo?.historyProductIds || [];
+    const historyProductIds: number[] = (() => {
+      const raw = userInfo?.history_product_ids; if (!raw) return [];
+      try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch { return []; }
+    })();
     const inHistory = historyProductIds.includes(productId);
     const viewCount = inHistory ? historyProductIds.indexOf(productId) + 1 : undefined;
 
-    return { in_history: inHistory, view_count };
+    return { in_history: inHistory, view_count: viewCount };
   }
 }
