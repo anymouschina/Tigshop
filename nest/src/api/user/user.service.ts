@@ -1,12 +1,25 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, ConflictException, UnauthorizedException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
-import { UpdateUserDto, UpdatePasswordDto, UpdateMobileDto, UpdateEmailDto, UploadAvatarDto, UserQueryDto } from './dto/user.dto';
-import { SmsService } from '../../../common/sms/sms.service';
-import { EmailService } from '../../../common/email/email.service';
-import { UserOauthService } from './user-oauth.service';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import * as bcrypt from "bcrypt";
+import {
+  UpdateUserDto,
+  UpdatePasswordDto,
+  UpdateMobileDto,
+  UpdateEmailDto,
+  UploadAvatarDto,
+  UserQueryDto,
+} from "./dto/user.dto";
+import { SmsService } from "../../../common/sms/sms.service";
+import { EmailService } from "../../../common/email/email.service";
+import { UserOauthService } from "./user-oauth.service";
 
 @Injectable()
 export class UserService {
@@ -39,7 +52,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     // 查询用户积分和余额
@@ -55,12 +68,15 @@ export class UserService {
     ]);
 
     // 查询用户是否授权微信
-    const isBindWechat = await this.userOauthService.getUserOAuthBindings(userId).then(bindings =>
-      bindings.some(binding => binding.provider === 'wechat')
-    );
+    const isBindWechat = await this.userOauthService
+      .getUserOAuthBindings(userId)
+      .then((bindings) =>
+        bindings.some((binding) => binding.provider === "wechat"),
+      );
 
     // 查询是否开启签到
-    const showSign = this.configService.get<string>('POINTS_SETTING', '1') === '1';
+    const showSign =
+      this.configService.get<string>("POINTS_SETTING", "1") === "1";
 
     // 查询用户是否有店铺
     const hasShop = await this.prisma.shop.findFirst({
@@ -93,7 +109,7 @@ export class UserService {
         },
       });
       if (existingEmailUser) {
-        throw new ConflictException('邮箱已被其他用户使用');
+        throw new ConflictException("邮箱已被其他用户使用");
       }
     }
 
@@ -107,7 +123,7 @@ export class UserService {
         },
       });
       if (existingMobileUser) {
-        throw new ConflictException('手机号已被其他用户使用');
+        throw new ConflictException("手机号已被其他用户使用");
       }
     }
 
@@ -128,7 +144,7 @@ export class UserService {
 
     // 验证新密码确认
     if (new_password !== confirm_password) {
-      throw new BadRequestException('新密码确认不一致');
+      throw new BadRequestException("新密码确认不一致");
     }
 
     // 验证旧密码
@@ -138,12 +154,15 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
-    const isOldPasswordValid = await bcrypt.compare(old_password, user.password);
+    const isOldPasswordValid = await bcrypt.compare(
+      old_password,
+      user.password,
+    );
     if (!isOldPasswordValid) {
-      throw new UnauthorizedException('原密码错误');
+      throw new UnauthorizedException("原密码错误");
     }
 
     // 更新密码
@@ -162,7 +181,7 @@ export class UserService {
     // 验证短信验证码
     const isValid = await this.smsService.checkCode(new_mobile, code);
     if (!isValid) {
-      throw new UnauthorizedException('短信验证码错误或已过期');
+      throw new UnauthorizedException("短信验证码错误或已过期");
     }
 
     // 检查手机号是否已被其他用户使用
@@ -174,7 +193,7 @@ export class UserService {
       },
     });
     if (existingUser) {
-      throw new ConflictException('手机号已被其他用户使用');
+      throw new ConflictException("手机号已被其他用户使用");
     }
 
     // 更新手机号
@@ -190,9 +209,13 @@ export class UserService {
     const { new_email, code } = updateDto;
 
     // 验证邮箱验证码
-    const isValid = await this.emailService.checkCode(new_email, code, 'bind_email');
+    const isValid = await this.emailService.checkCode(
+      new_email,
+      code,
+      "bind_email",
+    );
     if (!isValid) {
-      throw new UnauthorizedException('邮箱验证码错误或已过期');
+      throw new UnauthorizedException("邮箱验证码错误或已过期");
     }
 
     // 检查邮箱是否已被其他用户使用
@@ -204,7 +227,7 @@ export class UserService {
       },
     });
     if (existingUser) {
-      throw new ConflictException('邮箱已被其他用户使用');
+      throw new ConflictException("邮箱已被其他用户使用");
     }
 
     // 更新邮箱
@@ -273,7 +296,13 @@ export class UserService {
   }
 
   async getUserList(queryDto: UserQueryDto) {
-    const { page = 1, size = 10, keyword, sort_field = 'user_id', sort_order = 'desc' } = queryDto;
+    const {
+      page = 1,
+      size = 10,
+      keyword,
+      sort_field = "user_id",
+      sort_order = "desc",
+    } = queryDto;
     const skip = (page - 1) * size;
 
     const where: any = {

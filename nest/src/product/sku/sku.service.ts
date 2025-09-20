@@ -1,6 +1,10 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateSkuDto,
   UpdateSkuDto,
@@ -9,7 +13,7 @@ import {
   SkuBatchStockUpdateDto,
   SkuAvailabilityDto,
   SkuPriceUpdateDto,
-} from './dto/sku.dto';
+} from "./dto/sku.dto";
 
 export interface SkuResponse {
   id: number;
@@ -59,7 +63,18 @@ export class SkuService {
    * 创建SKU - 对齐PHP版本 product/sku/create
    */
   async createSku(createSkuDto: CreateSkuDto): Promise<SkuResponse> {
-    const { productId, skuCode, price, originalPrice, stock, skuImage, skuName, weight, barcode, attributes } = createSkuDto;
+    const {
+      productId,
+      skuCode,
+      price,
+      originalPrice,
+      stock,
+      skuImage,
+      skuName,
+      weight,
+      barcode,
+      attributes,
+    } = createSkuDto;
 
     // 检查产品是否存在
     const product = await this.prisma.product.findFirst({
@@ -67,7 +82,7 @@ export class SkuService {
     });
 
     if (!product) {
-      throw new NotFoundException('产品不存在');
+      throw new NotFoundException("产品不存在");
     }
 
     // 检查SKU编码是否已存在
@@ -76,36 +91,36 @@ export class SkuService {
     });
 
     if (existingSku) {
-      throw new BadRequestException('SKU编码已存在');
+      throw new BadRequestException("SKU编码已存在");
     }
 
     // 验证价格
     if (price <= 0) {
-      throw new BadRequestException('价格必须大于0');
+      throw new BadRequestException("价格必须大于0");
     }
 
     if (originalPrice <= 0) {
-      throw new BadRequestException('原价必须大于0');
+      throw new BadRequestException("原价必须大于0");
     }
 
     if (price > originalPrice) {
-      throw new BadRequestException('售价不能大于原价');
+      throw new BadRequestException("售价不能大于原价");
     }
 
     // 验证库存
     if (stock < 0) {
-      throw new BadRequestException('库存不能为负数');
+      throw new BadRequestException("库存不能为负数");
     }
 
     // 简化属性验证 - 暂时跳过复杂属性组合检查
     // TODO: 实现属性组合验证逻辑
 
     // 创建SKU
-    const sku = await this.prisma.$queryRaw`
+    const sku = (await this.prisma.$queryRaw`
       INSERT INTO "ProductSku" (productId, skuSn, skuName, price, originalPrice, stock, skuImage, weight, barcode, isEnable, addTime, "createdAt", "updatedAt")
       VALUES (${productId}, ${skuCode}, ${skuName || null}, ${price}, ${originalPrice}, ${stock}, ${skuImage || null}, ${weight || null}, ${barcode || null}, true, ${Math.floor(Date.now() / 1000)}, NOW(), NOW())
       RETURNING skuId, productId, skuSn, skuName, price, originalPrice, stock, skuImage, weight, barcode, isEnable, addTime, "createdAt", "updatedAt"
-    ` as any[];
+    `) as any[];
 
     const createdSku = sku[0];
 
@@ -132,10 +147,7 @@ export class SkuService {
         where: whereClause,
         skip,
         take: size,
-        orderBy: [
-          { createdAt: 'desc' },
-          { skuId: 'desc' }
-        ],
+        orderBy: [{ createdAt: "desc" }, { skuId: "desc" }],
       }),
       this.prisma.productSku.count({
         where: whereClause,
@@ -143,7 +155,7 @@ export class SkuService {
     ]);
 
     return {
-      list: skus.map(sku => this.formatSkuResponse(sku)),
+      list: skus.map((sku) => this.formatSkuResponse(sku)),
       total,
       page,
       size,
@@ -161,7 +173,7 @@ export class SkuService {
     });
 
     if (!sku) {
-      throw new NotFoundException('SKU不存在');
+      throw new NotFoundException("SKU不存在");
     }
 
     return this.formatSkuResponse(sku);
@@ -170,37 +182,46 @@ export class SkuService {
   /**
    * 更新SKU - 对齐PHP版本 product/sku/update
    */
-  async updateSku(skuId: number, updateSkuDto: UpdateSkuDto): Promise<SkuResponse> {
+  async updateSku(
+    skuId: number,
+    updateSkuDto: UpdateSkuDto,
+  ): Promise<SkuResponse> {
     // 检查SKU是否存在
     const existingSku = await this.prisma.productSku.findFirst({
       where: { skuId: skuId },
     });
 
     if (!existingSku) {
-      throw new NotFoundException('SKU不存在');
+      throw new NotFoundException("SKU不存在");
     }
 
     // 验证价格
     if (updateSkuDto.price !== undefined && updateSkuDto.price <= 0) {
-      throw new BadRequestException('价格必须大于0');
+      throw new BadRequestException("价格必须大于0");
     }
 
-    if (updateSkuDto.originalPrice !== undefined && updateSkuDto.originalPrice <= 0) {
-      throw new BadRequestException('原价必须大于0');
+    if (
+      updateSkuDto.originalPrice !== undefined &&
+      updateSkuDto.originalPrice <= 0
+    ) {
+      throw new BadRequestException("原价必须大于0");
     }
 
-    if (updateSkuDto.price !== undefined && updateSkuDto.originalPrice !== undefined &&
-        updateSkuDto.price > updateSkuDto.originalPrice) {
-      throw new BadRequestException('售价不能大于原价');
+    if (
+      updateSkuDto.price !== undefined &&
+      updateSkuDto.originalPrice !== undefined &&
+      updateSkuDto.price > updateSkuDto.originalPrice
+    ) {
+      throw new BadRequestException("售价不能大于原价");
     }
 
     // 验证库存
     if (updateSkuDto.stock !== undefined && updateSkuDto.stock < 0) {
-      throw new BadRequestException('库存不能为负数');
+      throw new BadRequestException("库存不能为负数");
     }
 
     // 使用原始SQL更新SKU以绕过XOR类型问题
-    const updatedSku = await this.prisma.$queryRaw`
+    const updatedSku = (await this.prisma.$queryRaw`
       UPDATE "ProductSku"
       SET
         skuName = ${updateSkuDto.skuName || null},
@@ -214,7 +235,7 @@ export class SkuService {
         "updatedAt" = NOW()
       WHERE skuId = ${skuId}
       RETURNING skuId, productId, skuSn, skuName, price, originalPrice, stock, skuImage, weight, barcode, isEnable, "createdAt", "updatedAt"
-    ` as any[];
+    `) as any[];
 
     return this.formatSkuResponse(updatedSku[0]);
   }
@@ -229,7 +250,7 @@ export class SkuService {
     });
 
     if (!sku) {
-      throw new NotFoundException('SKU不存在');
+      throw new NotFoundException("SKU不存在");
     }
 
     // 检查是否有关联的订单项
@@ -238,7 +259,7 @@ export class SkuService {
     });
 
     if (orderItemCount > 0) {
-      throw new BadRequestException('该SKU已被订单使用，不能删除');
+      throw new BadRequestException("该SKU已被订单使用，不能删除");
     }
 
     // 删除SKU属性关联
@@ -251,7 +272,7 @@ export class SkuService {
       where: { skuId: skuId },
     });
 
-    return { message: 'SKU删除成功' };
+    return { message: "SKU删除成功" };
   }
 
   /**
@@ -261,7 +282,7 @@ export class SkuService {
     const { stock } = stockUpdateDto;
 
     if (stock < 0) {
-      throw new BadRequestException('库存不能为负数');
+      throw new BadRequestException("库存不能为负数");
     }
 
     // 检查SKU是否存在
@@ -270,7 +291,7 @@ export class SkuService {
     });
 
     if (!sku) {
-      throw new NotFoundException('SKU不存在');
+      throw new NotFoundException("SKU不存在");
     }
 
     // 更新库存
@@ -279,7 +300,7 @@ export class SkuService {
       data: { skuStock: stock },
     });
 
-    return { message: '库存更新成功', stock };
+    return { message: "库存更新成功", stock };
   }
 
   /**
@@ -296,14 +317,14 @@ export class SkuService {
         } catch (error) {
           return { skuId: update.skuId, success: false, error: error.message };
         }
-      })
+      }),
     );
 
     return {
-      message: '批量库存更新完成',
+      message: "批量库存更新完成",
       results,
-      successCount: results.filter(r => r.success).length,
-      failCount: results.filter(r => !r.success).length,
+      successCount: results.filter((r) => r.success).length,
+      failCount: results.filter((r) => !r.success).length,
     };
   }
 
@@ -314,15 +335,15 @@ export class SkuService {
     const { price, originalPrice } = priceUpdateDto;
 
     if (price <= 0) {
-      throw new BadRequestException('价格必须大于0');
+      throw new BadRequestException("价格必须大于0");
     }
 
     if (originalPrice && originalPrice <= 0) {
-      throw new BadRequestException('原价必须大于0');
+      throw new BadRequestException("原价必须大于0");
     }
 
     if (originalPrice && price > originalPrice) {
-      throw new BadRequestException('售价不能大于原价');
+      throw new BadRequestException("售价不能大于原价");
     }
 
     // 检查SKU是否存在
@@ -331,7 +352,7 @@ export class SkuService {
     });
 
     if (!sku) {
-      throw new NotFoundException('SKU不存在');
+      throw new NotFoundException("SKU不存在");
     }
 
     // 更新价格
@@ -345,7 +366,7 @@ export class SkuService {
       data: updateData,
     });
 
-    return { message: '价格更新成功', price, originalPrice };
+    return { message: "价格更新成功", price, originalPrice };
   }
 
   /**
@@ -361,7 +382,7 @@ export class SkuService {
       },
     });
 
-    const results = skus.map(sku => ({
+    const results = skus.map((sku) => ({
       skuId: sku.skuId,
       isAvailable: sku.skuStock > 0,
       stock: sku.skuStock,
@@ -372,8 +393,8 @@ export class SkuService {
     }));
 
     // 包含请求的所有SKU ID，不存在的SKU标记为不可用
-    const allResults = skuIds.map(skuId => {
-      const existingSku = results.find(r => r.skuId === skuId);
+    const allResults = skuIds.map((skuId) => {
+      const existingSku = results.find((r) => r.skuId === skuId);
       if (existingSku) {
         return existingSku;
       }
@@ -388,7 +409,7 @@ export class SkuService {
 
     return {
       results: allResults,
-      availableCount: results.filter(r => r.isAvailable).length,
+      availableCount: results.filter((r) => r.isAvailable).length,
       totalCount: skuIds.length,
     };
   }
@@ -403,17 +424,17 @@ export class SkuService {
     });
 
     if (!product) {
-      throw new NotFoundException('产品不存在');
+      throw new NotFoundException("产品不存在");
     }
 
     const skus = await this.prisma.productSku.findMany({
       where: { productId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return {
       productId,
-      skus: skus.map(sku => this.formatSkuResponse(sku)),
+      skus: skus.map((sku) => this.formatSkuResponse(sku)),
       total: skus.length,
     };
   }
@@ -440,12 +461,15 @@ export class SkuService {
     }
 
     const totalStock = skus.reduce((sum, sku) => sum + Number(sku.skuStock), 0);
-    const prices = skus.map(sku => Number(sku.skuPrice));
-    const avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+    const prices = skus.map((sku) => Number(sku.skuPrice));
+    const avgPrice =
+      prices.reduce((sum, price) => sum + price, 0) / prices.length;
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
-    const outOfStockCount = skus.filter(sku => sku.skuStock === 0).length;
-    const lowStockCount = skus.filter(sku => sku.skuStock > 0 && sku.skuStock < 10).length;
+    const outOfStockCount = skus.filter((sku) => sku.skuStock === 0).length;
+    const lowStockCount = skus.filter(
+      (sku) => sku.skuStock > 0 && sku.skuStock < 10,
+    ).length;
 
     return {
       totalSkus: skus.length,

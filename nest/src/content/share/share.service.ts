@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateShareDto,
   UpdateShareDto,
   ShareQueryDto,
   ShareStatus,
-  ShareConfigDto
-} from './dto/share.dto';
+  ShareConfigDto,
+} from "./dto/share.dto";
 
 @Injectable()
 export class ShareService {
@@ -19,8 +23,8 @@ export class ShareService {
       page = 1,
       size = 15,
       status,
-      sortField = 'share_id',
-      sortOrder = 'desc'
+      sortField = "share_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -32,7 +36,7 @@ export class ShareService {
         { share_id: { contains: keyword } },
         { title: { contains: keyword } },
         { description: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -68,15 +72,13 @@ export class ShareService {
     });
 
     if (!item) {
-      throw new NotFoundException('分享不存在');
+      throw new NotFoundException("分享不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateShareDto) {
-    
-
     const item = await this.prisma.share.create({
       data: {
         title: createDto.title,
@@ -96,7 +98,7 @@ export class ShareService {
     });
 
     if (!item) {
-      throw new NotFoundException('分享不存在');
+      throw new NotFoundException("分享不存在");
     }
 
     const updateData: any = {};
@@ -127,7 +129,7 @@ export class ShareService {
     });
 
     if (!item) {
-      throw new NotFoundException('分享不存在');
+      throw new NotFoundException("分享不存在");
     }
 
     await this.prisma.share.delete({
@@ -144,8 +146,8 @@ export class ShareService {
   async getConfig(): Promise<ShareConfigDto> {
     return {
       statusConfig: {
-        [ShareStatus.DISABLED]: '禁用',
-        [ShareStatus.ENABLED]: '启用'
+        [ShareStatus.DISABLED]: "禁用",
+        [ShareStatus.ENABLED]: "启用",
       },
     };
   }

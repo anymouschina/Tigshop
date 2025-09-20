@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateProductTeamDto,
   UpdateProductTeamDto,
   ProductTeamQueryDto,
   ProductTeamStatus,
-  ProductTeamConfigDto
-} from './dto/productTeam.dto';
+  ProductTeamConfigDto,
+} from "./dto/productTeam.dto";
 
 @Injectable()
 export class ProductTeamService {
@@ -19,8 +23,8 @@ export class ProductTeamService {
       page = 1,
       size = 15,
       status,
-      sortField = 'team_id',
-      sortOrder = 'desc'
+      sortField = "team_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -34,7 +38,7 @@ export class ProductTeamService {
         { team_price: { contains: keyword } },
         { min_people: { contains: keyword } },
         { max_people: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -70,7 +74,7 @@ export class ProductTeamService {
     });
 
     if (!item) {
-      throw new NotFoundException('团购活动不存在');
+      throw new NotFoundException("团购活动不存在");
     }
 
     return item;
@@ -78,13 +82,13 @@ export class ProductTeamService {
 
   async create(createDto: CreateProductTeamDto) {
     if (createDto.teamPrice <= 0) {
-      throw new BadRequestException('团购价格必须大于0');
+      throw new BadRequestException("团购价格必须大于0");
     }
     if (createDto.minPeople <= 0) {
-      throw new BadRequestException('最小人数必须大于0');
+      throw new BadRequestException("最小人数必须大于0");
     }
     if (createDto.maxPeople < createDto.minPeople) {
-      throw new BadRequestException('最大人数不能小于最小人数');
+      throw new BadRequestException("最大人数不能小于最小人数");
     }
 
     const item = await this.prisma.product_team.create({
@@ -108,7 +112,7 @@ export class ProductTeamService {
     });
 
     if (!item) {
-      throw new NotFoundException('团购活动不存在');
+      throw new NotFoundException("团购活动不存在");
     }
 
     const updateData: any = {};
@@ -122,10 +126,14 @@ export class ProductTeamService {
       updateData.max_people = updateDto.maxPeople;
     }
     if (updateDto.startTime !== undefined) {
-      updateData.start_time = Math.floor(new Date(updateDto.startTime).getTime() / 1000);
+      updateData.start_time = Math.floor(
+        new Date(updateDto.startTime).getTime() / 1000,
+      );
     }
     if (updateDto.endTime !== undefined) {
-      updateData.end_time = Math.floor(new Date(updateDto.endTime).getTime() / 1000);
+      updateData.end_time = Math.floor(
+        new Date(updateDto.endTime).getTime() / 1000,
+      );
     }
     if (updateDto.status !== undefined) {
       updateData.status = updateDto.status;
@@ -145,7 +153,7 @@ export class ProductTeamService {
     });
 
     if (!item) {
-      throw new NotFoundException('团购活动不存在');
+      throw new NotFoundException("团购活动不存在");
     }
 
     await this.prisma.product_team.delete({
@@ -162,10 +170,10 @@ export class ProductTeamService {
   async getConfig(): Promise<ProductTeamConfigDto> {
     return {
       statusConfig: {
-        [ProductTeamStatus.PENDING]: '待审核',
-        [ProductTeamStatus.ACTIVE]: '激活',
-        [ProductTeamStatus.ENDED]: '已结束',
-        [ProductTeamStatus.CANCELLED]: '已取消'
+        [ProductTeamStatus.PENDING]: "待审核",
+        [ProductTeamStatus.ACTIVE]: "激活",
+        [ProductTeamStatus.ENDED]: "已结束",
+        [ProductTeamStatus.CANCELLED]: "已取消",
       },
     };
   }

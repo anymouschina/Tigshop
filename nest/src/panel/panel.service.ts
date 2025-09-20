@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 @Injectable()
 export class PanelService {
@@ -101,12 +101,12 @@ export class PanelService {
 
   async getPanelStatisticalData(shopId: number) {
     const now = Math.floor(Date.now() / 1000);
-    const sevenDaysAgo = now - (7 * 86400);
-    const thirtyDaysAgo = now - (30 * 86400);
+    const sevenDaysAgo = now - 7 * 86400;
+    const thirtyDaysAgo = now - 30 * 86400;
 
     // 近7天订单趋势
     const sevenDayOrders = await this.prisma.order.groupBy({
-      by: ['create_time'],
+      by: ["create_time"],
       where: {
         shop_id: shopId,
         create_time: {
@@ -139,7 +139,7 @@ export class PanelService {
 
     // 商品销售排行
     const topProducts = await this.prisma.order_item.groupBy({
-      by: ['product_id'],
+      by: ["product_id"],
       where: {
         order: {
           shop_id: shopId,
@@ -150,7 +150,7 @@ export class PanelService {
       },
       orderBy: {
         _sum: {
-          product_num: 'desc',
+          product_num: "desc",
         },
       },
       take: 10,

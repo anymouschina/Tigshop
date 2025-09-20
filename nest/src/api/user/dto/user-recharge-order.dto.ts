@@ -1,6 +1,13 @@
 // @ts-nocheck
-import { IsNumber, IsString, IsOptional, IsEnum, Min, Max } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsEnum,
+  Min,
+  Max,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export enum RechargeOrderStatus {
   PENDING = 0,
@@ -9,14 +16,14 @@ export enum RechargeOrderStatus {
 }
 
 export enum RechargeOrderSortField {
-  ADD_TIME = 'add_time',
-  AMOUNT = 'amount',
-  PAID_TIME = 'paid_time',
+  ADD_TIME = "add_time",
+  AMOUNT = "amount",
+  PAID_TIME = "paid_time",
 }
 
 export enum RechargeOrderSortOrder {
-  ASC = 'asc',
-  DESC = 'desc',
+  ASC = "asc",
+  DESC = "desc",
 }
 
 export class RechargeOrderQueryDto {

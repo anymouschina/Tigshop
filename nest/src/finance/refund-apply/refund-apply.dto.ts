@@ -1,6 +1,16 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class RefundApplyQueryDto {
   @IsOptional()
@@ -41,11 +51,11 @@ export class RefundApplyQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class RefundApplyDetailDto {
@@ -71,7 +81,7 @@ export class CreateRefundApplyDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  refund_images?: string = '';
+  refund_images?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -116,8 +126,8 @@ export class BatchDeleteRefundApplyDto {
 }
 
 export const REFUND_APPLY_STATUS = {
-  0: '待审核',
-  1: '审核通过',
-  2: '已拒绝',
-  3: '已取消',
+  0: "待审核",
+  1: "审核通过",
+  2: "已拒绝",
+  3: "已取消",
 };

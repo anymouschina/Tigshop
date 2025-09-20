@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateLicensedDto,
   UpdateLicensedDto,
   LicensedQueryDto,
   LicensedStatus,
-  LicensedConfigDto
-} from './dto/licensed.dto';
+  LicensedConfigDto,
+} from "./dto/licensed.dto";
 
 @Injectable()
 export class LicensedService {
@@ -19,8 +23,8 @@ export class LicensedService {
       page = 1,
       size = 15,
       status,
-      sortField = 'licensed_id',
-      sortOrder = 'desc'
+      sortField = "licensed_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -32,7 +36,7 @@ export class LicensedService {
         { licensed_id: { contains: keyword } },
         { domain: { contains: keyword } },
         { license_key: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -68,20 +72,20 @@ export class LicensedService {
     });
 
     if (!item) {
-      throw new NotFoundException('授权不存在');
+      throw new NotFoundException("授权不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateLicensedDto) {
-    
-
     const item = await this.prisma.licensed.create({
       data: {
         domain: createDto.domain,
         license_key: createDto.licenseKey,
-        expire_time: Math.floor(new Date(createDto.expireTime).getTime() / 1000),
+        expire_time: Math.floor(
+          new Date(createDto.expireTime).getTime() / 1000,
+        ),
         status: createDto.status,
         add_time: Math.floor(Date.now() / 1000),
       },
@@ -96,7 +100,7 @@ export class LicensedService {
     });
 
     if (!item) {
-      throw new NotFoundException('授权不存在');
+      throw new NotFoundException("授权不存在");
     }
 
     const updateData: any = {};
@@ -107,7 +111,9 @@ export class LicensedService {
       updateData.license_key = updateDto.licenseKey;
     }
     if (updateDto.expireTime !== undefined) {
-      updateData.expire_time = Math.floor(new Date(updateDto.expireTime).getTime() / 1000);
+      updateData.expire_time = Math.floor(
+        new Date(updateDto.expireTime).getTime() / 1000,
+      );
     }
     if (updateDto.status !== undefined) {
       updateData.status = updateDto.status;
@@ -127,7 +133,7 @@ export class LicensedService {
     });
 
     if (!item) {
-      throw new NotFoundException('授权不存在');
+      throw new NotFoundException("授权不存在");
     }
 
     await this.prisma.licensed.delete({
@@ -144,9 +150,9 @@ export class LicensedService {
   async getConfig(): Promise<LicensedConfigDto> {
     return {
       statusConfig: {
-        [LicensedStatus.INVALID]: '无效',
-        [LicensedStatus.VALID]: '有效',
-        [LicensedStatus.EXPIRED]: '已过期'
+        [LicensedStatus.INVALID]: "无效",
+        [LicensedStatus.VALID]: "有效",
+        [LicensedStatus.EXPIRED]: "已过期",
       },
     };
   }

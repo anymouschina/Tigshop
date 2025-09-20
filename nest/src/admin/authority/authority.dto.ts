@@ -1,6 +1,17 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength, IsDate } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+  IsDate,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class AuthorityQueryDto {
   @IsOptional()
@@ -42,11 +53,11 @@ export class AuthorityQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'asc';
+  sort_order?: "asc" | "desc" = "asc";
 }
 
 export class AuthorityDetailDto {
@@ -80,22 +91,22 @@ export class CreateAuthorityDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  icon?: string = '';
+  icon?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  path?: string = '';
+  path?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  component?: string = '';
+  component?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  description?: string = '';
+  description?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -186,12 +197,12 @@ export class BatchDeleteAuthorityDto {
 }
 
 export const AUTHORITY_TYPE = {
-  0: '菜单',
-  1: '操作',
-  2: '按钮',
+  0: "菜单",
+  1: "操作",
+  2: "按钮",
 };
 
 export const AUTHORITY_STATUS = {
-  0: '禁用',
-  1: '启用',
+  0: "禁用",
+  1: "启用",
 };

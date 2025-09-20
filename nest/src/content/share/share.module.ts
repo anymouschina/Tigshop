@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { Module } from '@nestjs/common';
-import { ShareService } from './share.service';
-import { ShareController } from './share.controller';
-import { DatabaseModule } from '../../database/database.module';
+import { Module } from "@nestjs/common";
+import { ShareService } from "./share.service";
+import { ShareController } from "./share.controller";
+import { DatabaseModule } from "../../database/database.module";
 
 @Module({
   imports: [DatabaseModule],

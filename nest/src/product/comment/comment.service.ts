@@ -1,6 +1,10 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateCommentDto,
   UpdateCommentDto,
@@ -8,7 +12,7 @@ import {
   CommentReplyDto,
   CommentStatus,
   CommentRating,
-} from './dto/comment.dto';
+} from "./dto/comment.dto";
 
 export interface CommentResponse {
   id: number;
@@ -47,8 +51,19 @@ export class CommentService {
   /**
    * 创建评论 - 对齐PHP版本 product/comment/create
    */
-  async createComment(userId: number, createCommentDto: CreateCommentDto): Promise<CommentResponse> {
-    const { productId, rating, content, images, orderSn, replyId, replyContent } = createCommentDto;
+  async createComment(
+    userId: number,
+    createCommentDto: CreateCommentDto,
+  ): Promise<CommentResponse> {
+    const {
+      productId,
+      rating,
+      content,
+      images,
+      orderSn,
+      replyId,
+      replyContent,
+    } = createCommentDto;
 
     // 检查产品是否存在
     const product = await this.prisma.product.findFirst({
@@ -56,7 +71,7 @@ export class CommentService {
     });
 
     if (!product) {
-      throw new NotFoundException('产品不存在');
+      throw new NotFoundException("产品不存在");
     }
 
     // 如果指定了订单，检查订单是否存在且属于该用户
@@ -69,7 +84,7 @@ export class CommentService {
       });
 
       if (!order) {
-        throw new BadRequestException('订单不存在或无权限');
+        throw new BadRequestException("订单不存在或无权限");
       }
 
       // 检查订单中是否包含该产品
@@ -81,7 +96,7 @@ export class CommentService {
       });
 
       if (!orderItem) {
-        throw new BadRequestException('订单中不包含该产品');
+        throw new BadRequestException("订单中不包含该产品");
       }
     }
 
@@ -92,16 +107,16 @@ export class CommentService {
       });
 
       if (!originalComment) {
-        throw new NotFoundException('原评论不存在');
+        throw new NotFoundException("原评论不存在");
       }
     }
 
     // 创建评论
-    const comment = await this.prisma.$queryRaw`
+    const comment = (await this.prisma.$queryRaw`
       INSERT INTO "Comment" ("productId", "userId", "rating", content, images, "orderSn", "replyId", "replyContent", "replyTime", status, likes, "isLiked", "createdAt", "updatedAt")
-      VALUES (${productId}, ${userId}, ${rating}, ${content}, ${images || null}, ${orderSn || null}, ${replyId || null}, ${replyContent || null}, ${replyContent ? 'NOW()' : null}, ${CommentStatus.PENDING}, 0, false, NOW(), NOW())
+      VALUES (${productId}, ${userId}, ${rating}, ${content}, ${images || null}, ${orderSn || null}, ${replyId || null}, ${replyContent || null}, ${replyContent ? "NOW()" : null}, ${CommentStatus.PENDING}, 0, false, NOW(), NOW())
       RETURNING *
-    ` as any[];
+    `) as any[];
 
     return this.formatCommentResponse(comment[0]);
   }
@@ -124,10 +139,7 @@ export class CommentService {
         where: whereClause,
         skip,
         take: size,
-        orderBy: [
-          { createdAt: 'desc' },
-          { commentId: 'desc' }
-        ],
+        orderBy: [{ createdAt: "desc" }, { commentId: "desc" }],
         include: {
           user: {
             select: {
@@ -144,7 +156,7 @@ export class CommentService {
     ]);
 
     return {
-      list: comments.map(comment => this.formatCommentResponse(comment)),
+      list: comments.map((comment) => this.formatCommentResponse(comment)),
       total,
       page,
       size,
@@ -170,7 +182,7 @@ export class CommentService {
     });
 
     if (!comment) {
-      throw new NotFoundException('评论不存在');
+      throw new NotFoundException("评论不存在");
     }
 
     return this.formatCommentResponse(comment);
@@ -179,7 +191,11 @@ export class CommentService {
   /**
    * 更新评论 - 对齐PHP版本 product/comment/update
    */
-  async updateComment(commentId: number, userId: number, updateCommentDto: UpdateCommentDto): Promise<CommentResponse> {
+  async updateComment(
+    commentId: number,
+    userId: number,
+    updateCommentDto: UpdateCommentDto,
+  ): Promise<CommentResponse> {
     // 检查评论是否存在且属于该用户
     const existingComment = await this.prisma.comment.findFirst({
       where: {
@@ -189,7 +205,7 @@ export class CommentService {
     });
 
     if (!existingComment) {
-      throw new NotFoundException('评论不存在或无权限');
+      throw new NotFoundException("评论不存在或无权限");
     }
 
     // 更新评论 - 转换枚举值为数字
@@ -228,7 +244,7 @@ export class CommentService {
     });
 
     if (!comment) {
-      throw new NotFoundException('评论不存在或无权限');
+      throw new NotFoundException("评论不存在或无权限");
     }
 
     // 删除评论
@@ -236,7 +252,7 @@ export class CommentService {
       where: { commentId: commentId },
     });
 
-    return { message: '评论删除成功' };
+    return { message: "评论删除成功" };
   }
 
   /**
@@ -249,19 +265,23 @@ export class CommentService {
     });
 
     if (!comment) {
-      throw new NotFoundException('评论不存在');
+      throw new NotFoundException("评论不存在");
     }
 
     // 检查用户是否已点赞 - UserLike model doesn't exist, likes field doesn't exist in schema
     // Simplified implementation: just return success message
 
-    return { message: '点赞成功', liked: false };
+    return { message: "点赞成功", liked: false };
   }
 
   /**
    * 回复评论 - 对齐PHP版本 product/comment/reply
    */
-  async replyComment(userId: number, commentId: number, replyDto: CommentReplyDto): Promise<CommentResponse> {
+  async replyComment(
+    userId: number,
+    commentId: number,
+    replyDto: CommentReplyDto,
+  ): Promise<CommentResponse> {
     const { content, images } = replyDto;
 
     // 检查原评论是否存在
@@ -270,15 +290,15 @@ export class CommentService {
     });
 
     if (!originalComment) {
-      throw new NotFoundException('原评论不存在');
+      throw new NotFoundException("原评论不存在");
     }
 
     // 创建回复评论
-    const reply = await this.prisma.$queryRaw`
+    const reply = (await this.prisma.$queryRaw`
       INSERT INTO "Comment" ("productId", "userId", "rating", content, images, "replyId", "replyContent", "replyTime", status, likes, "isLiked", "createdAt", "updatedAt")
       VALUES (${originalComment.productId}, ${userId}, 5, ${content}, ${images || null}, ${commentId}, ${content}, NOW(), ${CommentStatus.APPROVED}, 0, false, NOW(), NOW())
       RETURNING *
-    ` as any[];
+    `) as any[];
 
     // 更新原评论的回复内容 - replyContent field doesn't exist in schema
     // Skipping this update as the field doesn't exist
@@ -343,10 +363,7 @@ export class CommentService {
         where: whereClause,
         skip,
         take: size,
-        orderBy: [
-          { createdAt: 'desc' },
-          { commentId: 'desc' }
-        ],
+        orderBy: [{ createdAt: "desc" }, { commentId: "desc" }],
         include: {
           product: {
             select: {
@@ -370,7 +387,7 @@ export class CommentService {
     ]);
 
     return {
-      list: comments.map(comment => ({
+      list: comments.map((comment) => ({
         ...this.formatCommentResponse(comment),
         productName: comment.product.productName,
         productImage: comment.product.picThumb,
@@ -390,7 +407,7 @@ export class CommentService {
       id: comment.commentId,
       productId: comment.productId,
       userId: comment.userId,
-      userName: comment.user?.nickname || '匿名用户',
+      userName: comment.user?.nickname || "匿名用户",
       userAvatar: comment.user?.avatar,
       rating: comment.rating,
       content: comment.content,

@@ -1,11 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from "@nestjs/common";
 
 @Injectable()
 export class VerificationCodeService {
   // In-memory storage for verification codes (use Redis in production)
-  private readonly mobileCodes = new Map<string, { code: string; expires: number }>();
-  private readonly emailCodes = new Map<string, { code: string; expires: number }>();
+  private readonly mobileCodes = new Map<
+    string,
+    { code: string; expires: number }
+  >();
+  private readonly emailCodes = new Map<
+    string,
+    { code: string; expires: number }
+  >();
   private readonly MOBILE_CODE_EXPIRY = 120; // 2 minutes
   private readonly EMAIL_CODE_EXPIRY = 300; // 5 minutes
 
@@ -14,7 +20,7 @@ export class VerificationCodeService {
    */
   async generateMobileCode(mobile: string): Promise<string> {
     const code = this.generateCode();
-    const expires = Date.now() + (this.MOBILE_CODE_EXPIRY * 1000);
+    const expires = Date.now() + this.MOBILE_CODE_EXPIRY * 1000;
 
     this.mobileCodes.set(mobile, { code, expires });
 
@@ -29,7 +35,7 @@ export class VerificationCodeService {
    */
   async generateEmailCode(email: string): Promise<string> {
     const code = this.generateCode();
-    const expires = Date.now() + (this.EMAIL_CODE_EXPIRY * 1000);
+    const expires = Date.now() + this.EMAIL_CODE_EXPIRY * 1000;
 
     this.emailCodes.set(email, { code, expires });
 

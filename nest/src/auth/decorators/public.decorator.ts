@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata } from "@nestjs/common";
 
-export const IS_PUBLIC_KEY = 'isPublic';
+export const IS_PUBLIC_KEY = "isPublic";
 
 /**
  * Decorator that marks an endpoint as public (no authentication required)
  */
-export const Public = () => SetMetadata(IS_PUBLIC_KEY, true); 
+export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);

@@ -1,6 +1,14 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsArray, Min, Max, IsBoolean } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsArray,
+  Min,
+  Max,
+  IsBoolean,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class LogisticsCompanyQueryDto {
   @IsOptional()
@@ -21,11 +29,11 @@ export class LogisticsCompanyQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'logistics_id';
+  sort_field?: string = "logistics_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @Type(() => Number)
@@ -53,7 +61,7 @@ export class CreateLogisticsCompanyDto {
 
   @IsOptional()
   @IsString()
-  logistics_desc?: string = '';
+  logistics_desc?: string = "";
 
   @IsOptional()
   @IsBoolean()
@@ -67,23 +75,23 @@ export class CreateLogisticsCompanyDto {
 
   @IsOptional()
   @IsString()
-  customer_name?: string = '';
+  customer_name?: string = "";
 
   @IsOptional()
   @IsString()
-  customer_pwd?: string = '';
+  customer_pwd?: string = "";
 
   @IsOptional()
   @IsString()
-  month_code?: string = '';
+  month_code?: string = "";
 
   @IsOptional()
   @IsString()
-  send_site?: string = '';
+  send_site?: string = "";
 
   @IsOptional()
   @IsString()
-  send_staff?: string = '';
+  send_staff?: string = "";
 
   @IsOptional()
   @Type(() => Number)

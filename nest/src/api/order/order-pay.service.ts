@@ -1,6 +1,10 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 
 @Injectable()
 export class OrderPayService {
@@ -20,11 +24,11 @@ export class OrderPayService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     if (order.order_status !== 1) {
-      throw new BadRequestException('订单状态不正确，无法支付');
+      throw new BadRequestException("订单状态不正确，无法支付");
     }
 
     // 获取支付方式
@@ -41,7 +45,7 @@ export class OrderPayService {
         order_status: order.order_status,
         create_time: order.add_time,
       },
-      items: order.order_items.map(item => ({
+      items: order.order_items.map((item) => ({
         product_id: item.product_id,
         product_name: item.product_name,
         product_image: item.product_image,
@@ -49,20 +53,22 @@ export class OrderPayService {
         product_num: item.product_num,
         total_amount: item.total_amount,
       })),
-      address: order.user_address ? {
-        name: order.user_address.name,
-        mobile: order.user_address.mobile,
-        province: order.user_address.province,
-        city: order.user_address.city,
-        district: order.user_address.district,
-        address: order.user_address.address,
-      } : null,
+      address: order.user_address
+        ? {
+            name: order.user_address.name,
+            mobile: order.user_address.mobile,
+            province: order.user_address.province,
+            city: order.user_address.city,
+            district: order.user_address.district,
+            address: order.user_address.address,
+          }
+        : null,
       payment_types: paymentTypes,
     };
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: paymentInfo,
     };
   }
@@ -76,12 +82,12 @@ export class OrderPayService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     return {
       code: 200,
-      message: '检查成功',
+      message: "检查成功",
       data: {
         order_id: order.order_id,
         order_sn: order.order_sn,
@@ -101,7 +107,7 @@ export class OrderPayService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     const paymentLogs = await this.prisma.pay_log.findMany({
@@ -109,13 +115,13 @@ export class OrderPayService {
         order_id: orderId,
       },
       orderBy: {
-        add_time: 'desc',
+        add_time: "desc",
       },
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: paymentLogs,
     };
   }
@@ -130,23 +136,23 @@ export class OrderPayService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在或状态不正确');
+      throw new NotFoundException("订单不存在或状态不正确");
     }
 
     // 验证支付方式
-    const validPayTypes = ['wechat', 'alipay', 'balance'];
+    const validPayTypes = ["wechat", "alipay", "balance"];
     if (!validPayTypes.includes(payType)) {
-      throw new BadRequestException('不支持的支付方式');
+      throw new BadRequestException("不支持的支付方式");
     }
 
     // 如果是余额支付，检查余额
-    if (payType === 'balance') {
+    if (payType === "balance") {
       const user = await this.prisma.user.findUnique({
         where: { user_id: userId },
       });
 
       if (!user || user.user_money < order.pay_amount) {
-        throw new BadRequestException('余额不足');
+        throw new BadRequestException("余额不足");
       }
     }
 
@@ -165,22 +171,26 @@ export class OrderPayService {
     // 根据支付方式生成支付参数
     let paymentParams;
     switch (payType) {
-      case 'wechat':
+      case "wechat":
         paymentParams = await this.generateWechatPayment(order, paymentRecord);
         break;
-      case 'alipay':
+      case "alipay":
         paymentParams = await this.generateAlipayPayment(order, paymentRecord);
         break;
-      case 'balance':
-        paymentParams = await this.processBalancePayment(userId, order, paymentRecord);
+      case "balance":
+        paymentParams = await this.processBalancePayment(
+          userId,
+          order,
+          paymentRecord,
+        );
         break;
       default:
-        throw new BadRequestException('不支持的支付方式');
+        throw new BadRequestException("不支持的支付方式");
     }
 
     return {
       code: 200,
-      message: '创建支付成功',
+      message: "创建支付成功",
       data: {
         payment_id: paymentRecord.pay_id,
         pay_type: payType,
@@ -197,7 +207,7 @@ export class OrderPayService {
       // 更新订单状态
       await this.updateOrderPaymentStatus(paymentData.order_id, paymentData);
 
-      return { code: 200, message: 'success' };
+      return { code: 200, message: "success" };
     } catch (error) {
       return { code: 400, message: error.message };
     }
@@ -211,7 +221,7 @@ export class OrderPayService {
       // 更新退款状态
       await this.updateOrderRefundStatus(refundData.order_id, refundData);
 
-      return { code: 200, message: 'success' };
+      return { code: 200, message: "success" };
     } catch (error) {
       return { code: 400, message: error.message };
     }
@@ -219,10 +229,28 @@ export class OrderPayService {
 
   private async getAvailablePaymentTypes() {
     return [
-      { id: 1, name: '微信支付', code: 'wechat', icon: 'wechat', is_available: 1 },
-      { id: 2, name: '支付宝', code: 'alipay', icon: 'alipay', is_available: 1 },
-      { id: 3, name: '余额支付', code: 'balance', icon: 'balance', is_available: 1 },
-    ].filter(type => type.is_available === 1);
+      {
+        id: 1,
+        name: "微信支付",
+        code: "wechat",
+        icon: "wechat",
+        is_available: 1,
+      },
+      {
+        id: 2,
+        name: "支付宝",
+        code: "alipay",
+        icon: "alipay",
+        is_available: 1,
+      },
+      {
+        id: 3,
+        name: "余额支付",
+        code: "balance",
+        icon: "balance",
+        is_available: 1,
+      },
+    ].filter((type) => type.is_available === 1);
   }
 
   private async generateWechatPayment(order: any, paymentRecord: any) {
@@ -233,7 +261,7 @@ export class OrderPayService {
       timeStamp: Math.floor(Date.now() / 1000).toString(),
       nonceStr: Math.random().toString(36).substr(2),
       package: `prepay_id=${this.generatePrepayId()}`,
-      signType: 'RSA',
+      signType: "RSA",
     };
   }
 
@@ -245,7 +273,11 @@ export class OrderPayService {
     };
   }
 
-  private async processBalancePayment(userId: number, order: any, paymentRecord: any) {
+  private async processBalancePayment(
+    userId: number,
+    order: any,
+    paymentRecord: any,
+  ) {
     // 处理余额支付
     await this.prisma.$transaction(async (prisma) => {
       // 扣除用户余额
@@ -289,7 +321,7 @@ export class OrderPayService {
 
     return {
       success: true,
-      message: '支付成功',
+      message: "支付成功",
     };
   }
 

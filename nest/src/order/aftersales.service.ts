@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export enum AftersalesType {
   PAY_RETURN = 2, // 仅退款
@@ -21,28 +21,28 @@ export enum AftersalesStatus {
 }
 
 export const AFTERSALES_TYPE_NAME = {
-  [AftersalesType.PAY_RETURN]: '仅退款',
-  [AftersalesType.RETURN]: '退货/退款',
+  [AftersalesType.PAY_RETURN]: "仅退款",
+  [AftersalesType.RETURN]: "退货/退款",
 };
 
 export const STATUS_NAME = {
-  [AftersalesStatus.IN_REVIEW]: '审核中',
-  [AftersalesStatus.APPROVED_FOR_PROCESSING]: '审核通过，处理中',
-  [AftersalesStatus.REFUSE]: '拒绝',
-  [AftersalesStatus.SEND_BACK]: '用户寄回',
-  [AftersalesStatus.RETURNED]: '已寄回，待收货',
-  [AftersalesStatus.COMPLETE]: '已完成',
-  [AftersalesStatus.CANCEL]: '已取消',
-  [AftersalesStatus.WAIT_FOR_SUPPLIER_AUDIT]: '等待供应商审核',
-  [AftersalesStatus.SUPPLIER_APPROVED]: '供应商审核通过',
-  [AftersalesStatus.SUPPLIER_REFUSE]: '供应商拒绝',
+  [AftersalesStatus.IN_REVIEW]: "审核中",
+  [AftersalesStatus.APPROVED_FOR_PROCESSING]: "审核通过，处理中",
+  [AftersalesStatus.REFUSE]: "拒绝",
+  [AftersalesStatus.SEND_BACK]: "用户寄回",
+  [AftersalesStatus.RETURNED]: "已寄回，待收货",
+  [AftersalesStatus.COMPLETE]: "已完成",
+  [AftersalesStatus.CANCEL]: "已取消",
+  [AftersalesStatus.WAIT_FOR_SUPPLIER_AUDIT]: "等待供应商审核",
+  [AftersalesStatus.SUPPLIER_APPROVED]: "供应商审核通过",
+  [AftersalesStatus.SUPPLIER_REFUSE]: "供应商拒绝",
 };
 
 export const REFUSE_REASON = [
-  '已经超过七天无理由退货时限',
-  '商品没有问题，买家未举证',
-  '商品没有问题，买家举证无效',
-  '已协商完毕不退货',
+  "已经超过七天无理由退货时限",
+  "商品没有问题，买家未举证",
+  "商品没有问题，买家举证无效",
+  "已协商完毕不退货",
 ];
 
 export const VALID_STATUS = [
@@ -93,13 +93,13 @@ export class AftersalesService {
         refund: true,
         aftersales_log: {
           orderBy: {
-            log_id: 'desc',
+            log_id: "desc",
           },
         },
       },
     });
 
-    return results.map(result => ({
+    return results.map((result) => ({
       ...result,
       aftersales_type_name: this.getAftersalesTypeName(result.aftersales_type),
       status_name: this.getStatusName(result.status),
@@ -193,7 +193,7 @@ export class AftersalesService {
       };
     }
     return {
-      aftersale_id: 'desc',
+      aftersale_id: "desc",
     };
   }
 
@@ -208,7 +208,7 @@ export class AftersalesService {
         },
         aftersales_log: {
           orderBy: {
-            log_id: 'desc',
+            log_id: "desc",
           },
         },
         orders: true,
@@ -217,7 +217,7 @@ export class AftersalesService {
     });
 
     if (!result) {
-      throw new Error('售后记录不存在');
+      throw new Error("售后记录不存在");
     }
 
     // 计算建议退款金额
@@ -245,13 +245,13 @@ export class AftersalesService {
     });
 
     if (!aftersales) {
-      throw new Error('售后记录不存在');
+      throw new Error("售后记录不存在");
     }
 
     const updateData: any = {
       status: data.status,
-      reply: data.reply || '',
-      return_address: data.return_address || '',
+      reply: data.reply || "",
+      return_address: data.return_address || "",
       refund_amount: data.refund_amount || 0,
       update_time: Math.floor(Date.now() / 1000),
     };
@@ -271,8 +271,11 @@ export class AftersalesService {
       aftersale_id: id,
       operator_type: 1, // 管理员
       operator_id: data.admin_id || 0,
-      action: data.status === AftersalesStatus.APPROVED_FOR_PROCESSING ? '同意售后' : '拒绝售后',
-      action_desc: data.reply || '',
+      action:
+        data.status === AftersalesStatus.APPROVED_FOR_PROCESSING
+          ? "同意售后"
+          : "拒绝售后",
+      action_desc: data.reply || "",
       create_time: Math.floor(Date.now() / 1000),
     });
 
@@ -285,7 +288,7 @@ export class AftersalesService {
     });
 
     if (!aftersales) {
-      throw new Error('售后记录不存在');
+      throw new Error("售后记录不存在");
     }
 
     const result = await this.prisma.aftersales.update({
@@ -301,25 +304,28 @@ export class AftersalesService {
       aftersale_id: id,
       operator_type: 1, // 管理员
       operator_id: adminId,
-      action: '售后完成',
-      action_desc: '',
+      action: "售后完成",
+      action_desc: "",
       create_time: Math.floor(Date.now() / 1000),
     });
 
     return !!result;
   }
 
-  private async addAftersalesLog(aftersalesId: number, logData: any): Promise<void> {
+  private async addAftersalesLog(
+    aftersalesId: number,
+    logData: any,
+  ): Promise<void> {
     await this.prisma.aftersales_log.create({
       data: logData,
     });
   }
 
   private getAftersalesTypeName(type: number): string {
-    return AFTERSALES_TYPE_NAME[type] || '未知类型';
+    return AFTERSALES_TYPE_NAME[type] || "未知类型";
   }
 
   private getStatusName(status: number): string {
-    return STATUS_NAME[status] || '未知状态';
+    return STATUS_NAME[status] || "未知状态";
   }
 }

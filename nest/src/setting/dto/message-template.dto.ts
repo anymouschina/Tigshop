@@ -1,14 +1,23 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsEnum } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsEnum,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export enum MessageTemplateType {
-  WECHAT = 1,        // 微信公众号
-  MINI_PROGRAM = 2,  // 小程序
-  SMS = 3,           // 短信
-  SITE_MESSAGE = 4,  // 站内消息
-  APP = 5,           // APP
-  DINGTALK = 6,      // 钉钉
+  WECHAT = 1, // 微信公众号
+  MINI_PROGRAM = 2, // 小程序
+  SMS = 3, // 短信
+  SITE_MESSAGE = 4, // 站内消息
+  APP = 5, // APP
+  DINGTALK = 6, // 钉钉
 }
 
 export class MessageTemplateQueryDto {
@@ -30,11 +39,11 @@ export class MessageTemplateQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @IsEnum(MessageTemplateType)
@@ -69,14 +78,14 @@ export class CreateMessageTemplateDto {
 
   @IsOptional()
   @IsString()
-  to_userid?: string = '';
+  to_userid?: string = "";
 
   @IsString()
   template_id: string;
 
   @IsOptional()
   @IsString()
-  template_num?: string = '';
+  template_num?: string = "";
 
   @IsString()
   content: string;

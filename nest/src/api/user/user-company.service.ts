@@ -1,8 +1,16 @@
 // @ts-nocheck
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CompanyApplyDto, CompanyAuditDto, CompanyQueryDto } from './dto/user-company.dto';
-import { ConfigService } from '@nestjs/config';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import {
+  CompanyApplyDto,
+  CompanyAuditDto,
+  CompanyQueryDto,
+} from "./dto/user-company.dto";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class UserCompanyService {
@@ -21,7 +29,7 @@ export class UserCompanyService {
     });
 
     if (existingApplication) {
-      throw new BadRequestException('您已有待审核的企业认证申请');
+      throw new BadRequestException("您已有待审核的企业认证申请");
     }
 
     const { type, company_data } = applyDto;
@@ -31,9 +39,9 @@ export class UserCompanyService {
       data: {
         user_id: userId,
         type: type,
-        company_name: company_data.company_name || '',
-        contact_name: company_data.corporate_name || '',
-        contact_mobile: company_data.contact_phone || '',
+        company_name: company_data.company_name || "",
+        contact_name: company_data.corporate_name || "",
+        contact_mobile: company_data.contact_phone || "",
         company_data: company_data as any,
         status: 1, // STATUS_WAIT
         add_time: Math.floor(Date.now() / 1000),
@@ -41,8 +49,8 @@ export class UserCompanyService {
     });
 
     // TODO: Send SMS notification if enabled
-    const smsEnabled = this.configService.get<string>('smsNote', '0');
-    if (smsEnabled === '1') {
+    const smsEnabled = this.configService.get<string>("smsNote", "0");
+    if (smsEnabled === "1") {
       // SMS service would be called here
     }
 
@@ -68,17 +76,20 @@ export class UserCompanyService {
     });
 
     if (!company) {
-      throw new NotFoundException('企业认证信息不存在');
+      throw new NotFoundException("企业认证信息不存在");
     }
 
     // Check if user owns this application
     if (company.user_id !== userId) {
-      throw new NotFoundException('企业认证信息不存在');
+      throw new NotFoundException("企业认证信息不存在");
     }
 
     // Process address data
-    let companyData = company.company_data as any;
-    if (companyData.license_addr_province && Array.isArray(companyData.license_addr_province)) {
+    const companyData = company.company_data as any;
+    if (
+      companyData.license_addr_province &&
+      Array.isArray(companyData.license_addr_province)
+    ) {
       const regions = await this.prisma.region.findMany({
         where: {
           region_id: {
@@ -93,8 +104,8 @@ export class UserCompanyService {
       }, {});
 
       companyData.license_addr_province_name = companyData.license_addr_province
-        .map((regionId: number) => regionMap[regionId] || '')
-        .join('');
+        .map((regionId: number) => regionMap[regionId] || "")
+        .join("");
     }
 
     return {
@@ -118,7 +129,7 @@ export class UserCompanyService {
   async getUserApplication(userId: number) {
     const application = await this.prisma.user_company.findFirst({
       where: { user_id: userId },
-      orderBy: { id: 'desc' },
+      orderBy: { id: "desc" },
       select: {
         id: true,
         user_id: true,
@@ -168,7 +179,7 @@ export class UserCompanyService {
         where,
         skip,
         take: size,
-        orderBy: { id: 'desc' },
+        orderBy: { id: "desc" },
         include: {
           user: {
             select: {
@@ -181,7 +192,7 @@ export class UserCompanyService {
       this.prisma.user_company.count({ where }),
     ]);
 
-    const processedCompanies = companies.map(company => ({
+    const processedCompanies = companies.map((company) => ({
       id: company.id,
       user_id: company.user_id,
       type: company.type,
@@ -212,15 +223,17 @@ export class UserCompanyService {
     });
 
     if (!company) {
-      throw new NotFoundException('企业认证信息不存在');
+      throw new NotFoundException("企业认证信息不存在");
     }
 
-    if (company.status !== 1) { // STATUS_WAIT
-      throw new BadRequestException('状态参数错误');
+    if (company.status !== 1) {
+      // STATUS_WAIT
+      throw new BadRequestException("状态参数错误");
     }
 
-    if (auditDto.status === 3 && !auditDto.audit_remark) { // STATUS_REFUSE
-      throw new BadRequestException('请填写审核备注');
+    if (auditDto.status === 3 && !auditDto.audit_remark) {
+      // STATUS_REFUSE
+      throw new BadRequestException("请填写审核备注");
     }
 
     const updateData: any = {
@@ -228,7 +241,8 @@ export class UserCompanyService {
       audit_remark: auditDto.audit_remark || null,
     };
 
-    if (auditDto.status === 2) { // STATUS_PASS
+    if (auditDto.status === 2) {
+      // STATUS_PASS
       updateData.audit_time = Math.floor(Date.now() / 1000);
     }
 
@@ -258,7 +272,7 @@ export class UserCompanyService {
         audit_time: result.audit_time,
       };
     } catch (error) {
-      throw new BadRequestException('操作失败');
+      throw new BadRequestException("操作失败");
     }
   }
 
@@ -268,11 +282,12 @@ export class UserCompanyService {
     });
 
     if (!company) {
-      throw new NotFoundException('企业认证信息不存在');
+      throw new NotFoundException("企业认证信息不存在");
     }
 
-    if (company.status !== 3) { // STATUS_REFUSE
-      throw new BadRequestException('审核未通过的才可删除');
+    if (company.status !== 3) {
+      // STATUS_REFUSE
+      throw new BadRequestException("审核未通过的才可删除");
     }
 
     await this.prisma.user_company.delete({
@@ -284,18 +299,18 @@ export class UserCompanyService {
 
   private getTypeText(type: number): string {
     const typeMap = {
-      1: '个人',
-      2: '企业',
+      1: "个人",
+      2: "企业",
     };
-    return typeMap[type] || '';
+    return typeMap[type] || "";
   }
 
   private getStatusText(status: number): string {
     const statusMap = {
-      1: '待审核',
-      2: '审核通过',
-      3: '审核未通过',
+      1: "待审核",
+      2: "审核通过",
+      3: "审核未通过",
     };
-    return statusMap[status] || '';
+    return statusMap[status] || "";
   }
 }

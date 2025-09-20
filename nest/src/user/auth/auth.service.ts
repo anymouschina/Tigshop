@@ -5,14 +5,14 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
-} from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
-import { AuthService } from '../../auth/auth.service';
-import { VerificationCodeService } from '../../auth/services/verification-code.service';
-import { CaptchaService } from '../../auth/services/captcha.service';
-import { WechatOAuthService } from '../../auth/services/wechat-oauth.service';
-import { SmsService } from '../../auth/services/sms.service';
-import { EmailService } from '../../mail/mail.service';
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
+import { AuthService } from "../../auth/auth.service";
+import { VerificationCodeService } from "../../auth/services/verification-code.service";
+import { CaptchaService } from "../../auth/services/captcha.service";
+import { WechatOAuthService } from "../../auth/services/wechat-oauth.service";
+import { SmsService } from "../../auth/services/sms.service";
+import { EmailService } from "../../mail/mail.service";
 import {
   LoginDto,
   RegisterDto,
@@ -30,8 +30,8 @@ import {
   UpdateUserOpenIdDto,
   JsSdkConfigDto,
   QuickLoginSettingResponse,
-} from './dto/auth.dto';
-import { ConfigService } from '@nestjs/config';
+} from "./dto/auth.dto";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class UserAuthService {
@@ -50,8 +50,8 @@ export class UserAuthService {
    * 获取快捷登录设置
    */
   async getQuickLoginSetting(): Promise<QuickLoginSettingResponse> {
-    const wechatLogin = this.configService.get<string>('openWechatOauth', '0');
-    const showOAuth = wechatLogin === '1' ? 1 : 0;
+    const wechatLogin = this.configService.get<string>("openWechatOauth", "0");
+    const showOAuth = wechatLogin === "1" ? 1 : 0;
 
     return {
       wechat_login: parseInt(wechatLogin),
@@ -72,47 +72,57 @@ export class UserAuthService {
 
     let user;
 
-    if (login_type === 'password') {
+    if (login_type === "password") {
       // 密码登录
       if (!credentials.username) {
-        throw new BadRequestException('用户名不能为空');
+        throw new BadRequestException("用户名不能为空");
       }
 
       // 行为验证码
-      await this.captchaService.verify(`userSignin:${credentials.username}`, verify_token, 3);
+      await this.captchaService.verify(
+        `userSignin:${credentials.username}`,
+        verify_token,
+        3,
+      );
 
-      user = await this.loginByPassword(credentials.username, credentials.password);
-    } else if (login_type === 'mobile') {
+      user = await this.loginByPassword(
+        credentials.username,
+        credentials.password,
+      );
+    } else if (login_type === "mobile") {
       // 手机登录
       if (!credentials.mobile || !credentials.mobile_code) {
-        throw new BadRequestException('手机号和验证码不能为空');
+        throw new BadRequestException("手机号和验证码不能为空");
       }
 
-      user = await this.loginByMobile(credentials.mobile, credentials.mobile_code);
-    } else if (login_type === 'email') {
+      user = await this.loginByMobile(
+        credentials.mobile,
+        credentials.mobile_code,
+      );
+    } else if (login_type === "email") {
       // 邮箱登录
       if (!credentials.email || !credentials.email_code) {
-        throw new BadRequestException('邮箱和验证码不能为空');
+        throw new BadRequestException("邮箱和验证码不能为空");
       }
 
       user = await this.loginByEmail(credentials.email, credentials.email_code);
     } else {
-      throw new BadRequestException('不支持的登录类型');
+      throw new BadRequestException("不支持的登录类型");
     }
 
     if (!user) {
-      throw new BadRequestException('账户名或密码错误！');
+      throw new BadRequestException("账户名或密码错误！");
     }
 
     if (user.status !== 1) {
-      throw new BadRequestException('您的账号已被禁用！');
+      throw new BadRequestException("您的账号已被禁用！");
     }
 
     await this.setLogin(user.user_id);
     const token = await this.getLoginToken(user.user_id);
 
     return {
-      status: 'success',
+      status: "success",
       data: { token },
     };
   }
@@ -123,11 +133,7 @@ export class UserAuthService {
   private async loginByPassword(username: string, password: string) {
     const user = await this.databaseService.user.findFirst({
       where: {
-        OR: [
-          { username },
-          { email: username },
-          { mobile: username },
-        ],
+        OR: [{ username }, { email: username }, { mobile: username }],
       },
     });
 
@@ -135,7 +141,10 @@ export class UserAuthService {
       return null;
     }
 
-    const isValidPassword = await this.authService.validatePassword(password, user.password);
+    const isValidPassword = await this.authService.validatePassword(
+      password,
+      user.password,
+    );
     if (!isValidPassword) {
       return null;
     }
@@ -147,9 +156,12 @@ export class UserAuthService {
    * 手机登录
    */
   private async loginByMobile(mobile: string, code: string) {
-    const isValidCode = await this.verificationCodeService.validateMobileCode(mobile, code);
+    const isValidCode = await this.verificationCodeService.validateMobileCode(
+      mobile,
+      code,
+    );
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     const user = await this.databaseService.user.findUnique({
@@ -163,9 +175,12 @@ export class UserAuthService {
    * 邮箱登录
    */
   private async loginByEmail(email: string, code: string) {
-    const isValidCode = await this.verificationCodeService.validateEmailCode(email, code);
+    const isValidCode = await this.verificationCodeService.validateEmailCode(
+      email,
+      code,
+    );
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     const user = await this.databaseService.user.findUnique({
@@ -179,18 +194,22 @@ export class UserAuthService {
    * 用户注册
    */
   async register(registerDto: RegisterDto) {
-    const { email, password, confirm_password, email_code, ...userData } = registerDto;
+    const { email, password, confirm_password, email_code, ...userData } =
+      registerDto;
 
     // 验证密码
     if (password !== confirm_password) {
-      throw new BadRequestException('两次输入的密码不一致');
+      throw new BadRequestException("两次输入的密码不一致");
     }
 
     // 验证邮箱验证码
     if (email_code) {
-      const isValidCode = await this.verificationCodeService.validateEmailCode(email, email_code);
+      const isValidCode = await this.verificationCodeService.validateEmailCode(
+        email,
+        email_code,
+      );
       if (!isValidCode) {
-        throw new BadRequestException('邮箱验证码错误或已过期');
+        throw new BadRequestException("邮箱验证码错误或已过期");
       }
     }
 
@@ -200,7 +219,7 @@ export class UserAuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('邮箱已被注册');
+      throw new ConflictException("邮箱已被注册");
     }
 
     // 加密密码
@@ -221,8 +240,8 @@ export class UserAuthService {
     });
 
     return {
-      status: 'success',
-      message: '注册成功',
+      status: "success",
+      message: "注册成功",
       data: { user_id: user.user_id },
     };
   }
@@ -239,8 +258,8 @@ export class UserAuthService {
     await this.smsService.sendCode(mobile, event);
 
     return {
-      status: 'success',
-      message: '发送成功！',
+      status: "success",
+      message: "发送成功！",
     };
   }
 
@@ -253,11 +272,11 @@ export class UserAuthService {
     // 行为验证码
     await this.captchaService.verify(`emailCode:${email}`, verify_token);
 
-    await this.emailService.sendEmailCode(email, event, 'register_code');
+    await this.emailService.sendEmailCode(email, event, "register_code");
 
     return {
-      status: 'success',
-      message: '发送成功！',
+      status: "success",
+      message: "发送成功！",
     };
   }
 
@@ -267,14 +286,17 @@ export class UserAuthService {
   async checkMobileCode(checkMobileCodeDto: CheckMobileCodeDto) {
     const { mobile, code, event } = checkMobileCodeDto;
 
-    const result = await this.verificationCodeService.validateMobileCode(mobile, code);
+    const result = await this.verificationCodeService.validateMobileCode(
+      mobile,
+      code,
+    );
     if (!result) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     return {
-      status: 'success',
-      message: '验证码验证成功',
+      status: "success",
+      message: "验证码验证成功",
     };
   }
 
@@ -284,14 +306,17 @@ export class UserAuthService {
   async checkEmailCode(checkEmailCodeDto: CheckEmailCodeDto) {
     const { email, code, event } = checkEmailCodeDto;
 
-    const result = await this.verificationCodeService.validateEmailCode(email, code);
+    const result = await this.verificationCodeService.validateEmailCode(
+      email,
+      code,
+    );
     if (!result) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     return {
-      status: 'success',
-      message: '验证码验证成功',
+      status: "success",
+      message: "验证码验证成功",
     };
   }
 
@@ -303,13 +328,17 @@ export class UserAuthService {
 
     // 验证密码
     if (password !== confirm_password) {
-      throw new BadRequestException('两次输入的密码不一致');
+      throw new BadRequestException("两次输入的密码不一致");
     }
 
     // 验证手机验证码
-    const isValidCode = await this.verificationCodeService.validateMobileCode(mobile, code, 'forget_password');
+    const isValidCode = await this.verificationCodeService.validateMobileCode(
+      mobile,
+      code,
+      "forget_password",
+    );
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     // 查找用户
@@ -318,7 +347,7 @@ export class UserAuthService {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     // 加密新密码
@@ -331,8 +360,8 @@ export class UserAuthService {
     });
 
     return {
-      status: 'success',
-      message: '密码重置成功',
+      status: "success",
+      message: "密码重置成功",
     };
   }
 
@@ -345,10 +374,10 @@ export class UserAuthService {
     const res = await this.wechatOAuthService.getOAuthUrl(url);
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         url: res.url,
-        ticket: res.ticket || '',
+        ticket: res.ticket || "",
       },
     };
   }
@@ -365,7 +394,7 @@ export class UserAuthService {
     }
 
     const openid = openData.openid;
-    const unionid = openData.unionid || '';
+    const unionid = openData.unionid || "";
 
     // 检查用户是否已经绑定
     const existingAuth = await this.databaseService.userAuthorize.findFirst({
@@ -377,7 +406,7 @@ export class UserAuthService {
       const token = await this.getLoginToken(existingAuth.userId);
 
       return {
-        status: 'success',
+        status: "success",
         data: {
           type: 1,
           token,
@@ -386,8 +415,11 @@ export class UserAuthService {
     }
 
     // 检查是否开启微信自动注册
-    const openWechatRegister = this.configService.get<string>('openWechatRegister', '0');
-    if (openWechatRegister === '1') {
+    const openWechatRegister = this.configService.get<string>(
+      "openWechatRegister",
+      "0",
+    );
+    if (openWechatRegister === "1") {
       // 自动注册
       const username = `User_${Date.now()}`;
       const password = Math.random().toString(36).substring(2);
@@ -412,7 +444,7 @@ export class UserAuthService {
       const token = await this.getLoginToken(user.user_id);
 
       return {
-        status: 'success',
+        status: "success",
         data: {
           type: 1,
           token,
@@ -420,7 +452,7 @@ export class UserAuthService {
       };
     } else {
       return {
-        status: 'success',
+        status: "success",
         data: {
           type: 2,
           open_data: openData,
@@ -441,7 +473,7 @@ export class UserAuthService {
     });
 
     if (existingAuth) {
-      throw new BadRequestException('您已授权，无需重复授权');
+      throw new BadRequestException("您已授权，无需重复授权");
     }
 
     const openData = await this.wechatOAuthService.auth(code);
@@ -452,12 +484,14 @@ export class UserAuthService {
     const openid = openData.openid;
 
     // 检查是否已绑定其他账号
-    const existingUserAuth = await this.databaseService.userAuthorize.findFirst({
-      where: { openId: openid },
-    });
+    const existingUserAuth = await this.databaseService.userAuthorize.findFirst(
+      {
+        where: { openId: openid },
+      },
+    );
 
     if (existingUserAuth && existingUserAuth.userId !== userId) {
-      throw new BadRequestException('该微信号已绑定其他账号，请解绑后再重试');
+      throw new BadRequestException("该微信号已绑定其他账号，请解绑后再重试");
     }
 
     await this.databaseService.userAuthorize.create({
@@ -469,8 +503,8 @@ export class UserAuthService {
     });
 
     return {
-      status: 'success',
-      message: '绑定成功',
+      status: "success",
+      message: "绑定成功",
     };
   }
 
@@ -483,7 +517,7 @@ export class UserAuthService {
     });
 
     if (!existingAuth) {
-      throw new BadRequestException('该账号未绑定微信公众号');
+      throw new BadRequestException("该账号未绑定微信公众号");
     }
 
     await this.databaseService.userAuthorize.delete({
@@ -491,8 +525,8 @@ export class UserAuthService {
     });
 
     return {
-      status: 'success',
-      message: '解绑成功',
+      status: "success",
+      message: "解绑成功",
     };
   }
 
@@ -500,12 +534,16 @@ export class UserAuthService {
    * 绑定手机号
    */
   async bindMobile(bindMobileDto: BindMobileDto) {
-    const { mobile, mobile_code, password, open_data, referrer_user_id } = bindMobileDto;
+    const { mobile, mobile_code, password, open_data, referrer_user_id } =
+      bindMobileDto;
 
     // 验证手机验证码
-    const isValidCode = await this.verificationCodeService.validateMobileCode(mobile, mobile_code);
+    const isValidCode = await this.verificationCodeService.validateMobileCode(
+      mobile,
+      mobile_code,
+    );
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     // 检查手机号是否已注册
@@ -516,7 +554,9 @@ export class UserAuthService {
     if (!existingUser) {
       // 注册新用户
       const username = `User_${Date.now()}`;
-      const hashedPassword = password ? await this.authService.hashPassword(password) : null;
+      const hashedPassword = password
+        ? await this.authService.hashPassword(password)
+        : null;
 
       const user = await this.databaseService.user.create({
         data: {
@@ -544,7 +584,7 @@ export class UserAuthService {
       const token = await this.getLoginToken(user.user_id);
 
       return {
-        status: 'success',
+        status: "success",
         data: { token },
       };
     } else {
@@ -553,7 +593,7 @@ export class UserAuthService {
       const token = await this.getLoginToken(existingUser.user_id);
 
       return {
-        status: 'success',
+        status: "success",
         data: { token },
       };
     }
@@ -570,10 +610,10 @@ export class UserAuthService {
 
     // 暂时返回未登录
     return {
-      status: 'success',
+      status: "success",
       data: {
         type: 0,
-        message: '未登录',
+        message: "未登录",
       },
     };
   }
@@ -586,7 +626,7 @@ export class UserAuthService {
 
     const res = await this.wechatOAuthService.getMiniUserMobile(code);
     if (res.code !== 0) {
-      throw new BadRequestException(res.msg || '授权失败，请稍后再试~');
+      throw new BadRequestException(res.msg || "授权失败，请稍后再试~");
     }
 
     // 注册或登录用户
@@ -608,7 +648,7 @@ export class UserAuthService {
       const token = await this.getLoginToken(user.user_id);
 
       return {
-        status: 'success',
+        status: "success",
         data: { token },
       };
     } else {
@@ -616,7 +656,7 @@ export class UserAuthService {
       const token = await this.getLoginToken(existingUser.user_id);
 
       return {
-        status: 'success',
+        status: "success",
         data: { token },
       };
     }
@@ -625,7 +665,10 @@ export class UserAuthService {
   /**
    * 更新用户openid
    */
-  async updateUserOpenId(updateUserOpenIdDto: UpdateUserOpenIdDto, userId: number) {
+  async updateUserOpenId(
+    updateUserOpenIdDto: UpdateUserOpenIdDto,
+    userId: number,
+  ) {
     const { code } = updateUserOpenIdDto;
 
     const openid = await this.wechatOAuthService.getMiniOpenid(code);
@@ -637,8 +680,8 @@ export class UserAuthService {
     }
 
     return {
-      status: 'success',
-      message: '更新成功',
+      status: "success",
+      message: "更新成功",
     };
   }
 
@@ -651,7 +694,7 @@ export class UserAuthService {
     const params = await this.wechatOAuthService.getJsSdkConfig(url);
 
     return {
-      status: 'success',
+      status: "success",
       data: params,
     };
   }
@@ -664,7 +707,7 @@ export class UserAuthService {
       where: { user_id: userId },
       data: {
         lastLogin: new Date(),
-        lastIp: '', // 这里可以获取客户端IP
+        lastIp: "", // 这里可以获取客户端IP
       },
     });
   }

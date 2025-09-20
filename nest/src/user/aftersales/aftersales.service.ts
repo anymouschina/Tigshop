@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class AftersalesService {
@@ -21,7 +21,7 @@ export class AftersalesService {
           order_status: { not: 4 }, // 未取消的订单
           pay_status: 1, // 已支付
         },
-        orderBy: { order_id: 'desc' },
+        orderBy: { order_id: "desc" },
         skip,
         take: size,
         include: {
@@ -42,12 +42,14 @@ export class AftersalesService {
     ]);
 
     // 过滤出可售后的订单项
-    const aftersalesOrders = orders.map(order => ({
-      ...order,
-      orderItems: order.orderItems.filter(item =>
-        item.aftersales_status === 0 // 未申请售后的商品
-      ),
-    })).filter(order => order.orderItems.length > 0);
+    const aftersalesOrders = orders
+      .map((order) => ({
+        ...order,
+        orderItems: order.orderItems.filter(
+          (item) => item.aftersales_status === 0, // 未申请售后的商品
+        ),
+      }))
+      .filter((order) => order.orderItems.length > 0);
 
     return {
       records: aftersalesOrders,
@@ -64,21 +66,21 @@ export class AftersalesService {
   async getAftersalesConfig() {
     return {
       aftersale_type: {
-        1: '仅退款',
-        2: '退货退款',
-        3: '换货',
+        1: "仅退款",
+        2: "退货退款",
+        3: "换货",
       },
       aftersale_reason: {
-        1: '不喜欢/不想要',
-        2: '空包裹',
-        3: '未按约定时间发货',
-        4: '快递/物流一直未送到',
-        5: '货物破损已拒签',
-        6: '退运费',
-        7: '质量问题',
-        8: '描述不符',
-        9: '假货',
-        10: '其他',
+        1: "不喜欢/不想要",
+        2: "空包裹",
+        3: "未按约定时间发货",
+        4: "快递/物流一直未送到",
+        5: "货物破损已拒签",
+        6: "退运费",
+        7: "质量问题",
+        8: "描述不符",
+        9: "假货",
+        10: "其他",
       },
     };
   }
@@ -90,7 +92,7 @@ export class AftersalesService {
     const { item_id, order_id } = query;
 
     if (!order_id) {
-      throw new HttpException('订单ID不能为空', HttpStatus.BAD_REQUEST);
+      throw new HttpException("订单ID不能为空", HttpStatus.BAD_REQUEST);
     }
 
     const order = await this.prisma.order.findUnique({
@@ -106,10 +108,12 @@ export class AftersalesService {
     });
 
     if (!order) {
-      throw new HttpException('订单不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("订单不存在", HttpStatus.NOT_FOUND);
     }
 
-    const list = order.orderItems.filter(item => item.aftersales_status === 0);
+    const list = order.orderItems.filter(
+      (item) => item.aftersales_status === 0,
+    );
 
     return {
       list,
@@ -136,7 +140,7 @@ export class AftersalesService {
     });
 
     if (!order) {
-      throw new HttpException('订单不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("订单不存在", HttpStatus.NOT_FOUND);
     }
 
     // 验证订单项
@@ -150,7 +154,10 @@ export class AftersalesService {
       });
 
       if (!orderItem) {
-        throw new HttpException('订单项不存在或已申请售后', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          "订单项不存在或已申请售后",
+          HttpStatus.BAD_REQUEST,
+        );
       }
     }
 
@@ -202,7 +209,10 @@ export class AftersalesService {
     });
 
     if (!aftersales) {
-      throw new HttpException('售后申请不存在或状态不允许修改', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        "售后申请不存在或状态不允许修改",
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     // 更新售后申请
@@ -247,7 +257,7 @@ export class AftersalesService {
     const [aftersales, total] = await Promise.all([
       this.prisma.aftersales.findMany({
         where: { user_id: userId },
-        orderBy: { aftersale_id: 'desc' },
+        orderBy: { aftersale_id: "desc" },
         skip,
         take: size,
         include: {
@@ -310,7 +320,7 @@ export class AftersalesService {
     });
 
     if (!aftersales) {
-      throw new HttpException('售后申请不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("售后申请不存在", HttpStatus.NOT_FOUND);
     }
 
     return aftersales;
@@ -322,7 +332,7 @@ export class AftersalesService {
   async getAfterSalesDetailLog(id: number) {
     const logs = await this.prisma.aftersalesLog.findMany({
       where: { aftersale_id: id },
-      orderBy: { log_id: 'desc' },
+      orderBy: { log_id: "desc" },
     });
 
     return logs;
@@ -340,7 +350,7 @@ export class AftersalesService {
     });
 
     if (!aftersales) {
-      throw new HttpException('售后申请不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("售后申请不存在", HttpStatus.NOT_FOUND);
     }
 
     // 创建售后日志
@@ -381,7 +391,10 @@ export class AftersalesService {
     });
 
     if (!aftersales) {
-      throw new HttpException('售后申请不存在或状态不允许撤销', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        "售后申请不存在或状态不允许撤销",
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     // 更新售后状态

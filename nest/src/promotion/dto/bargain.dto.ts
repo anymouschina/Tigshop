@@ -1,6 +1,14 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsArray, Min, Max, IsBoolean } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsArray,
+  Min,
+  Max,
+  IsBoolean,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class BargainQueryDto {
   @IsOptional()
@@ -21,11 +29,11 @@ export class BargainQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'bargain_id';
+  sort_field?: string = "bargain_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @Type(() => Number)
@@ -44,8 +52,8 @@ export class BargainQueryDto {
 
   @IsOptional()
   @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      return value.split(',').map((date: string) => date.trim());
+    if (typeof value === "string") {
+      return value.split(",").map((date: string) => date.trim());
     }
     return value;
   })
@@ -64,7 +72,7 @@ export class CreateBargainDto {
 
   @IsOptional()
   @IsString()
-  bargain_pic?: string = '';
+  bargain_pic?: string = "";
 
   @IsNumber()
   @Type(() => Number)
@@ -93,11 +101,11 @@ export class CreateBargainDto {
 
   @IsOptional()
   @IsString()
-  first_cut_range?: string = '0.01-0.10';
+  first_cut_range?: string = "0.01-0.10";
 
   @IsOptional()
   @IsString()
-  cut_range?: string = '0.01-0.05';
+  cut_range?: string = "0.01-0.05";
 
   @IsNumber()
   @Type(() => Number)

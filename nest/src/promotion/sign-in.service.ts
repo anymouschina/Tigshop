@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 @Injectable()
 export class SignInService {
@@ -51,7 +51,7 @@ export class SignInService {
       };
     }
     return {
-      id: 'desc',
+      id: "desc",
     };
   }
 
@@ -61,7 +61,7 @@ export class SignInService {
     });
 
     if (!result) {
-      throw new Error('签到设置不存在');
+      throw new Error("签到设置不存在");
     }
 
     return result;
@@ -79,12 +79,12 @@ export class SignInService {
   async create(data: any): Promise<any> {
     // 验证积分必须大于0
     if (data.points <= 0) {
-      throw new Error('赠送积分必须大于0');
+      throw new Error("赠送积分必须大于0");
     }
 
     // 验证天数必须大于0
     if (data.day_num <= 0) {
-      throw new Error('天数必须大于0');
+      throw new Error("天数必须大于0");
     }
 
     const result = await this.prisma.signInSetting.create({
@@ -104,17 +104,17 @@ export class SignInService {
     });
 
     if (!signInSetting) {
-      throw new Error('签到设置不存在');
+      throw new Error("签到设置不存在");
     }
 
     // 验证积分必须大于0
     if (data.points !== undefined && data.points <= 0) {
-      throw new Error('赠送积分必须大于0');
+      throw new Error("赠送积分必须大于0");
     }
 
     // 验证天数必须大于0
     if (data.day_num !== undefined && data.day_num <= 0) {
-      throw new Error('天数必须大于0');
+      throw new Error("天数必须大于0");
     }
 
     const updateData: any = {};
@@ -136,7 +136,7 @@ export class SignInService {
     });
 
     if (!signInSetting) {
-      throw new Error('签到设置不存在');
+      throw new Error("签到设置不存在");
     }
 
     const result = await this.prisma.signInSetting.delete({
@@ -158,7 +158,7 @@ export class SignInService {
   async getSignSettingList(): Promise<any[]> {
     const result = await this.prisma.signInSetting.findMany({
       orderBy: {
-        day_num: 'asc',
+        day_num: "asc",
       },
     });
 
@@ -169,7 +169,7 @@ export class SignInService {
     const signRecord = await this.prisma.sign.findFirst({
       where: { user_id: userId },
       orderBy: {
-        add_time: 'desc',
+        add_time: "desc",
       },
     });
 
@@ -195,14 +195,18 @@ export class SignInService {
     return !!existingSign;
   }
 
-  async getSignPoints(settings: any[], count: number, userSign: number): Promise<number> {
+  async getSignPoints(
+    settings: any[],
+    count: number,
+    userSign: number,
+  ): Promise<number> {
     if (settings.length === 0) {
       return 0;
     }
 
     // 如果已经签到7天以上，循环使用第7天的设置
     const dayNum = count > 7 ? 7 : count;
-    const setting = settings.find(s => s.day_num === dayNum);
+    const setting = settings.find((s) => s.day_num === dayNum);
 
     return setting?.points || 0;
   }
@@ -244,7 +248,7 @@ export class SignInService {
   async userSignIn(userId: number): Promise<any> {
     // 检查今天是否已经签到
     if (await this.checkUserSignIn(userId)) {
-      throw new Error('今日已签到');
+      throw new Error("今日已签到");
     }
 
     const settings = await this.getSignSettingList();
@@ -252,10 +256,10 @@ export class SignInService {
 
     // 计算下一个签到天数
     const nextDayNum = currentCount >= 7 ? 7 : currentCount + 1;
-    const setting = settings.find(s => s.day_num === nextDayNum);
+    const setting = settings.find((s) => s.day_num === nextDayNum);
 
     if (!setting) {
-      throw new Error('签到配置不存在');
+      throw new Error("签到配置不存在");
     }
 
     // 计算实际签到次数（如果是连续第7天，重新开始计算）

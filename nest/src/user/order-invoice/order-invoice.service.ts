@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class OrderInvoiceService {
@@ -20,7 +20,7 @@ export class OrderInvoiceService {
     });
 
     if (!order) {
-      throw new HttpException('订单不存在或未支付', HttpStatus.BAD_REQUEST);
+      throw new HttpException("订单不存在或未支付", HttpStatus.BAD_REQUEST);
     }
 
     const invoiceData = {
@@ -78,7 +78,7 @@ export class OrderInvoiceService {
     const [invoices, total] = await Promise.all([
       this.prisma.orderInvoice.findMany({
         where,
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         skip,
         take: size,
         include: {
@@ -123,7 +123,7 @@ export class OrderInvoiceService {
     });
 
     if (!invoice) {
-      throw new HttpException('订单发票不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("订单发票不存在", HttpStatus.NOT_FOUND);
     }
 
     return invoice;
@@ -142,7 +142,7 @@ export class OrderInvoiceService {
     });
 
     if (!invoice) {
-      throw new HttpException('订单发票不存在或已处理', HttpStatus.BAD_REQUEST);
+      throw new HttpException("订单发票不存在或已处理", HttpStatus.BAD_REQUEST);
     }
 
     await this.prisma.orderInvoice.delete({
@@ -165,7 +165,7 @@ export class OrderInvoiceService {
     });
 
     if (!invoice) {
-      throw new HttpException('订单发票不存在或已处理', HttpStatus.BAD_REQUEST);
+      throw new HttpException("订单发票不存在或已处理", HttpStatus.BAD_REQUEST);
     }
 
     // 更新发票状态为申请中

@@ -1,23 +1,27 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
-import { UploadDto, UploadType } from './dto/upload.dto';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import * as path from "path";
+import * as fs from "fs";
+import * as crypto from "crypto";
+import { UploadDto, UploadType } from "./dto/upload.dto";
 
 export const UPLOAD_STATUS = {
-  0: '上传中',
-  1: '上传成功',
-  2: '上传失败',
+  0: "上传中",
+  1: "上传成功",
+  2: "上传失败",
 };
 
 export const UPLOAD_CATEGORY = {
-  IMAGE: 'image',
-  DOCUMENT: 'document',
-  VIDEO: 'video',
-  AUDIO: 'audio',
-  OTHER: 'other',
+  IMAGE: "image",
+  DOCUMENT: "document",
+  VIDEO: "video",
+  AUDIO: "audio",
+  OTHER: "other",
 };
 
 @Injectable()
@@ -25,13 +29,13 @@ export class UploadService {
   private readonly uploadPath: string;
 
   constructor(private prisma: PrismaService) {
-    this.uploadPath = path.join(process.cwd(), 'uploads');
+    this.uploadPath = path.join(process.cwd(), "uploads");
     this.ensureUploadDirectory();
   }
 
   private ensureUploadDirectory(): void {
     const categories = Object.values(UPLOAD_CATEGORY);
-    categories.forEach(category => {
+    categories.forEach((category) => {
       const categoryPath = path.join(this.uploadPath, category);
       if (!fs.existsSync(categoryPath)) {
         fs.mkdirSync(categoryPath, { recursive: true });
@@ -41,27 +45,28 @@ export class UploadService {
 
   private generateUniqueFilename(originalName: string): string {
     const ext = path.extname(originalName);
-    const randomName = crypto.randomBytes(16).toString('hex');
+    const randomName = crypto.randomBytes(16).toString("hex");
     return `${randomName}${ext}`;
   }
 
   private getFileCategory(mimetype: string): string {
-    if (mimetype.startsWith('image/')) return UPLOAD_CATEGORY.IMAGE;
-    if (mimetype.startsWith('video/')) return UPLOAD_CATEGORY.VIDEO;
-    if (mimetype.startsWith('audio/')) return UPLOAD_CATEGORY.AUDIO;
+    if (mimetype.startsWith("image/")) return UPLOAD_CATEGORY.IMAGE;
+    if (mimetype.startsWith("video/")) return UPLOAD_CATEGORY.VIDEO;
+    if (mimetype.startsWith("audio/")) return UPLOAD_CATEGORY.AUDIO;
     if (
-      mimetype.includes('pdf') ||
-      mimetype.includes('document') ||
-      mimetype.includes('text') ||
-      mimetype.includes('application/vnd.openxmlformats-officedocument')
-    ) return UPLOAD_CATEGORY.DOCUMENT;
+      mimetype.includes("pdf") ||
+      mimetype.includes("document") ||
+      mimetype.includes("text") ||
+      mimetype.includes("application/vnd.openxmlformats-officedocument")
+    )
+      return UPLOAD_CATEGORY.DOCUMENT;
     return UPLOAD_CATEGORY.OTHER;
   }
 
   private validateFile(file: Express.Multer.File, type: UploadType): void {
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      throw new BadRequestException('文件大小不能超过10MB');
+      throw new BadRequestException("文件大小不能超过10MB");
     }
 
     const allowedTypes = this.getAllowedFileTypes(type);
@@ -71,14 +76,19 @@ export class UploadService {
   }
 
   private getAllowedFileTypes(type: UploadType): string[] {
-    const commonImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const commonImageTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
     const commonDocumentTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'text/plain',
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "text/plain",
     ];
 
     switch (type) {
@@ -87,7 +97,7 @@ export class UploadService {
       case UploadType.BRAND:
         return [...commonImageTypes];
       case UploadType.USER:
-        return [...commonImageTypes, 'application/pdf'];
+        return [...commonImageTypes, "application/pdf"];
       case UploadType.ORDER:
         return [...commonImageTypes, ...commonDocumentTypes];
       default:
@@ -95,7 +105,11 @@ export class UploadService {
     }
   }
 
-  async uploadFile(file: Express.Multer.File, uploadDto: UploadDto, userId?: number): Promise<any> {
+  async uploadFile(
+    file: Express.Multer.File,
+    uploadDto: UploadDto,
+    userId?: number,
+  ): Promise<any> {
     try {
       this.validateFile(file, uploadDto.type);
 
@@ -215,9 +229,9 @@ export class UploadService {
     const orderBy: any = {};
 
     if (filter.sort_field) {
-      orderBy[filter.sort_field] = filter.sort_order || 'desc';
+      orderBy[filter.sort_field] = filter.sort_order || "desc";
     } else {
-      orderBy.created_at = 'desc';
+      orderBy.created_at = "desc";
     }
 
     return orderBy;
@@ -229,7 +243,7 @@ export class UploadService {
     });
 
     if (!upload) {
-      throw new NotFoundException('文件不存在');
+      throw new NotFoundException("文件不存在");
     }
 
     // 删除物理文件
@@ -259,13 +273,16 @@ export class UploadService {
     });
 
     if (!upload) {
-      throw new NotFoundException('文件不存在');
+      throw new NotFoundException("文件不存在");
     }
 
     return upload;
   }
 
-  async getFilesByRelatedId(relatedId: number, type: UploadType): Promise<any[]> {
+  async getFilesByRelatedId(
+    relatedId: number,
+    type: UploadType,
+  ): Promise<any[]> {
     return this.prisma.upload.findMany({
       where: {
         related_id: relatedId,
@@ -273,7 +290,7 @@ export class UploadService {
         status: 1,
       },
       orderBy: {
-        created_at: 'desc',
+        created_at: "desc",
       },
     });
   }
@@ -292,13 +309,13 @@ export class UploadService {
     });
 
     const categoryStats = await this.prisma.upload.groupBy({
-      by: ['category'],
+      by: ["category"],
       _count: { id: true },
       _sum: { file_size: true },
     });
 
     const typeStats = await this.prisma.upload.groupBy({
-      by: ['type'],
+      by: ["type"],
       _count: { id: true },
     });
 

@@ -1,6 +1,14 @@
 // @ts-nocheck
-import { IsString, IsNumber, IsEnum, IsOptional, IsNotEmpty, MinLength, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsNotEmpty,
+  MinLength,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export enum CompanyType {
   PERSON = 1,
@@ -53,10 +61,10 @@ export class CompanyDataDto {
 
 export class CompanyApplyDto {
   @IsOptional()
-  @IsEnum(CompanyType, { message: '认证类型不正确' })
+  @IsEnum(CompanyType, { message: "认证类型不正确" })
   type: CompanyType = CompanyType.COMPANY;
 
-  @IsNotEmpty({ message: '企业认证数据不能为空' })
+  @IsNotEmpty({ message: "企业认证数据不能为空" })
   @ValidateNested()
   @Type(() => CompanyDataDto)
   company_data: CompanyDataDto;
@@ -85,7 +93,7 @@ export class CompanyQueryDto {
 }
 
 export class CompanyAuditDto {
-  @IsEnum(CompanyStatus, { message: '状态不正确' })
+  @IsEnum(CompanyStatus, { message: "状态不正确" })
   status: CompanyStatus;
 
   @IsOptional()

@@ -1,14 +1,22 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service';
-import { CreateUserMessageLogDto } from './dto/user-message-log.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../database/prisma.service";
+import { CreateUserMessageLogDto } from "./dto/user-message-log.dto";
 
 @Injectable()
 export class UserMessageLogService {
   constructor(private prisma: PrismaService) {}
 
   async getFilterResult(filter: any) {
-    const { page, size, sort_field, sort_order, keyword, message_type, status } = filter;
+    const {
+      page,
+      size,
+      sort_field,
+      sort_order,
+      keyword,
+      message_type,
+      status,
+    } = filter;
 
     const skip = (page - 1) * size;
     const orderBy = { [sort_field]: sort_order };
@@ -26,7 +34,7 @@ export class UserMessageLogService {
     if (message_type) {
       where.message_type = parseInt(message_type);
     }
-    if (status !== '') {
+    if (status !== "") {
       where.status = parseInt(status);
     }
 
@@ -51,7 +59,15 @@ export class UserMessageLogService {
   }
 
   async getFilterCount(filter: any): Promise<number> {
-    const { page, size, sort_field, sort_order, keyword, message_type, status } = filter;
+    const {
+      page,
+      size,
+      sort_field,
+      sort_order,
+      keyword,
+      message_type,
+      status,
+    } = filter;
 
     const where: any = {};
     if (keyword) {
@@ -66,7 +82,7 @@ export class UserMessageLogService {
     if (message_type) {
       where.message_type = parseInt(message_type);
     }
-    if (status !== '') {
+    if (status !== "") {
       where.status = parseInt(status);
     }
 
@@ -89,7 +105,7 @@ export class UserMessageLogService {
     });
 
     if (!item) {
-      throw new Error('用户消息日志不存在');
+      throw new Error("用户消息日志不存在");
     }
 
     return item;
@@ -158,9 +174,11 @@ export class UserMessageLogService {
 
     const [total, unread, byType] = await Promise.all([
       (this.prisma as any).user_message_log.count({ where }),
-      (this.prisma as any).user_message.count({ where: { ...where, is_read: 0 } }),
+      (this.prisma as any).user_message.count({
+        where: { ...where, is_read: 0 },
+      }),
       (this.prisma as any).user_message_log.groupBy({
-        by: ['message_type'],
+        by: ["message_type"],
         where,
         _count: {
           message_type: true,
@@ -169,7 +187,7 @@ export class UserMessageLogService {
     ]);
 
     const typeStats = {};
-    byType.forEach(stat => {
+    byType.forEach((stat) => {
       typeStats[stat.message_type] = stat._count.message_type;
     });
 
@@ -181,7 +199,12 @@ export class UserMessageLogService {
     };
   }
 
-  async sendUserMessage(userId: number, title: string, content: string, messageType: number) {
+  async sendUserMessage(
+    userId: number,
+    title: string,
+    content: string,
+    messageType: number,
+  ) {
     return this.prisma.userMessageLog.create({
       data: {
         user_id: userId,
@@ -194,8 +217,13 @@ export class UserMessageLogService {
     });
   }
 
-  async sendBatchMessage(userIds: number[], title: string, content: string, messageType: number) {
-    const messages = userIds.map(userId => ({
+  async sendBatchMessage(
+    userIds: number[],
+    title: string,
+    content: string,
+    messageType: number,
+  ) {
+    const messages = userIds.map((userId) => ({
       user_id: userId,
       title,
       content,

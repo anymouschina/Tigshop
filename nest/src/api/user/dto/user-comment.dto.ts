@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { IsString, IsNumber, IsEnum, IsOptional, IsArray, ArrayNotEmpty, ArrayMinSize } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  ArrayNotEmpty,
+  ArrayMinSize,
+} from "class-validator";
 
 export class CreateCommentDto {
   @IsNumber()
@@ -28,8 +36,8 @@ export class CreateCommentDto {
   @ArrayMinSize(1)
   images?: string[]; // 图片URL数组
 
-  @IsEnum(['good', 'medium', 'bad'], { message: '评价类型不正确' })
-  comment_type?: 'good' | 'medium' | 'bad' = 'good';
+  @IsEnum(["good", "medium", "bad"], { message: "评价类型不正确" })
+  comment_type?: "good" | "medium" | "bad" = "good";
 
   @IsOptional()
   @IsString()
@@ -50,16 +58,16 @@ export class CommentQueryDto {
   product_id?: number;
 
   @IsOptional()
-  @IsEnum(['good', 'medium', 'bad'])
+  @IsEnum(["good", "medium", "bad"])
   comment_type?: string;
 
   @IsOptional()
-  @IsEnum(['all', 'with_image', 'with_content'])
-  filter_type?: string = 'all';
+  @IsEnum(["all", "with_image", "with_content"])
+  filter_type?: string = "all";
 
   @IsOptional()
-  @IsEnum(['newest', 'hottest', 'highest_score'])
-  sort_type?: string = 'newest';
+  @IsEnum(["newest", "hottest", "highest_score"])
+  sort_type?: string = "newest";
 }
 
 export class ReplyCommentDto {

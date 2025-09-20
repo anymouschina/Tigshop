@@ -10,34 +10,34 @@ import {
   Query,
   UseGuards,
   Request,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
-import { ShippingTypeService } from './shippingType.service';
+} from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from "@nestjs/swagger";
+import { ShippingTypeService } from "./shippingType.service";
 import {
   CreateShippingTypeDto,
   UpdateShippingTypeDto,
   ShippingTypeQueryDto,
-  ShippingTypeConfigDto
-} from './dto/shippingType.dto';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
+  ShippingTypeConfigDto,
+} from "./dto/shippingType.dto";
+import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../../auth/guards/roles.guard";
+import { Roles } from "../../auth/decorators/roles.decorator";
 
-@ApiTags('ShippingType Management')
-@Controller('setting/shipping_type')
+@ApiTags("ShippingType Management")
+@Controller("setting/shipping_type")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class ShippingTypeController {
   constructor(private readonly shippingTypeService: ShippingTypeService) {}
 
-  @Get('list')
-  @Roles('shippingTypeManage')
-  @ApiOperation({ summary: '获取配送方式列表' })
+  @Get("list")
+  @Roles("shippingTypeManage")
+  @ApiOperation({ summary: "获取配送方式列表" })
   async list(@Query() queryDto: ShippingTypeQueryDto) {
     const result = await this.shippingTypeService.findAll(queryDto);
     return {
       code: 200,
-      msg: '获取成功',
+      msg: "获取成功",
       data: {
         records: result.records,
         total: result.total,
@@ -48,56 +48,56 @@ export class ShippingTypeController {
     };
   }
 
-  @Get('config')
-  @Roles('shippingTypeManage')
-  @ApiOperation({ summary: '获取配置信息' })
+  @Get("config")
+  @Roles("shippingTypeManage")
+  @ApiOperation({ summary: "获取配置信息" })
   async config() {
     const config = await this.shippingTypeService.getConfig();
     return {
       code: 200,
-      msg: '获取成功',
+      msg: "获取成功",
       data: {
         status_config: config.statusConfig,
       },
     };
   }
 
-  @Get('detail')
-  @Roles('shippingTypeManage')
-  @ApiOperation({ summary: '获取配送方式详情' })
-  async detail(@Query('id') id: string) {
+  @Get("detail")
+  @Roles("shippingTypeManage")
+  @ApiOperation({ summary: "获取配送方式详情" })
+  async detail(@Query("id") id: string) {
     const itemId = parseInt(id, 10);
     if (isNaN(itemId)) {
       return {
         code: 400,
-        msg: '参数错误',
+        msg: "参数错误",
       };
     }
 
     const item = await this.shippingTypeService.findById(itemId);
     return {
       code: 200,
-      msg: '获取成功',
+      msg: "获取成功",
       data: item,
     };
   }
 
-  @Post('create')
-  @Roles('shippingTypeManage')
-  @ApiOperation({ summary: '创建配送方式' })
+  @Post("create")
+  @Roles("shippingTypeManage")
+  @ApiOperation({ summary: "创建配送方式" })
   @ApiBody({ type: CreateShippingTypeDto })
   async create(@Body() createDto: CreateShippingTypeDto) {
     const item = await this.shippingTypeService.create(createDto);
     return {
       code: 200,
-      msg: '创建成功',
+      msg: "创建成功",
       data: item,
     };
   }
 
-  @Put('update')
-  @Roles('shippingTypeManage')
-  @ApiOperation({ summary: '更新配送方式' })
+  @Put("update")
+  @Roles("shippingTypeManage")
+  @ApiOperation({ summary: "更新配送方式" })
   @ApiBody({ type: UpdateShippingTypeDto })
   async update(@Body() updateDto: UpdateShippingTypeDto & { id: number }) {
     const { id, ...data } = updateDto;
@@ -105,51 +105,51 @@ export class ShippingTypeController {
     const item = await this.shippingTypeService.update(id, data);
     return {
       code: 200,
-      msg: '更新成功',
+      msg: "更新成功",
       data: item,
     };
   }
 
-  @Delete('del')
-  @Roles('shippingTypeManage')
-  @ApiOperation({ summary: '删除配送方式' })
-  async delete(@Query('id') id: string) {
+  @Delete("del")
+  @Roles("shippingTypeManage")
+  @ApiOperation({ summary: "删除配送方式" })
+  async delete(@Query("id") id: string) {
     const itemId = parseInt(id, 10);
     if (isNaN(itemId)) {
       return {
         code: 400,
-        msg: '参数错误',
+        msg: "参数错误",
       };
     }
 
     await this.shippingTypeService.delete(itemId);
     return {
       code: 200,
-      msg: '删除成功',
+      msg: "删除成功",
     };
   }
 
-  @Post('batch')
-  @Roles('shippingTypeManage')
-  @ApiOperation({ summary: '批量操作' })
+  @Post("batch")
+  @Roles("shippingTypeManage")
+  @ApiOperation({ summary: "批量操作" })
   async batch(@Body() body: { type: string; ids: number[] }) {
     if (!body.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
       return {
         code: 400,
-        msg: '未选择项目',
+        msg: "未选择项目",
       };
     }
 
-    if (body.type === 'del') {
+    if (body.type === "del") {
       await this.shippingTypeService.batchDelete(body.ids);
       return {
         code: 200,
-        msg: '批量删除成功',
+        msg: "批量删除成功",
       };
     } else {
       return {
         code: 400,
-        msg: '操作类型错误',
+        msg: "操作类型错误",
       };
     }
   }

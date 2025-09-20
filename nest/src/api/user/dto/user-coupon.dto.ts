@@ -1,5 +1,12 @@
 // @ts-nocheck
-import { IsString, IsNumber, IsEnum, IsOptional, IsArray, ArrayNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  ArrayNotEmpty,
+} from "class-validator";
 
 export class CouponQueryDto {
   @IsOptional()
@@ -11,12 +18,12 @@ export class CouponQueryDto {
   size?: number = 10;
 
   @IsOptional()
-  @IsEnum(['all', 'unused', 'used', 'expired'])
-  status?: string = 'all';
+  @IsEnum(["all", "unused", "used", "expired"])
+  status?: string = "all";
 
   @IsOptional()
-  @IsEnum(['all', 'system', 'user', 'activity'])
-  coupon_type?: string = 'all';
+  @IsEnum(["all", "system", "user", "activity"])
+  coupon_type?: string = "all";
 
   @IsOptional()
   @IsString()
@@ -24,11 +31,11 @@ export class CouponQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'add_time';
+  sort_field?: string = "add_time";
 
   @IsOptional()
   @IsString()
-  sort_order?: string = 'desc';
+  sort_order?: string = "desc";
 }
 
 export class ReceiveCouponDto {

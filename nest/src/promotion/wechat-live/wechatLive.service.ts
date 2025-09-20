@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateWechatLiveDto,
   UpdateWechatLiveDto,
   WechatLiveQueryDto,
   WechatLiveStatus,
-  WechatLiveConfigDto
-} from './dto/wechatLive.dto';
+  WechatLiveConfigDto,
+} from "./dto/wechatLive.dto";
 
 @Injectable()
 export class WechatLiveService {
@@ -19,8 +23,8 @@ export class WechatLiveService {
       page = 1,
       size = 15,
       status,
-      sortField = 'live_id',
-      sortOrder = 'desc'
+      sortField = "live_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -32,7 +36,7 @@ export class WechatLiveService {
         { live_id: { contains: keyword } },
         { title: { contains: keyword } },
         { room_id: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -68,15 +72,13 @@ export class WechatLiveService {
     });
 
     if (!item) {
-      throw new NotFoundException('微信直播不存在');
+      throw new NotFoundException("微信直播不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateWechatLiveDto) {
-    
-
     const item = await this.prisma.wechat_live.create({
       data: {
         title: createDto.title,
@@ -97,7 +99,7 @@ export class WechatLiveService {
     });
 
     if (!item) {
-      throw new NotFoundException('微信直播不存在');
+      throw new NotFoundException("微信直播不存在");
     }
 
     const updateData: any = {};
@@ -105,10 +107,14 @@ export class WechatLiveService {
       updateData.title = updateDto.title;
     }
     if (updateDto.startTime !== undefined) {
-      updateData.start_time = Math.floor(new Date(updateDto.startTime).getTime() / 1000);
+      updateData.start_time = Math.floor(
+        new Date(updateDto.startTime).getTime() / 1000,
+      );
     }
     if (updateDto.endTime !== undefined) {
-      updateData.end_time = Math.floor(new Date(updateDto.endTime).getTime() / 1000);
+      updateData.end_time = Math.floor(
+        new Date(updateDto.endTime).getTime() / 1000,
+      );
     }
     if (updateDto.status !== undefined) {
       updateData.status = updateDto.status;
@@ -131,7 +137,7 @@ export class WechatLiveService {
     });
 
     if (!item) {
-      throw new NotFoundException('微信直播不存在');
+      throw new NotFoundException("微信直播不存在");
     }
 
     await this.prisma.wechat_live.delete({
@@ -148,9 +154,9 @@ export class WechatLiveService {
   async getConfig(): Promise<WechatLiveConfigDto> {
     return {
       statusConfig: {
-        [WechatLiveStatus.PENDING]: '待审核',
-        [WechatLiveStatus.LIVE]: '直播中',
-        [WechatLiveStatus.ENDED]: '已结束'
+        [WechatLiveStatus.PENDING]: "待审核",
+        [WechatLiveStatus.LIVE]: "直播中",
+        [WechatLiveStatus.ENDED]: "已结束",
       },
     };
   }

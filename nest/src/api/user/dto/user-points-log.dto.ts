@@ -1,5 +1,11 @@
 // @ts-nocheck
-import { IsString, IsNumber, IsEnum, IsOptional, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+} from "class-validator";
 
 export class PointsLogQueryDto {
   @IsOptional()
@@ -11,11 +17,11 @@ export class PointsLogQueryDto {
   size?: number = 10;
 
   @IsOptional()
-  @IsEnum(['all', 'income', 'expense'])
-  type?: string = 'all';
+  @IsEnum(["all", "income", "expense"])
+  type?: string = "all";
 
   @IsOptional()
-  @IsEnum(['sign', 'order', 'referral', 'exchange', 'admin', 'other'])
+  @IsEnum(["sign", "order", "referral", "exchange", "admin", "other"])
   log_type?: string;
 
   @IsOptional()

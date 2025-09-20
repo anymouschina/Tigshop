@@ -1,15 +1,15 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export const POINTS_EXCHANGE_ENABLED = {
-  0: '禁用',
-  1: '启用',
+  0: "禁用",
+  1: "启用",
 };
 
 export const POINTS_EXCHANGE_HOT = {
-  0: '普通',
-  1: '热门',
+  0: "普通",
+  1: "热门",
 };
 
 @Injectable()
@@ -57,7 +57,10 @@ export class PointsExchangeService {
         productPrice = Number(item.product.product_price || 0);
       }
 
-      const discountsPrice = Math.max(0, productPrice - Number(item.points_deducted_amount));
+      const discountsPrice = Math.max(
+        0,
+        productPrice - Number(item.points_deducted_amount),
+      );
       item.product_price = productPrice;
       item.discounts_price = Number(discountsPrice.toFixed(2));
     }
@@ -106,7 +109,7 @@ export class PointsExchangeService {
       };
     }
     return {
-      id: 'desc',
+      id: "desc",
     };
   }
 
@@ -135,7 +138,7 @@ export class PointsExchangeService {
     });
 
     if (!result) {
-      throw new Error('积分商品不存在');
+      throw new Error("积分商品不存在");
     }
 
     let productPrice = 0;
@@ -150,7 +153,10 @@ export class PointsExchangeService {
       productStock = Number(result.product?.product_stock || 0);
     }
 
-    const discountsPrice = Math.max(0, productPrice - Number(result.points_deducted_amount));
+    const discountsPrice = Math.max(
+      0,
+      productPrice - Number(result.points_deducted_amount),
+    );
 
     // 检查SKU是否存在或商品是否有价格
     if (result.sku_id > 0 && !result.product_sku) {
@@ -178,12 +184,12 @@ export class PointsExchangeService {
   async create(data: any): Promise<any> {
     // 验证积分必须大于0
     if (data.exchange_integral <= 0) {
-      throw new Error('兑换积分必须大于0');
+      throw new Error("兑换积分必须大于0");
     }
 
     // 验证抵扣金额不能为负数
     if (data.points_deducted_amount < 0) {
-      throw new Error('抵扣金额不能为负数');
+      throw new Error("抵扣金额不能为负数");
     }
 
     const result = await this.prisma.pointsExchange.create({
@@ -206,23 +212,28 @@ export class PointsExchangeService {
     });
 
     if (!pointsExchange) {
-      throw new Error('积分商品不存在');
+      throw new Error("积分商品不存在");
     }
 
     // 验证积分必须大于0
     if (data.exchange_integral !== undefined && data.exchange_integral <= 0) {
-      throw new Error('兑换积分必须大于0');
+      throw new Error("兑换积分必须大于0");
     }
 
     // 验证抵扣金额不能为负数
-    if (data.points_deducted_amount !== undefined && data.points_deducted_amount < 0) {
-      throw new Error('抵扣金额不能为负数');
+    if (
+      data.points_deducted_amount !== undefined &&
+      data.points_deducted_amount < 0
+    ) {
+      throw new Error("抵扣金额不能为负数");
     }
 
     const updateData: any = {};
     if (data.product_id !== undefined) updateData.product_id = data.product_id;
-    if (data.exchange_integral !== undefined) updateData.exchange_integral = data.exchange_integral;
-    if (data.points_deducted_amount !== undefined) updateData.points_deducted_amount = data.points_deducted_amount;
+    if (data.exchange_integral !== undefined)
+      updateData.exchange_integral = data.exchange_integral;
+    if (data.points_deducted_amount !== undefined)
+      updateData.points_deducted_amount = data.points_deducted_amount;
     if (data.is_hot !== undefined) updateData.is_hot = data.is_hot;
     if (data.is_enabled !== undefined) updateData.is_enabled = data.is_enabled;
     if (data.sku_id !== undefined) updateData.sku_id = data.sku_id;
@@ -241,12 +252,12 @@ export class PointsExchangeService {
     });
 
     if (!pointsExchange) {
-      throw new Error('积分商品不存在');
+      throw new Error("积分商品不存在");
     }
 
     // 验证字段
-    if (!['is_hot', 'is_enabled'].includes(field)) {
-      throw new Error('不支持的字段');
+    if (!["is_hot", "is_enabled"].includes(field)) {
+      throw new Error("不支持的字段");
     }
 
     const result = await this.prisma.pointsExchange.update({
@@ -265,7 +276,7 @@ export class PointsExchangeService {
     });
 
     if (!pointsExchange) {
-      throw new Error('积分商品不存在');
+      throw new Error("积分商品不存在");
     }
 
     const result = await this.prisma.pointsExchange.delete({

@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { Module } from '@nestjs/common';
-import { CategoryController } from './category.controller';
-import { CategoryService } from './category.service';
-import { PrismaService } from '../../prisma.service';
+import { Module } from "@nestjs/common";
+import { CategoryController } from "./category.controller";
+import { CategoryService } from "./category.service";
+import { PrismaService } from "../../prisma.service";
 
 @Module({
   controllers: [CategoryController],

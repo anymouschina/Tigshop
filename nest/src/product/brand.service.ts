@@ -1,21 +1,21 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export const BRAND_SHOW_STATUS = {
-  0: '隐藏',
-  1: '显示',
+  0: "隐藏",
+  1: "显示",
 };
 
 export const BRAND_HOT_STATUS = {
-  0: '普通',
-  1: '热门',
+  0: "普通",
+  1: "热门",
 };
 
 export const BRAND_AUDIT_STATUS = {
-  0: '待审核',
-  1: '审核通过',
-  2: '已拒绝',
+  0: "待审核",
+  1: "审核通过",
+  2: "已拒绝",
 };
 
 @Injectable()
@@ -129,7 +129,7 @@ export class BrandService {
       };
     }
     return {
-      brand_id: 'desc',
+      brand_id: "desc",
     };
   }
 
@@ -147,7 +147,7 @@ export class BrandService {
     });
 
     if (!result) {
-      throw new Error('品牌不存在');
+      throw new Error("品牌不存在");
     }
 
     return {
@@ -160,13 +160,13 @@ export class BrandService {
 
   async create(data: any): Promise<any> {
     // 验证品牌名称不能为空
-    if (!data.brand_name || data.brand_name.trim() === '') {
-      throw new Error('品牌名称不能为空');
+    if (!data.brand_name || data.brand_name.trim() === "") {
+      throw new Error("品牌名称不能为空");
     }
 
     // 验证品牌名称长度
     if (data.brand_name.length > 30) {
-      throw new Error('品牌名称不能超过30个字符');
+      throw new Error("品牌名称不能超过30个字符");
     }
 
     // 检查品牌名称是否重复
@@ -178,7 +178,7 @@ export class BrandService {
     });
 
     if (existingBrand) {
-      throw new Error('品牌名称已存在');
+      throw new Error("品牌名称已存在");
     }
 
     // 如果没有提供首字母，自动生成
@@ -193,15 +193,15 @@ export class BrandService {
       data: {
         brand_name: data.brand_name,
         first_word: data.first_word,
-        brand_type: data.brand_type || '',
-        brand_desc: data.brand_desc || '',
-        brand_logo: data.brand_logo || '',
-        site_url: data.site_url || '',
+        brand_type: data.brand_type || "",
+        brand_desc: data.brand_desc || "",
+        brand_logo: data.brand_logo || "",
+        site_url: data.site_url || "",
         brand_is_hot: data.brand_is_hot || 0,
         is_show: data.is_show || 1,
         sort_order: data.sort_order || 50,
         shop_id: data.shop_id || 0,
-        brand_en_name: data.brand_en_name || '',
+        brand_en_name: data.brand_en_name || "",
         status,
       },
     });
@@ -215,17 +215,20 @@ export class BrandService {
     });
 
     if (!brand) {
-      throw new Error('品牌不存在');
+      throw new Error("品牌不存在");
     }
 
     // 验证品牌名称不能为空
-    if (data.brand_name !== undefined && (!data.brand_name || data.brand_name.trim() === '')) {
-      throw new Error('品牌名称不能为空');
+    if (
+      data.brand_name !== undefined &&
+      (!data.brand_name || data.brand_name.trim() === "")
+    ) {
+      throw new Error("品牌名称不能为空");
     }
 
     // 验证品牌名称长度
     if (data.brand_name !== undefined && data.brand_name.length > 30) {
-      throw new Error('品牌名称不能超过30个字符');
+      throw new Error("品牌名称不能超过30个字符");
     }
 
     // 检查品牌名称是否重复（排除自己）
@@ -239,7 +242,7 @@ export class BrandService {
       });
 
       if (existingBrand) {
-        throw new Error('品牌名称已存在');
+        throw new Error("品牌名称已存在");
       }
     }
 
@@ -250,10 +253,12 @@ export class BrandService {
     if (data.brand_desc !== undefined) updateData.brand_desc = data.brand_desc;
     if (data.brand_logo !== undefined) updateData.brand_logo = data.brand_logo;
     if (data.site_url !== undefined) updateData.site_url = data.site_url;
-    if (data.brand_is_hot !== undefined) updateData.brand_is_hot = data.brand_is_hot;
+    if (data.brand_is_hot !== undefined)
+      updateData.brand_is_hot = data.brand_is_hot;
     if (data.is_show !== undefined) updateData.is_show = data.is_show;
     if (data.sort_order !== undefined) updateData.sort_order = data.sort_order;
-    if (data.brand_en_name !== undefined) updateData.brand_en_name = data.brand_en_name;
+    if (data.brand_en_name !== undefined)
+      updateData.brand_en_name = data.brand_en_name;
 
     const result = await this.prisma.brand.update({
       where: { brand_id: id },
@@ -269,22 +274,29 @@ export class BrandService {
     });
 
     if (!brand) {
-      throw new Error('品牌不存在');
+      throw new Error("品牌不存在");
     }
 
     // 验证字段
-    const allowedFields = ['brand_name', 'first_word', 'brand_is_hot', 'is_show', 'sort_order', 'brand_type'];
+    const allowedFields = [
+      "brand_name",
+      "first_word",
+      "brand_is_hot",
+      "is_show",
+      "sort_order",
+      "brand_type",
+    ];
     if (!allowedFields.includes(field)) {
-      throw new Error('不支持的字段');
+      throw new Error("不支持的字段");
     }
 
     // 特殊字段验证
-    if (field === 'brand_name') {
-      if (!value || value.trim() === '') {
-        throw new Error('品牌名称不能为空');
+    if (field === "brand_name") {
+      if (!value || value.trim() === "") {
+        throw new Error("品牌名称不能为空");
       }
       if (value.length > 30) {
-        throw new Error('品牌名称不能超过30个字符');
+        throw new Error("品牌名称不能超过30个字符");
       }
 
       // 检查品牌名称是否重复
@@ -297,11 +309,11 @@ export class BrandService {
       });
 
       if (existingBrand) {
-        throw new Error('品牌名称已存在');
+        throw new Error("品牌名称已存在");
       }
     }
 
-    if (field === 'first_word' && !value) {
+    if (field === "first_word" && !value) {
       // 如果清空首字母，自动重新生成
       value = this.generateFirstWord(brand.brand_name);
     }
@@ -322,7 +334,7 @@ export class BrandService {
     });
 
     if (!brand) {
-      throw new Error('品牌不存在');
+      throw new Error("品牌不存在");
     }
 
     // 检查是否有商品关联
@@ -331,7 +343,7 @@ export class BrandService {
     });
 
     if (hasProducts > 0) {
-      throw new Error('有商品关联该品牌，请先更换品牌后再删除');
+      throw new Error("有商品关联该品牌，请先更换品牌后再删除");
     }
 
     const result = await this.prisma.brand.delete({
@@ -350,7 +362,7 @@ export class BrandService {
   }
 
   // 搜索品牌
-  async searchBrands(word: string = ''): Promise<any> {
+  async searchBrands(word: string = ""): Promise<any> {
     const where: any = {
       is_show: 1,
       status: 1, // 只搜索审核通过的品牌
@@ -378,10 +390,7 @@ export class BrandService {
 
     const brands = await this.prisma.brand.findMany({
       where,
-      orderBy: [
-        { sort_order: 'asc' },
-        { brand_id: 'desc' },
-      ],
+      orderBy: [{ sort_order: "asc" }, { brand_id: "desc" }],
       select: {
         brand_id: true,
         brand_name: true,
@@ -396,12 +405,12 @@ export class BrandService {
         is_show: 1,
         status: 1,
         first_word: {
-          not: '',
+          not: "",
         },
       },
-      distinct: ['first_word'],
+      distinct: ["first_word"],
       orderBy: {
-        first_word: 'asc',
+        first_word: "asc",
       },
       select: {
         first_word: true,
@@ -410,7 +419,7 @@ export class BrandService {
 
     return {
       brand_list: brands,
-      firstWord_list: firstWords.map(item => item.first_word),
+      firstWord_list: firstWords.map((item) => item.first_word),
     };
   }
 
@@ -421,19 +430,19 @@ export class BrandService {
         is_show: 1,
         status: 1,
         first_word: {
-          not: '',
+          not: "",
         },
       },
-      distinct: ['first_word'],
+      distinct: ["first_word"],
       orderBy: {
-        first_word: 'asc',
+        first_word: "asc",
       },
       select: {
         first_word: true,
       },
     });
 
-    return result.map(item => item.first_word);
+    return result.map((item) => item.first_word);
   }
 
   // 更新所有品牌的首字母
@@ -457,28 +466,32 @@ export class BrandService {
   }
 
   // 品牌审核
-  async auditBrand(brandId: number, status: number, rejectRemark?: string): Promise<any> {
+  async auditBrand(
+    brandId: number,
+    status: number,
+    rejectRemark?: string,
+  ): Promise<any> {
     const brand = await this.prisma.brand.findUnique({
       where: { brand_id: brandId },
     });
 
     if (!brand) {
-      throw new Error('品牌不存在');
+      throw new Error("品牌不存在");
     }
 
     if (brand.status !== 0) {
-      throw new Error('该品牌已经审核过了');
+      throw new Error("该品牌已经审核过了");
     }
 
     if (status === 2 && !rejectRemark) {
-      throw new Error('请填写拒绝理由');
+      throw new Error("请填写拒绝理由");
     }
 
     const result = await this.prisma.brand.update({
       where: { brand_id: brandId },
       data: {
         status,
-        reject_remark: rejectRemark || '',
+        reject_remark: rejectRemark || "",
       },
     });
 
@@ -551,10 +564,7 @@ export class BrandService {
         is_show: 1,
         status: 1,
       },
-      orderBy: [
-        { sort_order: 'asc' },
-        { brand_id: 'desc' },
-      ],
+      orderBy: [{ sort_order: "asc" }, { brand_id: "desc" }],
       take: 10,
     });
 
@@ -568,10 +578,7 @@ export class BrandService {
         is_show: 1,
         status: 1,
       },
-      orderBy: [
-        { sort_order: 'asc' },
-        { brand_id: 'desc' },
-      ],
+      orderBy: [{ sort_order: "asc" }, { brand_id: "desc" }],
     });
 
     return brands;
@@ -579,7 +586,7 @@ export class BrandService {
 
   // 生成首字母拼音（简化版）
   private generateFirstWord(name: string): string {
-    if (!name) return '';
+    if (!name) return "";
 
     // 获取第一个字符
     const firstChar = name.charAt(0).toUpperCase();
@@ -591,31 +598,119 @@ export class BrandService {
 
     // 简单的中文拼音首字母映射（实际项目中应该使用完整的拼音库）
     const pinyinMap: Record<string, string> = {
-      '阿': 'A', '艾': 'A', '安': 'A',
-      '八': 'B', '巴': 'B', '白': 'B', '拜': 'B', '班': 'B',
-      '擦': 'C', '才': 'C', '菜': 'C', '参': 'C', '草': 'C',
-      '大': 'D', '达': 'D', '打': 'D', '带': 'D', '代': 'D',
-      '额': 'E', '俄': 'E', '恶': 'E', '恩': 'E', '儿': 'E',
-      '发': 'F', '法': 'F', '帆': 'F', '反': 'F', '方': 'F',
-      '嘎': 'G', '该': 'G', '改': 'G', '盖': 'G', '干': 'G',
-      '哈': 'H', '嗨': 'H', '汗': 'H', '汉': 'H', '航': 'H',
-      '击': 'J', '机': 'J', '鸡': 'J', '积': 'J', '基': 'J',
-      '喀': 'K', '卡': 'K', '开': 'K', '凯': 'K', '看': 'K',
-      '拉': 'L', '啦': 'L', '来': 'L', '兰': 'L', '蓝': 'L',
-      '妈': 'M', '麻': 'M', '马': 'M', '吗': 'M', '买': 'M',
-      '拿': 'N', '哪': 'N', '那': 'N', '纳': 'N', '乃': 'N',
-      '哦': 'O', '欧': 'O', '偶': 'O',
-      '啪': 'P', '怕': 'P', '拍': 'P', '排': 'P', '派': 'P',
-      '七': 'Q', '期': 'Q', '欺': 'Q', '漆': 'Q', '齐': 'Q',
-      '然': 'R', '燃': 'R', '染': 'R', '壤': 'R', '让': 'R',
-      '撒': 'S', '洒': 'S', '萨': 'S', '塞': 'S', '赛': 'S',
-      '他': 'T', '它': 'T', '她': 'T', '塔': 'T', '踏': 'T',
-      '挖': 'W', '哇': 'W', '娃': 'W', '瓦': 'W', '外': 'W',
-      '西': 'X', '希': 'X', '昔': 'X', '析': 'X', '席': 'X',
-      '压': 'Y', '呀': 'Y', '芽': 'Y', '雅': 'Y', '亚': 'Y',
-      '匝': 'Z', '砸': 'Z', '杂': 'Z', '灾': 'Z', '栽': 'Z',
+      阿: "A",
+      艾: "A",
+      安: "A",
+      八: "B",
+      巴: "B",
+      白: "B",
+      拜: "B",
+      班: "B",
+      擦: "C",
+      才: "C",
+      菜: "C",
+      参: "C",
+      草: "C",
+      大: "D",
+      达: "D",
+      打: "D",
+      带: "D",
+      代: "D",
+      额: "E",
+      俄: "E",
+      恶: "E",
+      恩: "E",
+      儿: "E",
+      发: "F",
+      法: "F",
+      帆: "F",
+      反: "F",
+      方: "F",
+      嘎: "G",
+      该: "G",
+      改: "G",
+      盖: "G",
+      干: "G",
+      哈: "H",
+      嗨: "H",
+      汗: "H",
+      汉: "H",
+      航: "H",
+      击: "J",
+      机: "J",
+      鸡: "J",
+      积: "J",
+      基: "J",
+      喀: "K",
+      卡: "K",
+      开: "K",
+      凯: "K",
+      看: "K",
+      拉: "L",
+      啦: "L",
+      来: "L",
+      兰: "L",
+      蓝: "L",
+      妈: "M",
+      麻: "M",
+      马: "M",
+      吗: "M",
+      买: "M",
+      拿: "N",
+      哪: "N",
+      那: "N",
+      纳: "N",
+      乃: "N",
+      哦: "O",
+      欧: "O",
+      偶: "O",
+      啪: "P",
+      怕: "P",
+      拍: "P",
+      排: "P",
+      派: "P",
+      七: "Q",
+      期: "Q",
+      欺: "Q",
+      漆: "Q",
+      齐: "Q",
+      然: "R",
+      燃: "R",
+      染: "R",
+      壤: "R",
+      让: "R",
+      撒: "S",
+      洒: "S",
+      萨: "S",
+      塞: "S",
+      赛: "S",
+      他: "T",
+      它: "T",
+      她: "T",
+      塔: "T",
+      踏: "T",
+      挖: "W",
+      哇: "W",
+      娃: "W",
+      瓦: "W",
+      外: "W",
+      西: "X",
+      希: "X",
+      昔: "X",
+      析: "X",
+      席: "X",
+      压: "Y",
+      呀: "Y",
+      芽: "Y",
+      雅: "Y",
+      亚: "Y",
+      匝: "Z",
+      砸: "Z",
+      杂: "Z",
+      灾: "Z",
+      栽: "Z",
     };
 
-    return pinyinMap[firstChar] || '#';
+    return pinyinMap[firstChar] || "#";
   }
 }

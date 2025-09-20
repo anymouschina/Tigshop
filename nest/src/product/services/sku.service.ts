@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import { Injectable } from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 
 @Injectable()
 export class SkuService {
@@ -18,9 +18,13 @@ export class SkuService {
     };
   }
 
-  async generateSkusFromTemplate(templateId: number, productId: number, skuData: any) {
+  async generateSkusFromTemplate(
+    templateId: number,
+    productId: number,
+    skuData: any,
+  ) {
     return {
-      message: 'SKU generation is temporarily disabled',
+      message: "SKU generation is temporarily disabled",
       templateId,
       productId,
     };
@@ -28,7 +32,7 @@ export class SkuService {
 
   async batchUpdatePrices(productId: number, updates: any[]) {
     return {
-      message: 'Batch price update is temporarily disabled',
+      message: "Batch price update is temporarily disabled",
       productId,
       updatesCount: updates.length,
     };
@@ -36,7 +40,7 @@ export class SkuService {
 
   async batchUpdateStock(productId: number, updates: any[]) {
     return {
-      message: 'Batch stock update is temporarily disabled',
+      message: "Batch stock update is temporarily disabled",
       productId,
       updatesCount: updates.length,
     };

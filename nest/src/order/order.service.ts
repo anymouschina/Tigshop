@@ -1,7 +1,11 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
-import { CartService } from '../cart/cart.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../database/database.service";
+import { CartService } from "../cart/cart.service";
 
 export interface CreateOrderDto {
   addressId: number;
@@ -35,7 +39,7 @@ export class OrderService {
     // 获取用户购物车
     const cart = await this.cartService.getCart(userId);
     if (!cart.items || cart.items.length === 0) {
-      throw new BadRequestException('购物车为空，无法创建订单');
+      throw new BadRequestException("购物车为空，无法创建订单");
     }
 
     // 获取用户地址
@@ -44,7 +48,7 @@ export class OrderService {
     });
 
     if (!address) {
-      throw new BadRequestException('收货地址不存在');
+      throw new BadRequestException("收货地址不存在");
     }
 
     // 验证库存
@@ -63,9 +67,9 @@ export class OrderService {
     }
 
     // 计算订单金额
-    let totalAmount = cart.totalPrice;
+    const totalAmount = cart.totalPrice;
     let discountAmount = 0;
-    let shippingFee = this.calculateShippingFee(cart.items);
+    const shippingFee = this.calculateShippingFee(cart.items);
 
     // 处理优惠券
     if (couponId) {
@@ -75,22 +79,27 @@ export class OrderService {
       });
 
       if (!coupon || coupon.usedTime !== null) {
-        throw new BadRequestException('优惠券不可用');
+        throw new BadRequestException("优惠券不可用");
       }
 
       const now = new Date();
       if (coupon.coupon.useStartDate > now || coupon.coupon.useEndDate < now) {
-        throw new BadRequestException('优惠券已过期');
+        throw new BadRequestException("优惠券已过期");
       }
 
       if (totalAmount < Number(coupon.coupon.minOrderAmount || 0)) {
-        throw new BadRequestException(`订单金额未达到优惠券使用门槛: ${coupon.coupon.minOrderAmount}`);
+        throw new BadRequestException(
+          `订单金额未达到优惠券使用门槛: ${coupon.coupon.minOrderAmount}`,
+        );
       }
 
-      if (coupon.coupon.couponType === 1) { // 固定金额
+      if (coupon.coupon.couponType === 1) {
+        // 固定金额
         discountAmount = Number(coupon.coupon.couponMoney);
-      } else if (coupon.coupon.couponType === 2) { // 百分比
-        discountAmount = totalAmount * Number(coupon.coupon.couponDiscount) / 100;
+      } else if (coupon.coupon.couponType === 2) {
+        // 百分比
+        discountAmount =
+          (totalAmount * Number(coupon.coupon.couponDiscount)) / 100;
       }
 
       // 优惠金额不能超过订单金额
@@ -105,7 +114,7 @@ export class OrderService {
     // 开启事务
     const result = await this.prisma.$transaction(async (tx) => {
       // 创建订单 - 使用原始SQL来避免XOR类型问题
-      const order = await tx.$queryRaw`
+      const order = (await tx.$queryRaw`
         INSERT INTO "Order" (
           "userId", "orderSn", "totalAmount", "discountAmount", "shippingFee",
           "paymentAmount", "paymentMethod", "remark", "status", "paymentStatus",
@@ -116,7 +125,7 @@ export class OrderService {
           'UNSHIPPED', ${new Date()}, ${new Date()}
         )
         RETURNING *
-      ` as any;
+      `) as any;
 
       // 获取创建的订单ID
       const orderId = (order as any)[0].orderId;
@@ -129,7 +138,7 @@ export class OrderService {
           INSERT INTO "OrderItem" (
             "orderId", "productId", "quantity", "price", "productName", "picThumb"
           ) VALUES (
-            ${orderId}, ${item.productId}, ${item.quantity}, ${item.originalPrice}, ${item.productSn || ''}, ${item.picThumb || ''}
+            ${orderId}, ${item.productId}, ${item.quantity}, ${item.originalPrice}, ${item.productSn || ""}, ${item.picThumb || ""}
           )
         `;
 
@@ -178,13 +187,7 @@ export class OrderService {
    * @returns 订单列表
    */
   async getOrderList(userId: number, query: any = {}) {
-    const {
-      page = 1,
-      size = 10,
-      status,
-      paymentStatus,
-      keyword,
-    } = query;
+    const { page = 1, size = 10, status, paymentStatus, keyword } = query;
 
     const skip = (page - 1) * size;
     const where: any = { userId };
@@ -220,7 +223,7 @@ export class OrderService {
           },
           payments: true,
         },
-        orderBy: { addTime: 'desc' },
+        orderBy: { addTime: "desc" },
       }),
       this.prisma.order.count({ where }),
     ]);
@@ -272,7 +275,7 @@ export class OrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     return order;
@@ -288,8 +291,9 @@ export class OrderService {
   async cancelOrder(orderId: number, userId: number, reason?: string) {
     const order = await this.getOrderDetail(orderId, userId);
 
-    if (order.orderStatus !== 0) { // PENDING = 0
-      throw new BadRequestException('只有待付款的订单才能取消');
+    if (order.orderStatus !== 0) {
+      // PENDING = 0
+      throw new BadRequestException("只有待付款的订单才能取消");
     }
 
     // 恢复库存
@@ -326,8 +330,9 @@ export class OrderService {
   async confirmReceive(orderId: number, userId: number) {
     const order = await this.getOrderDetail(orderId, userId);
 
-    if (order.orderStatus !== 1) { // SHIPPED = 1
-      throw new BadRequestException('只有已发货的订单才能确认收货');
+    if (order.orderStatus !== 1) {
+      // SHIPPED = 1
+      throw new BadRequestException("只有已发货的订单才能确认收货");
     }
 
     return this.prisma.order.update({
@@ -348,15 +353,16 @@ export class OrderService {
   async deleteOrder(orderId: number, userId: number) {
     const order = await this.getOrderDetail(orderId, userId);
 
-    if (![2, 3].includes(order.orderStatus)) { // CANCELLED = 2, COMPLETED = 3
-      throw new BadRequestException('只能删除已取消或已完成的订单');
+    if (![2, 3].includes(order.orderStatus)) {
+      // CANCELLED = 2, COMPLETED = 3
+      throw new BadRequestException("只能删除已取消或已完成的订单");
     }
 
     await this.prisma.order.delete({
       where: { orderId },
     });
 
-    return { message: '订单删除成功' };
+    return { message: "订单删除成功" };
   }
 
   /**
@@ -365,14 +371,15 @@ export class OrderService {
    * @returns 订单统计
    */
   async getOrderStats(userId: number) {
-    const [total, pending, paid, shipped, completed, cancelled] = await Promise.all([
-      this.prisma.order.count({ where: { userId } }),
-      this.prisma.order.count({ where: { userId, orderStatus: 0 } }), // PENDING = 0
-      this.prisma.order.count({ where: { userId, payStatus: 1 } }), // PAID = 1
-      this.prisma.order.count({ where: { userId, orderStatus: 1 } }), // SHIPPED = 1
-      this.prisma.order.count({ where: { userId, orderStatus: 3 } }), // COMPLETED = 3
-      this.prisma.order.count({ where: { userId, orderStatus: 2 } }), // CANCELLED = 2
-    ]);
+    const [total, pending, paid, shipped, completed, cancelled] =
+      await Promise.all([
+        this.prisma.order.count({ where: { userId } }),
+        this.prisma.order.count({ where: { userId, orderStatus: 0 } }), // PENDING = 0
+        this.prisma.order.count({ where: { userId, payStatus: 1 } }), // PAID = 1
+        this.prisma.order.count({ where: { userId, orderStatus: 1 } }), // SHIPPED = 1
+        this.prisma.order.count({ where: { userId, orderStatus: 3 } }), // COMPLETED = 3
+        this.prisma.order.count({ where: { userId, orderStatus: 2 } }), // CANCELLED = 2
+      ]);
 
     return {
       total,
@@ -408,13 +415,17 @@ export class OrderService {
    */
   private generateOrderSn(): string {
     const date = new Date();
-    const dateStr = date.getFullYear().toString() +
-      (date.getMonth() + 1).toString().padStart(2, '0') +
-      date.getDate().toString().padStart(2, '0');
-    const timeStr = date.getHours().toString().padStart(2, '0') +
-      date.getMinutes().toString().padStart(2, '0') +
-      date.getSeconds().toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const dateStr =
+      date.getFullYear().toString() +
+      (date.getMonth() + 1).toString().padStart(2, "0") +
+      date.getDate().toString().padStart(2, "0");
+    const timeStr =
+      date.getHours().toString().padStart(2, "0") +
+      date.getMinutes().toString().padStart(2, "0") +
+      date.getSeconds().toString().padStart(2, "0");
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
 
     return `${dateStr}${timeStr}${random}`;
   }

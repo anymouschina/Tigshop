@@ -1,7 +1,15 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
-import { OrderCheckDto, OrderUpdateDto, OrderSubmitDto } from './dto/order-check.dto';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
+import {
+  OrderCheckDto,
+  OrderUpdateDto,
+  OrderSubmitDto,
+} from "./dto/order-check.dto";
 
 @Injectable()
 export class OrderCheckService {
@@ -16,11 +24,15 @@ export class OrderCheckService {
     // 获取购物车数据
     const cartList = await this.getStoreCarts(userId, flowType);
     if (!cartList.carts || cartList.carts.length === 0) {
-      throw new BadRequestException('您还未选择商品！');
+      throw new BadRequestException("您还未选择商品！");
     }
 
     // 构建购物车促销信息
-    const processedCartList = await this.buildCartPromotion(cartList, userId, flowType);
+    const processedCartList = await this.buildCartPromotion(
+      cartList,
+      userId,
+      flowType,
+    );
 
     // 获取用户地址列表
     const addressList = await this.getUserAddresses(userId);
@@ -36,7 +48,7 @@ export class OrderCheckService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         address_list: addressList,
         available_payment_type: paymentTypes,
@@ -67,7 +79,7 @@ export class OrderCheckService {
 
     return {
       code: 200,
-      message: '更新成功',
+      message: "更新成功",
       data: null,
     };
   }
@@ -78,7 +90,7 @@ export class OrderCheckService {
 
     return {
       code: 200,
-      message: '优惠券更新成功',
+      message: "优惠券更新成功",
       data: null,
     };
   }
@@ -86,7 +98,7 @@ export class OrderCheckService {
   async submitOrder(userId: number, submitDto: OrderSubmitDto) {
     // 验证用户地址
     if (!submitDto.address_id) {
-      throw new BadRequestException('请选择收货地址');
+      throw new BadRequestException("请选择收货地址");
     }
 
     const address = await this.prisma.user_address.findFirst({
@@ -97,7 +109,7 @@ export class OrderCheckService {
     });
 
     if (!address) {
-      throw new NotFoundException('收货地址不存在');
+      throw new NotFoundException("收货地址不存在");
     }
 
     // 验证购物车商品
@@ -112,13 +124,15 @@ export class OrderCheckService {
     });
 
     if (cartItems.length === 0) {
-      throw new BadRequestException('购物车中没有商品');
+      throw new BadRequestException("购物车中没有商品");
     }
 
     // 检查库存
     for (const item of cartItems) {
       if (item.product.stock < item.num) {
-        throw new BadRequestException(`商品 "${item.product.product_name}" 库存不足`);
+        throw new BadRequestException(
+          `商品 "${item.product.product_name}" 库存不足`,
+        );
       }
     }
 
@@ -171,7 +185,7 @@ export class OrderCheckService {
 
     return {
       code: 200,
-      message: '下单成功',
+      message: "下单成功",
       data: {
         order_id: order.order_id,
         order_sn: order.order_sn,
@@ -182,7 +196,7 @@ export class OrderCheckService {
   async getLastInvoice(userId: number) {
     const lastOrder = await this.prisma.order.findFirst({
       where: { user_id: userId },
-      orderBy: { add_time: 'desc' },
+      orderBy: { add_time: "desc" },
       include: {
         invoice: true,
       },
@@ -191,14 +205,14 @@ export class OrderCheckService {
     if (!lastOrder || !lastOrder.invoice) {
       return {
         code: 200,
-        message: '获取成功',
+        message: "获取成功",
         data: null,
       };
     }
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: lastOrder.invoice,
     };
   }
@@ -206,29 +220,47 @@ export class OrderCheckService {
   async getAvailablePaymentType() {
     // 获取系统配置的支付方式
     const paymentTypes = [
-      { id: 1, name: '微信支付', code: 'wechat', icon: 'wechat', is_available: 1 },
-      { id: 2, name: '支付宝', code: 'alipay', icon: 'alipay', is_available: 1 },
-      { id: 3, name: '余额支付', code: 'balance', icon: 'balance', is_available: 1 },
+      {
+        id: 1,
+        name: "微信支付",
+        code: "wechat",
+        icon: "wechat",
+        is_available: 1,
+      },
+      {
+        id: 2,
+        name: "支付宝",
+        code: "alipay",
+        icon: "alipay",
+        is_available: 1,
+      },
+      {
+        id: 3,
+        name: "余额支付",
+        code: "balance",
+        icon: "balance",
+        is_available: 1,
+      },
     ];
 
     return {
       code: 200,
-      message: '获取成功',
-      data: paymentTypes.filter(type => type.is_available === 1),
+      message: "获取成功",
+      data: paymentTypes.filter((type) => type.is_available === 1),
     };
   }
 
   async getStoreShippingType(shopId: number) {
     // 获取店铺配送方式
     const shippingTypes = [
-      { id: 1, name: '快递配送', code: 'express', fee: 10, is_available: 1 },
-      { id: 2, name: '上门自提', code: 'pickup', fee: 0, is_available: 1 },
+      { id: 1, name: "快递配送", code: "express", fee: 10, is_available: 1 },
+      { id: 2, name: "上门自提", code: "pickup", fee: 0, is_available: 1 },
     ];
 
     return {
       code: 200,
-      message: '获取成功',
-      data: shippingTypes.filter(type => type.is_available === 1),
+      message: "获取成功",
+      data: shippingTypes.filter((type) => type.is_available === 1),
     };
   }
 
@@ -238,7 +270,7 @@ export class OrderCheckService {
     });
 
     if (!companyAuth) {
-      throw new BadRequestException('请先完成企业实名认证');
+      throw new BadRequestException("请先完成企业实名认证");
     }
   }
 
@@ -256,7 +288,7 @@ export class OrderCheckService {
 
     // 按店铺分组
     const shopCarts = {};
-    carts.forEach(cart => {
+    carts.forEach((cart) => {
       const shopId = cart.product.shop_id;
       if (!shopCarts[shopId]) {
         shopCarts[shopId] = {
@@ -274,7 +306,11 @@ export class OrderCheckService {
     };
   }
 
-  private async buildCartPromotion(cartList: any, userId: number, flowType: number) {
+  private async buildCartPromotion(
+    cartList: any,
+    userId: number,
+    flowType: number,
+  ) {
     // 构建购物车促销信息
     // 这里需要实现优惠券、满减等促销逻辑
     return cartList;
@@ -283,16 +319,16 @@ export class OrderCheckService {
   private async getUserAddresses(userId: number) {
     return await this.prisma.user_address.findMany({
       where: { user_id: userId },
-      orderBy: { is_default: 'desc' },
+      orderBy: { is_default: "desc" },
     });
   }
 
   private async calculateTotalFee(cartList: any) {
     let totalAmount = 0;
-    let shippingFee = 0;
+    const shippingFee = 0;
 
-    cartList.carts.forEach(shopCart => {
-      shopCart.carts.forEach(cart => {
+    cartList.carts.forEach((shopCart) => {
+      shopCart.carts.forEach((cart) => {
         totalAmount += cart.product.price * cart.num;
       });
     });
@@ -307,6 +343,6 @@ export class OrderCheckService {
   private generateOrderSn(): string {
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1000);
-    return `${timestamp}${random.toString().padStart(3, '0')}`;
+    return `${timestamp}${random.toString().padStart(3, "0")}`;
   }
 }

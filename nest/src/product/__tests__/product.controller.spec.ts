@@ -1,14 +1,18 @@
 // @ts-nocheck
-import { Test, TestingModule } from '@nestjs/testing';
-import { ProductController } from '../product.controller';
-import { ProductService } from '../product.service';
-import { CreateProductDto, CreateProductSpecDto, CreateProductAttrDto } from '../dto/create-product.dto';
-import { UpdateProductDto } from '../dto/update-product.dto';
-import { ProductQueryDto } from '../dto/product-query.dto';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
+import { Test, TestingModule } from "@nestjs/testing";
+import { ProductController } from "../product.controller";
+import { ProductService } from "../product.service";
+import {
+  CreateProductDto,
+  CreateProductSpecDto,
+  CreateProductAttrDto,
+} from "../dto/create-product.dto";
+import { UpdateProductDto } from "../dto/update-product.dto";
+import { ProductQueryDto } from "../dto/product-query.dto";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { RolesGuard } from "../../auth/guards/roles.guard";
+import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { Roles } from "../../auth/decorators/roles.decorator";
 
 // Mock the ProductService
 const mockProductService = {
@@ -26,7 +30,7 @@ const mockProductService = {
   search: jest.fn(),
 };
 
-describe('ProductController', () => {
+describe("ProductController", () => {
   let controller: ProductController;
   let service: ProductService;
 
@@ -50,17 +54,17 @@ describe('ProductController', () => {
     service = module.get<ProductService>(ProductService);
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(controller).toBeDefined();
   });
 
-  describe('create', () => {
-    it('should create a product successfully', async () => {
+  describe("create", () => {
+    it("should create a product successfully", async () => {
       const createProductDto: CreateProductDto = {
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         stock: 10,
-        description: 'Test Description',
+        description: "Test Description",
         categoryId: 1,
         specType: 0,
         minBuy: 1,
@@ -69,27 +73,29 @@ describe('ProductController', () => {
 
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         stock: 10,
-        description: 'Test Description',
+        description: "Test Description",
         categoryId: 1,
       };
 
       mockProductService.create.mockResolvedValue(mockProduct);
 
-      const result = await controller.create(createProductDto, { user: { userId: 1 } });
+      const result = await controller.create(createProductDto, {
+        user: { userId: 1 },
+      });
 
       expect(result).toEqual(mockProduct);
       expect(service.create).toHaveBeenCalledWith(createProductDto, 1);
     });
 
-    it('should handle service errors properly', async () => {
+    it("should handle service errors properly", async () => {
       const createProductDto: CreateProductDto = {
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         stock: 10,
-        description: 'Test Description',
+        description: "Test Description",
         categoryId: 1,
         specType: 0,
         minBuy: 1,
@@ -97,27 +103,27 @@ describe('ProductController', () => {
       };
 
       mockProductService.create.mockRejectedValue(
-        new BadRequestException('Category not found'),
+        new BadRequestException("Category not found"),
       );
 
-      await expect(controller.create(createProductDto, { user: { userId: 1 } })).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.create(createProductDto, { user: { userId: 1 } }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
-  describe('findAll', () => {
-    it('should return paginated products', async () => {
+  describe("findAll", () => {
+    it("should return paginated products", async () => {
       const queryDto: ProductQueryDto = {
         page: 1,
         size: 10,
-        keyword: 'test',
+        keyword: "test",
       };
 
       const mockResult = {
         records: [
-          { productId: 1, name: 'Test Product 1', price: 100 },
-          { productId: 2, name: 'Test Product 2', price: 200 },
+          { productId: 1, name: "Test Product 1", price: 100 },
+          { productId: 2, name: "Test Product 2", price: 200 },
         ],
         total: 2,
         page: 1,
@@ -133,7 +139,7 @@ describe('ProductController', () => {
       expect(service.findAll).toHaveBeenCalledWith(queryDto);
     });
 
-    it('should handle default pagination parameters', async () => {
+    it("should handle default pagination parameters", async () => {
       const queryDto = {};
       const mockResult = {
         records: [],
@@ -152,14 +158,14 @@ describe('ProductController', () => {
     });
   });
 
-  describe('findOne', () => {
-    it('should return a product by id', async () => {
+  describe("findOne", () => {
+    it("should return a product by id", async () => {
       const productId = 1;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
-        description: 'Test Description',
+        description: "Test Description",
       };
 
       mockProductService.findOne.mockResolvedValue(mockProduct);
@@ -170,10 +176,10 @@ describe('ProductController', () => {
       expect(service.findOne).toHaveBeenCalledWith(productId);
     });
 
-    it('should handle NotFoundException', async () => {
+    it("should handle NotFoundException", async () => {
       const productId = 999;
       mockProductService.findOne.mockRejectedValue(
-        new NotFoundException('Product not found'),
+        new NotFoundException("Product not found"),
       );
 
       await expect(controller.findOne(productId)).rejects.toThrow(
@@ -182,17 +188,17 @@ describe('ProductController', () => {
     });
   });
 
-  describe('update', () => {
-    it('should update a product successfully', async () => {
+  describe("update", () => {
+    it("should update a product successfully", async () => {
       const productId = 1;
       const updateProductDto: UpdateProductDto = {
-        name: 'Updated Product',
+        name: "Updated Product",
         price: 150,
       };
 
       const mockProduct = {
         productId: 1,
-        name: 'Updated Product',
+        name: "Updated Product",
         price: 150,
       };
 
@@ -204,24 +210,24 @@ describe('ProductController', () => {
       expect(service.update).toHaveBeenCalledWith(productId, updateProductDto);
     });
 
-    it('should handle NotFoundException', async () => {
+    it("should handle NotFoundException", async () => {
       const productId = 999;
-      const updateProductDto: UpdateProductDto = { name: 'Updated Product' };
+      const updateProductDto: UpdateProductDto = { name: "Updated Product" };
 
       mockProductService.update.mockRejectedValue(
-        new NotFoundException('Product not found'),
+        new NotFoundException("Product not found"),
       );
 
-      await expect(controller.update(productId, updateProductDto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.update(productId, updateProductDto),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('remove', () => {
-    it('should delete a product successfully', async () => {
+  describe("remove", () => {
+    it("should delete a product successfully", async () => {
       const productId = 1;
-      const mockResult = { message: '商品删除成功' };
+      const mockResult = { message: "商品删除成功" };
 
       mockProductService.remove.mockResolvedValue(mockResult);
 
@@ -231,10 +237,10 @@ describe('ProductController', () => {
       expect(service.remove).toHaveBeenCalledWith(productId);
     });
 
-    it('should handle NotFoundException', async () => {
+    it("should handle NotFoundException", async () => {
       const productId = 999;
       mockProductService.remove.mockRejectedValue(
-        new NotFoundException('Product not found'),
+        new NotFoundException("Product not found"),
       );
 
       await expect(controller.remove(productId)).rejects.toThrow(
@@ -243,10 +249,10 @@ describe('ProductController', () => {
     });
   });
 
-  describe('restore', () => {
-    it('should restore a deleted product successfully', async () => {
+  describe("restore", () => {
+    it("should restore a deleted product successfully", async () => {
       const productId = 1;
-      const mockResult = { message: '商品恢复成功' };
+      const mockResult = { message: "商品恢复成功" };
 
       mockProductService.restore.mockResolvedValue(mockResult);
 
@@ -257,8 +263,8 @@ describe('ProductController', () => {
     });
   });
 
-  describe('getStock', () => {
-    it('should return product stock information', async () => {
+  describe("getStock", () => {
+    it("should return product stock information", async () => {
       const productId = 1;
       const mockStock = {
         productId: 1,
@@ -274,7 +280,7 @@ describe('ProductController', () => {
       expect(service.getStock).toHaveBeenCalledWith(productId, undefined);
     });
 
-    it('should return spec stock information when specId is provided', async () => {
+    it("should return spec stock information when specId is provided", async () => {
       const productId = 1;
       const specId = 1;
       const mockStock = {
@@ -293,26 +299,30 @@ describe('ProductController', () => {
     });
   });
 
-  describe('updateStock', () => {
-    it('should update product stock successfully', async () => {
+  describe("updateStock", () => {
+    it("should update product stock successfully", async () => {
       const productId = 1;
-      const mockResult = { message: '库存更新成功' };
+      const mockResult = { message: "库存更新成功" };
 
       mockProductService.updateStock.mockResolvedValue(mockResult);
 
       const result = await controller.updateStock(productId, { quantity: 10 });
 
       expect(result).toEqual(mockResult);
-      expect(service.updateStock).toHaveBeenCalledWith(productId, 10, undefined);
+      expect(service.updateStock).toHaveBeenCalledWith(
+        productId,
+        10,
+        undefined,
+      );
     });
   });
 
-  describe('getHotProducts', () => {
-    it('should return hot products', async () => {
+  describe("getHotProducts", () => {
+    it("should return hot products", async () => {
       const limit = 10;
       const mockProducts = [
-        { productId: 1, name: 'Hot Product 1', sales: 100 },
-        { productId: 2, name: 'Hot Product 2', sales: 80 },
+        { productId: 1, name: "Hot Product 1", sales: 100 },
+        { productId: 2, name: "Hot Product 2", sales: 80 },
       ];
 
       mockProductService.getHotProducts.mockResolvedValue(mockProducts);
@@ -323,7 +333,7 @@ describe('ProductController', () => {
       expect(service.getHotProducts).toHaveBeenCalledWith(limit);
     });
 
-    it('should use default limit when not provided', async () => {
+    it("should use default limit when not provided", async () => {
       const mockProducts = [];
       mockProductService.getHotProducts.mockResolvedValue(mockProducts);
 
@@ -333,12 +343,12 @@ describe('ProductController', () => {
     });
   });
 
-  describe('getRecommendedProducts', () => {
-    it('should return recommended products', async () => {
+  describe("getRecommendedProducts", () => {
+    it("should return recommended products", async () => {
       const limit = 8;
       const mockProducts = [
-        { productId: 1, name: 'Recommended Product 1' },
-        { productId: 2, name: 'Recommended Product 2' },
+        { productId: 1, name: "Recommended Product 1" },
+        { productId: 2, name: "Recommended Product 2" },
       ];
 
       mockProductService.getRecommendedProducts.mockResolvedValue(mockProducts);
@@ -350,12 +360,12 @@ describe('ProductController', () => {
     });
   });
 
-  describe('getNewProducts', () => {
-    it('should return new products', async () => {
+  describe("getNewProducts", () => {
+    it("should return new products", async () => {
       const limit = 5;
       const mockProducts = [
-        { productId: 1, name: 'New Product 1', createdAt: new Date() },
-        { productId: 2, name: 'New Product 2', createdAt: new Date() },
+        { productId: 1, name: "New Product 1", createdAt: new Date() },
+        { productId: 2, name: "New Product 2", createdAt: new Date() },
       ];
 
       mockProductService.getNewProducts.mockResolvedValue(mockProducts);
@@ -367,12 +377,12 @@ describe('ProductController', () => {
     });
   });
 
-  describe('search', () => {
-    it('should search products by keyword', async () => {
-      const keyword = 'search term';
+  describe("search", () => {
+    it("should search products by keyword", async () => {
+      const keyword = "search term";
       const mockProducts = [
-        { productId: 1, name: 'Search Result 1' },
-        { productId: 2, name: 'Search Result 2' },
+        { productId: 1, name: "Search Result 1" },
+        { productId: 2, name: "Search Result 2" },
       ];
 
       mockProductService.search.mockResolvedValue(mockProducts);
@@ -383,18 +393,18 @@ describe('ProductController', () => {
       expect(service.search).toHaveBeenCalledWith(keyword, 20);
     });
 
-    it('should throw BadRequestException for empty keyword', async () => {
-      const keyword = '';
+    it("should throw BadRequestException for empty keyword", async () => {
+      const keyword = "";
 
       await expect(controller.search(keyword)).rejects.toThrow(
         BadRequestException,
       );
     });
 
-    it('should handle service errors during search', async () => {
-      const keyword = 'search term';
+    it("should handle service errors during search", async () => {
+      const keyword = "search term";
       mockProductService.search.mockRejectedValue(
-        new BadRequestException('Search failed'),
+        new BadRequestException("Search failed"),
       );
 
       await expect(controller.search(keyword)).rejects.toThrow(

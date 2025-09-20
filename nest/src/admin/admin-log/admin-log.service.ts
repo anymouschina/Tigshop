@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import { Injectable } from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   AdminLogQueryDto,
   AdminLogDetailDto,
@@ -8,8 +8,8 @@ import {
   DeleteAdminLogDto,
   BatchDeleteAdminLogDto,
   ADMIN_LOG_TYPE,
-  ADMIN_LOG_MODULE
-} from './admin-log.dto';
+  ADMIN_LOG_MODULE,
+} from "./admin-log.dto";
 
 @Injectable()
 export class AdminLogService {
@@ -17,16 +17,16 @@ export class AdminLogService {
 
   async findAll(query: AdminLogQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       admin_id = 0,
       type = -1,
       module = -1,
-      start_date = '',
-      end_date = '',
+      start_date = "",
+      end_date = "",
       page = 1,
       size = 15,
-      sort_field = 'log_id',
-      sort_order = 'desc',
+      sort_field = "log_id",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -85,7 +85,7 @@ export class AdminLogService {
     });
 
     if (!adminLog) {
-      throw new Error('日志不存在');
+      throw new Error("日志不存在");
     }
 
     return adminLog;
@@ -96,7 +96,7 @@ export class AdminLogService {
       data: {
         user_id: data.admin_id,
         log_info: data.description,
-        ip_address: data.ip || '',
+        ip_address: data.ip || "",
         log_time: Math.floor(Date.now() / 1000),
       },
     });
@@ -110,7 +110,7 @@ export class AdminLogService {
     });
 
     if (!adminLog) {
-      throw new Error('日志不存在');
+      throw new Error("日志不存在");
     }
 
     await this.databaseService.admin_log.delete({
@@ -132,7 +132,11 @@ export class AdminLogService {
     return true;
   }
 
-  async getOperationStats(adminId?: number, startDate?: string, endDate?: string) {
+  async getOperationStats(
+    adminId?: number,
+    startDate?: string,
+    endDate?: string,
+  ) {
     const where: any = {};
     if (adminId && adminId > 0) {
       where.user_id = adminId;
@@ -146,7 +150,7 @@ export class AdminLogService {
     }
 
     const result = await this.databaseService.admin_log.groupBy({
-      by: ['user_id'],
+      by: ["user_id"],
       where,
       _count: {
         _all: true,
@@ -157,10 +161,12 @@ export class AdminLogService {
   }
 
   async getActiveAdminsStats(days: number = 30) {
-    const startDate = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000);
+    const startDate = Math.floor(
+      (Date.now() - days * 24 * 60 * 60 * 1000) / 1000,
+    );
 
     const result = await this.databaseService.admin_log.groupBy({
-      by: ['user_id'],
+      by: ["user_id"],
       where: {
         log_time: {
           gte: startDate,
@@ -171,7 +177,7 @@ export class AdminLogService {
       },
       orderBy: {
         _count: {
-          user_id: 'desc',
+          user_id: "desc",
         },
       },
     });
@@ -184,13 +190,13 @@ export class AdminLogService {
     type: number,
     module: number,
     description: string,
-    ip: string = '',
-    userAgent: string = '',
-    url: string = '',
-    method: string = '',
-    params: string = '',
+    ip: string = "",
+    userAgent: string = "",
+    url: string = "",
+    method: string = "",
+    params: string = "",
   ) {
-    const logInfo = `${ADMIN_LOG_MODULE[module] || '未知模块'} - ${ADMIN_LOG_TYPE[type] || '未知操作'} - ${description}`;
+    const logInfo = `${ADMIN_LOG_MODULE[module] || "未知模块"} - ${ADMIN_LOG_TYPE[type] || "未知操作"} - ${description}`;
 
     return await this.databaseService.admin_log.create({
       data: {

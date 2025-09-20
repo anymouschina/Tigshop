@@ -1,12 +1,16 @@
 // @ts-nocheck
-import { Test, TestingModule } from '@nestjs/testing';
-import { ProductService } from '../product.service';
-import { DatabaseService } from '../../database/database.service';
-import { CreateProductDto, CreateProductSpecDto, CreateProductAttrDto } from '../dto/create-product.dto';
-import { UpdateProductDto } from '../dto/update-product.dto';
-import { ProductQueryDto } from '../dto/product-query.dto';
-import { BadRequestException, NotFoundException, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Test, TestingModule } from "@nestjs/testing";
+import { ProductService } from "../product.service";
+import { DatabaseService } from "../../database/database.service";
+import {
+  CreateProductDto,
+  CreateProductSpecDto,
+  CreateProductAttrDto,
+} from "../dto/create-product.dto";
+import { UpdateProductDto } from "../dto/update-product.dto";
+import { ProductQueryDto } from "../dto/product-query.dto";
+import { BadRequestException, NotFoundException, Logger } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 
 // Mock the DatabaseService
 const mockDatabaseService = {
@@ -36,7 +40,7 @@ const mockDatabaseService = {
   },
 };
 
-describe('ProductService', () => {
+describe("ProductService", () => {
   let service: ProductService;
 
   beforeEach(async () => {
@@ -53,25 +57,25 @@ describe('ProductService', () => {
     service = module.get<ProductService>(ProductService);
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
-  describe('create', () => {
-    it('should create a product successfully', async () => {
+  describe("create", () => {
+    it("should create a product successfully", async () => {
       const createProductDto: CreateProductDto = {
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         stock: 10,
-        description: 'Test Description',
+        description: "Test Description",
         categoryId: 1,
         specType: 0,
         minBuy: 1,
         sort: 100,
         specs: [
           {
-            specName: 'Color',
-            specValue: 'Red',
+            specName: "Color",
+            specValue: "Red",
             specPrice: 100,
             specStock: 10,
             sort: 1,
@@ -79,20 +83,20 @@ describe('ProductService', () => {
         ],
         attrs: [
           {
-            attrName: 'Material',
-            attrValue: 'Cotton',
+            attrName: "Material",
+            attrValue: "Cotton",
             sort: 1,
           },
         ],
       };
 
-      const mockCategory = { categoryId: 1, categoryName: 'Test Category' };
+      const mockCategory = { categoryId: 1, categoryName: "Test Category" };
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         stock: 10,
-        description: 'Test Description',
+        description: "Test Description",
         categoryId: 1,
         productSpecs: [],
         productAttrs: [],
@@ -109,18 +113,18 @@ describe('ProductService', () => {
       });
       expect(mockDatabaseService.product.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          name: 'Test Product',
+          name: "Test Product",
           price: 100,
           stock: 10,
-          description: 'Test Description',
+          description: "Test Description",
           categoryId: 1,
           shopId: 1,
           images: [],
           productSpecs: {
             create: [
               {
-                specName: 'Color',
-                specValue: 'Red',
+                specName: "Color",
+                specValue: "Red",
                 specPrice: 100,
                 specStock: 10,
                 sort: 1,
@@ -130,8 +134,8 @@ describe('ProductService', () => {
           productAttrs: {
             create: [
               {
-                attrName: 'Material',
-                attrValue: 'Cotton',
+                attrName: "Material",
+                attrValue: "Cotton",
                 sort: 1,
               },
             ],
@@ -148,12 +152,12 @@ describe('ProductService', () => {
       });
     });
 
-    it('should throw BadRequestException when category does not exist', async () => {
+    it("should throw BadRequestException when category does not exist", async () => {
       const createProductDto: CreateProductDto = {
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         stock: 10,
-        description: 'Test Description',
+        description: "Test Description",
         categoryId: 999,
         specType: 0,
         minBuy: 1,
@@ -167,21 +171,23 @@ describe('ProductService', () => {
       );
     });
 
-    it('should handle database errors gracefully', async () => {
+    it("should handle database errors gracefully", async () => {
       const createProductDto: CreateProductDto = {
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         stock: 10,
-        description: 'Test Description',
+        description: "Test Description",
         categoryId: 1,
         specType: 0,
         minBuy: 1,
         sort: 100,
       };
 
-      const mockCategory = { categoryId: 1, categoryName: 'Test Category' };
+      const mockCategory = { categoryId: 1, categoryName: "Test Category" };
       mockDatabaseService.category.findUnique.mockResolvedValue(mockCategory);
-      mockDatabaseService.product.create.mockRejectedValue(new Error('Database error'));
+      mockDatabaseService.product.create.mockRejectedValue(
+        new Error("Database error"),
+      );
 
       await expect(service.create(createProductDto)).rejects.toThrow(
         BadRequestException,
@@ -189,17 +195,17 @@ describe('ProductService', () => {
     });
   });
 
-  describe('findAll', () => {
-    it('should return paginated products', async () => {
+  describe("findAll", () => {
+    it("should return paginated products", async () => {
       const queryDto: ProductQueryDto = {
         page: 1,
         size: 10,
-        keyword: 'test',
+        keyword: "test",
       };
 
       const mockProducts = [
-        { productId: 1, name: 'Test Product 1', price: 100 },
-        { productId: 2, name: 'Test Product 2', price: 200 },
+        { productId: 1, name: "Test Product 1", price: 100 },
+        { productId: 2, name: "Test Product 2", price: 200 },
       ];
 
       mockDatabaseService.product.findMany.mockResolvedValue(mockProducts);
@@ -216,11 +222,11 @@ describe('ProductService', () => {
       });
     });
 
-    it('should apply keyword filter correctly', async () => {
+    it("should apply keyword filter correctly", async () => {
       const queryDto: ProductQueryDto = {
         page: 1,
         size: 10,
-        keyword: 'search term',
+        keyword: "search term",
       };
 
       await service.findAll(queryDto);
@@ -229,16 +235,16 @@ describe('ProductService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             OR: [
-              { name: { contains: 'search term', mode: 'insensitive' } },
-              { subtitle: { contains: 'search term', mode: 'insensitive' } },
-              { keywords: { contains: 'search term', mode: 'insensitive' } },
+              { name: { contains: "search term", mode: "insensitive" } },
+              { subtitle: { contains: "search term", mode: "insensitive" } },
+              { keywords: { contains: "search term", mode: "insensitive" } },
             ],
           }),
         }),
       );
     });
 
-    it('should handle pagination correctly', async () => {
+    it("should handle pagination correctly", async () => {
       const queryDto: ProductQueryDto = {
         page: 2,
         size: 5,
@@ -255,12 +261,12 @@ describe('ProductService', () => {
     });
   });
 
-  describe('findOne', () => {
-    it('should return a product by id', async () => {
+  describe("findOne", () => {
+    it("should return a product by id", async () => {
       const productId = 1;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         isDeleted: false,
         productSpecs: [],
@@ -285,44 +291,48 @@ describe('ProductService', () => {
       });
     });
 
-    it('should throw NotFoundException when product does not exist', async () => {
+    it("should throw NotFoundException when product does not exist", async () => {
       const productId = 999;
       mockDatabaseService.product.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne(productId)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(productId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('should throw NotFoundException when product is deleted', async () => {
+    it("should throw NotFoundException when product is deleted", async () => {
       const productId = 1;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         isDeleted: true,
       };
 
       mockDatabaseService.product.findUnique.mockResolvedValue(mockProduct);
 
-      await expect(service.findOne(productId)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(productId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
-  describe('update', () => {
-    it('should update a product successfully', async () => {
+  describe("update", () => {
+    it("should update a product successfully", async () => {
       const productId = 1;
       const updateProductDto: UpdateProductDto = {
-        name: 'Updated Product',
+        name: "Updated Product",
         price: 150,
       };
 
       const existingProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         isDeleted: false,
       };
 
       const updatedProduct = {
         productId: 1,
-        name: 'Updated Product',
+        name: "Updated Product",
         price: 150,
         productSpecs: [],
         productAttrs: [],
@@ -339,7 +349,7 @@ describe('ProductService', () => {
       expect(mockDatabaseService.product.update).toHaveBeenCalledWith({
         where: { productId: 1 },
         data: expect.objectContaining({
-          name: 'Updated Product',
+          name: "Updated Product",
           price: 150,
         }),
         include: expect.objectContaining({
@@ -353,9 +363,9 @@ describe('ProductService', () => {
       });
     });
 
-    it('should throw NotFoundException when updating non-existent product', async () => {
+    it("should throw NotFoundException when updating non-existent product", async () => {
       const productId = 999;
-      const updateProductDto: UpdateProductDto = { name: 'Updated Product' };
+      const updateProductDto: UpdateProductDto = { name: "Updated Product" };
 
       mockDatabaseService.product.findUnique.mockResolvedValue(null);
 
@@ -364,13 +374,13 @@ describe('ProductService', () => {
       );
     });
 
-    it('should throw BadRequestException when updating deleted product', async () => {
+    it("should throw BadRequestException when updating deleted product", async () => {
       const productId = 1;
-      const updateProductDto: UpdateProductDto = { name: 'Updated Product' };
+      const updateProductDto: UpdateProductDto = { name: "Updated Product" };
 
       const existingProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         isDeleted: true,
       };
 
@@ -382,12 +392,12 @@ describe('ProductService', () => {
     });
   });
 
-  describe('remove', () => {
-    it('should soft delete a product', async () => {
+  describe("remove", () => {
+    it("should soft delete a product", async () => {
       const productId = 1;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         isDeleted: false,
       };
 
@@ -396,40 +406,44 @@ describe('ProductService', () => {
 
       const result = await service.remove(productId);
 
-      expect(result).toEqual({ message: '商品删除成功' });
+      expect(result).toEqual({ message: "商品删除成功" });
       expect(mockDatabaseService.product.update).toHaveBeenCalledWith({
         where: { productId: 1 },
         data: { isDeleted: true, deletedAt: expect.any(Date) },
       });
     });
 
-    it('should throw NotFoundException when deleting non-existent product', async () => {
+    it("should throw NotFoundException when deleting non-existent product", async () => {
       const productId = 999;
       mockDatabaseService.product.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove(productId)).rejects.toThrow(NotFoundException);
+      await expect(service.remove(productId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('should throw BadRequestException when deleting already deleted product', async () => {
+    it("should throw BadRequestException when deleting already deleted product", async () => {
       const productId = 1;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         isDeleted: true,
       };
 
       mockDatabaseService.product.findUnique.mockResolvedValue(mockProduct);
 
-      await expect(service.remove(productId)).rejects.toThrow(BadRequestException);
+      await expect(service.remove(productId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
-  describe('restore', () => {
-    it('should restore a deleted product', async () => {
+  describe("restore", () => {
+    it("should restore a deleted product", async () => {
       const productId = 1;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         isDeleted: true,
       };
 
@@ -438,7 +452,7 @@ describe('ProductService', () => {
 
       const result = await service.restore(productId);
 
-      expect(result).toEqual({ message: '商品恢复成功' });
+      expect(result).toEqual({ message: "商品恢复成功" });
       expect(mockDatabaseService.product.update).toHaveBeenCalledWith({
         where: { productId: 1 },
         data: { isDeleted: false, deletedAt: null },
@@ -446,12 +460,12 @@ describe('ProductService', () => {
     });
   });
 
-  describe('getStock', () => {
-    it('should return product stock information', async () => {
+  describe("getStock", () => {
+    it("should return product stock information", async () => {
       const productId = 1;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         stock: 50,
         productSpecs: [],
@@ -468,18 +482,18 @@ describe('ProductService', () => {
       });
     });
 
-    it('should return spec stock information when specId is provided', async () => {
+    it("should return spec stock information when specId is provided", async () => {
       const productId = 1;
       const specId = 1;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         price: 100,
         productSpecs: [
           {
             specId: 1,
-            specName: 'Color',
-            specValue: 'Red',
+            specName: "Color",
+            specValue: "Red",
             specPrice: 120,
             specStock: 25,
           },
@@ -499,13 +513,13 @@ describe('ProductService', () => {
     });
   });
 
-  describe('updateStock', () => {
-    it('should update product stock successfully', async () => {
+  describe("updateStock", () => {
+    it("should update product stock successfully", async () => {
       const productId = 1;
       const quantity = 10;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         stock: 50,
       };
 
@@ -517,19 +531,19 @@ describe('ProductService', () => {
 
       const result = await service.updateStock(productId, quantity);
 
-      expect(result).toEqual({ message: '库存更新成功' });
+      expect(result).toEqual({ message: "库存更新成功" });
       expect(mockDatabaseService.product.update).toHaveBeenCalledWith({
         where: { productId: 1 },
         data: { stock: 60 },
       });
     });
 
-    it('should throw BadRequestException when insufficient stock', async () => {
+    it("should throw BadRequestException when insufficient stock", async () => {
       const productId = 1;
       const quantity = -100;
       const mockProduct = {
         productId: 1,
-        name: 'Test Product',
+        name: "Test Product",
         stock: 50,
       };
 
@@ -541,12 +555,12 @@ describe('ProductService', () => {
     });
   });
 
-  describe('getHotProducts', () => {
-    it('should return hot products', async () => {
+  describe("getHotProducts", () => {
+    it("should return hot products", async () => {
       const limit = 5;
       const mockProducts = [
-        { productId: 1, name: 'Hot Product 1', sales: 100 },
-        { productId: 2, name: 'Hot Product 2', sales: 80 },
+        { productId: 1, name: "Hot Product 1", sales: 100 },
+        { productId: 2, name: "Hot Product 2", sales: 80 },
       ];
 
       mockDatabaseService.product.findMany.mockResolvedValue(mockProducts);
@@ -560,7 +574,7 @@ describe('ProductService', () => {
           isEnable: true,
           isHot: true,
         },
-        orderBy: { sales: 'desc' },
+        orderBy: { sales: "desc" },
         take: 5,
         include: expect.objectContaining({
           category: true,
@@ -570,12 +584,12 @@ describe('ProductService', () => {
     });
   });
 
-  describe('getRecommendedProducts', () => {
-    it('should return recommended products', async () => {
+  describe("getRecommendedProducts", () => {
+    it("should return recommended products", async () => {
       const limit = 10;
       const mockProducts = [
-        { productId: 1, name: 'Recommended Product 1' },
-        { productId: 2, name: 'Recommended Product 2' },
+        { productId: 1, name: "Recommended Product 1" },
+        { productId: 2, name: "Recommended Product 2" },
       ];
 
       mockDatabaseService.product.findMany.mockResolvedValue(mockProducts);
@@ -589,7 +603,7 @@ describe('ProductService', () => {
           isEnable: true,
           isRecommend: true,
         },
-        orderBy: { sort: 'asc' },
+        orderBy: { sort: "asc" },
         take: 10,
         include: expect.objectContaining({
           category: true,
@@ -599,12 +613,12 @@ describe('ProductService', () => {
     });
   });
 
-  describe('getNewProducts', () => {
-    it('should return new products', async () => {
+  describe("getNewProducts", () => {
+    it("should return new products", async () => {
       const limit = 8;
       const mockProducts = [
-        { productId: 1, name: 'New Product 1', createdAt: new Date() },
-        { productId: 2, name: 'New Product 2', createdAt: new Date() },
+        { productId: 1, name: "New Product 1", createdAt: new Date() },
+        { productId: 2, name: "New Product 2", createdAt: new Date() },
       ];
 
       mockDatabaseService.product.findMany.mockResolvedValue(mockProducts);
@@ -618,7 +632,7 @@ describe('ProductService', () => {
           isEnable: true,
           isNew: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: 8,
         include: expect.objectContaining({
           category: true,
@@ -628,13 +642,13 @@ describe('ProductService', () => {
     });
   });
 
-  describe('search', () => {
-    it('should search products by keyword', async () => {
-      const keyword = 'search term';
+  describe("search", () => {
+    it("should search products by keyword", async () => {
+      const keyword = "search term";
       const limit = 20;
       const mockProducts = [
-        { productId: 1, name: 'Search Result 1' },
-        { productId: 2, name: 'Search Result 2' },
+        { productId: 1, name: "Search Result 1" },
+        { productId: 2, name: "Search Result 2" },
       ];
 
       mockDatabaseService.product.findMany.mockResolvedValue(mockProducts);
@@ -647,12 +661,12 @@ describe('ProductService', () => {
           isDeleted: false,
           isEnable: true,
           OR: [
-            { name: { contains: keyword, mode: 'insensitive' } },
-            { subtitle: { contains: keyword, mode: 'insensitive' } },
-            { keywords: { contains: keyword, mode: 'insensitive' } },
+            { name: { contains: keyword, mode: "insensitive" } },
+            { subtitle: { contains: keyword, mode: "insensitive" } },
+            { keywords: { contains: keyword, mode: "insensitive" } },
           ],
         },
-        orderBy: { sort: 'asc' },
+        orderBy: { sort: "asc" },
         take: 20,
         include: expect.objectContaining({
           category: true,

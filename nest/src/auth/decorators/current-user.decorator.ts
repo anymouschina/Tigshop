@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { createParamDecorator, ExecutionContext } from "@nestjs/common";
 
 /**
  * Decorator to extract the current authenticated user from the request object
@@ -9,4 +9,4 @@ export const CurrentUser = createParamDecorator(
     const request = ctx.switchToHttp().getRequest();
     return request.user;
   },
-); 
+);

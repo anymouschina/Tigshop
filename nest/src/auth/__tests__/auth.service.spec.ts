@@ -1,12 +1,13 @@
 // @ts-nocheck
-import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from '../auth.service';
-import { JwtService } from '@nestjs/jwt';
-import { AppConfigService } from '../../config/config.service';
-import { DatabaseService } from '../../database/database.service';
-import { JwtPayload } from '../auth.service';
+import { Test, TestingModule } from "@nestjs/testing";
+import { AuthService } from "../auth.service";
+import { JwtService } from "@nestjs/jwt";
+import { AppConfigService } from "../../config/config.service";
+import { DatabaseService } from "../../database/database.service";
+import { JwtPayload } from "../auth.service";
+import * as bcrypt from "bcrypt";
 
-describe('AuthService', () => {
+describe("AuthService", () => {
   let service: AuthService;
   let jwtService: jest.Mocked<JwtService>;
   let configService: jest.Mocked<AppConfigService>;
@@ -19,8 +20,8 @@ describe('AuthService', () => {
   };
 
   const mockConfigService = {
-    jwtSecret: 'test_secret',
-    jwtExpiration: '3600s',
+    jwtSecret: "test_secret",
+    jwtExpiration: "3600s",
   };
 
   const mockDatabaseService = {
@@ -52,26 +53,30 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     jwtService = module.get(JwtService) as jest.Mocked<JwtService>;
-    configService = module.get(AppConfigService) as jest.Mocked<AppConfigService>;
-    databaseService = module.get(DatabaseService) as jest.Mocked<DatabaseService>;
+    configService = module.get(
+      AppConfigService,
+    ) as jest.Mocked<AppConfigService>;
+    databaseService = module.get(
+      DatabaseService,
+    ) as jest.Mocked<DatabaseService>;
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('generateToken', () => {
-    it('should generate JWT token with user ID and additional payload', async () => {
+  describe("generateToken", () => {
+    it("should generate JWT token with user ID and additional payload", async () => {
       const userId = 1;
       const additionalPayload: Partial<JwtPayload> = {
-        name: 'Test User',
-        email: 'test@example.com',
+        name: "Test User",
+        email: "test@example.com",
       };
       const expectedPayload: JwtPayload = {
         sub: userId,
         ...additionalPayload,
       };
-      const expectedToken = 'generated_token';
+      const expectedToken = "generated_token";
 
       mockJwtService.sign.mockReturnValue(expectedToken);
 
@@ -81,10 +86,10 @@ describe('AuthService', () => {
       expect(mockJwtService.sign).toHaveBeenCalledWith(expectedPayload);
     });
 
-    it('should generate JWT token with only user ID when no additional payload', async () => {
+    it("should generate JWT token with only user ID when no additional payload", async () => {
       const userId = 1;
       const expectedPayload: JwtPayload = { sub: userId };
-      const expectedToken = 'generated_token';
+      const expectedToken = "generated_token";
 
       mockJwtService.sign.mockReturnValue(expectedToken);
 
@@ -95,15 +100,15 @@ describe('AuthService', () => {
     });
   });
 
-  describe('verifyToken', () => {
-    const token = 'test_token';
+  describe("verifyToken", () => {
+    const token = "test_token";
     const validPayload: JwtPayload = {
       sub: 1,
-      name: 'Test User',
+      name: "Test User",
       exp: Math.floor(Date.now() / 1000) + 3600,
     };
 
-    it('should return null when token is blacklisted', async () => {
+    it("should return null when token is blacklisted", async () => {
       mockDatabaseService.blacklistedToken.findUnique.mockResolvedValue({
         token,
         userId: 1,
@@ -113,14 +118,16 @@ describe('AuthService', () => {
       const result = await service.verifyToken(token);
 
       expect(result).toBeNull();
-      expect(mockDatabaseService.blacklistedToken.findUnique).toHaveBeenCalledWith({ where: { token } });
+      expect(
+        mockDatabaseService.blacklistedToken.findUnique,
+      ).toHaveBeenCalledWith({ where: { token } });
       expect(mockJwtService.verify).not.toHaveBeenCalled();
     });
 
-    it('should return null when token verification fails', async () => {
+    it("should return null when token verification fails", async () => {
       mockDatabaseService.blacklistedToken.findUnique.mockResolvedValue(null);
       mockJwtService.verify.mockImplementation(() => {
-        throw new Error('Invalid token');
+        throw new Error("Invalid token");
       });
 
       const result = await service.verifyToken(token);
@@ -129,7 +136,7 @@ describe('AuthService', () => {
       expect(mockJwtService.verify).toHaveBeenCalledWith(token);
     });
 
-    it('should return decoded payload when token is valid', async () => {
+    it("should return decoded payload when token is valid", async () => {
       mockDatabaseService.blacklistedToken.findUnique.mockResolvedValue(null);
       mockJwtService.verify.mockReturnValue(validPayload);
 
@@ -140,25 +147,27 @@ describe('AuthService', () => {
     });
   });
 
-  describe('blacklistToken', () => {
-    const token = 'test_token';
+  describe("blacklistToken", () => {
+    const token = "test_token";
     const userId = 1;
     const decodedToken: JwtPayload = {
       sub: userId,
       exp: Math.floor(Date.now() / 1000) + 3600,
     };
 
-    it('should return false when token cannot be decoded', async () => {
+    it("should return false when token cannot be decoded", async () => {
       mockJwtService.decode.mockReturnValue(null);
 
       const result = await service.blacklistToken(token, userId);
 
       expect(result).toBe(false);
       expect(mockJwtService.decode).toHaveBeenCalledWith(token);
-      expect(mockDatabaseService.blacklistedToken.create).not.toHaveBeenCalled();
+      expect(
+        mockDatabaseService.blacklistedToken.create,
+      ).not.toHaveBeenCalled();
     });
 
-    it('should return false when decoded token has no expiration', async () => {
+    it("should return false when decoded token has no expiration", async () => {
       const incompleteToken = { sub: userId };
       mockJwtService.decode.mockReturnValue(incompleteToken);
 
@@ -166,10 +175,12 @@ describe('AuthService', () => {
 
       expect(result).toBe(false);
       expect(mockJwtService.decode).toHaveBeenCalledWith(token);
-      expect(mockDatabaseService.blacklistedToken.create).not.toHaveBeenCalled();
+      expect(
+        mockDatabaseService.blacklistedToken.create,
+      ).not.toHaveBeenCalled();
     });
 
-    it('should blacklist token successfully', async () => {
+    it("should blacklist token successfully", async () => {
       mockJwtService.decode.mockReturnValue(decodedToken);
       const expectedExpiresAt = new Date(decodedToken.exp! * 1000);
 
@@ -192,9 +203,11 @@ describe('AuthService', () => {
       });
     });
 
-    it('should return false when database operation fails', async () => {
+    it("should return false when database operation fails", async () => {
       mockJwtService.decode.mockReturnValue(decodedToken);
-      mockDatabaseService.blacklistedToken.create.mockRejectedValue(new Error('Database error'));
+      mockDatabaseService.blacklistedToken.create.mockRejectedValue(
+        new Error("Database error"),
+      );
 
       const result = await service.blacklistToken(token, userId);
 
@@ -202,50 +215,47 @@ describe('AuthService', () => {
     });
   });
 
-  describe('hashPassword', () => {
-    const password = 'test_password';
-    const hashedPassword = 'hashed_password';
+  describe("hashPassword", () => {
+    const password = "test_password";
+    const hashedPassword = "hashed_password";
 
     beforeEach(() => {
       // Mock bcrypt
-      jest.doMock('bcrypt', () => ({
+      jest.doMock("bcrypt", () => ({
         hash: jest.fn().mockResolvedValue(hashedPassword),
         genSalt: jest.fn().mockResolvedValue(10),
       }));
     });
 
-    it('should hash password with salt rounds', async () => {
-      const bcrypt = require('bcrypt');
-      const salt = await bcrypt.genSalt(10);
-      const result = await bcrypt.hash(password, salt);
+    it("should hash password with salt rounds", async () => {
+      jest.spyOn(bcrypt, "hash").mockResolvedValue(hashedPassword);
+      const result = await bcrypt.hash(password, 10);
 
       expect(result).toBe(hashedPassword);
     });
   });
 
-  describe('validatePassword', () => {
-    const password = 'test_password';
-    const hash = 'hashed_password';
+  describe("validatePassword", () => {
+    const password = "test_password";
+    const hash = "hashed_password";
 
     beforeEach(() => {
       // Mock bcrypt
-      jest.doMock('bcrypt', () => ({
+      jest.doMock("bcrypt", () => ({
         compare: jest.fn(),
       }));
     });
 
-    it('should return true when password matches hash', async () => {
-      const bcrypt = require('bcrypt');
-      bcrypt.compare = jest.fn().mockResolvedValue(true);
+    it("should return true when password matches hash", async () => {
+      jest.spyOn(bcrypt, "compare").mockResolvedValue(true);
 
       const result = await bcrypt.compare(password, hash);
 
       expect(result).toBe(true);
     });
 
-    it('should return false when password does not match hash', async () => {
-      const bcrypt = require('bcrypt');
-      bcrypt.compare = jest.fn().mockResolvedValue(false);
+    it("should return false when password does not match hash", async () => {
+      jest.spyOn(bcrypt, "compare").mockResolvedValue(false);
 
       const result = await bcrypt.compare(password, hash);
 
@@ -253,13 +263,15 @@ describe('AuthService', () => {
     });
   });
 
-  describe('cleanupExpiredTokens', () => {
-    it('should delete expired blacklisted tokens', async () => {
+  describe("cleanupExpiredTokens", () => {
+    it("should delete expired blacklisted tokens", async () => {
       const now = new Date();
 
       await service.cleanupExpiredTokens();
 
-      expect(mockDatabaseService.blacklistedToken.deleteMany).toHaveBeenCalledWith({
+      expect(
+        mockDatabaseService.blacklistedToken.deleteMany,
+      ).toHaveBeenCalledWith({
         where: {
           expiresAt: {
             lt: now,
@@ -269,9 +281,9 @@ describe('AuthService', () => {
     });
   });
 
-  describe('onModuleInit', () => {
-    it('should call cleanupExpiredTokens on module initialization', async () => {
-      const cleanupSpy = jest.spyOn(service, 'cleanupExpiredTokens');
+  describe("onModuleInit", () => {
+    it("should call cleanupExpiredTokens on module initialization", async () => {
+      const cleanupSpy = jest.spyOn(service, "cleanupExpiredTokens");
 
       await service.onModuleInit();
 

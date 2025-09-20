@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class PayService {
@@ -19,16 +19,16 @@ export class PayService {
     });
 
     if (!order) {
-      throw new HttpException('订单不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("订单不存在", HttpStatus.NOT_FOUND);
     }
 
     // 检查订单是否可支付
     if (order.pay_status === 1) {
-      throw new HttpException('订单已支付', HttpStatus.BAD_REQUEST);
+      throw new HttpException("订单已支付", HttpStatus.BAD_REQUEST);
     }
 
     if (order.order_status === 4) {
-      throw new HttpException('订单已取消', HttpStatus.BAD_REQUEST);
+      throw new HttpException("订单已取消", HttpStatus.BAD_REQUEST);
     }
 
     // 获取可用支付方式
@@ -36,24 +36,33 @@ export class PayService {
 
     // 根据支付类型过滤
     if (order.pay_type_id === 1) {
-      paymentList = paymentList.filter(p => p !== 'offline');
+      paymentList = paymentList.filter((p) => p !== "offline");
     } else if (order.pay_type_id === 3) {
-      paymentList = paymentList.filter(p => !['wechat', 'alipay', 'paypal', 'yabanpay_wechat', 'yabanpay_alipay'].includes(p));
+      paymentList = paymentList.filter(
+        (p) =>
+          ![
+            "wechat",
+            "alipay",
+            "paypal",
+            "yabanpay_wechat",
+            "yabanpay_alipay",
+          ].includes(p),
+      );
     }
 
     // 转换支付方式格式
-    const formattedPaymentList = paymentList.map(p =>
-      p.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase())
+    const formattedPaymentList = paymentList.map((p) =>
+      p.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase()),
     );
 
     const offlinePaymentList = [];
-    if (paymentList.includes('offline')) {
-      offlinePaymentList.push(
-        {
-          offline_pay_bank: '银行名称：中国银行\n账号：6222********1234\n开户行：中国银行XX支行',
-          offline_pay_company: '公司名称：XX科技有限公司\n账号：1234567890123456\n开户行：XX银行XX支行',
-        }
-      );
+    if (paymentList.includes("offline")) {
+      offlinePaymentList.push({
+        offline_pay_bank:
+          "银行名称：中国银行\n账号：6222********1234\n开户行：中国银行XX支行",
+        offline_pay_company:
+          "公司名称：XX科技有限公司\n账号：1234567890123456\n开户行：XX银行XX支行",
+      });
     }
 
     return {
@@ -69,7 +78,7 @@ export class PayService {
   async getPayLogByOrderId(orderId: number) {
     return this.prisma.payLog.findFirst({
       where: { order_id: orderId },
-      orderBy: { add_time: 'desc' },
+      orderBy: { add_time: "desc" },
     });
   }
 
@@ -100,7 +109,12 @@ export class PayService {
   /**
    * 创建支付
    */
-  async createPayment(userId: number, orderId: number, payType: string, code?: string) {
+  async createPayment(
+    userId: number,
+    orderId: number,
+    payType: string,
+    code?: string,
+  ) {
     // 获取订单详情
     const order = await this.prisma.order.findFirst({
       where: {
@@ -110,17 +124,20 @@ export class PayService {
     });
 
     if (!order) {
-      throw new HttpException('订单不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("订单不存在", HttpStatus.NOT_FOUND);
     }
 
     // 检查订单是否可支付
     if (order.pay_status === 1) {
-      throw new HttpException('订单已支付', HttpStatus.BAD_REQUEST);
+      throw new HttpException("订单已支付", HttpStatus.BAD_REQUEST);
     }
 
     // 获取用户OpenID（微信支付需要）
-    let openid = '';
-    if (code && ['wechat', 'yabanpay_wechat', 'yunpay_wechat'].includes(payType)) {
+    let openid = "";
+    if (
+      code &&
+      ["wechat", "yabanpay_wechat", "yunpay_wechat"].includes(payType)
+    ) {
       openid = await this.getWechatOpenId(code);
     }
 
@@ -151,7 +168,10 @@ export class PayService {
         pay_info: payInfo,
       };
     } catch (error) {
-      throw new HttpException(error.message || '支付失败', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        error.message || "支付失败",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -163,17 +183,17 @@ export class PayService {
       let result;
 
       switch (payCode) {
-        case 'wechat':
+        case "wechat":
           result = await this.handleWechatNotify(data);
           break;
-        case 'alipay':
+        case "alipay":
           result = await this.handleAlipayNotify(data);
           break;
-        case 'paypal':
+        case "paypal":
           result = await this.handlePaypalNotify(data);
           break;
-        case 'yabanpay':
-        case 'yunpay':
+        case "yabanpay":
+        case "yunpay":
           result = await this.handleThirdPartyNotify(payCode, data);
           break;
         default:
@@ -182,7 +202,7 @@ export class PayService {
 
       return result;
     } catch (error) {
-      return { code: 'FAIL', message: '失败' };
+      return { code: "FAIL", message: "失败" };
     }
   }
 
@@ -194,17 +214,17 @@ export class PayService {
       let result;
 
       switch (payCode) {
-        case 'wechat':
+        case "wechat":
           result = await this.handleWechatRefundNotify(data);
           break;
-        case 'alipay':
+        case "alipay":
           result = await this.handleAlipayRefundNotify(data);
           break;
-        case 'paypal':
+        case "paypal":
           result = await this.handlePaypalRefundNotify(data);
           break;
-        case 'yabanpay':
-        case 'yunpay':
+        case "yabanpay":
+        case "yunpay":
           result = await this.handleThirdPartyRefundNotify(payCode, data);
           break;
         default:
@@ -213,7 +233,7 @@ export class PayService {
 
       return result;
     } catch (error) {
-      return { code: 'FAIL', message: '失败' };
+      return { code: "FAIL", message: "失败" };
     }
   }
 
@@ -221,7 +241,7 @@ export class PayService {
    * 获取可用支付方式
    */
   private getAvailablePayment(): string[] {
-    return ['wechat', 'alipay', 'balance', 'offline'];
+    return ["wechat", "alipay", "balance", "offline"];
   }
 
   /**
@@ -268,13 +288,13 @@ export class PayService {
    */
   private getPayName(payCode: string): string {
     const payNames = {
-      wechat: '微信支付',
-      alipay: '支付宝',
-      balance: '余额支付',
-      offline: '线下支付',
+      wechat: "微信支付",
+      alipay: "支付宝",
+      balance: "余额支付",
+      offline: "线下支付",
     };
 
-    return payNames[payCode] || '其他支付';
+    return payNames[payCode] || "其他支付";
   }
 
   /**
@@ -283,25 +303,25 @@ export class PayService {
   private async callThirdPartyPay(params: any, payType: string): Promise<any> {
     // 模拟第三方支付调用
     switch (payType) {
-      case 'wechat':
+      case "wechat":
         return {
-          appId: 'mock_app_id',
+          appId: "mock_app_id",
           timeStamp: Math.floor(Date.now() / 1000),
           nonceStr: Math.random().toString(36).substr(2, 15),
           package: `prepay_id=${Date.now()}`,
-          signType: 'MD5',
-          paySign: 'mock_sign',
+          signType: "MD5",
+          paySign: "mock_sign",
         };
-      case 'alipay':
+      case "alipay":
         return {
-          orderString: 'mock_alipay_order_string',
+          orderString: "mock_alipay_order_string",
         };
-      case 'balance':
+      case "balance":
         // 余额支付
         await this.processBalancePayment(params);
         return { success: true };
       default:
-        throw new HttpException('不支持的支付方式', HttpStatus.BAD_REQUEST);
+        throw new HttpException("不支持的支付方式", HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -314,7 +334,7 @@ export class PayService {
     });
 
     if (!user || Number(user.user_money) < params.unpaid_amount) {
-      throw new HttpException('余额不足', HttpStatus.BAD_REQUEST);
+      throw new HttpException("余额不足", HttpStatus.BAD_REQUEST);
     }
 
     // 扣除余额
@@ -361,7 +381,7 @@ export class PayService {
       },
     });
 
-    return { code: 'SUCCESS', message: 'OK' };
+    return { code: "SUCCESS", message: "OK" };
   }
 
   /**
@@ -380,7 +400,7 @@ export class PayService {
       },
     });
 
-    return { code: 'SUCCESS', message: 'OK' };
+    return { code: "SUCCESS", message: "OK" };
   }
 
   /**
@@ -388,15 +408,18 @@ export class PayService {
    */
   private async handlePaypalNotify(data: any): Promise<any> {
     // 模拟PayPal回调处理
-    return { code: 'SUCCESS', message: 'OK' };
+    return { code: "SUCCESS", message: "OK" };
   }
 
   /**
    * 处理第三方支付回调
    */
-  private async handleThirdPartyNotify(payCode: string, data: any): Promise<any> {
+  private async handleThirdPartyNotify(
+    payCode: string,
+    data: any,
+  ): Promise<any> {
     // 模拟第三方支付回调处理
-    return { code: 'SUCCESS', message: 'OK' };
+    return { code: "SUCCESS", message: "OK" };
   }
 
   /**
@@ -404,7 +427,7 @@ export class PayService {
    */
   private async handleWechatRefundNotify(data: any): Promise<any> {
     // 模拟微信退款回调处理
-    return { code: 'SUCCESS', message: 'OK' };
+    return { code: "SUCCESS", message: "OK" };
   }
 
   /**
@@ -412,7 +435,7 @@ export class PayService {
    */
   private async handleAlipayRefundNotify(data: any): Promise<any> {
     // 模拟支付宝退款回调处理
-    return { code: 'SUCCESS', message: 'OK' };
+    return { code: "SUCCESS", message: "OK" };
   }
 
   /**
@@ -420,14 +443,17 @@ export class PayService {
    */
   private async handlePaypalRefundNotify(data: any): Promise<any> {
     // 模拟PayPal退款回调处理
-    return { code: 'SUCCESS', message: 'OK' };
+    return { code: "SUCCESS", message: "OK" };
   }
 
   /**
    * 处理第三方退款回调
    */
-  private async handleThirdPartyRefundNotify(payCode: string, data: any): Promise<any> {
+  private async handleThirdPartyRefundNotify(
+    payCode: string,
+    data: any,
+  ): Promise<any> {
     // 模拟第三方退款回调处理
-    return { code: 'SUCCESS', message: 'OK' };
+    return { code: "SUCCESS", message: "OK" };
   }
 }

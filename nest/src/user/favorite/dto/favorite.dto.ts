@@ -1,10 +1,17 @@
 // @ts-nocheck
-import { IsNumber, IsOptional, IsBoolean, IsEnum, IsString, IsArray } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  IsString,
+  IsArray,
+} from "class-validator";
 
 export enum FavoriteType {
-  PRODUCT = 'product',
-  SHOP = 'shop',
-  ARTICLE = 'article',
+  PRODUCT = "product",
+  SHOP = "shop",
+  ARTICLE = "article",
 }
 
 export class CreateFavoriteDto {

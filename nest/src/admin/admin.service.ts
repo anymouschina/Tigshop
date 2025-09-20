@@ -1,8 +1,14 @@
 // @ts-nocheck
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { DatabaseService } from '../database/database.service';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from "bcrypt";
+import { DatabaseService } from "../database/database.service";
 
 @Injectable()
 export class AdminService {
@@ -19,12 +25,15 @@ export class AdminService {
     });
 
     if (!admin) {
-      throw new UnauthorizedException('用户名或密码错误');
+      throw new UnauthorizedException("用户名或密码错误");
     }
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, admin.password);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      admin.password,
+    );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('用户名或密码错误');
+      throw new UnauthorizedException("用户名或密码错误");
     }
 
     // 更新登录信息 - 使用原始SQL，因为lastLoginTime字段不在schema中
@@ -34,7 +43,11 @@ export class AdminService {
       WHERE "admin_id" = ${admin.admin_id}
     `;
 
-    const payload = { userId: admin.admin_id, username: admin.username, role: 'admin' };
+    const payload = {
+      userId: admin.admin_id,
+      username: admin.username,
+      role: "admin",
+    };
     const token = this.jwtService.sign(payload);
 
     return {
@@ -50,7 +63,7 @@ export class AdminService {
 
   async logout(userId: number) {
     // 在实际应用中，这里可以将token加入黑名单
-    return { message: '登出成功' };
+    return { message: "登出成功" };
   }
 
   async getAdminProfile(userId: number) {
@@ -68,13 +81,16 @@ export class AdminService {
     });
 
     if (!admin) {
-      throw new NotFoundException('管理员用户不存在');
+      throw new NotFoundException("管理员用户不存在");
     }
 
     return admin;
   }
 
-  async updateAdminProfile(userId: number, updateDto: { email?: string; mobile?: string; avatar?: string }) {
+  async updateAdminProfile(
+    userId: number,
+    updateDto: { email?: string; mobile?: string; avatar?: string },
+  ) {
     const admin = await this.databaseService.admin_user.update({
       where: { admin_id: userId },
       data: {
@@ -94,18 +110,24 @@ export class AdminService {
     return admin;
   }
 
-  async changePassword(userId: number, passwordDto: { oldPassword: string; newPassword: string }) {
+  async changePassword(
+    userId: number,
+    passwordDto: { oldPassword: string; newPassword: string },
+  ) {
     const admin = await this.databaseService.admin_user.findUnique({
       where: { admin_id: userId },
     });
 
     if (!admin) {
-      throw new NotFoundException('管理员用户不存在');
+      throw new NotFoundException("管理员用户不存在");
     }
 
-    const isOldPasswordValid = await bcrypt.compare(passwordDto.oldPassword, admin.password);
+    const isOldPasswordValid = await bcrypt.compare(
+      passwordDto.oldPassword,
+      admin.password,
+    );
     if (!isOldPasswordValid) {
-      throw new BadRequestException('原密码错误');
+      throw new BadRequestException("原密码错误");
     }
 
     const hashedPassword = await bcrypt.hash(passwordDto.newPassword, 10);
@@ -118,37 +140,48 @@ export class AdminService {
       },
     });
 
-    return { message: '密码修改成功' };
+    return { message: "密码修改成功" };
   }
 
   // 管理员用户管理
-  async createAdminUser(createDto: { username: string; password: string; email?: string; mobile?: string; avatar?: string }) {
+  async createAdminUser(createDto: {
+    username: string;
+    password: string;
+    email?: string;
+    mobile?: string;
+    avatar?: string;
+  }) {
     const existingAdmin = await this.databaseService.admin_user.findFirst({
       where: { username: createDto.username },
     });
 
     if (existingAdmin) {
-      throw new ConflictException('用户名已存在');
+      throw new ConflictException("用户名已存在");
     }
 
     const hashedPassword = await bcrypt.hash(createDto.password, 10);
 
     // Use raw SQL to create admin user without adminRole relationship requirement
-    const result = await this.databaseService.$queryRaw`
+    const result = (await this.databaseService.$queryRaw`
       INSERT INTO "admin_user" (
         username, password, email, mobile, avatar,
         add_time, admin_type, created_at, updated_at
       ) VALUES (
-        ${createDto.username}, ${hashedPassword}, ${createDto.email || ''}, ${createDto.mobile || ''}, ${createDto.avatar || ''},
+        ${createDto.username}, ${hashedPassword}, ${createDto.email || ""}, ${createDto.mobile || ""}, ${createDto.avatar || ""},
         ${Math.floor(Date.now() / 1000)}, 'admin', ${new Date()}, ${new Date()}
       )
       RETURNING admin_id, username, email, mobile, avatar, add_time, created_at
-    ` as any;
+    `) as any;
 
     return result[0];
   }
 
-  async getAdminUsers(queryDto: { page?: number; size?: number; keyword?: string; isEnable?: boolean }) {
+  async getAdminUsers(queryDto: {
+    page?: number;
+    size?: number;
+    keyword?: string;
+    isEnable?: boolean;
+  }) {
     const { page = 1, size = 20, keyword } = queryDto;
     const skip = (page - 1) * size;
 
@@ -175,7 +208,7 @@ export class AdminService {
           add_time: true,
           created_at: true,
         },
-        orderBy: { created_at: 'desc' },
+        orderBy: { created_at: "desc" },
       }),
       this.databaseService.admin_user.count({ where }),
     ]);
@@ -207,13 +240,16 @@ export class AdminService {
     });
 
     if (!admin) {
-      throw new NotFoundException('管理员用户不存在');
+      throw new NotFoundException("管理员用户不存在");
     }
 
     return admin;
   }
 
-  async updateAdminUser(adminId: number, updateDto: { email?: string; mobile?: string; avatar?: string }) {
+  async updateAdminUser(
+    adminId: number,
+    updateDto: { email?: string; mobile?: string; avatar?: string },
+  ) {
     const admin = await this.databaseService.admin_user.update({
       where: { admin_id: adminId },
       data: {
@@ -238,16 +274,21 @@ export class AdminService {
       where: { admin_id: adminId },
     });
 
-    return { message: '删除成功' };
+    return { message: "删除成功" };
   }
 
   async toggleAdminUserStatus(adminId: number, isEnable: boolean) {
     // isEnable field doesn't exist in the schema, so this function is not implemented
-    throw new BadRequestException('管理员状态切换功能暂未实现');
+    throw new BadRequestException("管理员状态切换功能暂未实现");
   }
 
   // 角色管理
-  async createRole(createRoleDto: { roleName: string; roleDesc?: string; authorityList: any[]; adminType?: string }) {
+  async createRole(createRoleDto: {
+    roleName: string;
+    roleDesc?: string;
+    authorityList: any[];
+    adminType?: string;
+  }) {
     // Convert authorityList array to JSON string as expected by schema
     const authorityListJson = JSON.stringify(createRoleDto.authorityList || []);
 
@@ -256,7 +297,7 @@ export class AdminService {
         role_name: createRoleDto.roleName,
         role_desc: createRoleDto.roleDesc,
         authority_list: authorityListJson,
-        admin_type: createRoleDto.adminType || 'admin',
+        admin_type: createRoleDto.adminType || "admin",
         updated_at: new Date(),
       },
     });
@@ -281,7 +322,7 @@ export class AdminService {
         where,
         skip,
         take: size,
-        orderBy: { created_at: 'desc' },
+        orderBy: { created_at: "desc" },
       }),
       this.databaseService.admin_role.count({ where }),
     ]);
@@ -303,13 +344,21 @@ export class AdminService {
     });
 
     if (!role) {
-      throw new NotFoundException('角色不存在');
+      throw new NotFoundException("角色不存在");
     }
 
     return role;
   }
 
-  async updateRole(roleId: number, updateRoleDto: { roleName?: string; roleDesc?: string; authorityList?: any[]; isEnable?: boolean }) {
+  async updateRole(
+    roleId: number,
+    updateRoleDto: {
+      roleName?: string;
+      roleDesc?: string;
+      authorityList?: any[];
+      isEnable?: boolean;
+    },
+  ) {
     const updateData: any = {
       ...updateRoleDto,
       updatedAt: new Date(),
@@ -333,13 +382,13 @@ export class AdminService {
       where: { role_id: roleId },
     });
 
-    return { message: '删除成功' };
+    return { message: "删除成功" };
   }
 
   async assignRolesToUser(adminId: number, roleIds: number[]) {
     // 这里需要实现用户角色关联表，目前返回模拟数据
     return {
-      message: '角色分配成功',
+      message: "角色分配成功",
       adminId,
       roleIds,
     };
@@ -384,7 +433,7 @@ export class AdminService {
 
     const recentOrders = await this.databaseService.order.findMany({
       take: 10,
-      orderBy: { created_at: 'desc' },
+      orderBy: { created_at: "desc" },
       include: {
         user: {
           select: { nickname: true, email: true },
@@ -406,7 +455,13 @@ export class AdminService {
   }
 
   // 系统日志
-  async getSystemLogs(queryDto: { page?: number; size?: number; level?: string; startDate?: string; endDate?: string }) {
+  async getSystemLogs(queryDto: {
+    page?: number;
+    size?: number;
+    level?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
     const { page = 1, size = 20, level, startDate, endDate } = queryDto;
     const skip = (page - 1) * size;
 
@@ -426,21 +481,21 @@ export class AdminService {
   async getSystemSettings() {
     // 这里需要实现系统设置表，目前返回模拟数据
     return {
-      siteName: 'Tigshop 管理系统',
-      siteLogo: '',
-      siteDescription: '专业的电商管理平台',
-      contactEmail: 'admin@tigshop.com',
-      contactPhone: '',
-      currency: 'CNY',
-      language: 'zh-CN',
-      timezone: 'Asia/Shanghai',
+      siteName: "Tigshop 管理系统",
+      siteLogo: "",
+      siteDescription: "专业的电商管理平台",
+      contactEmail: "admin@tigshop.com",
+      contactPhone: "",
+      currency: "CNY",
+      language: "zh-CN",
+      timezone: "Asia/Shanghai",
     };
   }
 
   async updateSystemSettings(settings: any) {
     // 这里需要实现系统设置表的更新，目前返回模拟数据
     return {
-      message: '系统设置更新成功',
+      message: "系统设置更新成功",
       settings,
     };
   }

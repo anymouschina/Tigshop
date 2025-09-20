@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { RedisService } from '../redis/redis.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { RedisService } from "../redis/redis.service";
 
 export interface SearchResult {
   id: number;
-  type: 'product' | 'user' | 'order' | 'category' | 'brand';
+  type: "product" | "user" | "order" | "category" | "brand";
   title: string;
   description?: string;
   image?: string;
@@ -17,11 +17,11 @@ export interface SearchResult {
 
 export interface SearchOptions {
   query: string;
-  type?: 'product' | 'user' | 'order' | 'category' | 'brand' | 'all';
+  type?: "product" | "user" | "order" | "category" | "brand" | "all";
   page?: number;
   limit?: number;
-  sortBy?: 'relevance' | 'date' | 'price' | 'popularity';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "relevance" | "date" | "price" | "popularity";
+  sortOrder?: "asc" | "desc";
   filters?: SearchFilters;
 }
 
@@ -39,7 +39,7 @@ export interface SearchSuggestions {
   query: string;
   suggestions: Array<{
     text: string;
-    type: 'product' | 'category' | 'brand' | 'search';
+    type: "product" | "category" | "brand" | "search";
     count?: number;
   }>;
 }
@@ -66,31 +66,35 @@ export class SearchService {
     const limit = Math.min(options.limit || 20, 100);
     const offset = (page - 1) * limit;
 
-    const searchType = options.type || 'all';
+    const searchType = options.type || "all";
 
     let results: SearchResult[] = [];
     let total = 0;
 
     // 根据类型进行搜索
-    if (searchType === 'all' || searchType === 'product') {
+    if (searchType === "all" || searchType === "product") {
       const productResults = await this.searchProducts(options, offset, limit);
       results.push(...productResults.results);
       total += productResults.total;
     }
 
-    if (searchType === 'all' || searchType === 'user') {
+    if (searchType === "all" || searchType === "user") {
       const userResults = await this.searchUsers(options, offset, limit);
       results.push(...userResults.results);
       total += userResults.total;
     }
 
-    if (searchType === 'all' || searchType === 'category') {
-      const categoryResults = await this.searchCategories(options, offset, limit);
+    if (searchType === "all" || searchType === "category") {
+      const categoryResults = await this.searchCategories(
+        options,
+        offset,
+        limit,
+      );
       results.push(...categoryResults.results);
       total += categoryResults.total;
     }
 
-    if (searchType === 'all' || searchType === 'brand') {
+    if (searchType === "all" || searchType === "brand") {
       const brandResults = await this.searchBrands(options, offset, limit);
       results.push(...brandResults.results);
       total += brandResults.total;
@@ -101,13 +105,17 @@ export class SearchService {
     const paginatedResults = results.slice(offset, offset + limit);
 
     // 缓存结果
-    await this.redisService.set(cacheKey, {
-      results: paginatedResults,
-      total,
-      page,
-      limit,
-      hasMore: offset + limit < results.length,
-    }, { ttl: 300 });
+    await this.redisService.set(
+      cacheKey,
+      {
+        results: paginatedResults,
+        total,
+        page,
+        limit,
+        hasMore: offset + limit < results.length,
+      },
+      { ttl: 300 },
+    );
 
     return {
       results: paginatedResults,
@@ -120,7 +128,11 @@ export class SearchService {
   }
 
   // 产品搜索
-  private async searchProducts(options: SearchOptions, offset: number, limit: number): Promise<{
+  private async searchProducts(
+    options: SearchOptions,
+    offset: number,
+    limit: number,
+  ): Promise<{
     results: SearchResult[];
     total: number;
   }> {
@@ -139,14 +151,18 @@ export class SearchService {
       this.prisma.product.count({ where }),
     ]);
 
-    const results: SearchResult[] = products.map(product => ({
+    const results: SearchResult[] = products.map((product) => ({
       id: product.product_id,
-      type: 'product' as const,
+      type: "product" as const,
       title: product.product_name,
       description: product.description,
       image: product.image,
       url: `/products/${product.product_id}`,
-      score: this.calculateRelevanceScore(options.query, product.product_name, product.description),
+      score: this.calculateRelevanceScore(
+        options.query,
+        product.product_name,
+        product.description,
+      ),
       metadata: {
         price: product.price,
         originalPrice: product.original_price,
@@ -161,7 +177,11 @@ export class SearchService {
   }
 
   // 用户搜索
-  private async searchUsers(options: SearchOptions, offset: number, limit: number): Promise<{
+  private async searchUsers(
+    options: SearchOptions,
+    offset: number,
+    limit: number,
+  ): Promise<{
     results: SearchResult[];
     total: number;
   }> {
@@ -189,21 +209,29 @@ export class SearchService {
       this.prisma.user.count({ where }),
     ]);
 
-    const results: SearchResult[] = users.map(user => ({
+    const results: SearchResult[] = users.map((user) => ({
       id: user.user_id,
-      type: 'user' as const,
+      type: "user" as const,
       title: user.username,
       description: user.email,
       image: user.avatar,
       url: `/users/${user.user_id}`,
-      score: this.calculateRelevanceScore(options.query, user.username, user.email),
+      score: this.calculateRelevanceScore(
+        options.query,
+        user.username,
+        user.email,
+      ),
     }));
 
     return { results, total };
   }
 
   // 分类搜索
-  private async searchCategories(options: SearchOptions, offset: number, limit: number): Promise<{
+  private async searchCategories(
+    options: SearchOptions,
+    offset: number,
+    limit: number,
+  ): Promise<{
     results: SearchResult[];
     total: number;
   }> {
@@ -221,21 +249,29 @@ export class SearchService {
       this.prisma.category.count({ where }),
     ]);
 
-    const results: SearchResult[] = categories.map(category => ({
+    const results: SearchResult[] = categories.map((category) => ({
       id: category.category_id,
-      type: 'category' as const,
+      type: "category" as const,
       title: category.category_name,
       description: category.description,
       image: category.image,
       url: `/categories/${category.category_id}`,
-      score: this.calculateRelevanceScore(options.query, category.category_name, category.description),
+      score: this.calculateRelevanceScore(
+        options.query,
+        category.category_name,
+        category.description,
+      ),
     }));
 
     return { results, total };
   }
 
   // 品牌搜索
-  private async searchBrands(options: SearchOptions, offset: number, limit: number): Promise<{
+  private async searchBrands(
+    options: SearchOptions,
+    offset: number,
+    limit: number,
+  ): Promise<{
     results: SearchResult[];
     total: number;
   }> {
@@ -253,14 +289,18 @@ export class SearchService {
       this.prisma.brand.count({ where }),
     ]);
 
-    const results: SearchResult[] = brands.map(brand => ({
+    const results: SearchResult[] = brands.map((brand) => ({
       id: brand.brand_id,
-      type: 'brand' as const,
+      type: "brand" as const,
       title: brand.brand_name,
       description: brand.description,
       image: brand.logo,
       url: `/brands/${brand.brand_id}`,
-      score: this.calculateRelevanceScore(options.query, brand.brand_name, brand.description),
+      score: this.calculateRelevanceScore(
+        options.query,
+        brand.brand_name,
+        brand.description,
+      ),
     }));
 
     return { results, total };
@@ -329,10 +369,14 @@ export class SearchService {
   }
 
   // 计算相关性得分
-  private calculateRelevanceScore(query: string, title: string, description?: string): number {
+  private calculateRelevanceScore(
+    query: string,
+    title: string,
+    description?: string,
+  ): number {
     const lowerQuery = query.toLowerCase();
     const lowerTitle = title.toLowerCase();
-    const lowerDescription = description?.toLowerCase() || '';
+    const lowerDescription = description?.toLowerCase() || "";
 
     let score = 0;
 
@@ -355,11 +399,11 @@ export class SearchService {
     }
 
     // 单词匹配
-    const queryWords = lowerQuery.split(' ');
-    const titleWords = lowerTitle.split(' ');
-    const descriptionWords = lowerDescription.split(' ');
+    const queryWords = lowerQuery.split(" ");
+    const titleWords = lowerTitle.split(" ");
+    const descriptionWords = lowerDescription.split(" ");
 
-    queryWords.forEach(queryWord => {
+    queryWords.forEach((queryWord) => {
       if (titleWords.includes(queryWord)) {
         score += 20;
       }
@@ -372,33 +416,37 @@ export class SearchService {
   }
 
   // 排序结果
-  private sortResults(results: SearchResult[], sortBy?: string, sortOrder?: string): SearchResult[] {
+  private sortResults(
+    results: SearchResult[],
+    sortBy?: string,
+    sortOrder?: string,
+  ): SearchResult[] {
     const sorted = [...results];
 
     switch (sortBy) {
-      case 'date':
+      case "date":
         sorted.sort((a, b) => {
           // 这里需要根据实际数据添加日期字段
-          return sortOrder === 'desc' ? 0 : 0;
+          return sortOrder === "desc" ? 0 : 0;
         });
         break;
-      case 'price':
+      case "price":
         sorted.sort((a, b) => {
           const priceA = a.metadata?.price || 0;
           const priceB = b.metadata?.price || 0;
-          return sortOrder === 'desc' ? priceB - priceA : priceA - priceB;
+          return sortOrder === "desc" ? priceB - priceA : priceA - priceB;
         });
         break;
-      case 'popularity':
+      case "popularity":
         sorted.sort((a, b) => {
           // 这里需要根据实际数据添加销量字段
-          return sortOrder === 'desc' ? 0 : 0;
+          return sortOrder === "desc" ? 0 : 0;
         });
         break;
-      case 'relevance':
+      case "relevance":
       default:
         sorted.sort((a, b) => {
-          return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
+          return sortOrder === "desc" ? b.score - a.score : a.score - b.score;
         });
         break;
     }
@@ -410,60 +458,68 @@ export class SearchService {
   async getSuggestions(query: string): Promise<string[]> {
     const cacheKey = `search_suggestions:${query}`;
 
-    return this.redisService.getOrSet(cacheKey, async () => {
-      const suggestions = new Set<string>();
+    return this.redisService.getOrSet(
+      cacheKey,
+      async () => {
+        const suggestions = new Set<string>();
 
-      // 从产品名称获取建议
-      const products = await this.prisma.product.findMany({
-        where: {
-          OR: [
-            { product_name: { contains: query } },
-            { keywords: { contains: query } },
-          ],
-          is_enabled: true,
-        },
-        select: { product_name: true },
-        take: 10,
-      });
+        // 从产品名称获取建议
+        const products = await this.prisma.product.findMany({
+          where: {
+            OR: [
+              { product_name: { contains: query } },
+              { keywords: { contains: query } },
+            ],
+            is_enabled: true,
+          },
+          select: { product_name: true },
+          take: 10,
+        });
 
-      products.forEach(product => {
-        suggestions.add(product.product_name);
-      });
+        products.forEach((product) => {
+          suggestions.add(product.product_name);
+        });
 
-      // 从分类获取建议
-      const categories = await this.prisma.category.findMany({
-        where: {
-          category_name: { contains: query },
-          is_enabled: true,
-        },
-        select: { category_name: true },
-        take: 5,
-      });
+        // 从分类获取建议
+        const categories = await this.prisma.category.findMany({
+          where: {
+            category_name: { contains: query },
+            is_enabled: true,
+          },
+          select: { category_name: true },
+          take: 5,
+        });
 
-      categories.forEach(category => {
-        suggestions.add(category.category_name);
-      });
+        categories.forEach((category) => {
+          suggestions.add(category.category_name);
+        });
 
-      // 从品牌获取建议
-      const brands = await this.prisma.brand.findMany({
-        where: {
-          brand_name: { contains: query },
-          is_enabled: true,
-        },
-        select: { brand_name: true },
-        take: 5,
-      });
+        // 从品牌获取建议
+        const brands = await this.prisma.brand.findMany({
+          where: {
+            brand_name: { contains: query },
+            is_enabled: true,
+          },
+          select: { brand_name: true },
+          take: 5,
+        });
 
-      brands.forEach(brand => {
-        suggestions.add(brand.brand_name);
-      });
+        brands.forEach((brand) => {
+          suggestions.add(brand.brand_name);
+        });
 
-      return Array.from(suggestions).slice(0, 10);
-    }, { ttl: 1800 }); // 缓存30分钟
+        return Array.from(suggestions).slice(0, 10);
+      },
+      { ttl: 1800 },
+    ); // 缓存30分钟
   }
 
   // 搜索历史记录
-  async saveSearchHistory(userId: number, query: string, resultsCount: number): Promise<void> {
+  async saveSearchHistory(
+    userId: number,
+    query: string,
+    resultsCount: number,
+  ): Promise<void> {
     await this.prisma.searchHistory.create({
       data: {
         user_id: userId,
@@ -480,30 +536,35 @@ export class SearchService {
     if (historyCount > 50) {
       const oldestRecords = await this.prisma.searchHistory.findMany({
         where: { user_id: userId },
-        orderBy: { created_at: 'asc' },
+        orderBy: { created_at: "asc" },
         take: historyCount - 50,
       });
 
       await this.prisma.searchHistory.deleteMany({
         where: {
-          id: { in: oldestRecords.map(r => r.id) },
+          id: { in: oldestRecords.map((r) => r.id) },
         },
       });
     }
   }
 
-  async getSearchHistory(userId: number, limit = 10): Promise<Array<{
-    query: string;
-    createdAt: Date;
-    resultsCount: number;
-  }>> {
+  async getSearchHistory(
+    userId: number,
+    limit = 10,
+  ): Promise<
+    Array<{
+      query: string;
+      createdAt: Date;
+      resultsCount: number;
+    }>
+  > {
     const history = await this.prisma.searchHistory.findMany({
       where: { user_id: userId },
-      orderBy: { created_at: 'desc' },
+      orderBy: { created_at: "desc" },
       take: limit,
     });
 
-    return history.map(h => ({
+    return history.map((h) => ({
       query: h.query,
       createdAt: h.created_at,
       resultsCount: h.results_count,
@@ -526,46 +587,54 @@ export class SearchService {
   }
 
   // 热门搜索
-  async getPopularSearches(limit = 10): Promise<Array<{
-    query: string;
-    count: number;
-  }>> {
-    const cacheKey = 'popular_searches';
+  async getPopularSearches(limit = 10): Promise<
+    Array<{
+      query: string;
+      count: number;
+    }>
+  > {
+    const cacheKey = "popular_searches";
 
-    return this.redisService.getOrSet(cacheKey, async () => {
-      const popularSearches = await this.prisma.searchHistory.groupBy({
-        by: ['query'],
-        _count: { query: true },
-        orderBy: {
-          _count: {
-            query: 'desc',
+    return this.redisService.getOrSet(
+      cacheKey,
+      async () => {
+        const popularSearches = await this.prisma.searchHistory.groupBy({
+          by: ["query"],
+          _count: { query: true },
+          orderBy: {
+            _count: {
+              query: "desc",
+            },
           },
-        },
-        take: limit,
-        where: {
-          created_at: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 最近7天
+          take: limit,
+          where: {
+            created_at: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 最近7天
+            },
           },
-        },
-      });
+        });
 
-      return popularSearches.map(item => ({
-        query: item.query,
-        count: item._count.query,
-      }));
-    }, { ttl: 3600 }); // 缓存1小时
+        return popularSearches.map((item) => ({
+          query: item.query,
+          count: item._count.query,
+        }));
+      },
+      { ttl: 3600 },
+    ); // 缓存1小时
   }
 
   // 索引管理
-  async rebuildIndex(type: 'product' | 'user' | 'category' | 'brand' | 'all'): Promise<void> {
+  async rebuildIndex(
+    type: "product" | "user" | "category" | "brand" | "all",
+  ): Promise<void> {
     // 这里可以实现Elasticsearch或其他搜索引擎的索引重建逻辑
     console.log(`Rebuilding search index for: ${type}`);
   }
 
   // 清除搜索缓存
   async clearCache(): Promise<void> {
-    await this.redisService.clearPattern('search:*');
-    await this.redisService.clearPattern('search_suggestions:*');
-    await this.redisService.del('popular_searches');
+    await this.redisService.clearPattern("search:*");
+    await this.redisService.clearPattern("search_suggestions:*");
+    await this.redisService.del("popular_searches");
   }
 }

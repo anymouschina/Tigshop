@@ -1,6 +1,16 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class BrandQueryDto {
   @IsOptional()
@@ -53,11 +63,11 @@ export class BrandQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'brand_id';
+  sort_field?: string = "brand_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @IsBoolean()
@@ -84,21 +94,21 @@ export class CreateBrandDto {
   @IsOptional()
   @IsString()
   @MaxLength(80)
-  brand_type?: string = '';
+  brand_type?: string = "";
 
   @IsOptional()
   @IsString()
-  brand_desc?: string = '';
+  brand_desc?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  brand_logo?: string = '';
+  brand_logo?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  site_url?: string = '';
+  site_url?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -208,7 +218,7 @@ export class BatchDeleteBrandDto {
 export class SearchBrandDto {
   @IsOptional()
   @IsString()
-  word?: string = '';
+  word?: string = "";
 }
 
 export class AuditBrandDto {
@@ -224,7 +234,7 @@ export class AuditBrandDto {
 
   @IsOptional()
   @IsString()
-  reject_remark?: string = '';
+  reject_remark?: string = "";
 }
 
 export class AuditBrandQueryDto {
@@ -253,9 +263,9 @@ export class AuditBrandQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'brand_id';
+  sort_field?: string = "brand_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }

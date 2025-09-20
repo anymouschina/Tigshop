@@ -1,6 +1,15 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsEnum, Min, Max, IsArray } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsEnum,
+  Min,
+  Max,
+  IsArray,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export enum CouponType {
   MONEY = 1,
@@ -37,11 +46,11 @@ export class CouponQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'coupon_id';
+  sort_field?: string = "coupon_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class CreateCouponDto {
@@ -74,11 +83,11 @@ export class CreateCouponDto {
 
   @IsString()
   @IsOptional()
-  send_range: string = '';
+  send_range: string = "";
 
   @IsString()
   @IsOptional()
-  send_range_data: string = '';
+  send_range_data: string = "";
 
   @IsBoolean()
   is_global: boolean = true;
@@ -94,7 +103,7 @@ export class CreateCouponDto {
 
   @IsString()
   @IsOptional()
-  limit_user_rank: string = '';
+  limit_user_rank: string = "";
 
   @IsString()
   @IsOptional()

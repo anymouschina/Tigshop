@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 
 @Injectable()
 export class CategoryService {
@@ -13,7 +13,7 @@ export class CategoryService {
         is_show: 1,
         is_delete: 0,
       },
-      orderBy: { sort_order: 'asc' },
+      orderBy: { sort_order: "asc" },
       include: {
         children: {
           where: {
@@ -31,7 +31,7 @@ export class CategoryService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: categories,
     };
   }
@@ -42,14 +42,14 @@ export class CategoryService {
         is_show: 1,
         is_delete: 0,
       },
-      orderBy: { sort_order: 'asc' },
+      orderBy: { sort_order: "asc" },
     });
 
     const tree = this.buildCategoryTree(categories, 0);
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: tree,
     };
   }
@@ -83,12 +83,12 @@ export class CategoryService {
     });
 
     if (!category) {
-      throw new NotFoundException('分类不存在');
+      throw new NotFoundException("分类不存在");
     }
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: category,
     };
   }
@@ -99,17 +99,17 @@ export class CategoryService {
       page?: number;
       size?: number;
       sort_field?: string;
-      sort_order?: 'asc' | 'desc';
+      sort_order?: "asc" | "desc";
       price_min?: number;
       price_max?: number;
       keyword?: string;
-    }
+    },
   ) {
     const {
       page = 1,
       size = 20,
-      sort_field = 'sort_order',
-      sort_order = 'asc',
+      sort_field = "sort_order",
+      sort_order = "asc",
       price_min,
       price_max,
       keyword,
@@ -126,7 +126,7 @@ export class CategoryService {
     });
 
     if (!category) {
-      throw new NotFoundException('分类不存在');
+      throw new NotFoundException("分类不存在");
     }
 
     // 获取分类ID及其所有子分类ID
@@ -174,7 +174,7 @@ export class CategoryService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         records: products,
         total,
@@ -203,13 +203,13 @@ export class CategoryService {
           },
         },
       },
-      orderBy: { sales_count: 'desc' },
+      orderBy: { sales_count: "desc" },
       take: limit,
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: products,
     };
   }
@@ -233,13 +233,13 @@ export class CategoryService {
           },
         },
       },
-      orderBy: { add_time: 'desc' },
+      orderBy: { add_time: "desc" },
       take: limit,
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: products,
     };
   }
@@ -271,7 +271,7 @@ export class CategoryService {
       include: {
         brand: true,
       },
-      distinct: ['brand_id'],
+      distinct: ["brand_id"],
     });
 
     // 获取子分类
@@ -281,18 +281,18 @@ export class CategoryService {
         is_show: 1,
         is_delete: 0,
       },
-      orderBy: { sort_order: 'asc' },
+      orderBy: { sort_order: "asc" },
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         price_range: {
           min: priceStats._min.price || 0,
           max: priceStats._max.price || 0,
         },
-        brands: brands.map(item => item.brand).filter(Boolean),
+        brands: brands.map((item) => item.brand).filter(Boolean),
         children: children,
       },
     };
@@ -305,13 +305,13 @@ export class CategoryService {
         is_delete: 0,
         is_recommend: 1,
       },
-      orderBy: { sort_order: 'asc' },
+      orderBy: { sort_order: "asc" },
       take: 10,
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: categories,
     };
   }
@@ -327,7 +327,7 @@ export class CategoryService {
     });
 
     if (!currentCategory) {
-      throw new NotFoundException('分类不存在');
+      throw new NotFoundException("分类不存在");
     }
 
     while (currentCategory) {
@@ -349,7 +349,7 @@ export class CategoryService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: breadcrumb,
     };
   }
@@ -407,7 +407,7 @@ export class CategoryService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         product_count: productCount,
         total_sales: totalSales._sum.sales_count || 0,
@@ -425,12 +425,12 @@ export class CategoryService {
         is_show: 1,
         is_delete: 0,
       },
-      orderBy: { sort_order: 'asc' },
+      orderBy: { sort_order: "asc" },
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: children,
     };
   }
@@ -441,7 +441,10 @@ export class CategoryService {
 
     for (const category of categories) {
       if (category.parent_id === parentId) {
-        const children = this.buildCategoryTree(categories, category.category_id);
+        const children = this.buildCategoryTree(
+          categories,
+          category.category_id,
+        );
         if (children.length > 0) {
           category.children = children;
         }
@@ -452,7 +455,9 @@ export class CategoryService {
     return tree;
   }
 
-  private async getCategoryIdsWithChildren(categoryId: number): Promise<number[]> {
+  private async getCategoryIdsWithChildren(
+    categoryId: number,
+  ): Promise<number[]> {
     const categoryIds = [categoryId];
 
     const getChildrenIds = async (parentId: number) => {

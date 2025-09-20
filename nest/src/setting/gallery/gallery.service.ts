@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateGalleryDto,
   UpdateGalleryDto,
   GalleryQueryDto,
   GalleryStatus,
-  GalleryConfigDto
-} from './dto/gallery.dto';
+  GalleryConfigDto,
+} from "./dto/gallery.dto";
 
 @Injectable()
 export class GalleryService {
@@ -19,8 +23,8 @@ export class GalleryService {
       page = 1,
       size = 15,
       status,
-      sortField = 'gallery_id',
-      sortOrder = 'desc'
+      sortField = "gallery_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -32,7 +36,7 @@ export class GalleryService {
         { gallery_id: { contains: keyword } },
         { name: { contains: keyword } },
         { description: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -68,15 +72,13 @@ export class GalleryService {
     });
 
     if (!item) {
-      throw new NotFoundException('图库不存在');
+      throw new NotFoundException("图库不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateGalleryDto) {
-    
-
     const item = await this.prisma.gallery.create({
       data: {
         name: createDto.name,
@@ -96,7 +98,7 @@ export class GalleryService {
     });
 
     if (!item) {
-      throw new NotFoundException('图库不存在');
+      throw new NotFoundException("图库不存在");
     }
 
     const updateData: any = {};
@@ -127,7 +129,7 @@ export class GalleryService {
     });
 
     if (!item) {
-      throw new NotFoundException('图库不存在');
+      throw new NotFoundException("图库不存在");
     }
 
     await this.prisma.gallery.delete({
@@ -144,8 +146,8 @@ export class GalleryService {
   async getConfig(): Promise<GalleryConfigDto> {
     return {
       statusConfig: {
-        [GalleryStatus.DISABLED]: '禁用',
-        [GalleryStatus.ENABLED]: '启用'
+        [GalleryStatus.DISABLED]: "禁用",
+        [GalleryStatus.ENABLED]: "启用",
       },
     };
   }

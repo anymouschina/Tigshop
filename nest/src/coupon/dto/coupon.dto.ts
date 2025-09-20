@@ -1,16 +1,24 @@
 // @ts-nocheck
-import { IsEnum, IsNumber, IsString, IsOptional, IsBoolean, Min, Max } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsBoolean,
+  Min,
+  Max,
+} from "class-validator";
 
 export enum CouponType {
-  FIXED = 'FIXED',
-  PERCENTAGE = 'PERCENTAGE',
+  FIXED = "FIXED",
+  PERCENTAGE = "PERCENTAGE",
 }
 
 export enum CouponStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  EXPIRED = 'EXPIRED',
-  USED = 'USED',
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  EXPIRED = "EXPIRED",
+  USED = "USED",
 }
 
 export class CreateCouponDto {

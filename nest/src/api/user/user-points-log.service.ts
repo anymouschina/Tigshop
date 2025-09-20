@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { PointsLogQueryDto } from './dto/user-points-log.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { PointsLogQueryDto } from "./dto/user-points-log.dto";
 
 @Injectable()
 export class UserPointsLogService {
@@ -13,7 +13,7 @@ export class UserPointsLogService {
     });
 
     if (!userPoints) {
-      throw new NotFoundException('用户积分账户不存在');
+      throw new NotFoundException("用户积分账户不存在");
     }
 
     return {
@@ -23,14 +23,21 @@ export class UserPointsLogService {
   }
 
   async getPointsLog(userId: number, queryDto: PointsLogQueryDto) {
-    const { page = 1, size = 10, type = 'all', log_type, start_date, end_date } = queryDto;
+    const {
+      page = 1,
+      size = 10,
+      type = "all",
+      log_type,
+      start_date,
+      end_date,
+    } = queryDto;
     const skip = (page - 1) * size;
 
     const where: any = { user_id: userId };
 
-    if (type === 'income') {
+    if (type === "income") {
       where.points = { gt: 0 };
-    } else if (type === 'expense') {
+    } else if (type === "expense") {
       where.points = { lt: 0 };
     }
 
@@ -43,7 +50,10 @@ export class UserPointsLogService {
     }
 
     if (end_date) {
-      where.add_time = { ...where.add_time, lte: new Date(end_date).getTime() / 1000 };
+      where.add_time = {
+        ...where.add_time,
+        lte: new Date(end_date).getTime() / 1000,
+      };
     }
 
     const [logs, total] = await Promise.all([
@@ -51,7 +61,7 @@ export class UserPointsLogService {
         where,
         skip,
         take: size,
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         select: {
           log_id: true,
           points: true,
@@ -78,42 +88,43 @@ export class UserPointsLogService {
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
-    const [totalPoints, thisMonthPoints, lastMonthPoints, todayPoints] = await Promise.all([
-      this.prisma.user_points_log.aggregate({
-        where: { user_id: userId },
-        _sum: { points: true },
-      }),
-      this.prisma.user_points_log.aggregate({
-        where: {
-          user_id: userId,
-          add_time: { gte: thisMonth.getTime() / 1000 },
-        },
-        _sum: { points: true },
-      }),
-      this.prisma.user_points_log.aggregate({
-        where: {
-          user_id: userId,
-          add_time: {
-            gte: lastMonth.getTime() / 1000,
-            lt: thisMonth.getTime() / 1000,
+    const [totalPoints, thisMonthPoints, lastMonthPoints, todayPoints] =
+      await Promise.all([
+        this.prisma.user_points_log.aggregate({
+          where: { user_id: userId },
+          _sum: { points: true },
+        }),
+        this.prisma.user_points_log.aggregate({
+          where: {
+            user_id: userId,
+            add_time: { gte: thisMonth.getTime() / 1000 },
           },
-        },
-        _sum: { points: true },
-      }),
-      this.prisma.user_points_log.aggregate({
-        where: {
-          user_id: userId,
-          add_time: {
-            gte: today.setHours(0, 0, 0, 0) / 1000,
+          _sum: { points: true },
+        }),
+        this.prisma.user_points_log.aggregate({
+          where: {
+            user_id: userId,
+            add_time: {
+              gte: lastMonth.getTime() / 1000,
+              lt: thisMonth.getTime() / 1000,
+            },
           },
-        },
-        _sum: { points: true },
-      }),
-    ]);
+          _sum: { points: true },
+        }),
+        this.prisma.user_points_log.aggregate({
+          where: {
+            user_id: userId,
+            add_time: {
+              gte: today.setHours(0, 0, 0, 0) / 1000,
+            },
+          },
+          _sum: { points: true },
+        }),
+      ]);
 
     // 按类型统计
     const typeStats = await this.prisma.user_points_log.groupBy({
-      by: ['log_type'],
+      by: ["log_type"],
       where: { user_id: userId },
       _sum: { points: true },
       _count: true,
@@ -137,7 +148,13 @@ export class UserPointsLogService {
     };
   }
 
-  async addPoints(userId: number, points: number, logType: string, description: string, relatedData?: any) {
+  async addPoints(
+    userId: number,
+    points: number,
+    logType: string,
+    description: string,
+    relatedData?: any,
+  ) {
     // 添加积分
     await this.prisma.user_points.update({
       where: { user_id: userId },
@@ -163,11 +180,17 @@ export class UserPointsLogService {
     return { log_id: log.log_id };
   }
 
-  async deductPoints(userId: number, points: number, logType: string, description: string, relatedData?: any) {
+  async deductPoints(
+    userId: number,
+    points: number,
+    logType: string,
+    description: string,
+    relatedData?: any,
+  ) {
     // 检查积分是否足够
     const userPoints = await this.getUserPoints(userId);
     if (userPoints.points < Math.abs(points)) {
-      throw new Error('积分不足');
+      throw new Error("积分不足");
     }
 
     // 扣除积分
@@ -195,7 +218,13 @@ export class UserPointsLogService {
     return { log_id: log.log_id };
   }
 
-  async freezePoints(userId: number, points: number, logType: string, description: string, relatedData?: any) {
+  async freezePoints(
+    userId: number,
+    points: number,
+    logType: string,
+    description: string,
+    relatedData?: any,
+  ) {
     // 冻结积分
     await this.prisma.user_points.update({
       where: { user_id: userId },
@@ -224,7 +253,13 @@ export class UserPointsLogService {
     return { log_id: log.log_id };
   }
 
-  async unfreezePoints(userId: number, points: number, logType: string, description: string, relatedData?: any) {
+  async unfreezePoints(
+    userId: number,
+    points: number,
+    logType: string,
+    description: string,
+    relatedData?: any,
+  ) {
     // 解冻积分
     await this.prisma.user_points.update({
       where: { user_id: userId },
@@ -269,7 +304,7 @@ export class UserPointsLogService {
       },
       orderBy: {
         user_points: {
-          points: 'desc',
+          points: "desc",
         },
       },
       take: limit,

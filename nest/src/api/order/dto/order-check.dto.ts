@@ -1,6 +1,14 @@
 // @ts-nocheck
-import { IsOptional, IsNumber, IsArray, IsString, IsBoolean, Min, Max } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsNumber,
+  IsArray,
+  IsString,
+  IsBoolean,
+  Min,
+  Max,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class OrderCheckDto {
   @IsOptional()

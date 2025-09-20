@@ -4,8 +4,8 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
-} from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   HistoryListDto,
   AddHistoryDto,
@@ -17,7 +17,7 @@ import {
   HistoryResponse,
   HistoryStatsResponse,
   SuccessResponse,
-} from './dto/history.dto';
+} from "./dto/history.dto";
 
 @Injectable()
 export class UserHistoryService {
@@ -26,12 +26,15 @@ export class UserHistoryService {
   /**
    * 获取用户浏览历史列表 - 对齐PHP版本 user/user/historyProduct
    */
-  async getHistoryList(userId: number, historyListDto: HistoryListDto): Promise<HistoryListResponse> {
+  async getHistoryList(
+    userId: number,
+    historyListDto: HistoryListDto,
+  ): Promise<HistoryListResponse> {
     const {
       page = 1,
       size = 20,
-      sort_field = 'view_time',
-      sort_order = 'desc',
+      sort_field = "view_time",
+      sort_order = "desc",
       keyword,
     } = historyListDto;
 
@@ -48,7 +51,9 @@ export class UserHistoryService {
       if (!raw) return [];
       try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n)) : [];
+        return Array.isArray(parsed)
+          ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n))
+          : [];
       } catch {
         return [];
       }
@@ -82,7 +87,7 @@ export class UserHistoryService {
         take: size,
         orderBy: [
           // 按照历史记录中的顺序排序
-          { product_id: 'desc' }, // 临时排序，需要在应用层重新排序
+          { product_id: "desc" }, // 临时排序，需要在应用层重新排序
         ],
         select: {
           product_id: true,
@@ -135,7 +140,10 @@ export class UserHistoryService {
   /**
    * 添加浏览历史
    */
-  async addHistory(userId: number, addHistoryDto: AddHistoryDto): Promise<SuccessResponse> {
+  async addHistory(
+    userId: number,
+    addHistoryDto: AddHistoryDto,
+  ): Promise<SuccessResponse> {
     const { product_id, view_duration = 0, source_page } = addHistoryDto;
 
     // 检查商品是否存在
@@ -144,7 +152,7 @@ export class UserHistoryService {
     });
 
     if (!product) {
-      throw new NotFoundException('商品不存在');
+      throw new NotFoundException("商品不存在");
     }
 
     // 获取用户当前的历史记录
@@ -154,8 +162,14 @@ export class UserHistoryService {
     });
 
     let historyProductIds: number[] = (() => {
-      const raw = userInfo?.history_product_ids; if (!raw) return [];
-      try { const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch { return []; }
+      const raw = userInfo?.history_product_ids;
+      if (!raw) return [];
+      try {
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch {
+        return [];
+      }
     })();
 
     // 如果商品已经在历史记录中，先移除旧的记录
@@ -182,7 +196,7 @@ export class UserHistoryService {
     // 目前为了与PHP版本保持一致，只更新用户表中的historyProductIds字段
 
     return {
-      message: '浏览历史添加成功',
+      message: "浏览历史添加成功",
       history_id: Date.now(), // 临时ID，实际应该从数据库获取
     };
   }
@@ -190,7 +204,10 @@ export class UserHistoryService {
   /**
    * 删除浏览历史 - 对齐PHP版本 user/user/delHistoryProduct
    */
-  async deleteHistory(userId: number, deleteHistoryDto: DeleteHistoryDto): Promise<SuccessResponse> {
+  async deleteHistory(
+    userId: number,
+    deleteHistoryDto: DeleteHistoryDto,
+  ): Promise<SuccessResponse> {
     const { ids } = deleteHistoryDto;
 
     // 获取用户当前的历史记录
@@ -199,13 +216,24 @@ export class UserHistoryService {
       select: { history_product_ids: true },
     });
 
-    const arrDel: number[] = (() => { const raw = userInfo?.history_product_ids; if (!raw) return []; try { const a = JSON.parse(raw); return Array.isArray(a) ? a : []; } catch { return []; } })();
+    const arrDel: number[] = (() => {
+      const raw = userInfo?.history_product_ids;
+      if (!raw) return [];
+      try {
+        const a = JSON.parse(raw);
+        return Array.isArray(a) ? a : [];
+      } catch {
+        return [];
+      }
+    })();
     if (arrDel.length === 0) {
-      throw new NotFoundException('浏览历史不存在');
+      throw new NotFoundException("浏览历史不存在");
     }
 
     // 从历史记录中移除指定的商品ID
-    const updatedHistoryIds = arrDel.filter(product_id => !ids.includes(product_id));
+    const updatedHistoryIds = arrDel.filter(
+      (product_id) => !ids.includes(product_id),
+    );
 
     // 更新用户的历史记录
     await this.databaseService.user.update({
@@ -214,17 +242,20 @@ export class UserHistoryService {
     });
 
     return {
-      message: '浏览历史删除成功',
+      message: "浏览历史删除成功",
     };
   }
 
   /**
    * 清除浏览历史
    */
-  async clearHistory(userId: number, clearHistoryDto: ClearHistoryDto): Promise<SuccessResponse> {
-    const { clear_type = 'all', days = 30 } = clearHistoryDto;
+  async clearHistory(
+    userId: number,
+    clearHistoryDto: ClearHistoryDto,
+  ): Promise<SuccessResponse> {
+    const { clear_type = "all", days = 30 } = clearHistoryDto;
 
-    if (clear_type === 'all') {
+    if (clear_type === "all") {
       // 清除所有浏览历史
       await this.databaseService.user.update({
         where: { user_id: userId },
@@ -238,7 +269,16 @@ export class UserHistoryService {
       });
 
       if (userInfo && userInfo.history_product_ids) {
-        const arr: number[] = (() => { const raw = userInfo.history_product_ids; if (!raw) return []; try { const a = JSON.parse(raw); return Array.isArray(a) ? a : []; } catch { return []; } })();
+        const arr: number[] = (() => {
+          const raw = userInfo.history_product_ids;
+          if (!raw) return [];
+          try {
+            const a = JSON.parse(raw);
+            return Array.isArray(a) ? a : [];
+          } catch {
+            return [];
+          }
+        })();
         // 保留最近的50个记录
         const keepCount = Math.max(50, Math.max(0, arr.length - days));
         const updatedHistoryIds = arr.slice(0, keepCount);
@@ -251,14 +291,17 @@ export class UserHistoryService {
     }
 
     return {
-      message: '浏览历史清除成功',
+      message: "浏览历史清除成功",
     };
   }
 
   /**
    * 获取浏览历史详情
    */
-  async getHistoryDetail(userId: number, historyDetailDto: HistoryDetailDto): Promise<HistoryResponse> {
+  async getHistoryDetail(
+    userId: number,
+    historyDetailDto: HistoryDetailDto,
+  ): Promise<HistoryResponse> {
     const { id } = historyDetailDto;
 
     // 获取用户的历史记录
@@ -267,9 +310,18 @@ export class UserHistoryService {
       select: { history_product_ids: true },
     });
 
-    const parsedIds: number[] = (() => { const raw = userInfo?.history_product_ids; if (!raw) return []; try { const a = JSON.parse(raw); return Array.isArray(a) ? a : []; } catch { return []; } })();
+    const parsedIds: number[] = (() => {
+      const raw = userInfo?.history_product_ids;
+      if (!raw) return [];
+      try {
+        const a = JSON.parse(raw);
+        return Array.isArray(a) ? a : [];
+      } catch {
+        return [];
+      }
+    })();
     if (!parsedIds.includes(id)) {
-      throw new NotFoundException('浏览历史不存在');
+      throw new NotFoundException("浏览历史不存在");
     }
 
     // 获取商品详情
@@ -290,7 +342,7 @@ export class UserHistoryService {
     });
 
     if (!product) {
-      throw new NotFoundException('商品不存在');
+      throw new NotFoundException("商品不存在");
     }
 
     const historyDetail = {
@@ -307,7 +359,7 @@ export class UserHistoryService {
       shop_id: product.shop_id,
       view_time: new Date().toISOString(), // 需要从实际历史记录中获取
       view_duration: 0, // 需要从实际历史记录中获取
-      source_page: '', // 需要从实际历史记录中获取
+      source_page: "", // 需要从实际历史记录中获取
     };
 
     return {
@@ -318,7 +370,10 @@ export class UserHistoryService {
   /**
    * 获取浏览历史统计
    */
-  async getHistoryStats(userId: number, historyStatsDto: HistoryStatsDto): Promise<HistoryStatsResponse> {
+  async getHistoryStats(
+    userId: number,
+    historyStatsDto: HistoryStatsDto,
+  ): Promise<HistoryStatsResponse> {
     const { days = 30 } = historyStatsDto;
 
     // 获取用户的历史记录
@@ -332,7 +387,9 @@ export class UserHistoryService {
       if (!raw) return [];
       try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n)) : [];
+        return Array.isArray(parsed)
+          ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n))
+          : [];
       } catch {
         return [];
       }
@@ -349,7 +406,7 @@ export class UserHistoryService {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = date.toISOString().split("T")[0];
 
       dailyStats.push({
         date: dateStr,
@@ -362,7 +419,8 @@ export class UserHistoryService {
       total_views: totalViews,
       product_count: productCount,
       avg_duration: avgDuration,
-      last_view_time: historyProductIds.length > 0 ? new Date().toISOString() : null,
+      last_view_time:
+        historyProductIds.length > 0 ? new Date().toISOString() : null,
       daily_stats: dailyStats,
     };
   }
@@ -370,7 +428,10 @@ export class UserHistoryService {
   /**
    * 获取推荐商品（基于浏览历史）
    */
-  async getRecommendedProducts(userId: number, limit: number = 10): Promise<any[]> {
+  async getRecommendedProducts(
+    userId: number,
+    limit: number = 10,
+  ): Promise<any[]> {
     // 获取用户的历史记录
     const userInfo = await this.databaseService.user.findUnique({
       where: { user_id: userId },
@@ -382,7 +443,9 @@ export class UserHistoryService {
       if (!raw) return [];
       try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n)) : [];
+        return Array.isArray(parsed)
+          ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n))
+          : [];
       } catch {
         return [];
       }
@@ -392,7 +455,7 @@ export class UserHistoryService {
       // 如果没有浏览历史，返回热门商品
       return this.databaseService.product.findMany({
         where: { product_status: 1 },
-        orderBy: { virtual_sales: 'desc' },
+        orderBy: { virtual_sales: "desc" },
         take: limit,
         select: {
           product_id: true,
@@ -412,7 +475,9 @@ export class UserHistoryService {
       select: { category_id: true },
     });
 
-    const categoryIds = [...new Set(viewedProducts.map(p => p.category_id).filter(Boolean))];
+    const categoryIds = [
+      ...new Set(viewedProducts.map((p) => p.category_id).filter(Boolean)),
+    ];
 
     if (categoryIds.length === 0) {
       // 如果没有分类信息，返回热门商品
@@ -421,7 +486,7 @@ export class UserHistoryService {
           product_status: 1,
           product_id: { notIn: historyProductIds }, // 排除已浏览过的商品
         },
-        orderBy: { virtual_sales: 'desc' },
+        orderBy: { virtual_sales: "desc" },
         take: limit,
         select: {
           product_id: true,
@@ -440,7 +505,7 @@ export class UserHistoryService {
         product_status: 1,
         product_id: { notIn: historyProductIds }, // 排除已浏览过的商品
       },
-      orderBy: { virtual_sales: 'desc' },
+      orderBy: { virtual_sales: "desc" },
       take: limit,
       select: {
         product_id: true,
@@ -457,7 +522,10 @@ export class UserHistoryService {
   /**
    * 批量添加浏览历史
    */
-  async batchAddHistory(userId: number, products: AddHistoryDto[]): Promise<SuccessResponse> {
+  async batchAddHistory(
+    userId: number,
+    products: AddHistoryDto[],
+  ): Promise<SuccessResponse> {
     // 获取用户当前的历史记录
     const userInfo = await this.databaseService.user.findUnique({
       where: { user_id: userId },
@@ -469,7 +537,9 @@ export class UserHistoryService {
       if (!raw) return [];
       try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n)) : [];
+        return Array.isArray(parsed)
+          ? parsed.map((n: any) => Number(n)).filter((n: any) => !isNaN(n))
+          : [];
       } catch {
         return [];
       }
@@ -501,7 +571,7 @@ export class UserHistoryService {
     });
 
     return {
-      message: '批量添加浏览历史成功',
+      message: "批量添加浏览历史成功",
     };
   }
 }

@@ -1,6 +1,17 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength, IsDate } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+  IsDate,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class OauthQueryDto {
   @IsOptional()
@@ -36,11 +47,11 @@ export class OauthQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class OauthDetailDto {
@@ -79,17 +90,17 @@ export class CreateOauthDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  description?: string = '';
+  description?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  redirect_url?: string = '';
+  redirect_url?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  scope?: string = '';
+  scope?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -167,20 +178,20 @@ export class BatchDeleteOauthDto {
 }
 
 export const OAUTH_TYPE = {
-  0: '微信',
-  1: 'QQ',
-  2: '微博',
-  3: '支付宝',
-  4: '钉钉',
-  5: '企业微信',
-  6: 'GitHub',
-  7: 'Google',
-  8: 'Facebook',
-  9: 'Twitter',
-  10: '其他',
+  0: "微信",
+  1: "QQ",
+  2: "微博",
+  3: "支付宝",
+  4: "钉钉",
+  5: "企业微信",
+  6: "GitHub",
+  7: "Google",
+  8: "Facebook",
+  9: "Twitter",
+  10: "其他",
 };
 
 export const OAUTH_STATUS = {
-  0: '禁用',
-  1: '启用',
+  0: "禁用",
+  1: "启用",
 };

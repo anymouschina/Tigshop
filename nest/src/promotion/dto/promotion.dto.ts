@@ -1,12 +1,20 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsEnum, Min, Max } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsEnum,
+  Min,
+  Max,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export enum PromotionType {
-  DISCOUNT = 'discount',
-  REDUCE = 'reduce',
-  GIFT = 'gift',
-  SHIPPING = 'shipping',
+  DISCOUNT = "discount",
+  REDUCE = "reduce",
+  GIFT = "gift",
+  SHIPPING = "shipping",
 }
 
 export enum TimeType {
@@ -38,11 +46,11 @@ export class PromotionQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'promotion_id';
+  sort_field?: string = "promotion_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @IsString()

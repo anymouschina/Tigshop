@@ -1,6 +1,14 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, Min, Max, IsArray } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  Min,
+  Max,
+  IsArray,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class AftersalesQueryDto {
   @IsOptional()
@@ -21,11 +29,11 @@ export class AftersalesQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'aftersale_id';
+  sort_field?: string = "aftersale_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @Type(() => Number)
@@ -49,8 +57,8 @@ export class AftersalesQueryDto {
 
   @IsOptional()
   @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      return value.split(',').map((date: string) => date.trim());
+    if (typeof value === "string") {
+      return value.split(",").map((date: string) => date.trim());
     }
     return value;
   })
@@ -74,11 +82,11 @@ export class UpdateAftersalesDto {
 
   @IsOptional()
   @IsString()
-  reply?: string = '';
+  reply?: string = "";
 
   @IsOptional()
   @IsString()
-  return_address?: string = '';
+  return_address?: string = "";
 
   @IsOptional()
   @Type(() => Number)

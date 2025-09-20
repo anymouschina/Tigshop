@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service';
-import { CreateUserPointsLogDto } from './dto/user-points-log.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../database/prisma.service";
+import { CreateUserPointsLogDto } from "./dto/user-points-log.dto";
 
 @Injectable()
 export class UserPointsLogService {
@@ -13,14 +13,16 @@ export class UserPointsLogService {
     const skip = (page - 1) * size;
     const orderBy = { [sort_field]: sort_order };
 
-    const where = keyword ? {
-      OR: [
-        { user: { username: { contains: keyword } } },
-        { user: { mobile: { contains: keyword } } },
-        { user: { email: { contains: keyword } } },
-        { remark: { contains: keyword } },
-      ],
-    } : {};
+    const where = keyword
+      ? {
+          OR: [
+            { user: { username: { contains: keyword } } },
+            { user: { mobile: { contains: keyword } } },
+            { user: { email: { contains: keyword } } },
+            { remark: { contains: keyword } },
+          ],
+        }
+      : {};
 
     const records = await (this.prisma as any).user_points_log.findMany({
       where,
@@ -35,14 +37,16 @@ export class UserPointsLogService {
   async getFilterCount(filter: any): Promise<number> {
     const { page, size, sort_field, sort_order, keyword } = filter;
 
-    const where = keyword ? {
-      OR: [
-        { user: { username: { contains: keyword } } },
-        { user: { mobile: { contains: keyword } } },
-        { user: { email: { contains: keyword } } },
-        { remark: { contains: keyword } },
-      ],
-    } : {};
+    const where = keyword
+      ? {
+          OR: [
+            { user: { username: { contains: keyword } } },
+            { user: { mobile: { contains: keyword } } },
+            { user: { email: { contains: keyword } } },
+            { remark: { contains: keyword } },
+          ],
+        }
+      : {};
 
     return (this.prisma as any).user_points_log.count({ where });
   }
@@ -58,7 +62,7 @@ export class UserPointsLogService {
     });
 
     if (!user) {
-      throw new Error('用户不存在');
+      throw new Error("用户不存在");
     }
 
     return user;
@@ -112,7 +116,7 @@ export class UserPointsLogService {
     });
 
     if (!item) {
-      throw new Error('积分日志不存在');
+      throw new Error("积分日志不存在");
     }
 
     return item;
@@ -133,7 +137,7 @@ export class UserPointsLogService {
     }
 
     const summary = await (this.prisma as any).user_points_log.groupBy({
-      by: ['change_type'],
+      by: ["change_type"],
       where,
       _sum: {
         points: true,

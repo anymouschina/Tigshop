@@ -1,6 +1,10 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateFavoriteDto,
   GetFavoritesDto,
@@ -8,7 +12,7 @@ import {
   FavoriteBatchDto,
   CheckFavoriteDto,
   FavoriteType,
-} from './dto/favorite.dto';
+} from "./dto/favorite.dto";
 
 export interface FavoriteResponse {
   id: number;
@@ -41,7 +45,11 @@ export class FavoriteService {
   /**
    * 检查是否已收藏
    */
-  private async checkIfFavoriteExists(userId: number, targetId: number, type: FavoriteType) {
+  private async checkIfFavoriteExists(
+    userId: number,
+    targetId: number,
+    type: FavoriteType,
+  ) {
     if (type === FavoriteType.PRODUCT) {
       return await this.prisma.collectProduct.findFirst({
         where: {
@@ -63,17 +71,24 @@ export class FavoriteService {
   /**
    * 添加收藏 - 对齐PHP版本 user/favorite/add
    */
-  async addFavorite(userId: number, createFavoriteDto: CreateFavoriteDto): Promise<FavoriteResponse> {
+  async addFavorite(
+    userId: number,
+    createFavoriteDto: CreateFavoriteDto,
+  ): Promise<FavoriteResponse> {
     const { targetId, type, remark } = createFavoriteDto;
 
     // 检查目标是否存在
     await this.validateTargetExists(targetId, type);
 
     // 检查是否已收藏
-    const existingFavorite = await this.checkIfFavoriteExists(userId, targetId, type);
+    const existingFavorite = await this.checkIfFavoriteExists(
+      userId,
+      targetId,
+      type,
+    );
 
     if (existingFavorite) {
-      throw new BadRequestException('已收藏该项目');
+      throw new BadRequestException("已收藏该项目");
     }
 
     // 根据类型创建不同的收藏
@@ -96,7 +111,7 @@ export class FavoriteService {
       });
     } else {
       // 对于文章收藏，暂时不实现，因为PHP schema中没有collect_article表
-      throw new BadRequestException('暂不支持文章收藏');
+      throw new BadRequestException("暂不支持文章收藏");
     }
 
     return this.formatFavoriteResponse(favorite, type);
@@ -126,19 +141,19 @@ export class FavoriteService {
               },
             },
           },
-          orderBy: { addTime: 'desc' },
+          orderBy: { addTime: "desc" },
         }),
         this.prisma.collectProduct.count({
           where: { userId },
         }),
       ]);
       favorites = favorites.concat(
-        products.map(item => ({
+        products.map((item) => ({
           ...item,
           targetId: item.productId,
           type: FavoriteType.PRODUCT,
           targetInfo: item.product,
-        }))
+        })),
       );
       total += productCount;
     }
@@ -152,19 +167,19 @@ export class FavoriteService {
           include: {
             shop: true,
           },
-          orderBy: { addTime: 'desc' },
+          orderBy: { addTime: "desc" },
         }),
         this.prisma.collectShop.count({
           where: { userId },
         }),
       ]);
       favorites = favorites.concat(
-        shops.map(item => ({
+        shops.map((item) => ({
           ...item,
           targetId: item.shopId,
           type: FavoriteType.SHOP,
           targetInfo: item.shop,
-        }))
+        })),
       );
       total += shopCount;
     }
@@ -173,7 +188,9 @@ export class FavoriteService {
     const paginatedFavorites = favorites.slice(skip, skip + size);
 
     return {
-      list: paginatedFavorites.map(fav => this.formatFavoriteResponse(fav, fav.type, fav.targetInfo)),
+      list: paginatedFavorites.map((fav) =>
+        this.formatFavoriteResponse(fav, fav.type, fav.targetInfo),
+      ),
       total,
       page,
       size,
@@ -184,7 +201,11 @@ export class FavoriteService {
   /**
    * 获取收藏详情 - 对齐PHP版本 user/favorite/detail
    */
-  async getFavoriteDetail(userId: number, favoriteId: number, type: FavoriteType): Promise<FavoriteResponse> {
+  async getFavoriteDetail(
+    userId: number,
+    favoriteId: number,
+    type: FavoriteType,
+  ): Promise<FavoriteResponse> {
     let favorite;
     let targetInfo;
 
@@ -222,7 +243,7 @@ export class FavoriteService {
     }
 
     if (!favorite) {
-      throw new NotFoundException('收藏不存在或无权限');
+      throw new NotFoundException("收藏不存在或无权限");
     }
 
     return this.formatFavoriteResponse(favorite, type, targetInfo);
@@ -231,10 +252,15 @@ export class FavoriteService {
   /**
    * 更新收藏 - 对齐PHP版本 user/favorite/update
    */
-  async updateFavorite(userId: number, favoriteId: number, updateFavoriteDto: UpdateFavoriteDto, type: FavoriteType): Promise<FavoriteResponse> {
+  async updateFavorite(
+    userId: number,
+    favoriteId: number,
+    updateFavoriteDto: UpdateFavoriteDto,
+    type: FavoriteType,
+  ): Promise<FavoriteResponse> {
     // 目前CollectProduct和CollectShop表没有remark字段，暂时不支持更新
     // 如果需要remark字段，需要在schema中添加
-    throw new BadRequestException('收藏更新功能暂未实现');
+    throw new BadRequestException("收藏更新功能暂未实现");
   }
 
   /**
@@ -252,7 +278,7 @@ export class FavoriteService {
       });
 
       if (!favorite) {
-        throw new NotFoundException('收藏不存在或无权限');
+        throw new NotFoundException("收藏不存在或无权限");
       }
 
       await this.prisma.collectProduct.delete({
@@ -268,7 +294,7 @@ export class FavoriteService {
       });
 
       if (!favorite) {
-        throw new NotFoundException('收藏不存在或无权限');
+        throw new NotFoundException("收藏不存在或无权限");
       }
 
       await this.prisma.collectShop.delete({
@@ -278,10 +304,10 @@ export class FavoriteService {
     }
 
     if (!deleted) {
-      throw new NotFoundException('收藏不存在或无权限');
+      throw new NotFoundException("收藏不存在或无权限");
     }
 
-    return { message: '收藏删除成功' };
+    return { message: "收藏删除成功" };
   }
 
   /**
@@ -310,7 +336,7 @@ export class FavoriteService {
     }
 
     return {
-      message: '批量删除完成',
+      message: "批量删除完成",
       deletedCount,
       targetIds,
     };
@@ -322,7 +348,11 @@ export class FavoriteService {
   async checkFavorite(userId: number, checkDto: CheckFavoriteDto) {
     const { targetId, type } = checkDto;
 
-    const existingFavorite = await this.checkIfFavoriteExists(userId, targetId, type);
+    const existingFavorite = await this.checkIfFavoriteExists(
+      userId,
+      targetId,
+      type,
+    );
 
     return {
       isFavorite: !!existingFavorite,
@@ -355,7 +385,7 @@ export class FavoriteService {
             },
           },
         },
-        orderBy: { addTime: 'desc' },
+        orderBy: { addTime: "desc" },
         take: 5,
       }),
       this.prisma.collectShop.findMany({
@@ -363,28 +393,28 @@ export class FavoriteService {
         include: {
           shop: true,
         },
-        orderBy: { addTime: 'desc' },
+        orderBy: { addTime: "desc" },
         take: 5,
       }),
     ]);
 
     const recentFavorites = [
-      ...recentProducts.map(item => ({
+      ...recentProducts.map((item) => ({
         ...item,
         targetId: item.productId,
         type: FavoriteType.PRODUCT,
         targetInfo: item.product,
       })),
-      ...recentShops.map(item => ({
+      ...recentShops.map((item) => ({
         ...item,
         targetId: item.shopId,
         type: FavoriteType.SHOP,
         targetInfo: item.shop,
       })),
     ]
-    .sort((a, b) => b.addTime.getTime() - a.addTime.getTime())
-    .slice(0, 5)
-    .map(fav => this.formatFavoriteResponse(fav, fav.type, fav.targetInfo));
+      .sort((a, b) => b.addTime.getTime() - a.addTime.getTime())
+      .slice(0, 5)
+      .map((fav) => this.formatFavoriteResponse(fav, fav.type, fav.targetInfo));
 
     return {
       totalCount,
@@ -405,7 +435,11 @@ export class FavoriteService {
     await this.validateTargetExists(targetId, type);
 
     // 查找现有收藏
-    const existingFavorite = await this.checkIfFavoriteExists(userId, targetId, type);
+    const existingFavorite = await this.checkIfFavoriteExists(
+      userId,
+      targetId,
+      type,
+    );
 
     if (existingFavorite) {
       // 如果已存在，删除收藏
@@ -418,7 +452,7 @@ export class FavoriteService {
           where: { collectId: existingFavorite.collectId },
         });
       }
-      return { message: '取消收藏成功', isFavorited: false };
+      return { message: "取消收藏成功", isFavorited: false };
     } else {
       // 如果不存在，添加收藏
       let favorite;
@@ -439,9 +473,13 @@ export class FavoriteService {
           },
         });
       } else {
-        throw new BadRequestException('暂不支持文章收藏');
+        throw new BadRequestException("暂不支持文章收藏");
       }
-      return { message: '收藏成功', isFavorited: true, favorite: this.formatFavoriteResponse(favorite, type) };
+      return {
+        message: "收藏成功",
+        isFavorited: true,
+        favorite: this.formatFavoriteResponse(favorite, type),
+      };
     }
   }
 
@@ -483,7 +521,7 @@ export class FavoriteService {
           where: { productId: targetId },
         });
         if (!product) {
-          throw new NotFoundException('商品不存在');
+          throw new NotFoundException("商品不存在");
         }
         break;
       case FavoriteType.SHOP:
@@ -491,7 +529,7 @@ export class FavoriteService {
           where: { shopId: targetId },
         });
         if (!shop) {
-          throw new NotFoundException('店铺不存在');
+          throw new NotFoundException("店铺不存在");
         }
         break;
       case FavoriteType.ARTICLE:
@@ -499,11 +537,11 @@ export class FavoriteService {
           where: { articleId: targetId },
         });
         if (!article) {
-          throw new NotFoundException('文章不存在');
+          throw new NotFoundException("文章不存在");
         }
         break;
       default:
-        throw new BadRequestException('无效的收藏类型');
+        throw new BadRequestException("无效的收藏类型");
     }
   }
 
@@ -522,12 +560,14 @@ export class FavoriteService {
             productPrice: true,
           },
         });
-        return product ? {
-          id: product.productId,
-          name: product.productName,
-          image: product.picThumb,
-          price: Number(product.productPrice),
-        } : null;
+        return product
+          ? {
+              id: product.productId,
+              name: product.productName,
+              image: product.picThumb,
+              price: Number(product.productPrice),
+            }
+          : null;
       case FavoriteType.SHOP:
         const shop = await this.prisma.shop.findFirst({
           where: { shopId: targetId },
@@ -537,11 +577,13 @@ export class FavoriteService {
             shopLogo: true,
           },
         });
-        return shop ? {
-          id: shop.shopId,
-          name: shop.shopTitle,
-          image: shop.shopLogo,
-        } : null;
+        return shop
+          ? {
+              id: shop.shopId,
+              name: shop.shopTitle,
+              image: shop.shopLogo,
+            }
+          : null;
       case FavoriteType.ARTICLE:
         const article = await this.prisma.article.findFirst({
           where: { articleId: targetId },
@@ -551,11 +593,13 @@ export class FavoriteService {
             image: true,
           },
         });
-        return article ? {
-          id: article.articleId,
-          name: article.title,
-          image: article.image,
-        } : null;
+        return article
+          ? {
+              id: article.articleId,
+              name: article.title,
+              image: article.image,
+            }
+          : null;
       default:
         return null;
     }
@@ -564,11 +608,16 @@ export class FavoriteService {
   /**
    * 格式化收藏响应
    */
-  private formatFavoriteResponse(favorite: any, type: FavoriteType, targetInfo?: any): FavoriteResponse {
+  private formatFavoriteResponse(
+    favorite: any,
+    type: FavoriteType,
+    targetInfo?: any,
+  ): FavoriteResponse {
     return {
       id: favorite.collectId || favorite.id,
       userId: favorite.userId,
-      targetId: type === FavoriteType.PRODUCT ? favorite.productId : favorite.shopId,
+      targetId:
+        type === FavoriteType.PRODUCT ? favorite.productId : favorite.shopId,
       type,
       remark: favorite.remark,
       targetInfo,

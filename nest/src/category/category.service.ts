@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class CategoryService {
@@ -23,8 +23,10 @@ export class CategoryService {
       return [];
     }
 
-    const path = category.path ? category.path.split(',') : [];
-    const parentIds = path.filter(id => parseInt(id) !== categoryId).map(id => parseInt(id));
+    const path = category.path ? category.path.split(",") : [];
+    const parentIds = path
+      .filter((id) => parseInt(id) !== categoryId)
+      .map((id) => parseInt(id));
 
     if (parentIds.length === 0) {
       return [];
@@ -36,9 +38,7 @@ export class CategoryService {
           in: parentIds,
         },
       },
-      orderBy: [
-        { level: 'asc' },
-      ],
+      orderBy: [{ level: "asc" }],
     });
 
     return parents;
@@ -53,10 +53,7 @@ export class CategoryService {
         parent_id: parentId,
         is_show: 1,
       },
-      orderBy: [
-        { sort_order: 'desc' },
-        { category_id: 'asc' },
-      ],
+      orderBy: [{ sort_order: "desc" }, { category_id: "asc" }],
     });
 
     return categories;
@@ -71,9 +68,9 @@ export class CategoryService {
         is_show: 1,
       },
       orderBy: [
-        { parent_id: 'asc' },
-        { sort_order: 'desc' },
-        { category_id: 'asc' },
+        { parent_id: "asc" },
+        { sort_order: "desc" },
+        { category_id: "asc" },
       ],
     });
 
@@ -89,7 +86,7 @@ export class CategoryService {
     rank_num?: number;
     intro?: string;
   }) {
-    const { product_id = 0, size = 10, rank_num = 5, intro = 'hot' } = query;
+    const { product_id = 0, size = 10, rank_num = 5, intro = "hot" } = query;
 
     // 获取分类ID
     const product = await this.prisma.product.findUnique({
@@ -111,13 +108,14 @@ export class CategoryService {
     const categoryId = product.category_id;
 
     // 并行获取所有相关数据
-    const [relateCate, relatedBrand, cateRank, articleList, lookAlso] = await Promise.all([
-      this.getRelatedCategory(categoryId, { ...query, size }),
-      this.getOtherBrand(categoryId, { ...query, size }),
-      this.getCategoryRank(categoryId, { ...query, size: rank_num }),
-      this.getArticleList({ ...query, size }),
-      this.getLookAlso(categoryId, { ...query, size }),
-    ]);
+    const [relateCate, relatedBrand, cateRank, articleList, lookAlso] =
+      await Promise.all([
+        this.getRelatedCategory(categoryId, { ...query, size }),
+        this.getOtherBrand(categoryId, { ...query, size }),
+        this.getCategoryRank(categoryId, { ...query, size: rank_num }),
+        this.getArticleList({ ...query, size }),
+        this.getLookAlso(categoryId, { ...query, size }),
+      ]);
 
     return {
       cate_info: relateCate,
@@ -207,7 +205,10 @@ export class CategoryService {
       return [];
     }
 
-    return this.getCategoryRank(product.category_id, { ...query, size: rank_num });
+    return this.getCategoryRank(product.category_id, {
+      ...query,
+      size: rank_num,
+    });
   }
 
   /**
@@ -242,14 +243,11 @@ export class CategoryService {
         is_show: 1,
         is_hot: 1,
       },
-      orderBy: [
-        { sort_order: 'desc' },
-        { category_id: 'asc' },
-      ],
+      orderBy: [{ sort_order: "desc" }, { category_id: "asc" }],
       take: 10,
     });
 
-    return categories.map(category => ({
+    return categories.map((category) => ({
       ...category,
       category_name: this.lang(category.category_name),
     }));
@@ -258,7 +256,10 @@ export class CategoryService {
   /**
    * 获取相关分类（内部方法）
    */
-  private async getRelatedCategory(categoryId: number, query: { size?: number }) {
+  private async getRelatedCategory(
+    categoryId: number,
+    query: { size?: number },
+  ) {
     const { size = 10 } = query;
 
     // 获取同级别的分类
@@ -276,14 +277,11 @@ export class CategoryService {
         category_id: { not: categoryId },
         is_show: 1,
       },
-      orderBy: [
-        { sort_order: 'desc' },
-        { category_id: 'asc' },
-      ],
+      orderBy: [{ sort_order: "desc" }, { category_id: "asc" }],
       take: size,
     });
 
-    return relatedCategories.map(category => ({
+    return relatedCategories.map((category) => ({
       ...category,
       category_name: this.lang(category.category_name),
     }));
@@ -305,11 +303,13 @@ export class CategoryService {
       select: {
         brand_id: true,
       },
-      distinct: ['brand_id'],
+      distinct: ["brand_id"],
       take: size,
     });
 
-    const brandIds = products.map(p => p.brand_id).filter(id => id !== null);
+    const brandIds = products
+      .map((p) => p.brand_id)
+      .filter((id) => id !== null);
 
     if (brandIds.length === 0) {
       return [];
@@ -322,10 +322,7 @@ export class CategoryService {
         },
         is_show: 1,
       },
-      orderBy: [
-        { sort_order: 'desc' },
-        { brand_id: 'asc' },
-      ],
+      orderBy: [{ sort_order: "desc" }, { brand_id: "asc" }],
     });
 
     return brands;
@@ -342,9 +339,7 @@ export class CategoryService {
         category_id: categoryId,
         is_show: 1,
       },
-      orderBy: [
-        { sales_count: 'desc' },
-      ],
+      orderBy: [{ sales_count: "desc" }],
       take: size,
     });
 
@@ -361,10 +356,7 @@ export class CategoryService {
       where: {
         is_show: 1,
       },
-      orderBy: [
-        { sort_order: 'desc' },
-        { article_id: 'desc' },
-      ],
+      orderBy: [{ sort_order: "desc" }, { article_id: "desc" }],
       take: size,
     });
 
@@ -382,9 +374,7 @@ export class CategoryService {
         category_id: categoryId,
         is_show: 1,
       },
-      orderBy: [
-        { view_count: 'desc' },
-      ],
+      orderBy: [{ view_count: "desc" }],
       take: size,
     });
 

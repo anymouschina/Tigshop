@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export enum BargainStatus {
   WAITING = 0, // 未开始
@@ -17,17 +17,17 @@ export enum BargainGroupStatus {
 }
 
 export const BARGAIN_STATUS_NAME = {
-  [BargainStatus.WAITING]: '未开始',
-  [BargainStatus.IN_PROGRESS]: '进行中',
-  [BargainStatus.ENDED]: '已结束',
-  [BargainStatus.CANCELLED]: '已取消',
+  [BargainStatus.WAITING]: "未开始",
+  [BargainStatus.IN_PROGRESS]: "进行中",
+  [BargainStatus.ENDED]: "已结束",
+  [BargainStatus.CANCELLED]: "已取消",
 };
 
 export const BARGAIN_GROUP_STATUS_NAME = {
-  [BargainGroupStatus.IN_PROGRESS]: '砍价中',
-  [BargainGroupStatus.SUCCESS]: '砍价成功',
-  [BargainGroupStatus.FAILED]: '砍价失败',
-  [BargainGroupStatus.CANCELLED]: '已取消',
+  [BargainGroupStatus.IN_PROGRESS]: "砍价中",
+  [BargainGroupStatus.SUCCESS]: "砍价成功",
+  [BargainGroupStatus.FAILED]: "砍价失败",
+  [BargainGroupStatus.CANCELLED]: "已取消",
 };
 
 @Injectable()
@@ -77,13 +77,19 @@ export class BargainService {
     // 检查活动状态并更新
     const now = Math.floor(Date.now() / 1000);
     for (const result of results) {
-      if (result.end_time < now && result.status === BargainStatus.IN_PROGRESS) {
+      if (
+        result.end_time < now &&
+        result.status === BargainStatus.IN_PROGRESS
+      ) {
         await this.prisma.bargain.update({
           where: { bargain_id: result.bargain_id },
           data: { status: BargainStatus.ENDED },
         });
         result.status = BargainStatus.ENDED;
-      } else if (result.start_time > now && result.status === BargainStatus.WAITING) {
+      } else if (
+        result.start_time > now &&
+        result.status === BargainStatus.WAITING
+      ) {
         // 活动开始时间已到，更新为进行中
         if (result.start_time <= now) {
           await this.prisma.bargain.update({
@@ -95,7 +101,7 @@ export class BargainService {
       }
     }
 
-    return results.map(result => ({
+    return results.map((result) => ({
       ...result,
       status_name: this.getStatusName(result.status),
       start_time_text: this.formatTime(result.start_time),
@@ -135,12 +141,12 @@ export class BargainService {
     }
 
     // 状态筛选
-    if (filter.status !== undefined && filter.status !== '') {
+    if (filter.status !== undefined && filter.status !== "") {
       where.status = filter.status;
     }
 
     // 显示状态筛选
-    if (filter.is_show !== undefined && filter.is_show !== '') {
+    if (filter.is_show !== undefined && filter.is_show !== "") {
       where.is_show = filter.is_show;
     }
 
@@ -163,7 +169,7 @@ export class BargainService {
       };
     }
     return {
-      bargain_id: 'desc',
+      bargain_id: "desc",
     };
   }
 
@@ -209,12 +215,12 @@ export class BargainService {
                 },
               },
               orderBy: {
-                add_time: 'desc',
+                add_time: "desc",
               },
             },
           },
           orderBy: {
-            create_time: 'desc',
+            create_time: "desc",
           },
           take: 10, // 只取最近10个砍价组
         },
@@ -222,7 +228,7 @@ export class BargainService {
     });
 
     if (!result) {
-      throw new Error('砍价活动不存在');
+      throw new Error("砍价活动不存在");
     }
 
     // 检查并更新状态
@@ -234,7 +240,10 @@ export class BargainService {
         where: { bargain_id: id },
         data: { status: BargainStatus.ENDED },
       });
-    } else if (result.start_time <= now && result.status === BargainStatus.WAITING) {
+    } else if (
+      result.start_time <= now &&
+      result.status === BargainStatus.WAITING
+    ) {
       currentStatus = BargainStatus.IN_PROGRESS;
       await this.prisma.bargain.update({
         where: { bargain_id: id },
@@ -248,10 +257,10 @@ export class BargainService {
       status_name: this.getStatusName(currentStatus),
       start_time_text: this.formatTime(result.start_time),
       end_time_text: this.formatTime(result.end_time),
-      bargain_groups: result.bargain_group.map(group => ({
+      bargain_groups: result.bargain_group.map((group) => ({
         ...group,
         status_name: this.getGroupStatusName(group.status),
-        bargain_logs: group.bargain_log.map(log => ({
+        bargain_logs: group.bargain_log.map((log) => ({
           ...log,
           add_time_text: this.formatTime(log.add_time),
         })),
@@ -264,25 +273,25 @@ export class BargainService {
 
     // 验证时间
     if (data.start_time >= data.end_time) {
-      throw new Error('开始时间必须小于结束时间');
+      throw new Error("开始时间必须小于结束时间");
     }
 
     // 验证价格
     if (data.cut_price_limit >= data.product_price) {
-      throw new Error('目标价格必须小于原价');
+      throw new Error("目标价格必须小于原价");
     }
 
     const result = await this.prisma.bargain.create({
       data: {
         bargain_name: data.bargain_name,
-        bargain_pic: data.bargain_pic || '',
+        bargain_pic: data.bargain_pic || "",
         product_id: data.product_id,
         sku_id: data.sku_id || 0,
         product_price: data.product_price,
         cut_price_limit: data.cut_price_limit,
         cut_num_limit: data.cut_num_limit || 1,
-        first_cut_range: data.first_cut_range || '0.01-0.10',
-        cut_range: data.cut_range || '0.01-0.05',
+        first_cut_range: data.first_cut_range || "0.01-0.10",
+        cut_range: data.cut_range || "0.01-0.05",
         start_time: data.start_time,
         end_time: data.end_time,
         shop_id: data.shop_id || 1,
@@ -302,31 +311,41 @@ export class BargainService {
     });
 
     if (!bargain) {
-      throw new Error('砍价活动不存在');
+      throw new Error("砍价活动不存在");
     }
 
     // 验证时间
     if (data.start_time && data.end_time && data.start_time >= data.end_time) {
-      throw new Error('开始时间必须小于结束时间');
+      throw new Error("开始时间必须小于结束时间");
     }
 
     // 验证价格
-    if (data.cut_price_limit && data.product_price && data.cut_price_limit >= data.product_price) {
-      throw new Error('目标价格必须小于原价');
+    if (
+      data.cut_price_limit &&
+      data.product_price &&
+      data.cut_price_limit >= data.product_price
+    ) {
+      throw new Error("目标价格必须小于原价");
     }
 
     const updateData: any = {
       update_time: Math.floor(Date.now() / 1000),
     };
 
-    if (data.bargain_name !== undefined) updateData.bargain_name = data.bargain_name;
-    if (data.bargain_pic !== undefined) updateData.bargain_pic = data.bargain_pic;
+    if (data.bargain_name !== undefined)
+      updateData.bargain_name = data.bargain_name;
+    if (data.bargain_pic !== undefined)
+      updateData.bargain_pic = data.bargain_pic;
     if (data.product_id !== undefined) updateData.product_id = data.product_id;
     if (data.sku_id !== undefined) updateData.sku_id = data.sku_id;
-    if (data.product_price !== undefined) updateData.product_price = data.product_price;
-    if (data.cut_price_limit !== undefined) updateData.cut_price_limit = data.cut_price_limit;
-    if (data.cut_num_limit !== undefined) updateData.cut_num_limit = data.cut_num_limit;
-    if (data.first_cut_range !== undefined) updateData.first_cut_range = data.first_cut_range;
+    if (data.product_price !== undefined)
+      updateData.product_price = data.product_price;
+    if (data.cut_price_limit !== undefined)
+      updateData.cut_price_limit = data.cut_price_limit;
+    if (data.cut_num_limit !== undefined)
+      updateData.cut_num_limit = data.cut_num_limit;
+    if (data.first_cut_range !== undefined)
+      updateData.first_cut_range = data.first_cut_range;
     if (data.cut_range !== undefined) updateData.cut_range = data.cut_range;
     if (data.start_time !== undefined) updateData.start_time = data.start_time;
     if (data.end_time !== undefined) updateData.end_time = data.end_time;
@@ -355,7 +374,7 @@ export class BargainService {
     });
 
     if (!bargain) {
-      throw new Error('砍价活动不存在');
+      throw new Error("砍价活动不存在");
     }
 
     const updateData: any = {
@@ -377,7 +396,7 @@ export class BargainService {
     });
 
     if (!bargain) {
-      throw new Error('砍价活动不存在');
+      throw new Error("砍价活动不存在");
     }
 
     await this.prisma.$transaction(async (prisma) => {
@@ -429,14 +448,14 @@ export class BargainService {
   }
 
   private getStatusName(status: number): string {
-    return BARGAIN_STATUS_NAME[status] || '未知状态';
+    return BARGAIN_STATUS_NAME[status] || "未知状态";
   }
 
   private getGroupStatusName(status: number): string {
-    return BARGAIN_GROUP_STATUS_NAME[status] || '未知状态';
+    return BARGAIN_GROUP_STATUS_NAME[status] || "未知状态";
   }
 
   private formatTime(timestamp: number): string {
-    return new Date(timestamp * 1000).toLocaleString('zh-CN');
+    return new Date(timestamp * 1000).toLocaleString("zh-CN");
   }
 }

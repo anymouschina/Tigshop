@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export enum MerchantStatus {
   PENDING = 0, // 待审核
@@ -62,7 +62,7 @@ export class MerchantService {
     }
 
     // 状态筛选
-    if (filter.status !== undefined && filter.status !== '') {
+    if (filter.status !== undefined && filter.status !== "") {
       where.status = filter.status;
     }
 
@@ -85,7 +85,7 @@ export class MerchantService {
       };
     }
     return {
-      merchant_id: 'desc',
+      merchant_id: "desc",
     };
   }
 
@@ -100,7 +100,7 @@ export class MerchantService {
     });
 
     if (!merchant) {
-      throw new Error('商家不存在');
+      throw new Error("商家不存在");
     }
 
     return merchant;
@@ -120,7 +120,11 @@ export class MerchantService {
     return !!merchant;
   }
 
-  async rejectMerchant(id: number, reason: string, adminId: number): Promise<boolean> {
+  async rejectMerchant(
+    id: number,
+    reason: string,
+    adminId: number,
+  ): Promise<boolean> {
     const merchant = await this.prisma.merchant.update({
       where: { merchant_id: id },
       data: {

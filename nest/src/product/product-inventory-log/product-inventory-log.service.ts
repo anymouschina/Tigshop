@@ -1,8 +1,11 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/services/prisma.service';
-import { CreateProductInventoryLogDto, UpdateProductInventoryLogDto } from './dto/product-inventory-log.dto';
-import { ResponseUtil } from '../../../common/utils/response.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../common/services/prisma.service";
+import {
+  CreateProductInventoryLogDto,
+  UpdateProductInventoryLogDto,
+} from "./dto/product-inventory-log.dto";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class ProductInventoryLogService {
@@ -13,16 +16,14 @@ export class ProductInventoryLogService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     const orderBy: any = {};
     if (sort_field) {
-      orderBy[sort_field] = sort_order || 'desc';
+      orderBy[sort_field] = sort_order || "desc";
     } else {
-      orderBy.id = 'desc';
+      orderBy.id = "desc";
     }
 
     const skip = (page - 1) * size;
@@ -40,9 +41,7 @@ export class ProductInventoryLogService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     return await this.prisma.product_inventory_log.count({ where });
@@ -65,12 +64,15 @@ export class ProductInventoryLogService {
       });
       return result;
     } catch (error) {
-      console.error('创建产品库存日志失败:', error);
+      console.error("创建产品库存日志失败:", error);
       return null;
     }
   }
 
-  async updateProductInventoryLog(id: number, updateData: UpdateProductInventoryLogDto) {
+  async updateProductInventoryLog(
+    id: number,
+    updateData: UpdateProductInventoryLogDto,
+  ) {
     try {
       const result = await this.prisma.product_inventory_log.update({
         where: { id },
@@ -81,7 +83,7 @@ export class ProductInventoryLogService {
       });
       return result;
     } catch (error) {
-      console.error('更新产品库存日志失败:', error);
+      console.error("更新产品库存日志失败:", error);
       return null;
     }
   }
@@ -93,7 +95,7 @@ export class ProductInventoryLogService {
       });
       return true;
     } catch (error) {
-      console.error('删除产品库存日志失败:', error);
+      console.error("删除产品库存日志失败:", error);
       return false;
     }
   }
@@ -109,7 +111,7 @@ export class ProductInventoryLogService {
       });
       return true;
     } catch (error) {
-      console.error('批量删除产品库存日志失败:', error);
+      console.error("批量删除产品库存日志失败:", error);
       return false;
     }
   }
@@ -132,7 +134,7 @@ export class ProductInventoryLogService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error('获取产品库存日志统计失败:', error);
+      console.error("获取产品库存日志统计失败:", error);
       return {
         total: 0,
         today_count: 0,

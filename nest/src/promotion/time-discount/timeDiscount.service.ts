@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateTimeDiscountDto,
   UpdateTimeDiscountDto,
   TimeDiscountQueryDto,
   TimeDiscountStatus,
-  TimeDiscountConfigDto
-} from './dto/timeDiscount.dto';
+  TimeDiscountConfigDto,
+} from "./dto/timeDiscount.dto";
 
 @Injectable()
 export class TimeDiscountService {
@@ -19,8 +23,8 @@ export class TimeDiscountService {
       page = 1,
       size = 15,
       status,
-      sortField = 'discount_id',
-      sortOrder = 'desc'
+      sortField = "discount_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -32,7 +36,7 @@ export class TimeDiscountService {
         { discount_id: { contains: keyword } },
         { name: { contains: keyword } },
         { discount: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -68,7 +72,7 @@ export class TimeDiscountService {
     });
 
     if (!item) {
-      throw new NotFoundException('时段折扣不存在');
+      throw new NotFoundException("时段折扣不存在");
     }
 
     return item;
@@ -76,7 +80,7 @@ export class TimeDiscountService {
 
   async create(createDto: CreateTimeDiscountDto) {
     if (createDto.discount <= 0 || createDto.discount > 1) {
-      throw new BadRequestException('折扣必须在0-1之间');
+      throw new BadRequestException("折扣必须在0-1之间");
     }
 
     const item = await this.prisma.time_discount.create({
@@ -99,7 +103,7 @@ export class TimeDiscountService {
     });
 
     if (!item) {
-      throw new NotFoundException('时段折扣不存在');
+      throw new NotFoundException("时段折扣不存在");
     }
 
     const updateData: any = {};
@@ -107,10 +111,14 @@ export class TimeDiscountService {
       updateData.name = updateDto.name;
     }
     if (updateDto.startTime !== undefined) {
-      updateData.start_time = Math.floor(new Date(updateDto.startTime).getTime() / 1000);
+      updateData.start_time = Math.floor(
+        new Date(updateDto.startTime).getTime() / 1000,
+      );
     }
     if (updateDto.endTime !== undefined) {
-      updateData.end_time = Math.floor(new Date(updateDto.endTime).getTime() / 1000);
+      updateData.end_time = Math.floor(
+        new Date(updateDto.endTime).getTime() / 1000,
+      );
     }
     if (updateDto.discount !== undefined) {
       updateData.discount = updateDto.discount;
@@ -133,7 +141,7 @@ export class TimeDiscountService {
     });
 
     if (!item) {
-      throw new NotFoundException('时段折扣不存在');
+      throw new NotFoundException("时段折扣不存在");
     }
 
     await this.prisma.time_discount.delete({
@@ -150,8 +158,8 @@ export class TimeDiscountService {
   async getConfig(): Promise<TimeDiscountConfigDto> {
     return {
       statusConfig: {
-        [TimeDiscountStatus.DISABLED]: '禁用',
-        [TimeDiscountStatus.ENABLED]: '启用'
+        [TimeDiscountStatus.DISABLED]: "禁用",
+        [TimeDiscountStatus.ENABLED]: "启用",
       },
     };
   }

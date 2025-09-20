@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateAppVersionDto,
   UpdateAppVersionDto,
   AppVersionQueryDto,
   AppVersionStatus,
-  AppVersionConfigDto
-} from './dto/appVersion.dto';
+  AppVersionConfigDto,
+} from "./dto/appVersion.dto";
 
 @Injectable()
 export class AppVersionService {
@@ -19,8 +23,8 @@ export class AppVersionService {
       page = 1,
       size = 15,
       status,
-      sortField = 'version_id',
-      sortOrder = 'desc'
+      sortField = "version_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -35,7 +39,7 @@ export class AppVersionService {
         { download_url: { contains: keyword } },
         { update_log: { contains: keyword } },
         { status: { contains: keyword } },
-        { force_update: { contains: keyword } }
+        { force_update: { contains: keyword } },
       ];
     }
 
@@ -71,15 +75,13 @@ export class AppVersionService {
     });
 
     if (!item) {
-      throw new NotFoundException('应用版本不存在');
+      throw new NotFoundException("应用版本不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateAppVersionDto) {
-    
-
     const item = await this.prisma.app_version.create({
       data: {
         version: createDto.version,
@@ -101,7 +103,7 @@ export class AppVersionService {
     });
 
     if (!item) {
-      throw new NotFoundException('应用版本不存在');
+      throw new NotFoundException("应用版本不存在");
     }
 
     const updateData: any = {};
@@ -138,7 +140,7 @@ export class AppVersionService {
     });
 
     if (!item) {
-      throw new NotFoundException('应用版本不存在');
+      throw new NotFoundException("应用版本不存在");
     }
 
     await this.prisma.app_version.delete({
@@ -155,8 +157,8 @@ export class AppVersionService {
   async getConfig(): Promise<AppVersionConfigDto> {
     return {
       statusConfig: {
-        [AppVersionStatus.DRAFT]: '草稿',
-        [AppVersionStatus.PUBLISHED]: '已发布'
+        [AppVersionStatus.DRAFT]: "草稿",
+        [AppVersionStatus.PUBLISHED]: "已发布",
       },
     };
   }

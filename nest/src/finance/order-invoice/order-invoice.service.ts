@@ -1,14 +1,27 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service';
-import { CreateOrderInvoiceDto, UpdateOrderInvoiceDto } from './dto/order-invoice.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../database/prisma.service";
+import {
+  CreateOrderInvoiceDto,
+  UpdateOrderInvoiceDto,
+} from "./dto/order-invoice.dto";
 
 @Injectable()
 export class OrderInvoiceService {
   constructor(private prisma: PrismaService) {}
 
   async getFilterResult(filter: any) {
-    const { page, size, sort_field, sort_order, keyword, invoice_type, status, shop_type, shop_id } = filter;
+    const {
+      page,
+      size,
+      sort_field,
+      sort_order,
+      keyword,
+      invoice_type,
+      status,
+      shop_type,
+      shop_id,
+    } = filter;
 
     const skip = (page - 1) * size;
     const orderBy = { [sort_field]: sort_order };
@@ -62,7 +75,17 @@ export class OrderInvoiceService {
   }
 
   async getFilterCount(filter: any): Promise<number> {
-    const { page, size, sort_field, sort_order, keyword, invoice_type, status, shop_type, shop_id } = filter;
+    const {
+      page,
+      size,
+      sort_field,
+      sort_order,
+      keyword,
+      invoice_type,
+      status,
+      shop_type,
+      shop_id,
+    } = filter;
 
     const where: any = {};
     if (keyword) {
@@ -112,7 +135,7 @@ export class OrderInvoiceService {
     });
 
     if (!item) {
-      throw new Error('发票申请不存在');
+      throw new Error("发票申请不存在");
     }
 
     return item;
@@ -163,15 +186,17 @@ export class OrderInvoiceService {
   }
 
   async getInvoiceStatistics() {
-    const [total, pending, approved, rejected, totalAmount] = await Promise.all([
-      this.prisma.orderInvoice.count(),
-      this.prisma.orderInvoice.count({ where: { status: 0 } }),
-      this.prisma.orderInvoice.count({ where: { status: 1 } }),
-      this.prisma.orderInvoice.count({ where: { status: 2 } }),
-      this.prisma.orderInvoice.aggregate({
-        _sum: { amount: true },
-      }),
-    ]);
+    const [total, pending, approved, rejected, totalAmount] = await Promise.all(
+      [
+        this.prisma.orderInvoice.count(),
+        this.prisma.orderInvoice.count({ where: { status: 0 } }),
+        this.prisma.orderInvoice.count({ where: { status: 1 } }),
+        this.prisma.orderInvoice.count({ where: { status: 2 } }),
+        this.prisma.orderInvoice.aggregate({
+          _sum: { amount: true },
+        }),
+      ],
+    );
 
     return {
       total,
@@ -194,14 +219,14 @@ export class OrderInvoiceService {
           },
         },
       },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
     });
   }
 
   async getInvoicesByOrder(orderId: number) {
     return this.prisma.orderInvoice.findMany({
       where: { order_id: orderId },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
     });
   }
 }

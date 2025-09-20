@@ -1,6 +1,6 @@
 // @ts-nocheck
 export class ResponseUtil {
-  static success(data: any = null, message: string = 'Success') {
+  static success(data: any = null, message: string = "Success") {
     return {
       code: 200,
       message,
@@ -9,7 +9,7 @@ export class ResponseUtil {
     };
   }
 
-  static error(message: string = 'Error', code: number = 400) {
+  static error(message: string = "Error", code: number = 400) {
     return {
       code,
       message,

@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 
 @Injectable()
 export class HomeService {
@@ -31,7 +31,7 @@ export class HomeService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         banners,
         categories,
@@ -50,7 +50,7 @@ export class HomeService {
     const banners = await this.getBannersData();
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: banners,
     };
   }
@@ -59,7 +59,7 @@ export class HomeService {
     const categories = await this.getHomeCategoriesData();
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: categories,
     };
   }
@@ -69,7 +69,7 @@ export class HomeService {
     const products = await this.getHotProductsData(validatedQuery);
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: products,
     };
   }
@@ -79,17 +79,23 @@ export class HomeService {
     const products = await this.getNewProductsData(validatedQuery);
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: products,
     };
   }
 
-  async getRecommendProducts(userId: number, query: { page?: number; size?: number }) {
+  async getRecommendProducts(
+    userId: number,
+    query: { page?: number; size?: number },
+  ) {
     const validatedQuery = { page: query.page || 1, size: query.size || 8 };
-    const products = await this.getRecommendProductsData(userId, validatedQuery);
+    const products = await this.getRecommendProductsData(
+      userId,
+      validatedQuery,
+    );
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: products,
     };
   }
@@ -98,7 +104,7 @@ export class HomeService {
     const activities = await this.getPromotionActivitiesData();
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: activities,
     };
   }
@@ -108,7 +114,7 @@ export class HomeService {
     const coupons = await this.getAvailableCouponsData(validatedQuery);
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: coupons,
     };
   }
@@ -117,7 +123,7 @@ export class HomeService {
     const seckillProducts = await this.getSeckillProductsData();
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: seckillProducts,
     };
   }
@@ -126,7 +132,7 @@ export class HomeService {
     const grouponProducts = await this.getGrouponProductsData();
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: grouponProducts,
     };
   }
@@ -135,7 +141,7 @@ export class HomeService {
     const statistics = await this.getUserStatisticsData(userId);
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: statistics,
     };
   }
@@ -145,17 +151,25 @@ export class HomeService {
     const shops = await this.getRecommendShopsData(validatedQuery);
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: shops,
     };
   }
 
-  async getNewsList(query: { page?: number; size?: number; category_id?: number }) {
-    const validatedQuery = { page: query.page || 1, size: query.size || 10, category_id: query.category_id };
+  async getNewsList(query: {
+    page?: number;
+    size?: number;
+    category_id?: number;
+  }) {
+    const validatedQuery = {
+      page: query.page || 1,
+      size: query.size || 10,
+      category_id: query.category_id,
+    };
     const news = await this.getNewsListData(validatedQuery);
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: news,
     };
   }
@@ -169,7 +183,7 @@ export class HomeService {
   private async getHomeCategoriesData() {
     const categories = await this.prisma.category.findMany({
       where: { parent_id: 0, is_show: 1 },
-      orderBy: { sort_order: 'asc' },
+      orderBy: { sort_order: "asc" },
       select: {
         category_id: true,
         category_name: true,
@@ -192,7 +206,7 @@ export class HomeService {
           product_stock: { gt: 0 } as any,
           is_hot: 1,
         },
-        orderBy: { virtual_sales: 'desc' },
+        orderBy: { virtual_sales: "desc" },
         skip,
         take: size,
         select: {
@@ -234,7 +248,7 @@ export class HomeService {
           product_stock: { gt: 0 } as any,
           is_new: 1,
         },
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         skip,
         take: size,
         select: {
@@ -264,11 +278,14 @@ export class HomeService {
     };
   }
 
-  private async getRecommendProductsData(userId: number, query: { page: number; size: number }) {
+  private async getRecommendProductsData(
+    userId: number,
+    query: { page: number; size: number },
+  ) {
     const { page = 1, size = 10 } = query;
     const skip = (page - 1) * size;
 
-    let where: any = {
+    const where: any = {
       product_status: 1,
       is_delete: 0,
       product_stock: { gt: 0 } as any,
@@ -284,7 +301,7 @@ export class HomeService {
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        orderBy: { sort_order: 'asc' },
+        orderBy: { sort_order: "asc" },
         skip,
         take: size,
         select: {
@@ -323,7 +340,7 @@ export class HomeService {
         end_time: true,
         type: true,
       },
-      orderBy: { end_time: 'asc' },
+      orderBy: { end_time: "asc" },
     });
 
     return activities;
@@ -341,7 +358,12 @@ export class HomeService {
       use_end_date: { gte: now } as any,
     };
     const [coupons, total] = await Promise.all([
-      this.prisma.coupon.findMany({ where, orderBy: { add_time: 'desc' }, skip, take: size }),
+      this.prisma.coupon.findMany({
+        where,
+        orderBy: { add_time: "desc" },
+        skip,
+        take: size,
+      }),
       this.prisma.coupon.count({ where }),
     ]);
 
@@ -364,40 +386,44 @@ export class HomeService {
   }
 
   private async getUserStatisticsData(userId: number) {
-    const [
-      orderStats,
-      cartCount,
-      favoriteCount,
-      couponCount,
-      points,
-      balance,
-    ] = await Promise.all([
-      this.prisma.order.groupBy({
-        by: ['order_status'],
-        where: { user_id: userId, is_del: 0 },
-        _count: { order_id: true },
-      }),
-      this.prisma.cart.count({ where: { user_id: userId } }),
-      (async () => {
-        const [p, s] = await Promise.all([
-          this.prisma.collect_product.count({ where: { user_id: userId } }),
-          this.prisma.collect_shop ? (this.prisma as any).collect_shop.count({ where: { user_id: userId } }) : Promise.resolve(0),
-        ]);
-        return p + (s || 0);
-      })(),
-      this.prisma.user_coupon.count({
-        where: {
-          user_id: userId,
-          used_time: 0 as any,
-          end_date: { gte: Math.floor(Date.now() / 1000) } as any,
-        },
-      }),
-      this.prisma.user.findUnique({ where: { user_id: userId }, select: { points: true } }),
-      this.prisma.user.findUnique({ where: { user_id: userId }, select: { balance: true } }),
-    ]);
+    const [orderStats, cartCount, favoriteCount, couponCount, points, balance] =
+      await Promise.all([
+        this.prisma.order.groupBy({
+          by: ["order_status"],
+          where: { user_id: userId, is_del: 0 },
+          _count: { order_id: true },
+        }),
+        this.prisma.cart.count({ where: { user_id: userId } }),
+        (async () => {
+          const [p, s] = await Promise.all([
+            this.prisma.collect_product.count({ where: { user_id: userId } }),
+            this.prisma.collect_shop
+              ? (this.prisma as any).collect_shop.count({
+                  where: { user_id: userId },
+                })
+              : Promise.resolve(0),
+          ]);
+          return p + (s || 0);
+        })(),
+        this.prisma.user_coupon.count({
+          where: {
+            user_id: userId,
+            used_time: 0 as any,
+            end_date: { gte: Math.floor(Date.now() / 1000) } as any,
+          },
+        }),
+        this.prisma.user.findUnique({
+          where: { user_id: userId },
+          select: { points: true },
+        }),
+        this.prisma.user.findUnique({
+          where: { user_id: userId },
+          select: { balance: true },
+        }),
+      ]);
 
     const orderCountMap = {};
-    orderStats.forEach(stat => {
+    orderStats.forEach((stat) => {
       orderCountMap[stat.order_status] = stat._count.order_id;
     });
 
@@ -429,7 +455,7 @@ export class HomeService {
           shop_logo: true,
           description: true,
         },
-        orderBy: { click_count: 'desc' },
+        orderBy: { click_count: "desc" },
         skip,
         take: size,
       }),
@@ -444,7 +470,11 @@ export class HomeService {
     };
   }
 
-  private async getNewsListData(query: { page: number; size: number; category_id?: number }) {
+  private async getNewsListData(query: {
+    page: number;
+    size: number;
+    category_id?: number;
+  }) {
     const { page = 1, size = 10 } = query;
     const skip = (page - 1) * size;
 

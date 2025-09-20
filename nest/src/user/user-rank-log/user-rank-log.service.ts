@@ -1,8 +1,11 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/services/prisma.service';
-import { CreateUserRankLogDto, UpdateUserRankLogDto } from './dto/user-rank-log.dto';
-import { ResponseUtil } from '../../../common/utils/response.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../common/services/prisma.service";
+import {
+  CreateUserRankLogDto,
+  UpdateUserRankLogDto,
+} from "./dto/user-rank-log.dto";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class UserRankLogService {
@@ -13,16 +16,14 @@ export class UserRankLogService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     const orderBy: any = {};
     if (sort_field) {
-      orderBy[sort_field] = sort_order || 'desc';
+      orderBy[sort_field] = sort_order || "desc";
     } else {
-      orderBy.id = 'desc';
+      orderBy.id = "desc";
     }
 
     const skip = (page - 1) * size;
@@ -40,9 +41,7 @@ export class UserRankLogService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     return await this.prisma.user_rank_log.count({ where });
@@ -64,7 +63,7 @@ export class UserRankLogService {
       });
       return result;
     } catch (error) {
-      console.error('创建用户等级日志失败:', error);
+      console.error("创建用户等级日志失败:", error);
       return null;
     }
   }
@@ -80,7 +79,7 @@ export class UserRankLogService {
       });
       return result;
     } catch (error) {
-      console.error('更新用户等级日志失败:', error);
+      console.error("更新用户等级日志失败:", error);
       return null;
     }
   }
@@ -92,7 +91,7 @@ export class UserRankLogService {
       });
       return true;
     } catch (error) {
-      console.error('删除用户等级日志失败:', error);
+      console.error("删除用户等级日志失败:", error);
       return false;
     }
   }
@@ -108,7 +107,7 @@ export class UserRankLogService {
       });
       return true;
     } catch (error) {
-      console.error('批量删除用户等级日志失败:', error);
+      console.error("批量删除用户等级日志失败:", error);
       return false;
     }
   }
@@ -131,7 +130,7 @@ export class UserRankLogService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error('获取用户等级日志统计失败:', error);
+      console.error("获取用户等级日志统计失败:", error);
       return {
         total: 0,
         today_count: 0,

@@ -1,6 +1,13 @@
 // @ts-nocheck
-import { IsOptional, IsNumber, IsString, IsEnum, Min, Max } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsEnum,
+  Min,
+  Max,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export enum OrderStatus {
   CLOSED = 0,
@@ -36,11 +43,11 @@ export class UserOrderQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'add_time';
+  sort_field?: string = "add_time";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class CancelOrderDto {

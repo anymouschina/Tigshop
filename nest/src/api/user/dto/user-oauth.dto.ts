@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { IsString, IsEmail, IsEnum, IsOptional } from 'class-validator';
+import { IsString, IsEmail, IsEnum, IsOptional } from "class-validator";
 
 export enum OAuthProvider {
-  WECHAT = 'wechat',
-  QQ = 'qq',
-  WEIBO = 'weibo',
-  ALIPAY = 'alipay',
+  WECHAT = "wechat",
+  QQ = "qq",
+  WEIBO = "weibo",
+  ALIPAY = "alipay",
 }
 
 export class OAuthCallbackDto {

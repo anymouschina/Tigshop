@@ -1,6 +1,17 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength, IsDate } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+  IsDate,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class StatementQueryDto {
   @IsOptional()
@@ -56,11 +67,11 @@ export class StatementQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class StatementDetailDto {
@@ -94,7 +105,7 @@ export class CreateStatementDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  description?: string = '';
+  description?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -105,7 +116,7 @@ export class CreateStatementDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  related_id?: string = '';
+  related_id?: string = "";
 }
 
 export class UpdateStatementDto {
@@ -154,22 +165,22 @@ export class BatchDeleteStatementDto {
 }
 
 export const STATEMENT_TYPE = {
-  0: '收入',
-  1: '支出',
-  2: '订单收入',
-  3: '退款支出',
-  4: '佣金收入',
-  5: '提现支出',
-  6: '充值收入',
-  7: '余额支出',
-  8: '积分兑换',
-  9: '罚款支出',
-  10: '其他',
+  0: "收入",
+  1: "支出",
+  2: "订单收入",
+  3: "退款支出",
+  4: "佣金收入",
+  5: "提现支出",
+  6: "充值收入",
+  7: "余额支出",
+  8: "积分兑换",
+  9: "罚款支出",
+  10: "其他",
 };
 
 export const STATEMENT_STATUS = {
-  0: '待审核',
-  1: '已确认',
-  2: '已拒绝',
-  3: '已取消',
+  0: "待审核",
+  1: "已确认",
+  2: "已拒绝",
+  3: "已取消",
 };

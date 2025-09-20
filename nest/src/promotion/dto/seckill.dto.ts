@@ -1,6 +1,14 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsArray, Min, Max, IsBoolean } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsArray,
+  Min,
+  Max,
+  IsBoolean,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class SeckillQueryDto {
   @IsOptional()
@@ -21,11 +29,11 @@ export class SeckillQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'seckill_id';
+  sort_field?: string = "seckill_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @Type(() => Number)
@@ -39,8 +47,8 @@ export class SeckillQueryDto {
 
   @IsOptional()
   @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      return value.split(',').map((date: string) => date.trim());
+    if (typeof value === "string") {
+      return value.split(",").map((date: string) => date.trim());
     }
     return value;
   })
@@ -59,7 +67,7 @@ export class CreateSeckillDto {
 
   @IsOptional()
   @IsString()
-  seckill_remark?: string = '';
+  seckill_remark?: string = "";
 
   @IsNumber()
   @Type(() => Number)

@@ -1,10 +1,14 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 
 @Injectable()
 export class UsernameGeneratorService {
-  private readonly USERNAME_PREFIX = 'USER_';
+  private readonly USERNAME_PREFIX = "USER_";
   private readonly USERNAME_LENGTH = 8;
   private readonly MAX_ATTEMPTS = 100;
 
@@ -29,7 +33,7 @@ export class UsernameGeneratorService {
       }
     }
 
-    throw new BadRequestException('无法生成唯一的用户名，请稍后重试');
+    throw new BadRequestException("无法生成唯一的用户名，请稍后重试");
   }
 
   /**
@@ -38,7 +42,7 @@ export class UsernameGeneratorService {
   async generateNickname(): Promise<string> {
     for (let attempt = 0; attempt < this.MAX_ATTEMPTS; attempt++) {
       const randomCode = this.generateRandomCode(this.USERNAME_LENGTH);
-      const nickname = 'USER_' + randomCode;
+      const nickname = "USER_" + randomCode;
 
       // Check if nickname is unique (optional, depending on requirements)
       const existingUser = await this.databaseService.user.findFirst({
@@ -50,7 +54,7 @@ export class UsernameGeneratorService {
       }
     }
 
-    throw new BadRequestException('无法生成唯一的昵称，请稍后重试');
+    throw new BadRequestException("无法生成唯一的昵称，请稍后重试");
   }
 
   /**
@@ -58,8 +62,8 @@ export class UsernameGeneratorService {
    * Matches PHP RandomUtils::getRandomCode(8, 3) implementation
    */
   private generateRandomCode(length: number): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
 
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));

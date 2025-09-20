@@ -1,6 +1,17 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength, IsDate } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+  IsDate,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class CacheManageQueryDto {
   @IsOptional()
@@ -36,11 +47,11 @@ export class CacheManageQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class CacheManageDetailDto {
@@ -75,7 +86,7 @@ export class CreateCacheManageDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  description?: string = '';
+  description?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -86,7 +97,7 @@ export class CreateCacheManageDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  prefix?: string = '';
+  prefix?: string = "";
 }
 
 export class UpdateCacheManageDto {
@@ -148,20 +159,20 @@ export class BatchDeleteCacheManageDto {
 }
 
 export const CACHE_TYPE = {
-  0: '系统缓存',
-  1: '用户缓存',
-  2: '商品缓存',
-  3: '订单缓存',
-  4: '配置缓存',
-  5: '页面缓存',
-  6: '接口缓存',
-  7: '统计缓存',
-  8: '日志缓存',
-  9: '其他缓存',
-  10: '临时缓存',
+  0: "系统缓存",
+  1: "用户缓存",
+  2: "商品缓存",
+  3: "订单缓存",
+  4: "配置缓存",
+  5: "页面缓存",
+  6: "接口缓存",
+  7: "统计缓存",
+  8: "日志缓存",
+  9: "其他缓存",
+  10: "临时缓存",
 };
 
 export const CACHE_STATUS = {
-  0: '禁用',
-  1: '启用',
+  0: "禁用",
+  1: "启用",
 };

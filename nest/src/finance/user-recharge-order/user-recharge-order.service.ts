@@ -1,6 +1,10 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateUserRechargeOrderDto,
   UpdateUserRechargeOrderDto,
@@ -8,8 +12,8 @@ import {
   RechargeOrderStatus,
   PaymentType,
   RechargeOrderStatisticsDto,
-  UserRechargeOrderConfigDto
-} from './dto/user-recharge-order.dto';
+  UserRechargeOrderConfigDto,
+} from "./dto/user-recharge-order.dto";
 
 @Injectable()
 export class UserRechargeOrderService {
@@ -28,10 +32,10 @@ export class UserRechargeOrderService {
       status,
       userId,
       paymentType,
-      sortField = 'order_id',
-      sortOrder = 'desc',
+      sortField = "order_id",
+      sortOrder = "desc",
       startTime,
-      endTime
+      endTime,
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -137,7 +141,7 @@ export class UserRechargeOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('充值订单不存在');
+      throw new NotFoundException("充值订单不存在");
     }
 
     return order;
@@ -150,7 +154,7 @@ export class UserRechargeOrderService {
    */
   async create(createDto: CreateUserRechargeOrderDto) {
     if (createDto.amount <= 0) {
-      throw new BadRequestException('充值金额必须大于0');
+      throw new BadRequestException("充值金额必须大于0");
     }
 
     // 生成订单号
@@ -161,7 +165,7 @@ export class UserRechargeOrderService {
         user_id: createDto.userId,
         order_sn: orderSn,
         amount: createDto.amount,
-        postscript: createDto.postscript || '',
+        postscript: createDto.postscript || "",
         status: createDto.status || RechargeOrderStatus.PENDING,
         payment_type: createDto.paymentType,
         admin_id: createDto.adminId,
@@ -200,7 +204,7 @@ export class UserRechargeOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('充值订单不存在');
+      throw new NotFoundException("充值订单不存在");
     }
 
     const updateData: any = {};
@@ -209,7 +213,10 @@ export class UserRechargeOrderService {
       updateData.status = updateDto.status;
 
       // 如果状态变更为已支付，记录支付时间
-      if (updateDto.status === RechargeOrderStatus.PAID && order.status !== RechargeOrderStatus.PAID) {
+      if (
+        updateDto.status === RechargeOrderStatus.PAID &&
+        order.status !== RechargeOrderStatus.PAID
+      ) {
         updateData.payment_time = Math.floor(Date.now() / 1000);
 
         // 增加用户余额（这里需要事务处理）
@@ -226,7 +233,9 @@ export class UserRechargeOrderService {
     }
 
     if (updateDto.paymentTime !== undefined) {
-      updateData.payment_time = Math.floor(new Date(updateDto.paymentTime).getTime() / 1000);
+      updateData.payment_time = Math.floor(
+        new Date(updateDto.paymentTime).getTime() / 1000,
+      );
     }
 
     if (updateDto.tradeNo !== undefined) {
@@ -271,12 +280,12 @@ export class UserRechargeOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('充值订单不存在');
+      throw new NotFoundException("充值订单不存在");
     }
 
     // 只有待支付和已取消的订单可以删除
     if (order.status === RechargeOrderStatus.PAID) {
-      throw new BadRequestException('已支付的订单不能删除');
+      throw new BadRequestException("已支付的订单不能删除");
     }
 
     await this.prisma.user_recharge_order.delete({
@@ -298,7 +307,7 @@ export class UserRechargeOrderService {
     });
 
     if (paidOrders.length > 0) {
-      throw new BadRequestException('已支付的订单不能删除');
+      throw new BadRequestException("已支付的订单不能删除");
     }
 
     await this.prisma.user_recharge_order.deleteMany({
@@ -313,16 +322,16 @@ export class UserRechargeOrderService {
   async getConfig(): Promise<UserRechargeOrderConfigDto> {
     return {
       statusConfig: {
-        [RechargeOrderStatus.PENDING]: '待支付',
-        [RechargeOrderStatus.PAID]: '已支付',
-        [RechargeOrderStatus.CANCELLED]: '已取消',
-        [RechargeOrderStatus.REFUNDED]: '已退款',
+        [RechargeOrderStatus.PENDING]: "待支付",
+        [RechargeOrderStatus.PAID]: "已支付",
+        [RechargeOrderStatus.CANCELLED]: "已取消",
+        [RechargeOrderStatus.REFUNDED]: "已退款",
       },
       paymentTypeConfig: {
-        [PaymentType.ALIPAY]: '支付宝',
-        [PaymentType.WECHAT]: '微信支付',
-        [PaymentType.BALANCE]: '余额支付',
-        [PaymentType.BANK]: '银行转账',
+        [PaymentType.ALIPAY]: "支付宝",
+        [PaymentType.WECHAT]: "微信支付",
+        [PaymentType.BALANCE]: "余额支付",
+        [PaymentType.BANK]: "银行转账",
       },
       minAmount: 0.01,
       maxAmount: 100000,
@@ -334,7 +343,9 @@ export class UserRechargeOrderService {
    * @param queryDto 查询参数
    * @returns 统计信息
    */
-  async getStatistics(queryDto?: UserRechargeOrderQueryDto): Promise<RechargeOrderStatisticsDto> {
+  async getStatistics(
+    queryDto?: UserRechargeOrderQueryDto,
+  ): Promise<RechargeOrderStatisticsDto> {
     const where: any = {};
 
     if (queryDto) {
@@ -347,10 +358,14 @@ export class UserRechargeOrderService {
       if (queryDto.startTime || queryDto.endTime) {
         where.add_time = {};
         if (queryDto.startTime) {
-          where.add_time.gte = Math.floor(new Date(queryDto.startTime).getTime() / 1000);
+          where.add_time.gte = Math.floor(
+            new Date(queryDto.startTime).getTime() / 1000,
+          );
         }
         if (queryDto.endTime) {
-          where.add_time.lte = Math.floor(new Date(queryDto.endTime).getTime() / 1000);
+          where.add_time.lte = Math.floor(
+            new Date(queryDto.endTime).getTime() / 1000,
+          );
         }
       }
     }
@@ -410,7 +425,10 @@ export class UserRechargeOrderService {
    * @param queryDto 查询参数
    * @returns 用户充值订单历史
    */
-  async getUserRechargeHistory(userId: number, queryDto: UserRechargeOrderQueryDto) {
+  async getUserRechargeHistory(
+    userId: number,
+    queryDto: UserRechargeOrderQueryDto,
+  ) {
     const modifiedQuery = { ...queryDto, userId };
     return this.findAll(modifiedQuery);
   }
@@ -436,7 +454,7 @@ export class UserRechargeOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     return order;
@@ -448,13 +466,17 @@ export class UserRechargeOrderService {
    */
   private generateOrderSn(): string {
     const date = new Date();
-    const dateStr = date.getFullYear().toString() +
-                   (date.getMonth() + 1).toString().padStart(2, '0') +
-                   date.getDate().toString().padStart(2, '0');
-    const timeStr = date.getHours().toString().padStart(2, '0') +
-                   date.getMinutes().toString().padStart(2, '0') +
-                   date.getSeconds().toString().padStart(2, '0');
-    const randomStr = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const dateStr =
+      date.getFullYear().toString() +
+      (date.getMonth() + 1).toString().padStart(2, "0") +
+      date.getDate().toString().padStart(2, "0");
+    const timeStr =
+      date.getHours().toString().padStart(2, "0") +
+      date.getMinutes().toString().padStart(2, "0") +
+      date.getSeconds().toString().padStart(2, "0");
+    const randomStr = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
 
     return `RC${dateStr}${timeStr}${randomStr}`;
   }
@@ -470,15 +492,15 @@ export class UserRechargeOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     if (order.status !== RechargeOrderStatus.PENDING) {
-      throw new BadRequestException('只有待支付的订单可以取消');
+      throw new BadRequestException("只有待支付的订单可以取消");
     }
 
     if (userId && order.user_id !== userId) {
-      throw new BadRequestException('无权限操作此订单');
+      throw new BadRequestException("无权限操作此订单");
     }
 
     await this.prisma.user_recharge_order.update({

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class InvoiceService {
@@ -15,7 +15,7 @@ export class InvoiceService {
     const [invoices, total] = await Promise.all([
       (this.prisma as any).user_invoice.findMany({
         where: { user_id: userId },
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         skip,
         take: size,
       }),
@@ -54,7 +54,7 @@ export class InvoiceService {
     });
 
     if (!invoice) {
-      throw new HttpException('发票不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("发票不存在", HttpStatus.NOT_FOUND);
     }
 
     return invoice;
@@ -75,11 +75,14 @@ export class InvoiceService {
     });
 
     if (orders.length !== data.order_ids.length) {
-      throw new HttpException('部分订单不可开票', HttpStatus.BAD_REQUEST);
+      throw new HttpException("部分订单不可开票", HttpStatus.BAD_REQUEST);
     }
 
     // 计算发票金额
-    const totalAmount = orders.reduce((sum, order) => sum + Number(order.order_amount), 0);
+    const totalAmount = orders.reduce(
+      (sum, order) => sum + Number(order.order_amount),
+      0,
+    );
 
     const invoice = await (this.prisma as any).user_invoice.create({
       data: {
@@ -128,20 +131,24 @@ export class InvoiceService {
     });
 
     if (!existingInvoice) {
-      throw new HttpException('发票不存在或已处理', HttpStatus.BAD_REQUEST);
+      throw new HttpException("发票不存在或已处理", HttpStatus.BAD_REQUEST);
     }
 
     const updateData: any = {};
-    if (data.invoice_type !== undefined) updateData.invoice_type = data.invoice_type;
+    if (data.invoice_type !== undefined)
+      updateData.invoice_type = data.invoice_type;
     if (data.title_type !== undefined) updateData.title_type = data.title_type;
-    if (data.invoice_title !== undefined) updateData.invoice_title = data.invoice_title;
+    if (data.invoice_title !== undefined)
+      updateData.invoice_title = data.invoice_title;
     if (data.tax_number !== undefined) updateData.tax_number = data.tax_number;
-    if (data.invoice_content !== undefined) updateData.invoice_content = data.invoice_content;
+    if (data.invoice_content !== undefined)
+      updateData.invoice_content = data.invoice_content;
     if (data.email !== undefined) updateData.email = data.email;
     if (data.mobile !== undefined) updateData.mobile = data.mobile;
     if (data.address !== undefined) updateData.address = data.address;
     if (data.bank_name !== undefined) updateData.bank_name = data.bank_name;
-    if (data.bank_account !== undefined) updateData.bank_account = data.bank_account;
+    if (data.bank_account !== undefined)
+      updateData.bank_account = data.bank_account;
 
     return (this.prisma as any).user_invoice.update({
       where: { invoice_id: data.id },
@@ -162,7 +169,7 @@ export class InvoiceService {
     });
 
     if (!invoice) {
-      throw new HttpException('发票不存在或已处理', HttpStatus.BAD_REQUEST);
+      throw new HttpException("发票不存在或已处理", HttpStatus.BAD_REQUEST);
     }
 
     // 删除发票订单关联（无关联表，跳过）
@@ -189,7 +196,7 @@ export class InvoiceService {
           invoice_status: 0, // 未开票
           order_status: { not: 4 }, // 未取消
         },
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         skip,
         take: size,
         select: {
@@ -223,9 +230,9 @@ export class InvoiceService {
    */
   async getInvoiceContentOptions() {
     return [
-      { id: 'goods_detail', name: '商品明细' },
-      { id: 'goods_category', name: '商品类别' },
-      { id: 'service_fee', name: '服务费' },
+      { id: "goods_detail", name: "商品明细" },
+      { id: "goods_category", name: "商品类别" },
+      { id: "service_fee", name: "服务费" },
     ];
   }
 
@@ -236,20 +243,20 @@ export class InvoiceService {
     return {
       electronic: {
         id: 1,
-        name: '电子发票',
-        description: '开具电子发票，发送到邮箱',
+        name: "电子发票",
+        description: "开具电子发票，发送到邮箱",
         enabled: true,
       },
       paper: {
         id: 2,
-        name: '纸质发票',
-        description: '开具纸质发票，邮寄到指定地址',
+        name: "纸质发票",
+        description: "开具纸质发票，邮寄到指定地址",
         enabled: true,
       },
       vat: {
         id: 3,
-        name: '增值税专用发票',
-        description: '开具增值税专用发票，需要提供完整税务信息',
+        name: "增值税专用发票",
+        description: "开具增值税专用发票，需要提供完整税务信息",
         enabled: true,
       },
     };
@@ -267,7 +274,7 @@ export class InvoiceService {
     });
 
     if (!invoice) {
-      throw new HttpException('发票不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("发票不存在", HttpStatus.NOT_FOUND);
     }
 
     // 更新发票状态
@@ -297,7 +304,7 @@ export class InvoiceService {
     });
 
     if (!invoice) {
-      throw new HttpException('发票不存在或状态错误', HttpStatus.BAD_REQUEST);
+      throw new HttpException("发票不存在或状态错误", HttpStatus.BAD_REQUEST);
     }
 
     // 更新邮寄地址和状态

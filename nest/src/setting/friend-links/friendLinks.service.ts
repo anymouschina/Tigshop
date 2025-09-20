@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateFriendLinksDto,
   UpdateFriendLinksDto,
   FriendLinksQueryDto,
   FriendLinksStatus,
-  FriendLinksConfigDto
-} from './dto/friendLinks.dto';
+  FriendLinksConfigDto,
+} from "./dto/friendLinks.dto";
 
 @Injectable()
 export class FriendLinksService {
@@ -19,8 +23,8 @@ export class FriendLinksService {
       page = 1,
       size = 15,
       status,
-      sortField = 'link_id',
-      sortOrder = 'desc'
+      sortField = "link_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -34,7 +38,7 @@ export class FriendLinksService {
         { url: { contains: keyword } },
         { logo: { contains: keyword } },
         { sort: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -70,15 +74,13 @@ export class FriendLinksService {
     });
 
     if (!item) {
-      throw new NotFoundException('友情链接不存在');
+      throw new NotFoundException("友情链接不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateFriendLinksDto) {
-    
-
     const item = await this.prisma.friend_links.create({
       data: {
         name: createDto.name,
@@ -99,7 +101,7 @@ export class FriendLinksService {
     });
 
     if (!item) {
-      throw new NotFoundException('友情链接不存在');
+      throw new NotFoundException("友情链接不存在");
     }
 
     const updateData: any = {};
@@ -133,7 +135,7 @@ export class FriendLinksService {
     });
 
     if (!item) {
-      throw new NotFoundException('友情链接不存在');
+      throw new NotFoundException("友情链接不存在");
     }
 
     await this.prisma.friend_links.delete({
@@ -150,8 +152,8 @@ export class FriendLinksService {
   async getConfig(): Promise<FriendLinksConfigDto> {
     return {
       statusConfig: {
-        [FriendLinksStatus.DISABLED]: '禁用',
-        [FriendLinksStatus.ENABLED]: '启用'
+        [FriendLinksStatus.DISABLED]: "禁用",
+        [FriendLinksStatus.ENABLED]: "启用",
       },
     };
   }

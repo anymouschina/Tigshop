@@ -1,6 +1,17 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength, IsDate } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+  IsDate,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class UserBalanceLogQueryDto {
   @IsOptional()
@@ -56,11 +67,11 @@ export class UserBalanceLogQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class UserBalanceLogDetailDto {
@@ -98,7 +109,7 @@ export class CreateUserBalanceLogDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  description?: string = '';
+  description?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -109,7 +120,7 @@ export class CreateUserBalanceLogDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  related_id?: string = '';
+  related_id?: string = "";
 }
 
 export class UpdateUserBalanceLogDto {
@@ -151,16 +162,16 @@ export class BatchDeleteUserBalanceLogDto {
 }
 
 export const USER_BALANCE_LOG_TYPE = {
-  0: '订单支付',
-  1: '订单退款',
-  2: '充值',
-  3: '提现',
-  4: '系统调整',
-  5: '其他',
+  0: "订单支付",
+  1: "订单退款",
+  2: "充值",
+  3: "提现",
+  4: "系统调整",
+  5: "其他",
 };
 
 export const BALANCE_CHANGE_TYPE = {
-  0: '增加',
-  1: '减少',
-  2: '冻结',
+  0: "增加",
+  1: "减少",
+  2: "冻结",
 };

@@ -1,6 +1,16 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class CategoryQueryDto {
   @IsOptional()
@@ -28,11 +38,11 @@ export class CategoryQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'category_id';
+  sort_field?: string = "category_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'asc';
+  sort_order?: "asc" | "desc" = "asc";
 
   @IsOptional()
   @IsBoolean()
@@ -54,7 +64,7 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsString()
   @MaxLength(80)
-  short_name?: string = '';
+  short_name?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -64,37 +74,37 @@ export class CreateCategoryDto {
 
   @IsOptional()
   @IsString()
-  category_pic?: string = '';
+  category_pic?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(80)
-  category_ico?: string = '';
+  category_ico?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(15)
-  measure_unit?: string = '';
+  measure_unit?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  seo_title?: string = '';
+  seo_title?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  search_keywords?: string = '';
+  search_keywords?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  keywords?: string = '';
+  keywords?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  category_desc?: string = '';
+  category_desc?: string = "";
 
   @IsOptional()
   @Type(() => Number)

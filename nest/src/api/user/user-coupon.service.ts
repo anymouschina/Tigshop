@@ -1,34 +1,44 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CouponQueryDto, ReceiveCouponDto } from './dto/user-coupon.dto';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CouponQueryDto, ReceiveCouponDto } from "./dto/user-coupon.dto";
 
 @Injectable()
 export class UserCouponService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getUserCouponList(userId: number, queryDto: CouponQueryDto) {
-    const { page = 1, size = 10, status = 'all', coupon_type, keyword, sort_field = 'add_time', sort_order = 'desc' } = queryDto;
+    const {
+      page = 1,
+      size = 10,
+      status = "all",
+      coupon_type,
+      keyword,
+      sort_field = "add_time",
+      sort_order = "desc",
+    } = queryDto;
     const skip = (page - 1) * size;
 
     const where: any = { user_id: userId };
 
     // 状态过滤
     const now = new Date();
-    if (status === 'unused') {
+    if (status === "unused") {
       where.status = 0;
       where.use_end_time = { gte: now };
-    } else if (status === 'used') {
+    } else if (status === "used") {
       where.status = 1;
-    } else if (status === 'expired') {
-      where.OR = [
-        { status: 0, use_end_time: { lt: now } },
-        { status: 2 }
-      ];
+    } else if (status === "expired") {
+      where.OR = [{ status: 0, use_end_time: { lt: now } }, { status: 2 }];
     }
 
     // 优惠券类型过滤
-    if (coupon_type !== 'all') {
+    if (coupon_type !== "all") {
       where.coupon = {
         coupon_type: coupon_type,
       };
@@ -83,7 +93,11 @@ export class UserCouponService {
     };
   }
 
-  async getAvailableCouponList(userId: number, productId?: number, categoryId?: number) {
+  async getAvailableCouponList(
+    userId: number,
+    productId?: number,
+    categoryId?: number,
+  ) {
     const now = new Date();
 
     const where: any = {
@@ -96,16 +110,16 @@ export class UserCouponService {
     if (productId || categoryId) {
       where.coupon = {
         OR: [
-          { use_scope: 'all' }, // 全场通用
-          { use_scope: 'category', use_scope_value: categoryId?.toString() }, // 指定分类
-          { use_scope: 'product', use_scope_value: productId?.toString() }, // 指定商品
+          { use_scope: "all" }, // 全场通用
+          { use_scope: "category", use_scope_value: categoryId?.toString() }, // 指定分类
+          { use_scope: "product", use_scope_value: productId?.toString() }, // 指定商品
         ],
       };
     }
 
     const userCoupons = await this.prisma.user_coupon.findMany({
       where,
-      orderBy: { add_time: 'desc' },
+      orderBy: { add_time: "desc" },
       select: {
         id: true,
         coupon_id: true,
@@ -143,7 +157,7 @@ export class UserCouponService {
     });
 
     if (!coupon) {
-      throw new NotFoundException('优惠券不存在或已过期');
+      throw new NotFoundException("优惠券不存在或已过期");
     }
 
     // 检查是否已领取
@@ -156,7 +170,7 @@ export class UserCouponService {
     });
 
     if (existingUserCoupon) {
-      throw new ConflictException('您已领取过此优惠券');
+      throw new ConflictException("您已领取过此优惠券");
     }
 
     // 检查领取限制
@@ -169,7 +183,7 @@ export class UserCouponService {
       });
 
       if (receivedCount >= coupon.limit_count) {
-        throw new ConflictException('优惠券已领取完毕');
+        throw new ConflictException("优惠券已领取完毕");
       }
     }
 
@@ -184,7 +198,9 @@ export class UserCouponService {
       });
 
       if (userReceivedCount >= coupon.user_limit_count) {
-        throw new ConflictException(`您已领取${userReceivedCount}张，达到领取上限`);
+        throw new ConflictException(
+          `您已领取${userReceivedCount}张，达到领取上限`,
+        );
       }
     }
 
@@ -234,7 +250,7 @@ export class UserCouponService {
     });
 
     if (!userCoupon) {
-      throw new NotFoundException('优惠券不存在');
+      throw new NotFoundException("优惠券不存在");
     }
 
     return userCoupon;
@@ -251,7 +267,7 @@ export class UserCouponService {
     });
 
     if (!userCoupon) {
-      throw new NotFoundException('优惠券不可用');
+      throw new NotFoundException("优惠券不可用");
     }
 
     // 检查订单是否属于用户
@@ -264,7 +280,7 @@ export class UserCouponService {
     });
 
     if (!order) {
-      throw new BadRequestException('订单不可用');
+      throw new BadRequestException("订单不可用");
     }
 
     // 检查订单金额是否满足使用条件
@@ -273,11 +289,13 @@ export class UserCouponService {
     });
 
     if (!coupon) {
-      throw new NotFoundException('优惠券信息不存在');
+      throw new NotFoundException("优惠券信息不存在");
     }
 
     if (order.order_amount < coupon.min_amount) {
-      throw new BadRequestException(`订单金额未达到最低使用金额${coupon.min_amount}元`);
+      throw new BadRequestException(
+        `订单金额未达到最低使用金额${coupon.min_amount}元`,
+      );
     }
 
     // 使用优惠券
@@ -334,41 +352,48 @@ export class UserCouponService {
         return {
           ...coupon,
           user_received_count: userReceivedCount,
-          can_receive: coupon.limit_count === 0 || coupon.received_count < coupon.limit_count,
-          can_user_receive: coupon.user_limit_count === 0 || userReceivedCount < coupon.user_limit_count,
+          can_receive:
+            coupon.limit_count === 0 ||
+            coupon.received_count < coupon.limit_count,
+          can_user_receive:
+            coupon.user_limit_count === 0 ||
+            userReceivedCount < coupon.user_limit_count,
         };
-      })
+      }),
     );
 
-    return couponsWithUserCount.filter(coupon => coupon.can_receive && coupon.can_user_receive);
+    return couponsWithUserCount.filter(
+      (coupon) => coupon.can_receive && coupon.can_user_receive,
+    );
   }
 
   async getUserCouponStatistics(userId: number) {
-    const [totalCount, unusedCount, usedCount, expiredCount] = await Promise.all([
-      this.prisma.user_coupon.count({ where: { user_id: userId } }),
-      this.prisma.user_coupon.count({
-        where: {
-          user_id: userId,
-          status: 0,
-          use_end_time: { gte: new Date() },
-        },
-      }),
-      this.prisma.user_coupon.count({
-        where: {
-          user_id: userId,
-          status: 1,
-        },
-      }),
-      this.prisma.user_coupon.count({
-        where: {
-          user_id: userId,
-          OR: [
-            { status: 0, use_end_time: { lt: new Date() } },
-            { status: 2 }
-          ],
-        },
-      }),
-    ]);
+    const [totalCount, unusedCount, usedCount, expiredCount] =
+      await Promise.all([
+        this.prisma.user_coupon.count({ where: { user_id: userId } }),
+        this.prisma.user_coupon.count({
+          where: {
+            user_id: userId,
+            status: 0,
+            use_end_time: { gte: new Date() },
+          },
+        }),
+        this.prisma.user_coupon.count({
+          where: {
+            user_id: userId,
+            status: 1,
+          },
+        }),
+        this.prisma.user_coupon.count({
+          where: {
+            user_id: userId,
+            OR: [
+              { status: 0, use_end_time: { lt: new Date() } },
+              { status: 2 },
+            ],
+          },
+        }),
+      ]);
 
     return {
       total_count: totalCount,
@@ -378,7 +403,11 @@ export class UserCouponService {
     };
   }
 
-  async calculateCouponDiscount(userId: number, couponId: number, orderAmount: number) {
+  async calculateCouponDiscount(
+    userId: number,
+    couponId: number,
+    orderAmount: number,
+  ) {
     const userCoupon = await this.prisma.user_coupon.findFirst({
       where: {
         user_id: userId,
@@ -392,21 +421,23 @@ export class UserCouponService {
     });
 
     if (!userCoupon) {
-      throw new NotFoundException('优惠券不可用');
+      throw new NotFoundException("优惠券不可用");
     }
 
     const coupon = userCoupon.coupon;
 
     // 检查订单金额
     if (orderAmount < coupon.min_amount) {
-      throw new BadRequestException(`订单金额未达到最低使用金额${coupon.min_amount}元`);
+      throw new BadRequestException(
+        `订单金额未达到最低使用金额${coupon.min_amount}元`,
+      );
     }
 
     // 计算折扣金额
     let discountAmount = 0;
-    if (coupon.coupon_type === 'fixed') {
+    if (coupon.coupon_type === "fixed") {
       discountAmount = coupon.coupon_amount;
-    } else if (coupon.coupon_type === 'percentage') {
+    } else if (coupon.coupon_type === "percentage") {
       discountAmount = Math.floor(orderAmount * (coupon.coupon_amount / 100));
       // 限制最大折扣金额
       if (coupon.max_amount && discountAmount > coupon.max_amount) {

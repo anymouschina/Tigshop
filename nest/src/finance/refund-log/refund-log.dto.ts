@@ -1,6 +1,16 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class RefundLogQueryDto {
   @IsOptional()
@@ -54,11 +64,11 @@ export class RefundLogQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class RefundLogDetailDto {
@@ -95,12 +105,12 @@ export class CreateRefundLogDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  refund_note?: string = '';
+  refund_note?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  payment_voucher?: string = '';
+  payment_voucher?: string = "";
 }
 
 export class UpdateRefundLogDto {
@@ -138,16 +148,16 @@ export class BatchDeleteRefundLogDto {
 }
 
 export const REFUND_LOG_TYPE = {
-  0: '未知',
-  1: '线上退款',
-  2: '余额退款',
-  3: '线下退款',
-  4: '原路退回',
+  0: "未知",
+  1: "线上退款",
+  2: "余额退款",
+  3: "线下退款",
+  4: "原路退回",
 };
 
 export const REFUND_LOG_STATUS = {
-  0: '待处理',
-  1: '退款成功',
-  2: '退款失败',
-  3: '已取消',
+  0: "待处理",
+  1: "退款成功",
+  2: "退款失败",
+  3: "已取消",
 };

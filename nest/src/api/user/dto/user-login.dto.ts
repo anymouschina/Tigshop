@@ -1,10 +1,19 @@
 // @ts-nocheck
-import { IsString, IsEmail, IsMobilePhone, IsEnum, IsOptional, IsNumber, MinLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsMobilePhone,
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  MinLength,
+  Matches,
+} from "class-validator";
 
 export enum LoginType {
-  USERNAME = 'username',
-  MOBILE = 'mobile',
-  EMAIL = 'email',
+  USERNAME = "username",
+  MOBILE = "mobile",
+  EMAIL = "email",
 }
 
 export class LoginDto {
@@ -12,7 +21,7 @@ export class LoginDto {
   username: string;
 
   @IsString()
-  @MinLength(6, { message: '密码长度至少6位' })
+  @MinLength(6, { message: "密码长度至少6位" })
   password: string;
 
   @IsOptional()
@@ -25,7 +34,7 @@ export class LoginDto {
 }
 
 export class SendMobileCodeDto {
-  @IsMobilePhone('zh-CN', { message: '手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "手机号格式不正确" })
   mobile: string;
 
   @IsString()
@@ -33,24 +42,24 @@ export class SendMobileCodeDto {
 }
 
 export class CheckMobileDto {
-  @IsMobilePhone('zh-CN', { message: '手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "手机号格式不正确" })
   mobile: string;
 }
 
 export class CheckEmailDto {
-  @IsEmail({}, { message: '邮箱格式不正确' })
+  @IsEmail({}, { message: "邮箱格式不正确" })
   email: string;
 }
 
 export class ForgetPasswordDto {
-  @IsMobilePhone('zh-CN', { message: '手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "手机号格式不正确" })
   mobile: string;
 
   @IsString()
   code: string;
 
   @IsString()
-  @MinLength(6, { message: '新密码长度至少6位' })
+  @MinLength(6, { message: "新密码长度至少6位" })
   new_password: string;
 
   @IsString()
@@ -61,7 +70,7 @@ export class BindMobileDto {
   @IsString()
   wechat_info: string; // JSON字符串
 
-  @IsMobilePhone('zh-CN', { message: '手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "手机号格式不正确" })
   mobile: string;
 
   @IsString()
@@ -89,7 +98,7 @@ export class WxLoginInfoDto {
 }
 
 export class SendEmailCodeDto {
-  @IsEmail({}, { message: '邮箱格式不正确' })
+  @IsEmail({}, { message: "邮箱格式不正确" })
   email: string;
 
   @IsString()
@@ -101,7 +110,7 @@ export class ChangePasswordDto {
   old_password: string;
 
   @IsString()
-  @MinLength(6, { message: '新密码长度至少6位' })
+  @MinLength(6, { message: "新密码长度至少6位" })
   new_password: string;
 
   @IsString()
@@ -109,7 +118,7 @@ export class ChangePasswordDto {
 }
 
 export class ModifyMobileDto {
-  @IsMobilePhone('zh-CN', { message: '新手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "新手机号格式不正确" })
   new_mobile: string;
 
   @IsString()
@@ -117,7 +126,7 @@ export class ModifyMobileDto {
 }
 
 export class ModifyEmailDto {
-  @IsEmail({}, { message: '新邮箱格式不正确' })
+  @IsEmail({}, { message: "新邮箱格式不正确" })
   new_email: string;
 
   @IsString()

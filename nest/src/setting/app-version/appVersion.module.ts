@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { Module } from '@nestjs/common';
-import { AppVersionService } from './appVersion.service';
-import { AppVersionController } from './appVersion.controller';
-import { DatabaseModule } from '../../database/database.module';
+import { Module } from "@nestjs/common";
+import { AppVersionService } from "./appVersion.service";
+import { AppVersionController } from "./appVersion.controller";
+import { DatabaseModule } from "../../database/database.module";
 
 @Module({
   imports: [DatabaseModule],

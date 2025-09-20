@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   CacheManageQueryDto,
   CacheManageDetailDto,
@@ -9,8 +9,8 @@ import {
   DeleteCacheManageDto,
   BatchDeleteCacheManageDto,
   CACHE_TYPE,
-  CACHE_STATUS
-} from './cache-manage.dto';
+  CACHE_STATUS,
+} from "./cache-manage.dto";
 
 @Injectable()
 export class CacheManageService {
@@ -18,13 +18,13 @@ export class CacheManageService {
 
   async findAll(query: CacheManageQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       type = -1,
       status = -1,
       page = 1,
       size = 15,
-      sort_field = 'id',
-      sort_order = 'desc',
+      sort_field = "id",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -75,7 +75,7 @@ export class CacheManageService {
     });
 
     if (!cacheManage) {
-      throw new Error('缓存管理记录不存在');
+      throw new Error("缓存管理记录不存在");
     }
 
     return cacheManage;
@@ -87,7 +87,7 @@ export class CacheManageService {
     });
 
     if (existingCache) {
-      throw new Error('缓存键已存在');
+      throw new Error("缓存键已存在");
     }
 
     const cacheManage = await this.prisma.cacheManage.create({
@@ -107,7 +107,7 @@ export class CacheManageService {
     });
 
     if (!cacheManage) {
-      throw new Error('缓存管理记录不存在');
+      throw new Error("缓存管理记录不存在");
     }
 
     if (data.key && data.key !== cacheManage.key) {
@@ -116,7 +116,7 @@ export class CacheManageService {
       });
 
       if (existingCache) {
-        throw new Error('缓存键已存在');
+        throw new Error("缓存键已存在");
       }
     }
 
@@ -141,7 +141,7 @@ export class CacheManageService {
     });
 
     if (!cacheManage) {
-      throw new Error('缓存管理记录不存在');
+      throw new Error("缓存管理记录不存在");
     }
 
     await this.prisma.cacheManage.delete({
@@ -167,14 +167,14 @@ export class CacheManageService {
     await this.prisma.cacheManage.deleteMany();
 
     return {
-      message: '所有缓存已清空',
+      message: "所有缓存已清空",
       cleared_at: new Date(),
     };
   }
 
   async clearTypeCache(type: number) {
     if (!Object.values(CACHE_TYPE).includes(type)) {
-      throw new Error('无效的缓存类型');
+      throw new Error("无效的缓存类型");
     }
 
     const result = await this.prisma.cacheManage.deleteMany({
@@ -190,7 +190,7 @@ export class CacheManageService {
 
   async getCacheStats() {
     const stats = await this.prisma.cacheManage.groupBy({
-      by: ['type', 'status'],
+      by: ["type", "status"],
       _count: {
         _all: true,
       },
@@ -199,7 +199,7 @@ export class CacheManageService {
     const typeStats = {};
     const statusStats = {};
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       if (!typeStats[stat.type]) {
         typeStats[stat.type] = 0;
       }

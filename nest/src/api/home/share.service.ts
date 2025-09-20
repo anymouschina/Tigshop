@@ -1,20 +1,20 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   ShareProductDto,
   ShareOrderDto,
   ShareShopDto,
   GenerateShareDto,
   ShareStatsDto,
-} from './dto/share.dto';
+} from "./dto/share.dto";
 
 @Injectable()
 export class ShareService {
   constructor(private prisma: PrismaService) {}
 
   async generateProductShare(query: ShareProductDto) {
-    const { product_id, channel = 'wechat' } = query;
+    const { product_id, channel = "wechat" } = query;
 
     // 验证商品是否存在
     const product = await this.prisma.product.findFirst({
@@ -40,18 +40,18 @@ export class ShareService {
     });
 
     if (!product) {
-      throw new Error('商品不存在或已下架');
+      throw new Error("商品不存在或已下架");
     }
 
     // 生成分享链接
-    const shareUrl = this.generateShareUrl('product', product_id, channel);
+    const shareUrl = this.generateShareUrl("product", product_id, channel);
     const shareCode = this.generateShareCode();
 
     // 创建分享记录
     const share = await this.prisma.share.create({
       data: {
         share_code: shareCode,
-        share_type: 'product',
+        share_type: "product",
         target_id: product_id,
         channel,
         share_url: shareUrl,
@@ -63,11 +63,15 @@ export class ShareService {
     });
 
     // 生成分享内容
-    const shareContent = this.generateProductShareContent(product, shareUrl, channel);
+    const shareContent = this.generateProductShareContent(
+      product,
+      shareUrl,
+      channel,
+    );
 
     return {
       code: 200,
-      message: '生成成功',
+      message: "生成成功",
       data: {
         share_id: share.share_id,
         share_code: shareCode,
@@ -82,7 +86,7 @@ export class ShareService {
   }
 
   async generateOrderShare(query: ShareOrderDto) {
-    const { order_id, channel = 'wechat' } = query;
+    const { order_id, channel = "wechat" } = query;
 
     // 验证订单是否存在
     const order = await this.prisma.order.findFirst({
@@ -104,34 +108,38 @@ export class ShareService {
     });
 
     if (!order) {
-      throw new Error('订单不存在');
+      throw new Error("订单不存在");
     }
 
     // 生成分享链接
-    const shareUrl = this.generateShareUrl('order', order_id, channel);
+    const shareUrl = this.generateShareUrl("order", order_id, channel);
     const shareCode = this.generateShareCode();
 
     // 创建分享记录
     const share = await this.prisma.share.create({
       data: {
         share_code: shareCode,
-        share_type: 'order',
+        share_type: "order",
         target_id: order_id,
         channel,
         share_url: shareUrl,
         title: `我的订单：${order.order_sn}`,
         description: `分享我的购物体验`,
-        image: order.order_items[0]?.product.image || '',
+        image: order.order_items[0]?.product.image || "",
         add_time: Math.floor(Date.now() / 1000),
       },
     });
 
     // 生成分享内容
-    const shareContent = this.generateOrderShareContent(order, shareUrl, channel);
+    const shareContent = this.generateOrderShareContent(
+      order,
+      shareUrl,
+      channel,
+    );
 
     return {
       code: 200,
-      message: '生成成功',
+      message: "生成成功",
       data: {
         share_id: share.share_id,
         share_code: shareCode,
@@ -146,7 +154,7 @@ export class ShareService {
   }
 
   async generateShopShare(query: ShareShopDto) {
-    const { shop_id, channel = 'wechat' } = query;
+    const { shop_id, channel = "wechat" } = query;
 
     // 验证店铺是否存在
     const shop = await this.prisma.shop.findFirst({
@@ -154,18 +162,18 @@ export class ShareService {
     });
 
     if (!shop) {
-      throw new Error('店铺不存在或已关闭');
+      throw new Error("店铺不存在或已关闭");
     }
 
     // 生成分享链接
-    const shareUrl = this.generateShareUrl('shop', shop_id, channel);
+    const shareUrl = this.generateShareUrl("shop", shop_id, channel);
     const shareCode = this.generateShareCode();
 
     // 创建分享记录
     const share = await this.prisma.share.create({
       data: {
         share_code: shareCode,
-        share_type: 'shop',
+        share_type: "shop",
         target_id: shop_id,
         channel,
         share_url: shareUrl,
@@ -181,7 +189,7 @@ export class ShareService {
 
     return {
       code: 200,
-      message: '生成成功',
+      message: "生成成功",
       data: {
         share_id: share.share_id,
         share_code: shareCode,
@@ -196,21 +204,21 @@ export class ShareService {
   }
 
   async generateShareContent(body: GenerateShareDto) {
-    const { type, target_id, channel = 'wechat', custom_content } = body;
+    const { type, target_id, channel = "wechat", custom_content } = body;
 
     let shareData;
     switch (type) {
-      case 'product':
+      case "product":
         shareData = await this.getProductShareData(target_id);
         break;
-      case 'order':
+      case "order":
         shareData = await this.getOrderShareData(target_id);
         break;
-      case 'shop':
+      case "shop":
         shareData = await this.getShopShareData(target_id);
         break;
       default:
-        throw new Error('不支持的分享类型');
+        throw new Error("不支持的分享类型");
     }
 
     const shareUrl = this.generateShareUrl(type, target_id, channel);
@@ -233,7 +241,7 @@ export class ShareService {
 
     return {
       code: 200,
-      message: '生成成功',
+      message: "生成成功",
       data: {
         share_id: share.share_id,
         share_code: shareCode,
@@ -252,29 +260,38 @@ export class ShareService {
     });
 
     if (!share) {
-      throw new Error('分享记录不存在');
+      throw new Error("分享记录不存在");
     }
 
     const stats = {
       share_id: share.share_id,
-      view_count: share.share_logs.filter(log => log.action === 'view').length,
-      click_count: share.share_logs.filter(log => log.action === 'click').length,
-      share_count: share.share_logs.filter(log => log.action === 'share').length,
-      register_count: share.share_logs.filter(log => log.action === 'register').length,
-      order_count: share.share_logs.filter(log => log.action === 'order').length,
+      view_count: share.share_logs.filter((log) => log.action === "view")
+        .length,
+      click_count: share.share_logs.filter((log) => log.action === "click")
+        .length,
+      share_count: share.share_logs.filter((log) => log.action === "share")
+        .length,
+      register_count: share.share_logs.filter(
+        (log) => log.action === "register",
+      ).length,
+      order_count: share.share_logs.filter((log) => log.action === "order")
+        .length,
       total_reward: share.share_logs
-        .filter(log => log.reward_amount > 0)
+        .filter((log) => log.reward_amount > 0)
         .reduce((sum, log) => sum + log.reward_amount, 0),
     };
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: stats,
     };
   }
 
-  async getUserShares(userId: number, query: { page?: number; size?: number; type?: string }) {
+  async getUserShares(
+    userId: number,
+    query: { page?: number; size?: number; type?: string },
+  ) {
     const { page = 1, size = 20, type } = query;
     const skip = (page - 1) * size;
 
@@ -286,7 +303,7 @@ export class ShareService {
     const [shares, total] = await Promise.all([
       this.prisma.share.findMany({
         where,
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         skip,
         take: size,
       }),
@@ -295,7 +312,7 @@ export class ShareService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         records: shares,
         total,
@@ -311,7 +328,7 @@ export class ShareService {
     await this.prisma.share_log.create({
       data: {
         share_id,
-        action: 'share',
+        action: "share",
         channel,
         add_time: Math.floor(Date.now() / 1000),
       },
@@ -319,7 +336,7 @@ export class ShareService {
 
     return {
       code: 200,
-      message: '记录成功',
+      message: "记录成功",
       data: null,
     };
   }
@@ -355,7 +372,7 @@ export class ShareService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         total_reward: totalReward._sum.reward_amount || 0,
         pending_reward: pendingReward._sum.reward_amount || 0,
@@ -370,7 +387,7 @@ export class ShareService {
 
     return {
       code: 200,
-      message: '生成成功',
+      message: "生成成功",
       data: {
         qr_code_url: qrCodeUrl,
         size,
@@ -381,36 +398,36 @@ export class ShareService {
   async getShareConfig() {
     const config = {
       channels: [
-        { code: 'wechat', name: '微信', icon: 'wechat' },
-        { code: 'wechat_moments', name: '朋友圈', icon: 'wechat-moments' },
-        { code: 'qq', name: 'QQ', icon: 'qq' },
-        { code: 'weibo', name: '微博', icon: 'weibo' },
-        { code: 'douyin', name: '抖音', icon: 'douyin' },
+        { code: "wechat", name: "微信", icon: "wechat" },
+        { code: "wechat_moments", name: "朋友圈", icon: "wechat-moments" },
+        { code: "qq", name: "QQ", icon: "qq" },
+        { code: "weibo", name: "微博", icon: "weibo" },
+        { code: "douyin", name: "抖音", icon: "douyin" },
       ],
       rewards: {
         enabled: true,
         rules: [
-          { action: 'register', reward: 5, description: '用户注册奖励5积分' },
-          { action: 'order', reward: 10, description: '用户下单奖励10积分' },
+          { action: "register", reward: 5, description: "用户注册奖励5积分" },
+          { action: "order", reward: 10, description: "用户下单奖励10积分" },
         ],
       },
       templates: [
         {
-          type: 'product',
-          title: '发现好物',
-          description: '{product_name} 价格优惠，快来购买吧！',
+          type: "product",
+          title: "发现好物",
+          description: "{product_name} 价格优惠，快来购买吧！",
         },
         {
-          type: 'shop',
-          title: '推荐店铺',
-          description: '{shop_name} 商品丰富，服务优质！',
+          type: "shop",
+          title: "推荐店铺",
+          description: "{shop_name} 商品丰富，服务优质！",
         },
       ],
     };
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: config,
     };
   }
@@ -420,19 +437,20 @@ export class ShareService {
       where: { share_id: shareId },
       include: {
         share_logs: {
-          orderBy: { add_time: 'asc' },
+          orderBy: { add_time: "asc" },
         },
       },
     });
 
     if (!share) {
-      throw new Error('分享记录不存在');
+      throw new Error("分享记录不存在");
     }
 
     const analysis = {
       share_id: share.share_id,
       total_logs: share.share_logs.length,
-      unique_users: [...new Set(share.share_logs.map(log => log.user_id))].length,
+      unique_users: [...new Set(share.share_logs.map((log) => log.user_id))]
+        .length,
       actions_by_day: this.groupLogsByDay(share.share_logs),
       conversion_rate: this.calculateConversionRate(share.share_logs),
       top_channels: this.getTopChannels(share.share_logs),
@@ -440,7 +458,7 @@ export class ShareService {
 
     return {
       code: 200,
-      message: '分析成功',
+      message: "分析成功",
       data: analysis,
     };
   }
@@ -457,7 +475,7 @@ export class ShareService {
       },
       orderBy: {
         share_logs: {
-          _count: 'desc',
+          _count: "desc",
         },
       },
       take: limit,
@@ -465,13 +483,15 @@ export class ShareService {
 
     return {
       code: 200,
-      message: '获取成功',
-      data: shares.map(share => ({
+      message: "获取成功",
+      data: shares.map((share) => ({
         share_id: share.share_id,
         title: share.title,
         share_type: share.share_type,
-        view_count: share.share_logs.filter(log => log.action === 'view').length,
-        share_count: share.share_logs.filter(log => log.action === 'share').length,
+        view_count: share.share_logs.filter((log) => log.action === "view")
+          .length,
+        share_count: share.share_logs.filter((log) => log.action === "share")
+          .length,
       })),
     };
   }
@@ -484,19 +504,24 @@ export class ShareService {
 
     const templates = await this.prisma.share_template.findMany({
       where,
-      orderBy: { sort_order: 'asc' },
+      orderBy: { sort_order: "asc" },
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: templates,
     };
   }
 
   // 私有方法
-  private generateShareUrl(type: string, targetId: number, channel: string): string {
-    const baseUrl = process.env.SHARE_BASE_URL || 'https://yourdomain.com/share';
+  private generateShareUrl(
+    type: string,
+    targetId: number,
+    channel: string,
+  ): string {
+    const baseUrl =
+      process.env.SHARE_BASE_URL || "https://yourdomain.com/share";
     return `${baseUrl}/${type}/${targetId}?channel=${channel}`;
   }
 
@@ -504,11 +529,15 @@ export class ShareService {
     return Math.random().toString(36).substr(2, 8).toUpperCase();
   }
 
-  private generateProductShareContent(product: any, shareUrl: string, channel: string) {
+  private generateProductShareContent(
+    product: any,
+    shareUrl: string,
+    channel: string,
+  ) {
     const channelTemplates = {
       wechat: {
         title: `🛒 ${product.product_name}`,
-        description: `💰 价格：¥${product.price}\n🏪 店铺：${product.shop.shop_name}\n${product.brief || ''}`,
+        description: `💰 价格：¥${product.price}\n🏪 店铺：${product.shop.shop_name}\n${product.brief || ""}`,
         content: `【好物推荐】\n${product.product_name}\n💰 特价：¥${product.price}\n👉 立即购买：${shareUrl}`,
       },
       wechat_moments: {
@@ -521,22 +550,30 @@ export class ShareService {
     return channelTemplates[channel] || channelTemplates.wechat;
   }
 
-  private generateOrderShareContent(order: any, shareUrl: string, channel: string) {
+  private generateOrderShareContent(
+    order: any,
+    shareUrl: string,
+    channel: string,
+  ) {
     const itemCount = order.order_items.length;
     const totalAmount = order.pay_amount;
 
     return {
       title: `我的购物分享`,
       description: `购买${itemCount}件商品，共计¥${totalAmount}`,
-      image: order.order_items[0]?.product.image || '',
+      image: order.order_items[0]?.product.image || "",
       content: `分享我的购物体验，${itemCount}件好物，共计¥${totalAmount}！`,
     };
   }
 
-  private generateShopShareContent(shop: any, shareUrl: string, channel: string) {
+  private generateShopShareContent(
+    shop: any,
+    shareUrl: string,
+    channel: string,
+  ) {
     return {
       title: `推荐店铺：${shop.shop_name}`,
-      description: shop.description || '优质店铺，值得信赖',
+      description: shop.description || "优质店铺，值得信赖",
       image: shop.shop_logo,
       content: `推荐一个不错的店铺：${shop.shop_name}，商品丰富，服务优质！`,
     };
@@ -554,9 +591,9 @@ export class ShareService {
     });
 
     return {
-      title: product?.product_name || '',
-      description: product?.brief || '',
-      image: product?.image || '',
+      title: product?.product_name || "",
+      description: product?.brief || "",
+      image: product?.image || "",
     };
   }
 
@@ -570,9 +607,9 @@ export class ShareService {
     });
 
     return {
-      title: `我的订单：${order?.order_sn || ''}`,
+      title: `我的订单：${order?.order_sn || ""}`,
       description: `订单金额：¥${order?.pay_amount || 0}`,
-      image: '',
+      image: "",
     };
   }
 
@@ -587,16 +624,16 @@ export class ShareService {
     });
 
     return {
-      title: shop?.shop_name || '',
-      description: shop?.description || '',
-      image: shop?.shop_logo || '',
+      title: shop?.shop_name || "",
+      description: shop?.description || "",
+      image: shop?.shop_logo || "",
     };
   }
 
   private groupLogsByDay(logs: any[]) {
     const grouped = {};
-    logs.forEach(log => {
-      const day = new Date(log.add_time * 1000).toISOString().split('T')[0];
+    logs.forEach((log) => {
+      const day = new Date(log.add_time * 1000).toISOString().split("T")[0];
       if (!grouped[day]) {
         grouped[day] = 0;
       }
@@ -606,21 +643,23 @@ export class ShareService {
   }
 
   private calculateConversionRate(logs: any[]) {
-    const totalViews = logs.filter(log => log.action === 'view').length;
-    const totalActions = logs.filter(log => ['register', 'order'].includes(log.action)).length;
+    const totalViews = logs.filter((log) => log.action === "view").length;
+    const totalActions = logs.filter((log) =>
+      ["register", "order"].includes(log.action),
+    ).length;
     return totalViews > 0 ? (totalActions / totalViews) * 100 : 0;
   }
 
   private getTopChannels(logs: any[]) {
     const channelStats = {};
-    logs.forEach(log => {
+    logs.forEach((log) => {
       if (!channelStats[log.channel]) {
         channelStats[log.channel] = 0;
       }
       channelStats[log.channel]++;
     });
     return Object.entries(channelStats)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([channel, count]) => ({ channel, count }));
   }

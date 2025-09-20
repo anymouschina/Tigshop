@@ -1,6 +1,17 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength, IsDate } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+  IsDate,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class AdminRoleQueryDto {
   @IsOptional()
@@ -29,11 +40,11 @@ export class AdminRoleQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class AdminRoleDetailDto {
@@ -50,11 +61,11 @@ export class CreateAdminRoleDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  description?: string = '';
+  description?: string = "";
 
   @IsOptional()
   @IsString()
-  permissions?: string = '';
+  permissions?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -104,6 +115,6 @@ export class BatchDeleteAdminRoleDto {
 }
 
 export const ROLE_STATUS = {
-  0: '禁用',
-  1: '启用',
+  0: "禁用",
+  1: "启用",
 };

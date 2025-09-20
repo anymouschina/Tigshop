@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsNumber, IsOptional, IsDateString } from "class-validator";
 
 export class SignQueryDto {
   @IsOptional()

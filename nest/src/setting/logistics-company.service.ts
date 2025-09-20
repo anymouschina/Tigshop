@@ -1,10 +1,10 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export const LOGISTICS_SHOW_STATUS = {
-  0: '隐藏',
-  1: '显示',
+  0: "隐藏",
+  1: "显示",
 };
 
 @Injectable()
@@ -82,7 +82,7 @@ export class LogisticsCompanyService {
       };
     }
     return {
-      logistics_id: 'desc',
+      logistics_id: "desc",
     };
   }
 
@@ -92,7 +92,7 @@ export class LogisticsCompanyService {
     });
 
     if (!result) {
-      throw new Error('物流公司不存在');
+      throw new Error("物流公司不存在");
     }
 
     return {
@@ -103,27 +103,27 @@ export class LogisticsCompanyService {
 
   async create(data: any): Promise<any> {
     // 验证物流公司名称不能为空
-    if (!data.logistics_name || data.logistics_name.trim() === '') {
-      throw new Error('物流公司名称不能为空');
+    if (!data.logistics_name || data.logistics_name.trim() === "") {
+      throw new Error("物流公司名称不能为空");
     }
 
     // 验证物流公司代码不能为空
-    if (!data.logistics_code || data.logistics_code.trim() === '') {
-      throw new Error('物流公司代码不能为空');
+    if (!data.logistics_code || data.logistics_code.trim() === "") {
+      throw new Error("物流公司代码不能为空");
     }
 
     const result = await this.prisma.logisticsCompany.create({
       data: {
         logistics_name: data.logistics_name,
         logistics_code: data.logistics_code,
-        logistics_desc: data.logistics_desc || '',
+        logistics_desc: data.logistics_desc || "",
         is_show: data.is_show ?? 1,
         sort_order: data.sort_order || 50,
-        customer_name: data.customer_name || '',
-        customer_pwd: data.customer_pwd || '',
-        month_code: data.month_code || '',
-        send_site: data.send_site || '',
-        send_staff: data.send_staff || '',
+        customer_name: data.customer_name || "",
+        customer_pwd: data.customer_pwd || "",
+        month_code: data.month_code || "",
+        send_site: data.send_site || "",
+        send_staff: data.send_staff || "",
         exp_type: data.exp_type || 0,
         shop_id: data.shop_id || 1,
       },
@@ -138,27 +138,38 @@ export class LogisticsCompanyService {
     });
 
     if (!logisticsCompany) {
-      throw new Error('物流公司不存在');
+      throw new Error("物流公司不存在");
     }
 
     // 验证物流公司名称不能为空
-    if (data.logistics_name !== undefined && (!data.logistics_name || data.logistics_name.trim() === '')) {
-      throw new Error('物流公司名称不能为空');
+    if (
+      data.logistics_name !== undefined &&
+      (!data.logistics_name || data.logistics_name.trim() === "")
+    ) {
+      throw new Error("物流公司名称不能为空");
     }
 
     // 验证物流公司代码不能为空
-    if (data.logistics_code !== undefined && (!data.logistics_code || data.logistics_code.trim() === '')) {
-      throw new Error('物流公司代码不能为空');
+    if (
+      data.logistics_code !== undefined &&
+      (!data.logistics_code || data.logistics_code.trim() === "")
+    ) {
+      throw new Error("物流公司代码不能为空");
     }
 
     const updateData: any = {};
-    if (data.logistics_name !== undefined) updateData.logistics_name = data.logistics_name;
-    if (data.logistics_code !== undefined) updateData.logistics_code = data.logistics_code;
-    if (data.logistics_desc !== undefined) updateData.logistics_desc = data.logistics_desc;
+    if (data.logistics_name !== undefined)
+      updateData.logistics_name = data.logistics_name;
+    if (data.logistics_code !== undefined)
+      updateData.logistics_code = data.logistics_code;
+    if (data.logistics_desc !== undefined)
+      updateData.logistics_desc = data.logistics_desc;
     if (data.is_show !== undefined) updateData.is_show = data.is_show;
     if (data.sort_order !== undefined) updateData.sort_order = data.sort_order;
-    if (data.customer_name !== undefined) updateData.customer_name = data.customer_name;
-    if (data.customer_pwd !== undefined) updateData.customer_pwd = data.customer_pwd;
+    if (data.customer_name !== undefined)
+      updateData.customer_name = data.customer_name;
+    if (data.customer_pwd !== undefined)
+      updateData.customer_pwd = data.customer_pwd;
     if (data.month_code !== undefined) updateData.month_code = data.month_code;
     if (data.send_site !== undefined) updateData.send_site = data.send_site;
     if (data.send_staff !== undefined) updateData.send_staff = data.send_staff;
@@ -179,13 +190,19 @@ export class LogisticsCompanyService {
     });
 
     if (!logisticsCompany) {
-      throw new Error('物流公司不存在');
+      throw new Error("物流公司不存在");
     }
 
     // 验证字段
-    const allowedFields = ['logistics_name', 'sort_order', 'is_show', 'logistics_code', 'logistics_desc'];
+    const allowedFields = [
+      "logistics_name",
+      "sort_order",
+      "is_show",
+      "logistics_code",
+      "logistics_desc",
+    ];
     if (!allowedFields.includes(field)) {
-      throw new Error('不支持的字段');
+      throw new Error("不支持的字段");
     }
 
     const result = await this.prisma.logisticsCompany.update({
@@ -204,7 +221,7 @@ export class LogisticsCompanyService {
     });
 
     if (!logisticsCompany) {
-      throw new Error('物流公司不存在');
+      throw new Error("物流公司不存在");
     }
 
     const result = await this.prisma.logisticsCompany.delete({
@@ -229,7 +246,7 @@ export class LogisticsCompanyService {
         is_show: 1,
       },
       orderBy: {
-        sort_order: 'asc',
+        sort_order: "asc",
       },
       select: {
         logistics_id: true,

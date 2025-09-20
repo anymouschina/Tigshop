@@ -1,10 +1,10 @@
 // @ts-nocheck
-import { registerAs } from '@nestjs/config';
+import { registerAs } from "@nestjs/config";
 
-export default registerAs('mail', () => ({
-  host: process.env.MAIL_HOST || 'smtpdm.aliyun.com',
+export default registerAs("mail", () => ({
+  host: process.env.MAIL_HOST || "smtpdm.aliyun.com",
   port: parseInt(process.env.MAIL_PORT, 10) || 465,
-  secure: process.env.MAIL_SECURE === 'true' || true,
+  secure: process.env.MAIL_SECURE === "true" || true,
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
@@ -12,7 +12,7 @@ export default registerAs('mail', () => ({
   from: process.env.MAIL_FROM || process.env.MAIL_USER,
   templates: {
     verification: {
-      subject: '邮箱验证码 - 请验证您的邮箱',
+      subject: "邮箱验证码 - 请验证您的邮箱",
       template: (code: string, expireMinutes: number) => `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">邮箱验证</h2>
@@ -29,7 +29,7 @@ export default registerAs('mail', () => ({
       `,
     },
     passwordReset: {
-      subject: '密码重置 - 请重置您的密码',
+      subject: "密码重置 - 请重置您的密码",
       template: (code: string, expireMinutes: number) => `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">密码重置</h2>
@@ -46,7 +46,7 @@ export default registerAs('mail', () => ({
       `,
     },
     orderConfirmation: {
-      subject: '订单确认 - 您的订单已提交成功',
+      subject: "订单确认 - 您的订单已提交成功",
       template: (orderNumber: string, totalAmount: number) => `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">订单确认</h2>
@@ -65,7 +65,7 @@ export default registerAs('mail', () => ({
       `,
     },
     welcome: {
-      subject: '欢迎加入 - 感谢您的注册',
+      subject: "欢迎加入 - 感谢您的注册",
       template: (username: string) => `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">欢迎加入我们！</h2>

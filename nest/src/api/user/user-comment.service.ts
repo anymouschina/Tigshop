@@ -1,14 +1,33 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCommentDto, CommentQueryDto, ReplyCommentDto } from './dto/user-comment.dto';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import {
+  CreateCommentDto,
+  CommentQueryDto,
+  ReplyCommentDto,
+} from "./dto/user-comment.dto";
 
 @Injectable()
 export class UserCommentService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createComment(userId: number, createDto: CreateCommentDto) {
-    const { product_id, order_id, order_item_id, spec_value_id, score, content, images, comment_type } = createDto;
+    const {
+      product_id,
+      order_id,
+      order_item_id,
+      spec_value_id,
+      score,
+      content,
+      images,
+      comment_type,
+    } = createDto;
 
     // 检查订单是否存在且属于当前用户
     const order = await this.prisma.order.findFirst({
@@ -20,7 +39,7 @@ export class UserCommentService {
     });
 
     if (!order) {
-      throw new ForbiddenException('订单不存在或未完成，无法评价');
+      throw new ForbiddenException("订单不存在或未完成，无法评价");
     }
 
     // 检查订单项是否已评价
@@ -29,7 +48,7 @@ export class UserCommentService {
         where: { order_item_id },
       });
       if (existingComment) {
-        throw new ConflictException('该订单项已评价');
+        throw new ConflictException("该订单项已评价");
       }
     }
 
@@ -38,7 +57,7 @@ export class UserCommentService {
       where: { product_id },
     });
     if (!product) {
-      throw new NotFoundException('商品不存在');
+      throw new NotFoundException("商品不存在");
     }
 
     // 创建评价
@@ -65,7 +84,14 @@ export class UserCommentService {
   }
 
   async getCommentList(queryDto: CommentQueryDto) {
-    const { page = 1, size = 10, product_id, comment_type, filter_type, sort_type } = queryDto;
+    const {
+      page = 1,
+      size = 10,
+      product_id,
+      comment_type,
+      filter_type,
+      sort_type,
+    } = queryDto;
     const skip = (page - 1) * size;
 
     const where: any = { status: 1 }; // 已审核通过
@@ -79,18 +105,18 @@ export class UserCommentService {
     }
 
     // 过滤类型
-    if (filter_type === 'with_image') {
+    if (filter_type === "with_image") {
       where.images = { not: [] };
-    } else if (filter_type === 'with_content') {
+    } else if (filter_type === "with_content") {
       where.content = { not: null };
     }
 
     // 排序
-    let orderBy: any = { add_time: 'desc' };
-    if (sort_type === 'hottest') {
-      orderBy = { like_count: 'desc' };
-    } else if (sort_type === 'highest_score') {
-      orderBy = { score: 'desc' };
+    let orderBy: any = { add_time: "desc" };
+    if (sort_type === "hottest") {
+      orderBy = { like_count: "desc" };
+    } else if (sort_type === "highest_score") {
+      orderBy = { score: "desc" };
     }
 
     const [comments, total] = await Promise.all([
@@ -119,7 +145,7 @@ export class UserCommentService {
           },
           replies: {
             take: 3, // 只取前3条回复
-            orderBy: { add_time: 'desc' },
+            orderBy: { add_time: "desc" },
             select: {
               id: true,
               reply_content: true,
@@ -161,7 +187,7 @@ export class UserCommentService {
         where: { user_id: userId },
         skip,
         take: size,
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         select: {
           id: true,
           product_id: true,
@@ -225,7 +251,7 @@ export class UserCommentService {
           },
         },
         replies: {
-          orderBy: { add_time: 'desc' },
+          orderBy: { add_time: "desc" },
           select: {
             id: true,
             reply_content: true,
@@ -241,7 +267,7 @@ export class UserCommentService {
     });
 
     if (!comment) {
-      throw new NotFoundException('评论不存在');
+      throw new NotFoundException("评论不存在");
     }
 
     return comment;
@@ -256,11 +282,11 @@ export class UserCommentService {
     });
 
     if (!comment) {
-      throw new NotFoundException('评论不存在');
+      throw new NotFoundException("评论不存在");
     }
 
     if (comment.user_id !== userId) {
-      throw new ForbiddenException('只能回复自己的评论');
+      throw new ForbiddenException("只能回复自己的评论");
     }
 
     // 创建回复
@@ -288,11 +314,11 @@ export class UserCommentService {
     });
 
     if (!comment) {
-      throw new NotFoundException('评论不存在');
+      throw new NotFoundException("评论不存在");
     }
 
     if (comment.user_id !== userId) {
-      throw new ForbiddenException('只能删除自己的评论');
+      throw new ForbiddenException("只能删除自己的评论");
     }
 
     await this.prisma.comment.delete({
@@ -312,7 +338,7 @@ export class UserCommentService {
     });
 
     if (!comment) {
-      throw new NotFoundException('评论不存在');
+      throw new NotFoundException("评论不存在");
     }
 
     // 检查是否已点赞
@@ -379,10 +405,12 @@ export class UserCommentService {
     });
 
     // 过滤出未评价的订单项
-    const uncommentedOrders = orders.map(order => ({
-      ...order,
-      order_items: order.order_items.filter(item => !item.is_commented),
-    })).filter(order => order.order_items.length > 0);
+    const uncommentedOrders = orders
+      .map((order) => ({
+        ...order,
+        order_items: order.order_items.filter((item) => !item.is_commented),
+      }))
+      .filter((order) => order.order_items.length > 0);
 
     return uncommentedOrders;
   }
@@ -412,7 +440,7 @@ export class UserCommentService {
 
   private async getScoreStats(productId: number) {
     const stats = await this.prisma.comment.groupBy({
-      by: ['score'],
+      by: ["score"],
       where: {
         product_id: productId,
         status: 1,
@@ -422,20 +450,23 @@ export class UserCommentService {
 
     const scoreStats = {
       total: 0,
-      distribution: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
+      distribution: { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 },
     };
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       const score = stat.score.toString();
       scoreStats.distribution[score] = stat._count;
       scoreStats.total += stat._count;
     });
 
     // 计算百分比
-    Object.keys(scoreStats.distribution).forEach(score => {
-      scoreStats.distribution[score] = scoreStats.total > 0
-        ? Math.round((scoreStats.distribution[score] / scoreStats.total) * 100)
-        : 0;
+    Object.keys(scoreStats.distribution).forEach((score) => {
+      scoreStats.distribution[score] =
+        scoreStats.total > 0
+          ? Math.round(
+              (scoreStats.distribution[score] / scoreStats.total) * 100,
+            )
+          : 0;
     });
 
     return scoreStats;

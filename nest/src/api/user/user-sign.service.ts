@@ -1,8 +1,13 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import { SignQueryDto } from './dto/user-sign.dto';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import { SignQueryDto } from "./dto/user-sign.dto";
 
 @Injectable()
 export class UserSignService {
@@ -12,7 +17,7 @@ export class UserSignService {
   ) {}
 
   async getSignSetting() {
-    const pointsSetting = this.configService.get('POINTS_SETTING', {});
+    const pointsSetting = this.configService.get("POINTS_SETTING", {});
     return {
       is_enabled: pointsSetting.enabled || false,
       daily_points: pointsSetting.daily_points || 10,
@@ -26,7 +31,7 @@ export class UserSignService {
 
     // 检查今天是否已签到
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = today.toISOString().split("T")[0];
     const isSignedToday = await this.checkSignedToday(userId, todayStr);
 
     // 获取连续签到天数
@@ -52,15 +57,15 @@ export class UserSignService {
     // 检查签到是否启用
     const signSetting = await this.getSignSetting();
     if (!signSetting.is_enabled) {
-      throw new BadRequestException('签到功能已关闭');
+      throw new BadRequestException("签到功能已关闭");
     }
 
     // 检查今天是否已签到
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = today.toISOString().split("T")[0];
     const isSignedToday = await this.checkSignedToday(userId, todayStr);
     if (isSignedToday) {
-      throw new ConflictException('今日已签到');
+      throw new ConflictException("今日已签到");
     }
 
     // 获取连续签到天数
@@ -72,7 +77,7 @@ export class UserSignService {
 
     // 连续签到奖励
     if (continuousBonus && continuousDays > 1) {
-      Object.keys(continuousBonus).forEach(days => {
+      Object.keys(continuousBonus).forEach((days) => {
         if (continuousDays >= parseInt(days)) {
           points += continuousBonus[days] || 0;
         }
@@ -105,7 +110,7 @@ export class UserSignService {
       data: {
         user_id: userId,
         points: points,
-        log_type: 'sign',
+        log_type: "sign",
         description: `每日签到 #${signRecord.id}`,
         add_time: Math.floor(Date.now() / 1000),
       },
@@ -127,10 +132,10 @@ export class UserSignService {
       where: {
         user_id: userId,
         sign_date: {
-          gte: startDate.toISOString().split('T')[0],
+          gte: startDate.toISOString().split("T")[0],
         },
       },
-      orderBy: { sign_date: 'desc' },
+      orderBy: { sign_date: "desc" },
       select: {
         id: true,
         sign_date: true,
@@ -162,7 +167,7 @@ export class UserSignService {
         where,
         skip,
         take: size,
-        orderBy: { sign_date: 'desc' },
+        orderBy: { sign_date: "desc" },
         select: {
           id: true,
           sign_date: true,
@@ -183,7 +188,10 @@ export class UserSignService {
     };
   }
 
-  private async checkSignedToday(userId: number, todayStr: string): Promise<boolean> {
+  private async checkSignedToday(
+    userId: number,
+    todayStr: string,
+  ): Promise<boolean> {
     const signRecord = await this.prisma.user_sign.findFirst({
       where: {
         user_id: userId,
@@ -194,12 +202,15 @@ export class UserSignService {
     return !!signRecord;
   }
 
-  private async getContinuousSignDays(userId: number, todayStr: string): Promise<number> {
+  private async getContinuousSignDays(
+    userId: number,
+    todayStr: string,
+  ): Promise<number> {
     let continuousDays = 0;
     const checkDate = new Date(todayStr);
 
     while (true) {
-      const checkDateStr = checkDate.toISOString().split('T')[0];
+      const checkDateStr = checkDate.toISOString().split("T")[0];
       const signRecord = await this.prisma.user_sign.findFirst({
         where: {
           user_id: userId,
@@ -218,7 +229,10 @@ export class UserSignService {
     return continuousDays;
   }
 
-  private async getMonthSignDays(userId: number, currentDate: Date): Promise<number> {
+  private async getMonthSignDays(
+    userId: number,
+    currentDate: Date,
+  ): Promise<number> {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
 
@@ -226,8 +240,8 @@ export class UserSignService {
       where: {
         user_id: userId,
         sign_date: {
-          gte: `${year}-${month.toString().padStart(2, '0')}-01`,
-          lte: `${year}-${month.toString().padStart(2, '0')}-31`,
+          gte: `${year}-${month.toString().padStart(2, "0")}-01`,
+          lte: `${year}-${month.toString().padStart(2, "0")}-31`,
         },
       },
     });
@@ -255,8 +269,8 @@ export class UserSignService {
         },
       },
       orderBy: [
-        { user_sign: { _count: 'desc' } },
-        { user_points: { points: 'desc' } },
+        { user_sign: { _count: "desc" } },
+        { user_points: { points: "desc" } },
       ],
       take: limit,
     });
@@ -277,30 +291,31 @@ export class UserSignService {
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
-    const [thisMonthSigns, lastMonthSigns, totalSigns, totalPoints] = await Promise.all([
-      this.prisma.user_sign.count({
-        where: {
-          user_id: userId,
-          sign_date: { gte: thisMonth.toISOString().split('T')[0] },
-        },
-      }),
-      this.prisma.user_sign.count({
-        where: {
-          user_id: userId,
-          sign_date: {
-            gte: lastMonth.toISOString().split('T')[0],
-            lt: thisMonth.toISOString().split('T')[0],
+    const [thisMonthSigns, lastMonthSigns, totalSigns, totalPoints] =
+      await Promise.all([
+        this.prisma.user_sign.count({
+          where: {
+            user_id: userId,
+            sign_date: { gte: thisMonth.toISOString().split("T")[0] },
           },
-        },
-      }),
-      this.prisma.user_sign.count({
-        where: { user_id: userId },
-      }),
-      this.prisma.user_sign.aggregate({
-        where: { user_id: userId },
-        _sum: { points: true },
-      }),
-    ]);
+        }),
+        this.prisma.user_sign.count({
+          where: {
+            user_id: userId,
+            sign_date: {
+              gte: lastMonth.toISOString().split("T")[0],
+              lt: thisMonth.toISOString().split("T")[0],
+            },
+          },
+        }),
+        this.prisma.user_sign.count({
+          where: { user_id: userId },
+        }),
+        this.prisma.user_sign.aggregate({
+          where: { user_id: userId },
+          _sum: { points: true },
+        }),
+      ]);
 
     return {
       this_month_signs: thisMonthSigns,

@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { RedisService } from '../redis/redis.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { RedisService } from "../redis/redis.service";
 
 export interface TimeRange {
   startDate: Date;
@@ -56,42 +56,56 @@ export class StatisticService {
   async getDashboardStats(timeRange?: TimeRange): Promise<DashboardStats> {
     const cacheKey = `dashboard_stats:${timeRange?.startDate.toISOString()}:${timeRange?.endDate.toISOString()}`;
 
-    return this.redisService.getOrSet(cacheKey, async () => {
-      const [totalUsers, newUsersToday, activeUsersToday, totalOrders, ordersToday, totalRevenue, revenueToday] = await Promise.all([
-        this.getTotalUsers(),
-        this.getNewUsersToday(),
-        this.getActiveUsersToday(),
-        this.getTotalOrders(),
-        this.getOrdersToday(),
-        this.getTotalRevenue(),
-        this.getRevenueToday(),
-      ]);
+    return this.redisService.getOrSet(
+      cacheKey,
+      async () => {
+        const [
+          totalUsers,
+          newUsersToday,
+          activeUsersToday,
+          totalOrders,
+          ordersToday,
+          totalRevenue,
+          revenueToday,
+        ] = await Promise.all([
+          this.getTotalUsers(),
+          this.getNewUsersToday(),
+          this.getActiveUsersToday(),
+          this.getTotalOrders(),
+          this.getOrdersToday(),
+          this.getTotalRevenue(),
+          this.getRevenueToday(),
+        ]);
 
-      const conversionRate = newUsersToday > 0 ? (ordersToday / newUsersToday) * 100 : 0;
-      const avgOrderValue = ordersToday > 0 ? revenueToday / ordersToday : 0;
+        const conversionRate =
+          newUsersToday > 0 ? (ordersToday / newUsersToday) * 100 : 0;
+        const avgOrderValue = ordersToday > 0 ? revenueToday / ordersToday : 0;
 
-      return {
-        totalUsers,
-        newUsersToday,
-        activeUsersToday,
-        totalOrders,
-        ordersToday,
-        totalRevenue,
-        revenueToday,
-        conversionRate,
-        avgOrderValue,
-      };
-    }, { ttl: 300 }); // 缓存5分钟
+        return {
+          totalUsers,
+          newUsersToday,
+          activeUsersToday,
+          totalOrders,
+          ordersToday,
+          totalRevenue,
+          revenueToday,
+          conversionRate,
+          avgOrderValue,
+        };
+      },
+      { ttl: 300 },
+    ); // 缓存5分钟
   }
 
   // 用户统计
   async getUserStats(timeRange: TimeRange): Promise<any> {
-    const [totalUsers, newUsers, activeUsers, userGrowthData] = await Promise.all([
-      this.getTotalUsers(),
-      this.getNewUsersByRange(timeRange),
-      this.getActiveUsersByRange(timeRange),
-      this.getUserGrowthData(timeRange),
-    ]);
+    const [totalUsers, newUsers, activeUsers, userGrowthData] =
+      await Promise.all([
+        this.getTotalUsers(),
+        this.getNewUsersByRange(timeRange),
+        this.getActiveUsersByRange(timeRange),
+        this.getUserGrowthData(timeRange),
+      ]);
 
     return {
       totalUsers,
@@ -103,59 +117,79 @@ export class StatisticService {
 
   // 产品统计
   async getProductStats(): Promise<ProductStats> {
-    const cacheKey = 'product_stats';
+    const cacheKey = "product_stats";
 
-    return this.redisService.getOrSet(cacheKey, async () => {
-      const [totalProducts, activeProducts, lowStockProducts, outOfStockProducts, topSellingProducts] = await Promise.all([
-        this.getTotalProducts(),
-        this.getActiveProducts(),
-        this.getLowStockProducts(),
-        this.getOutOfStockProducts(),
-        this.getTopSellingProducts(),
-      ]);
+    return this.redisService.getOrSet(
+      cacheKey,
+      async () => {
+        const [
+          totalProducts,
+          activeProducts,
+          lowStockProducts,
+          outOfStockProducts,
+          topSellingProducts,
+        ] = await Promise.all([
+          this.getTotalProducts(),
+          this.getActiveProducts(),
+          this.getLowStockProducts(),
+          this.getOutOfStockProducts(),
+          this.getTopSellingProducts(),
+        ]);
 
-      return {
-        totalProducts,
-        activeProducts,
-        lowStockProducts,
-        outOfStockProducts,
-        topSellingProducts,
-      };
-    }, { ttl: 600 }); // 缓存10分钟
+        return {
+          totalProducts,
+          activeProducts,
+          lowStockProducts,
+          outOfStockProducts,
+          topSellingProducts,
+        };
+      },
+      { ttl: 600 },
+    ); // 缓存10分钟
   }
 
   // 订单统计
   async getOrderStats(timeRange: TimeRange): Promise<OrderStats> {
     const cacheKey = `order_stats:${timeRange.startDate.toISOString()}:${timeRange.endDate.toISOString()}`;
 
-    return this.redisService.getOrSet(cacheKey, async () => {
-      const [totalOrders, orderStatusCounts, totalRevenue, avgOrderValue] = await Promise.all([
-        this.getTotalOrdersByRange(timeRange),
-        this.getOrderStatusCounts(timeRange),
-        this.getTotalRevenueByRange(timeRange),
-        this.getAvgOrderValue(timeRange),
-      ]);
+    return this.redisService.getOrSet(
+      cacheKey,
+      async () => {
+        const [totalOrders, orderStatusCounts, totalRevenue, avgOrderValue] =
+          await Promise.all([
+            this.getTotalOrdersByRange(timeRange),
+            this.getOrderStatusCounts(timeRange),
+            this.getTotalRevenueByRange(timeRange),
+            this.getAvgOrderValue(timeRange),
+          ]);
 
-      return {
-        totalOrders,
-        pendingOrders: orderStatusCounts['pending'] || 0,
-        processingOrders: orderStatusCounts['processing'] || 0,
-        shippedOrders: orderStatusCounts['shipped'] || 0,
-        completedOrders: orderStatusCounts['completed'] || 0,
-        cancelledOrders: orderStatusCounts['cancelled'] || 0,
-        totalRevenue,
-        avgOrderValue,
-        orderStatusDistribution: orderStatusCounts,
-      };
-    }, { ttl: 300 });
+        return {
+          totalOrders,
+          pendingOrders: orderStatusCounts["pending"] || 0,
+          processingOrders: orderStatusCounts["processing"] || 0,
+          shippedOrders: orderStatusCounts["shipped"] || 0,
+          completedOrders: orderStatusCounts["completed"] || 0,
+          cancelledOrders: orderStatusCounts["cancelled"] || 0,
+          totalRevenue,
+          avgOrderValue,
+          orderStatusDistribution: orderStatusCounts,
+        };
+      },
+      { ttl: 300 },
+    );
   }
 
   // 销售趋势
-  async getSalesTrends(timeRange: TimeRange, granularity: 'day' | 'week' | 'month' = 'day'): Promise<any> {
+  async getSalesTrends(
+    timeRange: TimeRange,
+    granularity: "day" | "week" | "month" = "day",
+  ): Promise<any> {
     const cacheKey = `sales_trends:${timeRange.startDate.toISOString()}:${timeRange.endDate.toISOString()}:${granularity}`;
 
-    return this.redisService.getOrSet(cacheKey, async () => {
-      const trends = await this.prisma.$queryRaw`
+    return this.redisService.getOrSet(
+      cacheKey,
+      async () => {
+        const trends = (await this.prisma.$queryRaw`
         SELECT
           DATE_TRUNC(${granularity}, created_at) as period,
           COUNT(*) as order_count,
@@ -166,18 +200,22 @@ export class StatisticService {
           AND created_at <= ${timeRange.endDate}
         GROUP BY DATE_TRUNC(${granularity}, created_at)
         ORDER BY period ASC
-      ` as any[];
+      `) as any[];
 
-      return trends;
-    }, { ttl: 600 });
+        return trends;
+      },
+      { ttl: 600 },
+    );
   }
 
   // 地理位置分析
   async getGeoDistribution(timeRange: TimeRange): Promise<any> {
     const cacheKey = `geo_distribution:${timeRange.startDate.toISOString()}:${timeRange.endDate.toISOString()}`;
 
-    return this.redisService.getOrSet(cacheKey, async () => {
-      const distribution = await this.prisma.$queryRaw`
+    return this.redisService.getOrSet(
+      cacheKey,
+      async () => {
+        const distribution = (await this.prisma.$queryRaw`
         SELECT
           region,
           COUNT(*) as order_count,
@@ -188,20 +226,23 @@ export class StatisticService {
           AND region IS NOT NULL
         GROUP BY region
         ORDER BY revenue DESC
-      ` as any[];
+      `) as any[];
 
-      return distribution;
-    }, { ttl: 1800 }); // 缓存30分钟
+        return distribution;
+      },
+      { ttl: 1800 },
+    ); // 缓存30分钟
   }
 
   // 用户行为分析
   async getUserBehaviorAnalysis(timeRange: TimeRange): Promise<any> {
-    const [pageViews, userSessions, bounceRate, avgSessionDuration] = await Promise.all([
-      this.getPageViews(timeRange),
-      this.getUserSessions(timeRange),
-      this.getBounceRate(timeRange),
-      this.getAvgSessionDuration(timeRange),
-    ]);
+    const [pageViews, userSessions, bounceRate, avgSessionDuration] =
+      await Promise.all([
+        this.getPageViews(timeRange),
+        this.getUserSessions(timeRange),
+        this.getBounceRate(timeRange),
+        this.getAvgSessionDuration(timeRange),
+      ]);
 
     return {
       pageViews,
@@ -381,9 +422,11 @@ export class StatisticService {
     });
   }
 
-  private async getOrderStatusCounts(timeRange: TimeRange): Promise<Record<string, number>> {
+  private async getOrderStatusCounts(
+    timeRange: TimeRange,
+  ): Promise<Record<string, number>> {
     const results = await this.prisma.order.groupBy({
-      by: ['order_status'],
+      by: ["order_status"],
       where: {
         created_at: {
           gte: timeRange.startDate,
@@ -394,7 +437,7 @@ export class StatisticService {
     });
 
     const counts: Record<string, number> = {};
-    results.forEach(result => {
+    results.forEach((result) => {
       counts[result.order_status] = result._count.order_status;
     });
 
@@ -451,10 +494,10 @@ export class StatisticService {
 
   // 清除缓存
   async clearCache(): Promise<void> {
-    await this.redisService.clearPattern('dashboard_stats:*');
-    await this.redisService.clearPattern('product_stats');
-    await this.redisService.clearPattern('order_stats:*');
-    await this.redisService.clearPattern('sales_trends:*');
-    await this.redisService.clearPattern('geo_distribution:*');
+    await this.redisService.clearPattern("dashboard_stats:*");
+    await this.redisService.clearPattern("product_stats");
+    await this.redisService.clearPattern("order_stats:*");
+    await this.redisService.clearPattern("sales_trends:*");
+    await this.redisService.clearPattern("geo_distribution:*");
   }
 }

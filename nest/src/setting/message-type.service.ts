@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { MessageSendType } from './dto/message-type.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { MessageSendType } from "./dto/message-type.dto";
 
 export const MESSAGE_SEND_TYPE_NAMES = {
-  1: '会员',
-  2: '商家',
+  1: "会员",
+  2: "商家",
 };
 
 @Injectable()
@@ -85,7 +85,7 @@ export class MessageTypeService {
       };
     }
     return {
-      message_id: 'desc',
+      message_id: "desc",
     };
   }
 
@@ -95,7 +95,7 @@ export class MessageTypeService {
     });
 
     if (!result) {
-      throw new Error('消息类型不存在');
+      throw new Error("消息类型不存在");
     }
 
     return {
@@ -106,23 +106,27 @@ export class MessageTypeService {
 
   async create(data: any): Promise<any> {
     // 验证消息类型名称不能为空
-    if (!data.name || data.name.trim() === '') {
-      throw new Error('消息类型名称不能为空');
+    if (!data.name || data.name.trim() === "") {
+      throw new Error("消息类型名称不能为空");
     }
 
     // 检查是否至少启用了一种消息渠道
-    const hasAnyChannel = data.is_wechat || data.is_mini_program ||
-                         data.is_message || data.is_msg ||
-                         data.is_app || data.is_ding;
+    const hasAnyChannel =
+      data.is_wechat ||
+      data.is_mini_program ||
+      data.is_message ||
+      data.is_msg ||
+      data.is_app ||
+      data.is_ding;
 
     if (!hasAnyChannel) {
-      throw new Error('至少需要启用一种消息渠道');
+      throw new Error("至少需要启用一种消息渠道");
     }
 
     const result = await this.prisma.messageType.create({
       data: {
         name: data.name,
-        describe: data.describe || '',
+        describe: data.describe || "",
         send_type: data.send_type || MessageSendType.MEMBER,
         is_wechat: data.is_wechat || false,
         is_mini_program: data.is_mini_program || false,
@@ -144,12 +148,12 @@ export class MessageTypeService {
     });
 
     if (!messageType) {
-      throw new Error('消息类型不存在');
+      throw new Error("消息类型不存在");
     }
 
     // 验证消息类型名称不能为空
-    if (data.name !== undefined && (!data.name || data.name.trim() === '')) {
-      throw new Error('消息类型名称不能为空');
+    if (data.name !== undefined && (!data.name || data.name.trim() === "")) {
+      throw new Error("消息类型名称不能为空");
     }
 
     // 如果更新了消息渠道，检查是否至少启用了一种
@@ -158,26 +162,39 @@ export class MessageTypeService {
     if (data.describe !== undefined) updateData.describe = data.describe;
     if (data.send_type !== undefined) updateData.send_type = data.send_type;
     if (data.is_wechat !== undefined) updateData.is_wechat = data.is_wechat;
-    if (data.is_mini_program !== undefined) updateData.is_mini_program = data.is_mini_program;
+    if (data.is_mini_program !== undefined)
+      updateData.is_mini_program = data.is_mini_program;
     if (data.is_message !== undefined) updateData.is_message = data.is_message;
     if (data.is_msg !== undefined) updateData.is_msg = data.is_msg;
     if (data.is_app !== undefined) updateData.is_app = data.is_app;
     if (data.is_ding !== undefined) updateData.is_ding = data.is_ding;
 
     // 如果更新了任何消息渠道，检查是否至少启用了一种
-    const channelFields = ['is_wechat', 'is_mini_program', 'is_message', 'is_msg', 'is_app', 'is_ding'];
-    const hasChannelUpdate = channelFields.some(field => data[field] !== undefined);
+    const channelFields = [
+      "is_wechat",
+      "is_mini_program",
+      "is_message",
+      "is_msg",
+      "is_app",
+      "is_ding",
+    ];
+    const hasChannelUpdate = channelFields.some(
+      (field) => data[field] !== undefined,
+    );
 
     if (hasChannelUpdate) {
-      const hasAnyChannel = Object.keys(updateData)
-        .filter(key => channelFields.includes(key))
-        .some(key => updateData[key]) ||
-        channelFields.some(field =>
-          data[field] === undefined && messageType[field as keyof typeof messageType]
+      const hasAnyChannel =
+        Object.keys(updateData)
+          .filter((key) => channelFields.includes(key))
+          .some((key) => updateData[key]) ||
+        channelFields.some(
+          (field) =>
+            data[field] === undefined &&
+            messageType[field as keyof typeof messageType],
         );
 
       if (!hasAnyChannel) {
-        throw new Error('至少需要启用一种消息渠道');
+        throw new Error("至少需要启用一种消息渠道");
       }
     }
 
@@ -189,31 +206,51 @@ export class MessageTypeService {
     return result;
   }
 
-  async updateField(messageId: number, field: string, value: any): Promise<boolean> {
+  async updateField(
+    messageId: number,
+    field: string,
+    value: any,
+  ): Promise<boolean> {
     const messageType = await this.prisma.messageType.findUnique({
       where: { message_id: messageId },
     });
 
     if (!messageType) {
-      throw new Error('消息类型不存在');
+      throw new Error("消息类型不存在");
     }
 
     // 验证字段
-    const allowedFields = ['name', 'describe', 'send_type', 'is_wechat', 'is_mini_program',
-                          'is_message', 'is_msg', 'is_app', 'is_ding'];
+    const allowedFields = [
+      "name",
+      "describe",
+      "send_type",
+      "is_wechat",
+      "is_mini_program",
+      "is_message",
+      "is_msg",
+      "is_app",
+      "is_ding",
+    ];
     if (!allowedFields.includes(field)) {
-      throw new Error('不支持的字段');
+      throw new Error("不支持的字段");
     }
 
     // 如果更新的是消息渠道，检查是否至少启用了一种
-    const channelFields = ['is_wechat', 'is_mini_program', 'is_message', 'is_msg', 'is_app', 'is_ding'];
+    const channelFields = [
+      "is_wechat",
+      "is_mini_program",
+      "is_message",
+      "is_msg",
+      "is_app",
+      "is_ding",
+    ];
     if (channelFields.includes(field) && value === false) {
       const remainingChannels = channelFields
-        .filter(f => f !== field)
-        .some(f => messageType[f as keyof typeof messageType]);
+        .filter((f) => f !== field)
+        .some((f) => messageType[f as keyof typeof messageType]);
 
       if (!remainingChannels) {
-        throw new Error('至少需要启用一种消息渠道');
+        throw new Error("至少需要启用一种消息渠道");
       }
     }
 
@@ -233,7 +270,7 @@ export class MessageTypeService {
     });
 
     if (!messageType) {
-      throw new Error('消息类型不存在');
+      throw new Error("消息类型不存在");
     }
 
     // 检查是否有关联的消息模板
@@ -244,7 +281,7 @@ export class MessageTypeService {
     });
 
     if (relatedTemplates > 0) {
-      throw new Error('该消息类型下存在消息模板，无法删除');
+      throw new Error("该消息类型下存在消息模板，无法删除");
     }
 
     // 软删除
@@ -262,12 +299,12 @@ export class MessageTypeService {
     // 检查是否有关联的消息模板
     const relatedTemplates = await this.prisma.messageTemplate.count({
       where: {
-        message_id: { in: messageIds.map(id => id.toString()) },
+        message_id: { in: messageIds.map((id) => id.toString()) },
       },
     });
 
     if (relatedTemplates > 0) {
-      throw new Error('选中的消息类型下存在消息模板，无法删除');
+      throw new Error("选中的消息类型下存在消息模板，无法删除");
     }
 
     // 批量软删除
@@ -288,7 +325,7 @@ export class MessageTypeService {
         is_deleted: false,
       },
       orderBy: {
-        message_id: 'desc',
+        message_id: "desc",
       },
     });
 
@@ -303,7 +340,7 @@ export class MessageTypeService {
         is_deleted: false,
       },
       orderBy: {
-        message_id: 'desc',
+        message_id: "desc",
       },
     });
 
@@ -320,7 +357,7 @@ export class MessageTypeService {
         message_templates: true,
       },
       orderBy: {
-        message_id: 'desc',
+        message_id: "desc",
       },
     });
 

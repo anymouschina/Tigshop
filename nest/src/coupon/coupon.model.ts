@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Prisma } from '@prisma/client';
+import { Prisma } from "@prisma/client";
 
 export class Coupon {
   couponName: string;

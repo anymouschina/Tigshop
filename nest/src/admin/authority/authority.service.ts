@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   AuthorityQueryDto,
   AuthorityDetailDto,
@@ -9,8 +9,8 @@ import {
   DeleteAuthorityDto,
   BatchDeleteAuthorityDto,
   AUTHORITY_TYPE,
-  AUTHORITY_STATUS
-} from './authority.dto';
+  AUTHORITY_STATUS,
+} from "./authority.dto";
 
 @Injectable()
 export class AuthorityService {
@@ -18,14 +18,14 @@ export class AuthorityService {
 
   async findAll(query: AuthorityQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       parent_id = -1,
       type = -1,
       status = -1,
       page = 1,
       size = 15,
-      sort_field = 'id',
-      sort_order = 'asc',
+      sort_field = "id",
+      sort_order = "asc",
     } = query;
 
     const where: any = {};
@@ -80,7 +80,7 @@ export class AuthorityService {
     });
 
     if (!authority) {
-      throw new Error('权限不存在');
+      throw new Error("权限不存在");
     }
 
     return authority;
@@ -92,7 +92,7 @@ export class AuthorityService {
     });
 
     if (existingAuthority) {
-      throw new Error('权限代码已存在');
+      throw new Error("权限代码已存在");
     }
 
     if (data.parent_id > 0) {
@@ -101,7 +101,7 @@ export class AuthorityService {
       });
 
       if (!parentAuthority) {
-        throw new Error('父级权限不存在');
+        throw new Error("父级权限不存在");
       }
     }
 
@@ -122,7 +122,7 @@ export class AuthorityService {
     });
 
     if (!authority) {
-      throw new Error('权限不存在');
+      throw new Error("权限不存在");
     }
 
     if (data.code && data.code !== authority.code) {
@@ -131,7 +131,7 @@ export class AuthorityService {
       });
 
       if (existingAuthority) {
-        throw new Error('权限代码已存在');
+        throw new Error("权限代码已存在");
       }
     }
 
@@ -142,11 +142,11 @@ export class AuthorityService {
         });
 
         if (!parentAuthority) {
-          throw new Error('父级权限不存在');
+          throw new Error("父级权限不存在");
         }
 
         if (data.parent_id === data.id) {
-          throw new Error('不能将权限设置为自己的子级');
+          throw new Error("不能将权限设置为自己的子级");
         }
       }
     }
@@ -172,7 +172,7 @@ export class AuthorityService {
     });
 
     if (!authority) {
-      throw new Error('权限不存在');
+      throw new Error("权限不存在");
     }
 
     const childCount = await this.prisma.authority.count({
@@ -180,7 +180,7 @@ export class AuthorityService {
     });
 
     if (childCount > 0) {
-      throw new Error('该权限下还有子权限，无法删除');
+      throw new Error("该权限下还有子权限，无法删除");
     }
 
     await this.prisma.authority.delete({
@@ -223,11 +223,7 @@ export class AuthorityService {
 
     const authorities = await this.prisma.authority.findMany({
       where,
-      orderBy: [
-        { parent_id: 'asc' },
-        { sort: 'asc' },
-        { id: 'asc' },
-      ],
+      orderBy: [{ parent_id: "asc" }, { sort: "asc" }, { id: "asc" }],
     });
 
     return this.buildTree(authorities);
@@ -255,11 +251,11 @@ export class AuthorityService {
     });
 
     if (!authority) {
-      throw new Error('权限不存在');
+      throw new Error("权限不存在");
     }
 
     if (!Object.values(AUTHORITY_STATUS).includes(status)) {
-      throw new Error('无效的状态值');
+      throw new Error("无效的状态值");
     }
 
     const updatedAuthority = await this.prisma.authority.update({
@@ -275,11 +271,7 @@ export class AuthorityService {
 
     const authorities = await this.prisma.authority.findMany({
       where,
-      orderBy: [
-        { parent_id: 'asc' },
-        { sort: 'asc' },
-        { id: 'asc' },
-      ],
+      orderBy: [{ parent_id: "asc" }, { sort: "asc" }, { id: "asc" }],
     });
 
     return this.buildTree(authorities);
@@ -290,11 +282,7 @@ export class AuthorityService {
 
     const authorities = await this.prisma.authority.findMany({
       where,
-      orderBy: [
-        { parent_id: 'asc' },
-        { sort: 'asc' },
-        { id: 'asc' },
-      ],
+      orderBy: [{ parent_id: "asc" }, { sort: "asc" }, { id: "asc" }],
     });
 
     return authorities;

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   RefundApplyQueryDto,
   RefundApplyDetailDto,
@@ -8,8 +8,8 @@ import {
   UpdateRefundApplyDto,
   DeleteRefundApplyDto,
   BatchDeleteRefundApplyDto,
-  REFUND_APPLY_STATUS
-} from './refund-apply.dto';
+  REFUND_APPLY_STATUS,
+} from "./refund-apply.dto";
 
 @Injectable()
 export class RefundApplyService {
@@ -17,14 +17,14 @@ export class RefundApplyService {
 
   async findAll(query: RefundApplyQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       user_id = 0,
       order_id = 0,
       status = -1,
       page = 1,
       size = 15,
-      sort_field = 'id',
-      sort_order = 'desc',
+      sort_field = "id",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -119,7 +119,7 @@ export class RefundApplyService {
     });
 
     if (!refund) {
-      throw new Error('退款申请不存在');
+      throw new Error("退款申请不存在");
     }
 
     return refund;
@@ -132,12 +132,12 @@ export class RefundApplyService {
     });
 
     if (!order) {
-      throw new Error('订单不存在');
+      throw new Error("订单不存在");
     }
 
     // 检查退款金额不能超过订单金额
     if (data.refund_amount > order.order_amount) {
-      throw new Error('退款金额不能超过订单金额');
+      throw new Error("退款金额不能超过订单金额");
     }
 
     // 检查是否已有未完成的退款申请
@@ -151,7 +151,7 @@ export class RefundApplyService {
     });
 
     if (existingRefund) {
-      throw new Error('该订单已有未完成的退款申请');
+      throw new Error("该订单已有未完成的退款申请");
     }
 
     const refund = await this.prisma.refundApply.create({
@@ -171,7 +171,7 @@ export class RefundApplyService {
     });
 
     if (!refund) {
-      throw new Error('退款申请不存在');
+      throw new Error("退款申请不存在");
     }
 
     // 状态变更检查
@@ -181,7 +181,7 @@ export class RefundApplyService {
         if (data.status === 1 || data.status === 2) {
           // 允许状态变更
         } else {
-          throw new Error('无效的状态变更');
+          throw new Error("无效的状态变更");
         }
       }
       // 只有审核通过状态可以变为已取消
@@ -189,12 +189,12 @@ export class RefundApplyService {
         if (data.status === 3) {
           // 允许状态变更
         } else {
-          throw new Error('无效的状态变更');
+          throw new Error("无效的状态变更");
         }
       }
       // 其他状态不允许变更
       else {
-        throw new Error('当前状态不允许变更');
+        throw new Error("当前状态不允许变更");
       }
     }
 
@@ -220,12 +220,12 @@ export class RefundApplyService {
     });
 
     if (!refund) {
-      throw new Error('退款申请不存在');
+      throw new Error("退款申请不存在");
     }
 
     // 只有待审核状态可以删除
     if (refund.status !== 0) {
-      throw new Error('只有待审核状态的退款申请可以删除');
+      throw new Error("只有待审核状态的退款申请可以删除");
     }
 
     await this.prisma.refundApply.delete({
@@ -247,7 +247,7 @@ export class RefundApplyService {
     });
 
     if (refunds.length !== ids.length) {
-      throw new Error('只能删除待审核状态的退款申请');
+      throw new Error("只能删除待审核状态的退款申请");
     }
 
     await this.prisma.refundApply.deleteMany({
@@ -263,7 +263,7 @@ export class RefundApplyService {
 
   async getRefundStats() {
     const stats = await this.prisma.refundApply.groupBy({
-      by: ['status'],
+      by: ["status"],
       _count: {
         status: true,
       },
@@ -274,7 +274,7 @@ export class RefundApplyService {
       result[i] = 0;
     }
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       result[stat.status] = stat._count.status;
     });
 

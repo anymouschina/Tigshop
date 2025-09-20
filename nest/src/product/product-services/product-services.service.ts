@@ -1,8 +1,11 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/services/prisma.service';
-import { CreateProductServicesDto, UpdateProductServicesDto } from './dto/product-services.dto';
-import { ResponseUtil } from '../../../common/utils/response.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../common/services/prisma.service";
+import {
+  CreateProductServicesDto,
+  UpdateProductServicesDto,
+} from "./dto/product-services.dto";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class ProductServicesService {
@@ -13,16 +16,14 @@ export class ProductServicesService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     const orderBy: any = {};
     if (sort_field) {
-      orderBy[sort_field] = sort_order || 'desc';
+      orderBy[sort_field] = sort_order || "desc";
     } else {
-      orderBy.id = 'desc';
+      orderBy.id = "desc";
     }
 
     const skip = (page - 1) * size;
@@ -40,9 +41,7 @@ export class ProductServicesService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     return await this.prisma.product_services.count({ where });
@@ -65,12 +64,15 @@ export class ProductServicesService {
       });
       return result;
     } catch (error) {
-      console.error('创建产品服务失败:', error);
+      console.error("创建产品服务失败:", error);
       return null;
     }
   }
 
-  async updateProductServices(id: number, updateData: UpdateProductServicesDto) {
+  async updateProductServices(
+    id: number,
+    updateData: UpdateProductServicesDto,
+  ) {
     try {
       const result = await this.prisma.product_services.update({
         where: { id },
@@ -81,7 +83,7 @@ export class ProductServicesService {
       });
       return result;
     } catch (error) {
-      console.error('更新产品服务失败:', error);
+      console.error("更新产品服务失败:", error);
       return null;
     }
   }
@@ -93,7 +95,7 @@ export class ProductServicesService {
       });
       return true;
     } catch (error) {
-      console.error('删除产品服务失败:', error);
+      console.error("删除产品服务失败:", error);
       return false;
     }
   }
@@ -109,7 +111,7 @@ export class ProductServicesService {
       });
       return true;
     } catch (error) {
-      console.error('批量删除产品服务失败:', error);
+      console.error("批量删除产品服务失败:", error);
       return false;
     }
   }
@@ -132,7 +134,7 @@ export class ProductServicesService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error('获取产品服务统计失败:', error);
+      console.error("获取产品服务统计失败:", error);
       return {
         total: 0,
         today_count: 0,

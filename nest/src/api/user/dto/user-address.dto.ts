@@ -1,6 +1,14 @@
 // @ts-nocheck
-import { IsOptional, IsNumber, IsString, IsBoolean, IsMobilePhone, MaxLength, MinLength } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsBoolean,
+  IsMobilePhone,
+  MaxLength,
+  MinLength,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class AddressQueryDto {
   @IsOptional()
@@ -16,10 +24,10 @@ export class AddressQueryDto {
 
 export class CreateAddressDto {
   @IsString()
-  @MaxLength(20, { message: '收货人姓名不能超过20个字符' })
+  @MaxLength(20, { message: "收货人姓名不能超过20个字符" })
   name: string;
 
-  @IsMobilePhone('zh-CN', { message: '手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "手机号格式不正确" })
   mobile: string;
 
   @IsNumber()
@@ -33,11 +41,11 @@ export class CreateAddressDto {
   district_id?: number;
 
   @IsString()
-  @MaxLength(200, { message: '详细地址不能超过200个字符' })
+  @MaxLength(200, { message: "详细地址不能超过200个字符" })
   address: string;
 
   @IsOptional()
-  @Transform(({ value }) => value ? 1 : 0)
+  @Transform(({ value }) => (value ? 1 : 0))
   @IsBoolean()
   is_default?: number = 0;
 }
@@ -48,11 +56,11 @@ export class UpdateAddressDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(20, { message: '收货人姓名不能超过20个字符' })
+  @MaxLength(20, { message: "收货人姓名不能超过20个字符" })
   name?: string;
 
   @IsOptional()
-  @IsMobilePhone('zh-CN', { message: '手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "手机号格式不正确" })
   mobile?: string;
 
   @IsOptional()
@@ -69,11 +77,11 @@ export class UpdateAddressDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(200, { message: '详细地址不能超过200个字符' })
+  @MaxLength(200, { message: "详细地址不能超过200个字符" })
   address?: string;
 
   @IsOptional()
-  @Transform(({ value }) => value ? 1 : 0)
+  @Transform(({ value }) => (value ? 1 : 0))
   @IsBoolean()
   is_default?: number;
 }

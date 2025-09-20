@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   UserBalanceLogQueryDto,
   UserBalanceLogDetailDto,
@@ -9,8 +9,8 @@ import {
   DeleteUserBalanceLogDto,
   BatchDeleteUserBalanceLogDto,
   USER_BALANCE_LOG_TYPE,
-  BALANCE_CHANGE_TYPE
-} from './user-balance-log.dto';
+  BALANCE_CHANGE_TYPE,
+} from "./user-balance-log.dto";
 
 @Injectable()
 export class UserBalanceLogService {
@@ -18,17 +18,17 @@ export class UserBalanceLogService {
 
   async findAll(query: UserBalanceLogQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       user_id = 0,
       order_id = 0,
       type = -1,
       change_type = -1,
-      start_date = '',
-      end_date = '',
+      start_date = "",
+      end_date = "",
       page = 1,
       size = 15,
-      sort_field = 'id',
-      sort_order = 'desc',
+      sort_field = "id",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -39,13 +39,15 @@ export class UserBalanceLogService {
         { admin_remark: { contains: keyword } },
         { related_id: { contains: keyword } },
         { order: { order_sn: { contains: keyword } } },
-        { user: {
-          OR: [
-            { nickname: { contains: keyword } },
-            { username: { contains: keyword } },
-            { mobile: { contains: keyword } },
-          ]
-        } },
+        {
+          user: {
+            OR: [
+              { nickname: { contains: keyword } },
+              { username: { contains: keyword } },
+              { mobile: { contains: keyword } },
+            ],
+          },
+        },
       ];
     }
 
@@ -150,7 +152,7 @@ export class UserBalanceLogService {
     });
 
     if (!userBalanceLog) {
-      throw new Error('余额记录不存在');
+      throw new Error("余额记录不存在");
     }
 
     return userBalanceLog;
@@ -163,7 +165,7 @@ export class UserBalanceLogService {
     });
 
     if (!user) {
-      throw new Error('用户不存在');
+      throw new Error("用户不存在");
     }
 
     // 检查订单是否存在（如果提供了）
@@ -173,13 +175,13 @@ export class UserBalanceLogService {
       });
 
       if (!order) {
-        throw new Error('订单不存在');
+        throw new Error("订单不存在");
       }
     }
 
     // 验证余额变化
     if (data.change_type === 1 && data.amount > user.balance) {
-      throw new Error('余额不足');
+      throw new Error("余额不足");
     }
 
     const userBalanceLog = await this.prisma.userBalanceLog.create({
@@ -198,7 +200,7 @@ export class UserBalanceLogService {
     });
 
     if (!userBalanceLog) {
-      throw new Error('余额记录不存在');
+      throw new Error("余额记录不存在");
     }
 
     const updateData: any = {
@@ -223,7 +225,7 @@ export class UserBalanceLogService {
     });
 
     if (!userBalanceLog) {
-      throw new Error('余额记录不存在');
+      throw new Error("余额记录不存在");
     }
 
     await this.prisma.userBalanceLog.delete({
@@ -262,7 +264,7 @@ export class UserBalanceLogService {
           },
         },
       },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
     });
   }
 
@@ -273,7 +275,7 @@ export class UserBalanceLogService {
     }
 
     const result = await this.prisma.userBalanceLog.groupBy({
-      by: ['type', 'change_type'],
+      by: ["type", "change_type"],
       where,
       _sum: {
         amount: true,
@@ -292,7 +294,7 @@ export class UserBalanceLogService {
       };
     }
 
-    result.forEach(stat => {
+    result.forEach((stat) => {
       if (stat.change_type === 0) {
         stats[stat.type].increase = {
           total: stat._sum.amount || 0,
@@ -330,7 +332,7 @@ export class UserBalanceLogService {
     }
 
     const result = await this.prisma.userBalanceLog.groupBy({
-      by: ['type', 'change_type'],
+      by: ["type", "change_type"],
       where,
       _sum: {
         amount: true,
@@ -352,7 +354,7 @@ export class UserBalanceLogService {
         mobile: true,
         balance: true,
       },
-      orderBy: { balance: 'desc' },
+      orderBy: { balance: "desc" },
       take: limit,
     });
 
@@ -364,7 +366,7 @@ export class UserBalanceLogService {
     amount: number,
     type: number,
     changeType: number,
-    description: string = '',
+    description: string = "",
     orderId?: number,
   ) {
     const user = await this.prisma.user.findUnique({
@@ -372,7 +374,7 @@ export class UserBalanceLogService {
     });
 
     if (!user) {
-      throw new Error('用户不存在');
+      throw new Error("用户不存在");
     }
 
     let newBalance = user.balance;
@@ -383,13 +385,13 @@ export class UserBalanceLogService {
     } else if (changeType === 1) {
       // 减少
       if (amount > user.balance) {
-        throw new Error('余额不足');
+        throw new Error("余额不足");
       }
       newBalance -= amount;
     } else if (changeType === 2) {
       // 冻结
       if (amount > user.balance) {
-        throw new Error('余额不足');
+        throw new Error("余额不足");
       }
       // 冻结逻辑在这里处理
     }

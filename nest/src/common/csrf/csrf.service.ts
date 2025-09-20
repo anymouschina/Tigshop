@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   CsrfQueryDto,
   CsrfDetailDto,
@@ -9,8 +9,8 @@ import {
   DeleteCsrfDto,
   BatchDeleteCsrfDto,
   CSRF_TYPE,
-  CSRF_STATUS
-} from './csrf.dto';
+  CSRF_STATUS,
+} from "./csrf.dto";
 
 @Injectable()
 export class CsrfService {
@@ -18,13 +18,13 @@ export class CsrfService {
 
   async findAll(query: CsrfQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       type = -1,
       status = -1,
       page = 1,
       size = 15,
-      sort_field = 'id',
-      sort_order = 'desc',
+      sort_field = "id",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -76,7 +76,7 @@ export class CsrfService {
     });
 
     if (!csrf) {
-      throw new Error('CSRF记录不存在');
+      throw new Error("CSRF记录不存在");
     }
 
     return csrf;
@@ -100,7 +100,7 @@ export class CsrfService {
     });
 
     if (!csrf) {
-      throw new Error('CSRF记录不存在');
+      throw new Error("CSRF记录不存在");
     }
 
     const updateData: any = {
@@ -124,7 +124,7 @@ export class CsrfService {
     });
 
     if (!csrf) {
-      throw new Error('CSRF记录不存在');
+      throw new Error("CSRF记录不存在");
     }
 
     await this.prisma.csrf.delete({
@@ -183,11 +183,11 @@ export class CsrfService {
     });
 
     if (!csrf) {
-      throw new Error('无效的CSRF令牌');
+      throw new Error("无效的CSRF令牌");
     }
 
     if (csrf.used) {
-      throw new Error('CSRF令牌已使用');
+      throw new Error("CSRF令牌已使用");
     }
 
     return {
@@ -208,7 +208,7 @@ export class CsrfService {
     });
 
     if (!oldCsrf) {
-      throw new Error('无效的旧令牌');
+      throw new Error("无效的旧令牌");
     }
 
     await this.prisma.csrf.update({
@@ -221,7 +221,7 @@ export class CsrfService {
 
   async getCsrfStats() {
     const stats = await this.prisma.csrf.groupBy({
-      by: ['type', 'status'],
+      by: ["type", "status"],
       _count: {
         _all: true,
       },
@@ -230,7 +230,7 @@ export class CsrfService {
     const typeStats = {};
     const statusStats = {};
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       if (!typeStats[stat.type]) {
         typeStats[stat.type] = 0;
       }
@@ -254,23 +254,21 @@ export class CsrfService {
     const now = new Date();
     const result = await this.prisma.csrf.deleteMany({
       where: {
-        OR: [
-          { expires_at: { lt: now } },
-          { status: 0 },
-        ],
+        OR: [{ expires_at: { lt: now } }, { status: 0 }],
       },
     });
 
     return {
-      message: '清理完成',
+      message: "清理完成",
       cleaned_count: result.count,
       cleaned_at: now,
     };
   }
 
   private generateRandomToken(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let token = '';
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let token = "";
     for (let i = 0; i < 32; i++) {
       token += chars.charAt(Math.floor(Math.random() * chars.length));
     }

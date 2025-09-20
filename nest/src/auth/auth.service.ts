@@ -1,28 +1,47 @@
 // @ts-nocheck
-import { Injectable, OnModuleInit, Inject, BadRequestException, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { DatabaseService } from '../database/database.service';
-import { Cron } from '@nestjs/schedule';
-import { RegisterDto, LoginDto, ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, LoginType, RegisterType, UpdateProfileDto } from './dto/auth.dto';
-import { CsrfService } from './services/csrf.service';
-import { CaptchaService } from './services/captcha.service';
-import { UsernameGeneratorService } from './services/username-generator.service';
-import { VerificationCodeService } from './services/verification-code.service';
+import {
+  Injectable,
+  OnModuleInit,
+  Inject,
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { DatabaseService } from "../database/database.service";
+import * as crypto from "crypto";
+import * as bcrypt from "bcrypt";
+import { Cron } from "@nestjs/schedule";
+import {
+  RegisterDto,
+  LoginDto,
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  LoginType,
+  RegisterType,
+  UpdateProfileDto,
+} from "./dto/auth.dto";
+import { CsrfService } from "./services/csrf.service";
+import { CaptchaService } from "./services/captcha.service";
+import { UsernameGeneratorService } from "./services/username-generator.service";
+import { VerificationCodeService } from "./services/verification-code.service";
 
 export interface JwtPayload {
-  sub: number;      // User ID
-  openId?: string;  // WeChat openId
-  name?: string;    // Username
-  email?: string;   // Email address
-  iat?: number;     // Issued at
-  exp?: number;     // Expiration time
+  sub: number; // User ID
+  openId?: string; // WeChat openId
+  name?: string; // Username
+  email?: string; // Email address
+  iat?: number; // Issued at
+  exp?: number; // Expiration time
 }
 
 @Injectable()
 export class AuthService implements OnModuleInit {
   constructor(
     private readonly jwtService: JwtService,
-    @Inject('CONFIG') private readonly config: any,
+    @Inject("CONFIG") private readonly config: any,
     private readonly databaseService: DatabaseService,
     private readonly csrfService: CsrfService,
     private readonly captchaService: CaptchaService,
@@ -42,7 +61,10 @@ export class AuthService implements OnModuleInit {
    * @param payload Additional payload data
    * @returns JWT token string
    */
-  async generateToken(userId: number, payload: Partial<JwtPayload> = {}): Promise<string> {
+  async generateToken(
+    userId: number,
+    payload: Partial<JwtPayload> = {},
+  ): Promise<string> {
     const tokenPayload: JwtPayload = {
       sub: userId,
       ...payload,
@@ -59,12 +81,15 @@ export class AuthService implements OnModuleInit {
    * @param expirationSeconds Optional expiration time in seconds (default: 15 days)
    * @returns JWT token string
    */
-  async generateTokenPhpCompatible(userId: number, expirationSeconds: number = 3600 * 24 * 15): Promise<string> {
-    const uuid = require('crypto').randomUUID();
+  async generateTokenPhpCompatible(
+    userId: number,
+    expirationSeconds: number = 3600 * 24 * 15,
+  ): Promise<string> {
+    const uuid = crypto.randomUUID();
     const now = Math.floor(Date.now() / 1000);
     const payload = {
-      iss: 'lyecs@2023',
-      aud: '',
+      iss: "lyecs@2023",
+      aud: "",
       iat: now,
       nbf: now,
       exp: now + expirationSeconds, // Default: 15 days
@@ -75,8 +100,8 @@ export class AuthService implements OnModuleInit {
     };
 
     const token = this.jwtService.sign(payload, {
-      secret: 'lyecs@2023',
-      algorithm: 'HS256',
+      secret: "lyecs@2023",
+      algorithm: "HS256",
     });
 
     // Store token in cache for validation (in real implementation, use Redis)
@@ -93,21 +118,22 @@ export class AuthService implements OnModuleInit {
 
   /**
    * Verify and decode a JWT token
-   * 
+   *
    * @param token JWT token string
    * @returns Decoded payload or null if invalid
    */
   async verifyToken(token: string): Promise<JwtPayload | null> {
     try {
       // Check if the token is blacklisted
-      const blacklistedToken = await this.databaseService.blacklistedToken.findUnique({
-        where: { token },
-      });
-      
+      const blacklistedToken =
+        await this.databaseService.blacklistedToken.findUnique({
+          where: { token },
+        });
+
       if (blacklistedToken) {
         return null;
       }
-      
+
       return this.jwtService.verify<JwtPayload>(token);
     } catch (error) {
       return null;
@@ -116,7 +142,7 @@ export class AuthService implements OnModuleInit {
 
   /**
    * Blacklist a token (logout)
-   * 
+   *
    * @param token JWT token string
    * @param userId User ID
    * @returns True if token was blacklisted, false otherwise
@@ -125,14 +151,14 @@ export class AuthService implements OnModuleInit {
     try {
       // Decode token without verifying to get expiration time
       const decoded = this.jwtService.decode(token) as JwtPayload;
-      
+
       if (!decoded || !decoded.exp) {
         return false;
       }
-      
+
       // Convert exp timestamp to Date object
       const expiresAt = new Date(decoded.exp * 1000);
-      
+
       // Add token to blacklist
       await this.databaseService.blacklistedToken.create({
         data: {
@@ -141,7 +167,7 @@ export class AuthService implements OnModuleInit {
           expiresAt,
         },
       });
-      
+
       return true;
     } catch (error) {
       return false;
@@ -154,9 +180,7 @@ export class AuthService implements OnModuleInit {
    * @returns Hashed password
    */
   async hashPassword(password: string): Promise<string> {
-    const bcrypt = require('bcrypt');
-    const saltRounds = 10;
-    return bcrypt.hash(password, saltRounds);
+    return bcrypt.hash(password, 10);
   }
 
   /**
@@ -166,7 +190,6 @@ export class AuthService implements OnModuleInit {
    * @returns True if password matches, false otherwise
    */
   async validatePassword(password: string, hash: string): Promise<boolean> {
-    const bcrypt = require('bcrypt');
     return bcrypt.compare(password, hash);
   }
 
@@ -174,7 +197,7 @@ export class AuthService implements OnModuleInit {
    * Clean up expired blacklisted tokens
    * Runs every day at midnight
    */
-  @Cron('0 0 * * *')
+  @Cron("0 0 * * *")
   async cleanupExpiredTokens() {
     const now = new Date();
 
@@ -199,7 +222,7 @@ export class AuthService implements OnModuleInit {
       case RegisterType.EMAIL:
         return this.registerWithEmail(registerDto);
       default:
-        throw new BadRequestException('不支持的注册类型');
+        throw new BadRequestException("不支持的注册类型");
     }
   }
 
@@ -209,21 +232,22 @@ export class AuthService implements OnModuleInit {
   private async registerWithMobile(registerDto: RegisterDto) {
     // 验证必填字段
     if (!registerDto.mobile) {
-      throw new BadRequestException('手机号不能为空');
+      throw new BadRequestException("手机号不能为空");
     }
 
     if (!registerDto.mobile_code) {
-      throw new BadRequestException('手机验证码不能为空');
+      throw new BadRequestException("手机验证码不能为空");
     }
 
     // 验证手机验证码
-    const isValidMobileCode = await this.verificationCodeService.validateMobileCode(
-      registerDto.mobile,
-      registerDto.mobile_code,
-    );
+    const isValidMobileCode =
+      await this.verificationCodeService.validateMobileCode(
+        registerDto.mobile,
+        registerDto.mobile_code,
+      );
 
     if (!isValidMobileCode) {
-      throw new BadRequestException('手机验证码错误或已过期');
+      throw new BadRequestException("手机验证码错误或已过期");
     }
 
     // 检查手机号是否已存在
@@ -232,7 +256,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (existingMobile) {
-      throw new ConflictException('手机号已存在');
+      throw new ConflictException("手机号已存在");
     }
 
     return this.createUser(registerDto, { mobileValidated: 1 });
@@ -244,21 +268,22 @@ export class AuthService implements OnModuleInit {
   private async registerWithEmail(registerDto: RegisterDto) {
     // 验证必填字段
     if (!registerDto.email) {
-      throw new BadRequestException('邮箱不能为空');
+      throw new BadRequestException("邮箱不能为空");
     }
 
     if (!registerDto.email_code) {
-      throw new BadRequestException('邮箱验证码不能为空');
+      throw new BadRequestException("邮箱验证码不能为空");
     }
 
     // 验证邮箱验证码
-    const isValidEmailCode = await this.verificationCodeService.validateEmailCode(
-      registerDto.email,
-      registerDto.email_code,
-    );
+    const isValidEmailCode =
+      await this.verificationCodeService.validateEmailCode(
+        registerDto.email,
+        registerDto.email_code,
+      );
 
     if (!isValidEmailCode) {
-      throw new BadRequestException('邮箱验证码错误或已过期');
+      throw new BadRequestException("邮箱验证码错误或已过期");
     }
 
     // 检查邮箱是否已存在
@@ -267,7 +292,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (existingEmail) {
-      throw new ConflictException('邮箱已存在');
+      throw new ConflictException("邮箱已存在");
     }
 
     return this.createUser(registerDto, { emailValidated: 1 });
@@ -276,7 +301,10 @@ export class AuthService implements OnModuleInit {
   /**
    * 创建用户
    */
-  private async createUser(registerDto: RegisterDto, validationFlags: { mobileValidated?: number; emailValidated?: number }) {
+  private async createUser(
+    registerDto: RegisterDto,
+    validationFlags: { mobileValidated?: number; emailValidated?: number },
+  ) {
     // 检查用户名是否存在（如果提供）
     let username = registerDto.username;
     if (username) {
@@ -285,7 +313,7 @@ export class AuthService implements OnModuleInit {
       });
 
       if (existingUser) {
-        throw new ConflictException('用户名已存在');
+        throw new ConflictException("用户名已存在");
       }
     } else {
       // 自动生成用户名
@@ -315,10 +343,10 @@ export class AuthService implements OnModuleInit {
     const userData: any = {
       username,
       password: hashedPassword,
-      avatar: registerDto.avatar || '',
-      mobile: registerDto.mobile || '',
+      avatar: registerDto.avatar || "",
+      mobile: registerDto.mobile || "",
       mobileValidated: validationFlags.mobileValidated || 0,
-      email: registerDto.email || '',
+      email: registerDto.email || "",
       emailValidated: validationFlags.emailValidated || 0,
       nickname,
       balance: 0,
@@ -345,10 +373,13 @@ export class AuthService implements OnModuleInit {
     const token = await this.generateTokenPhpCompatible(user.userId, 3600 * 2);
 
     // 生成refresh token (30天过期)
-    const refreshToken = await this.generateTokenPhpCompatible(user.userId, 3600 * 24 * 30);
+    const refreshToken = await this.generateTokenPhpCompatible(
+      user.userId,
+      3600 * 24 * 30,
+    );
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         token,
         refreshToken,
@@ -374,7 +405,7 @@ export class AuthService implements OnModuleInit {
     // CSRF token validation (if provided)
     if (loginDto.verify_token) {
       if (!this.csrfService.validateToken(loginDto.verify_token)) {
-        throw new UnauthorizedException('CSRF token无效');
+        throw new UnauthorizedException("CSRF token无效");
       }
       this.csrfService.deleteToken(loginDto.verify_token);
     }
@@ -382,24 +413,33 @@ export class AuthService implements OnModuleInit {
     // 根据登录类型进行不同的验证
     switch (loginDto.login_type) {
       case LoginType.PASSWORD:
-        user = await this.authenticateWithPassword(loginDto.username, loginDto.password);
+        user = await this.authenticateWithPassword(
+          loginDto.username,
+          loginDto.password,
+        );
         break;
 
       case LoginType.MOBILE:
-        user = await this.authenticateWithMobile(loginDto.mobile, loginDto.mobile_code);
+        user = await this.authenticateWithMobile(
+          loginDto.mobile,
+          loginDto.mobile_code,
+        );
         break;
 
       case LoginType.EMAIL:
-        user = await this.authenticateWithEmail(loginDto.email, loginDto.email_code);
+        user = await this.authenticateWithEmail(
+          loginDto.email,
+          loginDto.email_code,
+        );
         break;
 
       default:
-        throw new BadRequestException('不支持的登录类型');
+        throw new BadRequestException("不支持的登录类型");
     }
 
     // 检查用户状态
     if (!user.isEnable || user.status !== 1) {
-      throw new BadRequestException('用户已被禁用');
+      throw new BadRequestException("用户已被禁用");
     }
 
     // 更新最后登录时间
@@ -414,10 +454,13 @@ export class AuthService implements OnModuleInit {
     const token = await this.generateTokenPhpCompatible(user.userId, 3600 * 2);
 
     // 生成refresh token (30天过期)
-    const refreshToken = await this.generateTokenPhpCompatible(user.userId, 3600 * 24 * 30);
+    const refreshToken = await this.generateTokenPhpCompatible(
+      user.userId,
+      3600 * 24 * 30,
+    );
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         token,
         refreshToken,
@@ -430,38 +473,37 @@ export class AuthService implements OnModuleInit {
    */
   private async authenticateWithPassword(username: string, password: string) {
     if (!username || !password) {
-      throw new BadRequestException('用户名和密码不能为空');
+      throw new BadRequestException("用户名和密码不能为空");
     }
 
     // 行为验证（检查是否需要验证码）
     const requiresCaptcha = await this.captchaService.requiresCaptcha(username);
     if (requiresCaptcha) {
-      throw new BadRequestException('登录尝试次数过多，请进行行为验证');
+      throw new BadRequestException("登录尝试次数过多，请进行行为验证");
     }
 
     // 查找用户（支持用户名、邮箱、手机号登录）
     const user = await this.databaseService.user.findFirst({
       where: {
-        OR: [
-          { username },
-          { email: username },
-          { mobile: username },
-        ],
+        OR: [{ username }, { email: username }, { mobile: username }],
       },
     });
 
     if (!user) {
       // 记录失败登录
       await this.captchaService.trackFailedLogin(username);
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     // 验证密码
-    const isValidPassword = await this.validatePassword(password, user.password);
+    const isValidPassword = await this.validatePassword(
+      password,
+      user.password,
+    );
     if (!isValidPassword) {
       // 记录失败登录
       await this.captchaService.trackFailedLogin(username);
-      throw new BadRequestException('密码错误');
+      throw new BadRequestException("密码错误");
     }
 
     return user;
@@ -472,7 +514,7 @@ export class AuthService implements OnModuleInit {
    */
   private async authenticateWithMobile(mobile: string, code: string) {
     if (!mobile || !code) {
-      throw new BadRequestException('手机号和验证码不能为空');
+      throw new BadRequestException("手机号和验证码不能为空");
     }
 
     // 查找用户
@@ -481,13 +523,13 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     // 验证手机验证码（这里需要实现短信验证码验证逻辑）
     const isValidCode = await this.validateMobileCode(mobile, code);
     if (!isValidCode) {
-      throw new BadRequestException('手机验证码错误');
+      throw new BadRequestException("手机验证码错误");
     }
 
     return user;
@@ -498,7 +540,7 @@ export class AuthService implements OnModuleInit {
    */
   private async authenticateWithEmail(email: string, code: string) {
     if (!email || !code) {
-      throw new BadRequestException('邮箱和验证码不能为空');
+      throw new BadRequestException("邮箱和验证码不能为空");
     }
 
     // 查找用户
@@ -507,13 +549,13 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     // 验证邮箱验证码（这里需要实现邮箱验证码验证逻辑）
     const isValidCode = await this.validateEmailCode(email, code);
     if (!isValidCode) {
-      throw new BadRequestException('邮箱验证码错误');
+      throw new BadRequestException("邮箱验证码错误");
     }
 
     return user;
@@ -522,7 +564,10 @@ export class AuthService implements OnModuleInit {
   /**
    * 验证手机验证码（待实现）
    */
-  private async validateMobileCode(mobile: string, code: string): Promise<boolean> {
+  private async validateMobileCode(
+    mobile: string,
+    code: string,
+  ): Promise<boolean> {
     // TODO: 实现短信验证码验证逻辑
     // 这里需要连接短信服务，验证验证码是否正确
     return true; // 临时返回true，实际需要验证
@@ -531,7 +576,10 @@ export class AuthService implements OnModuleInit {
   /**
    * 验证邮箱验证码（待实现）
    */
-  private async validateEmailCode(email: string, code: string): Promise<boolean> {
+  private async validateEmailCode(
+    email: string,
+    code: string,
+  ): Promise<boolean> {
     // TODO: 实现邮箱验证码验证逻辑
     // 这里需要连接邮件服务，验证验证码是否正确
     return true; // 临时返回true，实际需要验证
@@ -566,7 +614,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     return {
@@ -593,7 +641,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     // 基于角色定义权限
@@ -611,7 +659,7 @@ export class AuthService implements OnModuleInit {
     };
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         user: {
           userId: user.userId,
@@ -632,28 +680,24 @@ export class AuthService implements OnModuleInit {
    */
   private getRolePermissions(role: string): string[] {
     const rolePermissionsMap = {
-      'admin': [
-        'manage_users',
-        'manage_products',
-        'manage_orders',
-        'manage_categories',
-        'system_settings',
-        'view_analytics',
+      admin: [
+        "manage_users",
+        "manage_products",
+        "manage_orders",
+        "manage_categories",
+        "system_settings",
+        "view_analytics",
       ],
-      'merchant': [
-        'manage_products',
-        'manage_orders',
-        'view_analytics',
-      ],
-      'user': [
-        'view_products',
-        'make_purchases',
-        'view_orders',
-        'manage_profile',
+      merchant: ["manage_products", "manage_orders", "view_analytics"],
+      user: [
+        "view_products",
+        "make_purchases",
+        "view_orders",
+        "manage_profile",
       ],
     };
 
-    return rolePermissionsMap[role] || rolePermissionsMap['user'];
+    return rolePermissionsMap[role] || rolePermissionsMap["user"];
   }
 
   /**
@@ -665,22 +709,27 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     // 验证当前密码
-    const isValidPassword = await this.validatePassword(changePasswordDto.currentPassword, user.password);
+    const isValidPassword = await this.validatePassword(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
     if (!isValidPassword) {
-      throw new BadRequestException('当前密码错误');
+      throw new BadRequestException("当前密码错误");
     }
 
     // 验证新密码确认
     if (changePasswordDto.newPassword !== changePasswordDto.confirmPassword) {
-      throw new BadRequestException('新密码确认不匹配');
+      throw new BadRequestException("新密码确认不匹配");
     }
 
     // 加密新密码
-    const hashedPassword = await this.hashPassword(changePasswordDto.newPassword);
+    const hashedPassword = await this.hashPassword(
+      changePasswordDto.newPassword,
+    );
 
     // 更新密码
     await this.databaseService.user.update({
@@ -690,7 +739,7 @@ export class AuthService implements OnModuleInit {
 
     return {
       success: true,
-      message: '密码修改成功',
+      message: "密码修改成功",
     };
   }
 
@@ -703,11 +752,11 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new NotFoundException('邮箱不存在');
+      throw new NotFoundException("邮箱不存在");
     }
 
     // 生成重置令牌
-    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    const resetToken = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 3600 * 1000); // 1小时后过期
 
     // 保存重置令牌到数据库
@@ -721,11 +770,13 @@ export class AuthService implements OnModuleInit {
     });
 
     // TODO: 发送重置密码邮件
-    console.log(`Password reset token for ${forgotPasswordDto.email}: ${resetToken}`);
+    console.log(
+      `Password reset token for ${forgotPasswordDto.email}: ${resetToken}`,
+    );
 
     return {
-      status: 'success',
-      message: '重置密码邮件已发送',
+      status: "success",
+      message: "重置密码邮件已发送",
       data: {
         resetToken,
       },
@@ -737,26 +788,30 @@ export class AuthService implements OnModuleInit {
    */
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     // 查找重置令牌
-    const resetToken = await this.databaseService.passwordResetToken.findUnique({
-      where: { token: resetPasswordDto.token },
-    });
+    const resetToken = await this.databaseService.passwordResetToken.findUnique(
+      {
+        where: { token: resetPasswordDto.token },
+      },
+    );
 
     if (!resetToken) {
-      throw new BadRequestException('重置令牌无效');
+      throw new BadRequestException("重置令牌无效");
     }
 
     // 检查令牌是否过期
     if (resetToken.expiresAt < new Date()) {
-      throw new BadRequestException('重置令牌已过期');
+      throw new BadRequestException("重置令牌已过期");
     }
 
     // 验证新密码确认
     if (resetPasswordDto.newPassword !== resetPasswordDto.confirmPassword) {
-      throw new BadRequestException('新密码确认不匹配');
+      throw new BadRequestException("新密码确认不匹配");
     }
 
     // 加密新密码
-    const hashedPassword = await this.hashPassword(resetPasswordDto.newPassword);
+    const hashedPassword = await this.hashPassword(
+      resetPasswordDto.newPassword,
+    );
 
     // 更新密码
     await this.databaseService.user.update({
@@ -770,8 +825,8 @@ export class AuthService implements OnModuleInit {
     });
 
     return {
-      status: 'success',
-      message: '密码重置成功',
+      status: "success",
+      message: "密码重置成功",
     };
   }
 
@@ -779,14 +834,14 @@ export class AuthService implements OnModuleInit {
    * 用户登出 - 对齐PHP版本 user/logout
    */
   async logout(userId: number, authorization: string) {
-    const token = authorization?.replace('Bearer ', '');
+    const token = authorization?.replace("Bearer ", "");
     if (token) {
       await this.blacklistToken(token, userId);
     }
 
     return {
       success: true,
-      message: '登出成功',
+      message: "登出成功",
     };
   }
 
@@ -796,7 +851,7 @@ export class AuthService implements OnModuleInit {
   async refreshToken(refreshToken: string) {
     const payload = await this.verifyToken(refreshToken);
     if (!payload) {
-      throw new BadRequestException('刷新令牌无效');
+      throw new BadRequestException("刷新令牌无效");
     }
 
     // 生成新的访问令牌
@@ -818,17 +873,18 @@ export class AuthService implements OnModuleInit {
    */
   async verifyEmail(token: string) {
     // 查找验证令牌
-    const verificationToken = await this.databaseService.emailVerificationToken.findUnique({
-      where: { token },
-    });
+    const verificationToken =
+      await this.databaseService.emailVerificationToken.findUnique({
+        where: { token },
+      });
 
     if (!verificationToken) {
-      throw new BadRequestException('验证令牌无效');
+      throw new BadRequestException("验证令牌无效");
     }
 
     // 检查令牌是否过期
     if (verificationToken.expiresAt < new Date()) {
-      throw new BadRequestException('验证令牌已过期');
+      throw new BadRequestException("验证令牌已过期");
     }
 
     // 更新用户邮箱验证状态
@@ -843,8 +899,8 @@ export class AuthService implements OnModuleInit {
     });
 
     return {
-      status: 'success',
-      message: '邮箱验证成功',
+      status: "success",
+      message: "邮箱验证成功",
     };
   }
 
@@ -857,16 +913,16 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     // 检查是否已验证
     if (user.emailValidated === 1) {
-      throw new BadRequestException('邮箱已验证');
+      throw new BadRequestException("邮箱已验证");
     }
 
     // 生成验证令牌
-    const token = require('crypto').randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 24 * 3600 * 1000); // 24小时后过期
 
     // 保存验证令牌
@@ -883,8 +939,8 @@ export class AuthService implements OnModuleInit {
     console.log(`Email verification token for ${user.email}: ${token}`);
 
     return {
-      status: 'success',
-      message: '验证邮件已发送',
+      status: "success",
+      message: "验证邮件已发送",
       data: {
         token,
       },
@@ -896,7 +952,7 @@ export class AuthService implements OnModuleInit {
    */
   async checkUsername(username: string) {
     if (!username || username.length < 3) {
-      throw new BadRequestException('用户名长度至少3个字符');
+      throw new BadRequestException("用户名长度至少3个字符");
     }
 
     const existingUser = await this.databaseService.user.findFirst({
@@ -915,8 +971,8 @@ export class AuthService implements OnModuleInit {
    * 检查邮箱是否可用 - 对齐PHP版本 user/check-email
    */
   async checkEmail(email: string) {
-    if (!email || !email.includes('@')) {
-      throw new BadRequestException('邮箱格式不正确');
+    if (!email || !email.includes("@")) {
+      throw new BadRequestException("邮箱格式不正确");
     }
 
     const existingUser = await this.databaseService.user.findFirst({
@@ -936,7 +992,7 @@ export class AuthService implements OnModuleInit {
    */
   async checkMobile(mobile: string) {
     if (!mobile || mobile.length < 11) {
-      throw new BadRequestException('手机号格式不正确');
+      throw new BadRequestException("手机号格式不正确");
     }
 
     const existingUser = await this.databaseService.user.findFirst({
@@ -956,9 +1012,12 @@ export class AuthService implements OnModuleInit {
    */
   async bindMobile(userId: number, mobile: string, code: string) {
     // 验证短信验证码
-    const isValidCode = await this.verificationCodeService.validateMobileCode(mobile, code);
+    const isValidCode = await this.verificationCodeService.validateMobileCode(
+      mobile,
+      code,
+    );
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     const user = await this.databaseService.user.findUnique({
@@ -966,7 +1025,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     // 检查手机号是否已被其他用户使用
@@ -975,7 +1034,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (existingMobile) {
-      throw new BadRequestException('手机号已被其他用户使用');
+      throw new BadRequestException("手机号已被其他用户使用");
     }
 
     // 更新手机号
@@ -988,8 +1047,8 @@ export class AuthService implements OnModuleInit {
     });
 
     return {
-      status: 'success',
-      message: '手机号绑定成功',
+      status: "success",
+      message: "手机号绑定成功",
     };
   }
 
@@ -1002,20 +1061,20 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     await this.databaseService.user.update({
       where: { userId },
       data: {
-        mobile: '',
+        mobile: "",
         mobileValidated: 0,
       },
     });
 
     return {
-      status: 'success',
-      message: '手机号解绑成功',
+      status: "success",
+      message: "手机号解绑成功",
     };
   }
 
@@ -1024,13 +1083,13 @@ export class AuthService implements OnModuleInit {
    */
   async sendSmsCode(mobile: string, type: string) {
     // 如果是注册验证，检查手机号是否已存在
-    if (type === 'register') {
+    if (type === "register") {
       const existingUser = await this.databaseService.user.findFirst({
         where: { mobile },
       });
 
       if (existingUser) {
-        throw new ConflictException('手机号已注册');
+        throw new ConflictException("手机号已注册");
       }
     }
 
@@ -1038,8 +1097,8 @@ export class AuthService implements OnModuleInit {
     const code = await this.verificationCodeService.generateMobileCode(mobile);
 
     return {
-      status: 'success',
-      message: '短信验证码已发送',
+      status: "success",
+      message: "短信验证码已发送",
       data: {
         code, // 测试用，实际生产环境不返回验证码
       },
@@ -1051,26 +1110,29 @@ export class AuthService implements OnModuleInit {
    */
   async verifySmsCode(mobile: string, code: string, type: string) {
     // 验证短信验证码
-    const isValidCode = await this.verificationCodeService.validateMobileCode(mobile, code);
+    const isValidCode = await this.verificationCodeService.validateMobileCode(
+      mobile,
+      code,
+    );
 
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     // 如果是注册验证，检查用户是否已存在
-    if (type === 'register') {
+    if (type === "register") {
       const existingUser = await this.databaseService.user.findFirst({
         where: { mobile },
       });
 
       if (existingUser) {
-        throw new ConflictException('手机号已注册');
+        throw new ConflictException("手机号已注册");
       }
     }
 
     return {
-      status: 'success',
-      message: '验证码验证成功',
+      status: "success",
+      message: "验证码验证成功",
     };
   }
 
@@ -1081,16 +1143,17 @@ export class AuthService implements OnModuleInit {
     try {
       // 验证refresh token
       const decoded = this.jwtService.verify(refreshToken, {
-        secret: 'lyecs@2023',
+        secret: "lyecs@2023",
       });
 
       // 检查token是否在黑名单中
-      const blacklistedToken = await this.databaseService.blacklistedToken.findUnique({
-        where: { token: refreshToken },
-      });
+      const blacklistedToken =
+        await this.databaseService.blacklistedToken.findUnique({
+          where: { token: refreshToken },
+        });
 
       if (blacklistedToken) {
-        throw new UnauthorizedException('Refresh token已失效');
+        throw new UnauthorizedException("Refresh token已失效");
       }
 
       // 获取用户信息
@@ -1099,11 +1162,14 @@ export class AuthService implements OnModuleInit {
       });
 
       if (!user || user.status !== 1) {
-        throw new UnauthorizedException('用户不存在或已被禁用');
+        throw new UnauthorizedException("用户不存在或已被禁用");
       }
 
       // 生成新的access token (2小时过期)
-      const newToken = await this.generateTokenPhpCompatible(user.userId, 3600 * 2);
+      const newToken = await this.generateTokenPhpCompatible(
+        user.userId,
+        3600 * 2,
+      );
 
       // 将旧的refresh token加入黑名单
       await this.databaseService.blacklistedToken.create({
@@ -1127,7 +1193,7 @@ export class AuthService implements OnModuleInit {
         },
       };
     } catch (error) {
-      throw new UnauthorizedException('Refresh token无效或已过期');
+      throw new UnauthorizedException("Refresh token无效或已过期");
     }
   }
 
@@ -1140,11 +1206,11 @@ export class AuthService implements OnModuleInit {
       await this.blacklistToken(token, userId);
 
       return {
-        status: 'success',
-        message: '登出成功',
+        status: "success",
+        message: "登出成功",
       };
     } catch (error) {
-      throw new BadRequestException('登出失败');
+      throw new BadRequestException("登出失败");
     }
   }
 
@@ -1173,11 +1239,11 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new BadRequestException('用户不存在');
+      throw new BadRequestException("用户不存在");
     }
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         user_id: user.userId,
         username: user.username,
@@ -1207,7 +1273,7 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new BadRequestException('用户不存在');
+      throw new BadRequestException("用户不存在");
     }
 
     // 准备更新数据
@@ -1224,7 +1290,7 @@ export class AuthService implements OnModuleInit {
         });
 
         if (existingNickname) {
-          throw new ConflictException('昵称已被其他用户使用');
+          throw new ConflictException("昵称已被其他用户使用");
         }
       }
       updatePayload.nickname = updateData.nickname;
@@ -1241,7 +1307,7 @@ export class AuthService implements OnModuleInit {
         });
 
         if (existingEmail) {
-          throw new ConflictException('邮箱已被其他用户使用');
+          throw new ConflictException("邮箱已被其他用户使用");
         }
       }
       updatePayload.email = updateData.email;
@@ -1258,7 +1324,7 @@ export class AuthService implements OnModuleInit {
         });
 
         if (existingMobile) {
-          throw new ConflictException('手机号已被其他用户使用');
+          throw new ConflictException("手机号已被其他用户使用");
         }
       }
       updatePayload.mobile = updateData.mobile;
@@ -1278,7 +1344,7 @@ export class AuthService implements OnModuleInit {
 
     // 如果没有要更新的字段
     if (Object.keys(updatePayload).length === 0) {
-      throw new BadRequestException('没有提供要更新的字段');
+      throw new BadRequestException("没有提供要更新的字段");
     }
 
     // 更新用户信息
@@ -1288,8 +1354,8 @@ export class AuthService implements OnModuleInit {
     });
 
     return {
-      status: 'success',
-      message: '用户信息更新成功',
+      status: "success",
+      message: "用户信息更新成功",
       data: {
         user_id: updatedUser.userId,
         username: updatedUser.username,
@@ -1313,32 +1379,38 @@ export class AuthService implements OnModuleInit {
     });
 
     if (!user) {
-      throw new BadRequestException('用户不存在');
+      throw new BadRequestException("用户不存在");
     }
 
     // 验证当前密码
-    const isCurrentPasswordValid = await bcrypt.compare(changePasswordDto.currentPassword, user.password);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
     if (!isCurrentPasswordValid) {
-      throw new BadRequestException('当前密码错误');
+      throw new BadRequestException("当前密码错误");
     }
 
     // 验证新密码格式
     if (changePasswordDto.newPassword.length < 6) {
-      throw new BadRequestException('新密码长度不能少于6位');
+      throw new BadRequestException("新密码长度不能少于6位");
     }
 
     // 验证确认密码
     if (changePasswordDto.newPassword !== changePasswordDto.confirmPassword) {
-      throw new BadRequestException('新密码与确认密码不一致');
+      throw new BadRequestException("新密码与确认密码不一致");
     }
 
     // 检查新密码是否与当前密码相同
     if (changePasswordDto.currentPassword === changePasswordDto.newPassword) {
-      throw new BadRequestException('新密码不能与当前密码相同');
+      throw new BadRequestException("新密码不能与当前密码相同");
     }
 
     // 加密新密码
-    const hashedNewPassword = await bcrypt.hash(changePasswordDto.newPassword, 12);
+    const hashedNewPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      12,
+    );
 
     // 更新密码
     await this.databaseService.user.update({
@@ -1347,8 +1419,8 @@ export class AuthService implements OnModuleInit {
     });
 
     return {
-      status: 'success',
-      message: '密码修改成功',
+      status: "success",
+      message: "密码修改成功",
     };
   }
-} 
+}

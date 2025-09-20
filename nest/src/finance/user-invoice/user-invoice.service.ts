@@ -1,14 +1,18 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateUserInvoiceDto,
   UpdateUserInvoiceDto,
   UserInvoiceQueryDto,
   UserInvoiceStatus,
   TitleType,
-  UserInvoiceConfigDto
-} from './dto/user-invoice.dto';
+  UserInvoiceConfigDto,
+} from "./dto/user-invoice.dto";
 
 @Injectable()
 export class UserInvoiceService {
@@ -25,9 +29,9 @@ export class UserInvoiceService {
       page = 1,
       size = 15,
       status,
-      sortField = 'invoice_id',
-      sortOrder = 'desc',
-      userId
+      sortField = "invoice_id",
+      sortOrder = "desc",
+      userId,
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -106,7 +110,7 @@ export class UserInvoiceService {
     });
 
     if (!invoice) {
-      throw new NotFoundException('用户发票不存在');
+      throw new NotFoundException("用户发票不存在");
     }
 
     return invoice;
@@ -122,17 +126,17 @@ export class UserInvoiceService {
     const existingInvoice = await this.prisma.user_invoice.findFirst({
       where: {
         user_id: createDto.userId,
-        status: UserInvoiceStatus.APPROVED
+        status: UserInvoiceStatus.APPROVED,
       },
     });
 
     if (existingInvoice) {
-      throw new BadRequestException('用户已有有效的发票信息');
+      throw new BadRequestException("用户已有有效的发票信息");
     }
 
     // 企业发票必须提供纳税人识别号
     if (createDto.titleType === TitleType.COMPANY && !createDto.taxNumber) {
-      throw new BadRequestException('企业发票必须提供纳税人识别号');
+      throw new BadRequestException("企业发票必须提供纳税人识别号");
     }
 
     const invoice = await this.prisma.user_invoice.create({
@@ -140,13 +144,13 @@ export class UserInvoiceService {
         user_id: createDto.userId,
         title_type: createDto.titleType,
         title: createDto.title,
-        tax_number: createDto.taxNumber || '',
-        register_address: createDto.registerAddress || '',
-        register_phone: createDto.registerPhone || '',
-        bank_name: createDto.bankName || '',
-        bank_account: createDto.bankAccount || '',
+        tax_number: createDto.taxNumber || "",
+        register_address: createDto.registerAddress || "",
+        register_phone: createDto.registerPhone || "",
+        bank_name: createDto.bankName || "",
+        bank_account: createDto.bankAccount || "",
         status: createDto.status || UserInvoiceStatus.PENDING,
-        apply_remark: createDto.applyRemark || '',
+        apply_remark: createDto.applyRemark || "",
         add_time: Math.floor(Date.now() / 1000),
       },
       include: {
@@ -176,22 +180,25 @@ export class UserInvoiceService {
     });
 
     if (!invoice) {
-      throw new NotFoundException('用户发票不存在');
+      throw new NotFoundException("用户发票不存在");
     }
 
     // 拒绝必须填写原因
-    if (updateDto.status === UserInvoiceStatus.REJECTED && !updateDto.applyReply) {
-      throw new BadRequestException('请填写未通过原因');
+    if (
+      updateDto.status === UserInvoiceStatus.REJECTED &&
+      !updateDto.applyReply
+    ) {
+      throw new BadRequestException("请填写未通过原因");
     }
 
     // 企业发票必须提供纳税人识别号
     if (updateDto.titleType === TitleType.COMPANY && !updateDto.taxNumber) {
-      throw new BadRequestException('企业发票必须提供纳税人识别号');
+      throw new BadRequestException("企业发票必须提供纳税人识别号");
     }
 
     const updateData: any = {
       status: updateDto.status,
-      apply_reply: updateDto.applyReply || '',
+      apply_reply: updateDto.applyReply || "",
     };
 
     if (updateDto.titleType !== undefined) {
@@ -247,7 +254,7 @@ export class UserInvoiceService {
     });
 
     if (!invoice) {
-      throw new NotFoundException('用户发票不存在');
+      throw new NotFoundException("用户发票不存在");
     }
 
     await this.prisma.user_invoice.delete({
@@ -272,13 +279,13 @@ export class UserInvoiceService {
   async getConfig(): Promise<UserInvoiceConfigDto> {
     return {
       statusConfig: {
-        [UserInvoiceStatus.PENDING]: '待审核',
-        [UserInvoiceStatus.APPROVED]: '已通过',
-        [UserInvoiceStatus.REJECTED]: '已拒绝',
+        [UserInvoiceStatus.PENDING]: "待审核",
+        [UserInvoiceStatus.APPROVED]: "已通过",
+        [UserInvoiceStatus.REJECTED]: "已拒绝",
       },
       titleTypeConfig: {
-        [TitleType.PERSONAL]: '个人',
-        [TitleType.COMPANY]: '企业',
+        [TitleType.PERSONAL]: "个人",
+        [TitleType.COMPANY]: "企业",
       },
     };
   }
@@ -292,7 +299,7 @@ export class UserInvoiceService {
     const invoice = await this.prisma.user_invoice.findFirst({
       where: {
         user_id: userId,
-        status: UserInvoiceStatus.APPROVED
+        status: UserInvoiceStatus.APPROVED,
       },
     });
 

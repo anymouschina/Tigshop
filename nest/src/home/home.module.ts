@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { Module } from '@nestjs/common';
-import { HomeController } from './home.controller';
-import { HomeService } from './home.service';
-import { PrismaModule } from '../prisma/prisma.module';
+import { Module } from "@nestjs/common";
+import { HomeController } from "./home.controller";
+import { HomeService } from "./home.service";
+import { PrismaModule } from "../prisma/prisma.module";
 
 @Module({
   imports: [PrismaModule],

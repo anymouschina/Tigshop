@@ -1,21 +1,29 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service';
-import { CreateUserCompanyDto, UpdateUserCompanyDto, AuditUserCompanyDto } from './dto/user-company.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../database/prisma.service";
+import {
+  CreateUserCompanyDto,
+  UpdateUserCompanyDto,
+  AuditUserCompanyDto,
+} from "./dto/user-company.dto";
 
 @Injectable()
 export class UserCompanyService {
   constructor(private prisma: PrismaService) {}
 
-  async getFilterList(filter: any, includes: string[] = [], appends: string[] = []) {
+  async getFilterList(
+    filter: any,
+    includes: string[] = [],
+    appends: string[] = [],
+  ) {
     const { page, size, sort_field, sort_order, ...where } = filter;
 
     const skip = (page - 1) * size;
     const orderBy = { [sort_field]: sort_order };
 
     const include = {};
-    if (includes.includes('user')) {
-      include['user'] = true;
+    if (includes.includes("user")) {
+      include["user"] = true;
     }
 
     const records = await this.prisma.userCompany.findMany({
@@ -27,14 +35,14 @@ export class UserCompanyService {
     });
 
     // 添加附加字段
-    const recordsWithAppends = records.map(record => {
+    const recordsWithAppends = records.map((record) => {
       const result = { ...record };
 
-      if (appends.includes('status_text')) {
-        result['status_text'] = this.getStatusText(record.status);
+      if (appends.includes("status_text")) {
+        result["status_text"] = this.getStatusText(record.status);
       }
-      if (appends.includes('type_text')) {
-        result['type_text'] = this.getTypeText(record.type);
+      if (appends.includes("type_text")) {
+        result["type_text"] = this.getTypeText(record.type);
       }
 
       return result;
@@ -57,7 +65,7 @@ export class UserCompanyService {
     });
 
     if (!item) {
-      throw new Error('企业认证不存在');
+      throw new Error("企业认证不存在");
     }
 
     return {
@@ -115,19 +123,19 @@ export class UserCompanyService {
 
   private getStatusText(status: number): string {
     const statusMap = {
-      0: '待审核',
-      1: '已通过',
-      2: '已拒绝',
+      0: "待审核",
+      1: "已通过",
+      2: "已拒绝",
     };
-    return statusMap[status] || '未知';
+    return statusMap[status] || "未知";
   }
 
   private getTypeText(type: number): string {
     const typeMap = {
-      0: '企业',
-      1: '个体工商户',
-      2: '其他',
+      0: "企业",
+      1: "个体工商户",
+      2: "其他",
     };
-    return typeMap[type] || '未知';
+    return typeMap[type] || "未知";
   }
 }

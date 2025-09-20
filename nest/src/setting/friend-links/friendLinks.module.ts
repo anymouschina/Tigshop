@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { Module } from '@nestjs/common';
-import { FriendLinksService } from './friendLinks.service';
-import { FriendLinksController } from './friendLinks.controller';
-import { DatabaseModule } from '../../database/database.module';
+import { Module } from "@nestjs/common";
+import { FriendLinksService } from "./friendLinks.service";
+import { FriendLinksController } from "./friendLinks.controller";
+import { DatabaseModule } from "../../database/database.module";
 
 @Module({
   imports: [DatabaseModule],

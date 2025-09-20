@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   OauthQueryDto,
   OauthDetailDto,
@@ -9,8 +9,8 @@ import {
   DeleteOauthDto,
   BatchDeleteOauthDto,
   OAUTH_TYPE,
-  OAUTH_STATUS
-} from './oauth.dto';
+  OAUTH_STATUS,
+} from "./oauth.dto";
 
 @Injectable()
 export class OauthService {
@@ -18,13 +18,13 @@ export class OauthService {
 
   async findAll(query: OauthQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       type = -1,
       status = -1,
       page = 1,
       size = 15,
-      sort_field = 'id',
-      sort_order = 'desc',
+      sort_field = "id",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -75,7 +75,7 @@ export class OauthService {
     });
 
     if (!oauth) {
-      throw new Error('OAuth配置不存在');
+      throw new Error("OAuth配置不存在");
     }
 
     return oauth;
@@ -87,7 +87,7 @@ export class OauthService {
     });
 
     if (existingOauth) {
-      throw new Error('应用ID已存在');
+      throw new Error("应用ID已存在");
     }
 
     const oauth = await this.prisma.oauth.create({
@@ -107,7 +107,7 @@ export class OauthService {
     });
 
     if (!oauth) {
-      throw new Error('OAuth配置不存在');
+      throw new Error("OAuth配置不存在");
     }
 
     if (data.app_id && data.app_id !== oauth.app_id) {
@@ -116,7 +116,7 @@ export class OauthService {
       });
 
       if (existingOauth) {
-        throw new Error('应用ID已存在');
+        throw new Error("应用ID已存在");
       }
     }
 
@@ -141,7 +141,7 @@ export class OauthService {
     });
 
     if (!oauth) {
-      throw new Error('OAuth配置不存在');
+      throw new Error("OAuth配置不存在");
     }
 
     await this.prisma.oauth.delete({
@@ -169,11 +169,11 @@ export class OauthService {
     });
 
     if (!oauth) {
-      throw new Error('OAuth配置不存在');
+      throw new Error("OAuth配置不存在");
     }
 
     if (!Object.values(OAUTH_STATUS).includes(status)) {
-      throw new Error('无效的状态值');
+      throw new Error("无效的状态值");
     }
 
     const updatedOauth = await this.prisma.oauth.update({
@@ -186,7 +186,7 @@ export class OauthService {
 
   async getOauthStats() {
     const stats = await this.prisma.oauth.groupBy({
-      by: ['type', 'status'],
+      by: ["type", "status"],
       _count: {
         _all: true,
       },
@@ -195,7 +195,7 @@ export class OauthService {
     const typeStats = {};
     const statusStats = {};
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       if (!typeStats[stat.type]) {
         typeStats[stat.type] = 0;
       }

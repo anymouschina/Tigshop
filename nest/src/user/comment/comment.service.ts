@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class CommentService {
@@ -41,7 +41,12 @@ export class CommentService {
     }
 
     const [comments, total] = await Promise.all([
-      (this.prisma as any).comment.findMany({ where, orderBy: { order_id: 'desc' }, skip, take: size }),
+      (this.prisma as any).comment.findMany({
+        where,
+        orderBy: { order_id: "desc" },
+        skip,
+        take: size,
+      }),
       (this.prisma as any).comment.count({ where }),
     ]);
 
@@ -63,7 +68,12 @@ export class CommentService {
     const skip = (page - 1) * size;
 
     const [comments, total] = await Promise.all([
-      (this.prisma as any).comment.findMany({ where: { user_id: userId }, orderBy: { comment_id: 'desc' }, skip, take: size }),
+      (this.prisma as any).comment.findMany({
+        where: { user_id: userId },
+        orderBy: { comment_id: "desc" },
+        skip,
+        take: size,
+      }),
       (this.prisma as any).comment.count({ where: { user_id: userId } }),
     ]);
 
@@ -92,7 +102,7 @@ export class CommentService {
     });
 
     if (!orderItem) {
-      throw new HttpException('订单项不存在或已评价', HttpStatus.BAD_REQUEST);
+      throw new HttpException("订单项不存在或已评价", HttpStatus.BAD_REQUEST);
     }
 
     // 创建评论
@@ -127,10 +137,12 @@ export class CommentService {
    * 获取评论详情
    */
   async getCommentDetail(commentId: number) {
-    const comment = await (this.prisma as any).comment.findUnique({ where: { comment_id: commentId } });
+    const comment = await (this.prisma as any).comment.findUnique({
+      where: { comment_id: commentId },
+    });
 
     if (!comment) {
-      throw new HttpException('评论不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("评论不存在", HttpStatus.NOT_FOUND);
     }
 
     return comment;
@@ -153,7 +165,10 @@ export class CommentService {
       return;
     }
 
-    const totalRating = comments.reduce((sum, comment) => sum + comment.comment_rank, 0);
+    const totalRating = comments.reduce(
+      (sum, comment) => sum + comment.comment_rank,
+      0,
+    );
     const averageRating = totalRating / comments.length;
 
     // 更新商品评分

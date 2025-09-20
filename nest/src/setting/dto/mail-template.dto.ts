@@ -1,10 +1,19 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsEnum } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsEnum,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export enum MailTemplateType {
-  TEMPLATE = 'template',
-  MAGAZINE = 'magazine',
+  TEMPLATE = "template",
+  MAGAZINE = "magazine",
 }
 
 export class MailTemplateQueryDto {
@@ -26,11 +35,11 @@ export class MailTemplateQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'template_id';
+  sort_field?: string = "template_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @IsString()

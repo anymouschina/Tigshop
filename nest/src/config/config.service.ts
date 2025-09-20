@@ -1,32 +1,32 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { ConfigService as NestConfigService } from '@nestjs/config';
+import { Injectable } from "@nestjs/common";
+import { ConfigService as NestConfigService } from "@nestjs/config";
 
 @Injectable()
 export class AppConfigService {
   constructor(private configService: NestConfigService) {}
 
   get port(): number {
-    return this.configService.get<number>('port');
+    return this.configService.get<number>("port");
   }
 
   get databaseUrl(): string {
-    return this.configService.get<string>('database.url');
+    return this.configService.get<string>("database.url");
   }
 
   get wechatAppId(): string {
-    return this.configService.get<string>('wechat.appId');
+    return this.configService.get<string>("wechat.appId");
   }
 
   get wechatAppSecret(): string {
-    return this.configService.get<string>('wechat.appSecret');
+    return this.configService.get<string>("wechat.appSecret");
   }
-  
+
   get jwtSecret(): string {
-    return this.configService.get<string>('jwt.secret');
+    return this.configService.get<string>("jwt.secret");
   }
-  
+
   get jwtExpiresIn(): string {
-    return this.configService.get<string>('jwt.expiresIn');
+    return this.configService.get<string>("jwt.expiresIn");
   }
-} 
+}

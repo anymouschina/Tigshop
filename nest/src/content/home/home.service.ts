@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateHomeDto,
   UpdateHomeDto,
   HomeQueryDto,
   HomeStatus,
-  HomeConfigDto
-} from './dto/home.dto';
+  HomeConfigDto,
+} from "./dto/home.dto";
 
 @Injectable()
 export class HomeService {
@@ -19,8 +23,8 @@ export class HomeService {
       page = 1,
       size = 15,
       status,
-      sortField = 'home_id',
-      sortOrder = 'desc'
+      sortField = "home_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -33,7 +37,7 @@ export class HomeService {
         { name: { contains: keyword } },
         { type: { contains: keyword } },
         { content: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -69,15 +73,13 @@ export class HomeService {
     });
 
     if (!item) {
-      throw new NotFoundException('首页不存在');
+      throw new NotFoundException("首页不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateHomeDto) {
-    
-
     const item = await this.prisma.home.create({
       data: {
         name: createDto.name,
@@ -97,7 +99,7 @@ export class HomeService {
     });
 
     if (!item) {
-      throw new NotFoundException('首页不存在');
+      throw new NotFoundException("首页不存在");
     }
 
     const updateData: any = {};
@@ -128,7 +130,7 @@ export class HomeService {
     });
 
     if (!item) {
-      throw new NotFoundException('首页不存在');
+      throw new NotFoundException("首页不存在");
     }
 
     await this.prisma.home.delete({
@@ -145,8 +147,8 @@ export class HomeService {
   async getConfig(): Promise<HomeConfigDto> {
     return {
       statusConfig: {
-        [HomeStatus.DISABLED]: '禁用',
-        [HomeStatus.ENABLED]: '启用'
+        [HomeStatus.DISABLED]: "禁用",
+        [HomeStatus.ENABLED]: "启用",
       },
     };
   }

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class HomeService {
@@ -112,20 +112,30 @@ export class HomeService {
     const { decorate_id = 0, module_index, page = 1, preview_id = 0 } = query;
 
     if (preview_id > 0) {
-      return this.getPreviewDecorateModuleData(decorate_id, module_index, { page, size: 10 });
+      return this.getPreviewDecorateModuleData(decorate_id, module_index, {
+        page,
+        size: 10,
+      });
     } else {
-      return this.getDecorateModuleData(decorate_id, module_index, { page, size: 10 });
+      return this.getDecorateModuleData(decorate_id, module_index, {
+        page,
+        size: 10,
+      });
     }
   }
 
   /**
    * 获取预览装修模块数据
    */
-  private async getPreviewDecorateModuleData(decorateId: number, moduleIndex: string, pagination: { page: number; size: number }) {
+  private async getPreviewDecorateModuleData(
+    decorateId: number,
+    moduleIndex: string,
+    pagination: { page: number; size: number },
+  ) {
     // 模拟获取预览模块数据
     return {
-      module_name: '推荐商品',
-      module_type: 'product',
+      module_name: "推荐商品",
+      module_type: "product",
       data: this.getMockProductList(pagination.page, pagination.size),
       pagination: {
         current: pagination.page,
@@ -138,11 +148,15 @@ export class HomeService {
   /**
    * 获取装修模块数据
    */
-  private async getDecorateModuleData(decorateId: number, moduleIndex: string, pagination: { page: number; size: number }) {
+  private async getDecorateModuleData(
+    decorateId: number,
+    moduleIndex: string,
+    pagination: { page: number; size: number },
+  ) {
     // 模拟获取模块数据
     return {
-      module_name: '推荐商品',
-      module_type: 'product',
+      module_name: "推荐商品",
+      module_type: "product",
       data: this.getMockProductList(pagination.page, pagination.size),
       pagination: {
         current: pagination.page,
@@ -186,14 +200,12 @@ export class HomeService {
 
     const coupons = await this.prisma.coupon.findMany({
       where,
-      orderBy: [
-        { add_time: 'desc' },
-      ],
+      orderBy: [{ add_time: "desc" }],
       take: 5,
     });
 
     // 格式化金额
-    return coupons.map(coupon => ({
+    return coupons.map((coupon) => ({
       ...coupon,
       coupon_money: this.formatAmount(coupon.coupon_money || 0),
       coupon_discount: this.formatAmount(coupon.coupon_discount || 0),
@@ -206,9 +218,7 @@ export class HomeService {
   async getMobileCatNav() {
     const navItems = await this.prisma.mobileCatNav.findMany({
       where: { is_show: 1 },
-      orderBy: [
-        { mobile_cat_nav_id: 'desc' },
-      ],
+      orderBy: [{ mobile_cat_nav_id: "desc" }],
     });
 
     return navItems;
@@ -244,31 +254,31 @@ export class HomeService {
     const serviceType = 1; // 默认易客服
     const openType = 1;
 
-    let url = '';
-    let corpId = '';
+    let url = "";
+    let corpId = "";
 
     switch (serviceType) {
       case 0:
         break;
       case 1:
         url = `https://yzf.qq.com/xvYW0uAK1?sign=mock_sign`;
-        corpId = 'mock_corp_id';
+        corpId = "mock_corp_id";
         break;
       case 2:
         url = `https://work.weixin.qq.com/kfid/mock_id`;
         openType = 0;
-        corpId = 'mock_corp_id';
+        corpId = "mock_corp_id";
         break;
       case 3:
-        url = 'mock_kefu_code';
+        url = "mock_kefu_code";
         break;
       case 4:
-        url = '';
+        url = "";
         break;
     }
 
     return {
-      h5_domain: 'https://m.example.com',
+      h5_domain: "https://m.example.com",
       corp_id: corpId,
       url,
       open_type: openType,
@@ -282,9 +292,7 @@ export class HomeService {
    */
   async getFriendLinks() {
     const links = await this.prisma.friendLinks.findMany({
-      orderBy: [
-        { sort_order: 'desc' },
-      ],
+      orderBy: [{ sort_order: "desc" }],
       take: 20,
     });
 
@@ -304,26 +312,26 @@ export class HomeService {
   private getMockModuleList() {
     return [
       {
-        module_name: '轮播图',
-        module_type: 'banner',
+        module_name: "轮播图",
+        module_type: "banner",
         data: [
-          { image: '/images/banner1.jpg', url: '/product/1' },
-          { image: '/images/banner2.jpg', url: '/product/2' },
+          { image: "/images/banner1.jpg", url: "/product/1" },
+          { image: "/images/banner2.jpg", url: "/product/2" },
         ],
       },
       {
-        module_name: '导航菜单',
-        module_type: 'nav',
+        module_name: "导航菜单",
+        module_type: "nav",
         data: [
-          { name: '首页', icon: 'home', url: '/' },
-          { name: '分类', icon: 'category', url: '/category' },
-          { name: '购物车', icon: 'cart', url: '/cart' },
-          { name: '我的', icon: 'user', url: '/user' },
+          { name: "首页", icon: "home", url: "/" },
+          { name: "分类", icon: "category", url: "/category" },
+          { name: "购物车", icon: "cart", url: "/cart" },
+          { name: "我的", icon: "user", url: "/user" },
         ],
       },
       {
-        module_name: '推荐商品',
-        module_type: 'product',
+        module_name: "推荐商品",
+        module_type: "product",
         data: this.getMockProductList(1, 8),
       },
     ];
@@ -334,9 +342,9 @@ export class HomeService {
    */
   private getMockPageModule() {
     return {
-      title: '首页',
-      keywords: '商城,购物,商品',
-      description: '欢迎访问我们的商城',
+      title: "首页",
+      keywords: "商城,购物,商品",
+      description: "欢迎访问我们的商城",
     };
   }
 
@@ -376,8 +384,12 @@ export class HomeService {
         product_image: `/images/seckill${start + i + 1}.jpg`,
         seckill_price: (Math.random() * 100 + 1).toFixed(2),
         original_price: (Math.random() * 200 + 50).toFixed(2),
-        start_time: new Date(Date.now() + Math.random() * 86400000).toISOString(),
-        end_time: new Date(Date.now() + Math.random() * 86400000 + 86400000).toISOString(),
+        start_time: new Date(
+          Date.now() + Math.random() * 86400000,
+        ).toISOString(),
+        end_time: new Date(
+          Date.now() + Math.random() * 86400000 + 86400000,
+        ).toISOString(),
         stock_count: Math.floor(Math.random() * 100) + 1,
         sold_count: Math.floor(Math.random() * 50),
       });

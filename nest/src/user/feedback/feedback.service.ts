@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/services/prisma.service';
-import { CreateFeedbackDto, UpdateFeedbackDto } from './dto/feedback.dto';
-import { ResponseUtil } from '../../../common/utils/response.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../common/services/prisma.service";
+import { CreateFeedbackDto, UpdateFeedbackDto } from "./dto/feedback.dto";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class FeedbackService {
@@ -13,16 +13,14 @@ export class FeedbackService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     const orderBy: any = {};
     if (sort_field) {
-      orderBy[sort_field] = sort_order || 'desc';
+      orderBy[sort_field] = sort_order || "desc";
     } else {
-      orderBy.id = 'desc';
+      orderBy.id = "desc";
     }
 
     const skip = (page - 1) * size;
@@ -40,9 +38,7 @@ export class FeedbackService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     return await this.prisma.feedback.count({ where });
@@ -57,17 +53,17 @@ export class FeedbackService {
   async createFeedback(createData: CreateFeedbackDto) {
     try {
       const result = await this.prisma.feedback.create({
-        data: ({
+        data: {
           // Map minimal required fields; other DTO fields are admin-only meta
-          content: createData.description || createData.name || '',
+          content: createData.description || createData.name || "",
           add_time: Math.floor(Date.now() / 1000),
           status: createData.status ? 1 : 0,
           title: createData.name,
-        } as any),
+        } as any,
       });
       return result;
     } catch (error) {
-      console.error('创建用户反馈失败:', error);
+      console.error("创建用户反馈失败:", error);
       return null;
     }
   }
@@ -76,15 +72,20 @@ export class FeedbackService {
     try {
       const result = await this.prisma.feedback.update({
         where: { id },
-        data: ({
+        data: {
           content: updateData.description,
-          status: updateData.status === undefined ? undefined : (updateData.status ? 1 : 0),
+          status:
+            updateData.status === undefined
+              ? undefined
+              : updateData.status
+                ? 1
+                : 0,
           title: updateData.name,
-        } as any),
+        } as any,
       });
       return result;
     } catch (error) {
-      console.error('更新用户反馈失败:', error);
+      console.error("更新用户反馈失败:", error);
       return null;
     }
   }
@@ -96,7 +97,7 @@ export class FeedbackService {
       });
       return true;
     } catch (error) {
-      console.error('删除用户反馈失败:', error);
+      console.error("删除用户反馈失败:", error);
       return false;
     }
   }
@@ -112,7 +113,7 @@ export class FeedbackService {
       });
       return true;
     } catch (error) {
-      console.error('批量删除用户反馈失败:', error);
+      console.error("批量删除用户反馈失败:", error);
       return false;
     }
   }
@@ -134,7 +135,7 @@ export class FeedbackService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error('获取用户反馈统计失败:', error);
+      console.error("获取用户反馈统计失败:", error);
       return {
         total: 0,
         today_count: 0,

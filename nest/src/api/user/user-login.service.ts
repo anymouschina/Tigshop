@@ -1,8 +1,12 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
+import * as bcrypt from "bcrypt";
+import { JwtService } from "@nestjs/jwt";
 import {
   LoginDto,
   SendMobileCodeDto,
@@ -14,7 +18,7 @@ import {
   GetWxLoginUrlDto,
   WxLoginInfoDto,
   SendEmailCodeDto,
-} from './dto/user-login.dto';
+} from "./dto/user-login.dto";
 
 @Injectable()
 export class UserLoginService {
@@ -29,24 +33,24 @@ export class UserLoginService {
       wechat_login: 1,
       mobile_login: 1,
       email_login: 1,
-      register_type: ['mobile', 'email'],
+      register_type: ["mobile", "email"],
       captcha_enabled: 1,
     };
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: settings,
     };
   }
 
   async login(loginDto: LoginDto) {
-    const { username, password, login_type = 'username', code } = loginDto;
+    const { username, password, login_type = "username", code } = loginDto;
 
     let user;
 
     switch (login_type) {
-      case 'username':
+      case "username":
         user = await this.prisma.user.findFirst({
           where: {
             OR: [
@@ -59,10 +63,10 @@ export class UserLoginService {
         });
         break;
 
-      case 'mobile':
+      case "mobile":
         // 手机验证码登录
         if (!code) {
-          throw new BadRequestException('请输入验证码');
+          throw new BadRequestException("请输入验证码");
         }
         user = await this.prisma.user.findFirst({
           where: {
@@ -72,10 +76,10 @@ export class UserLoginService {
         });
         break;
 
-      case 'email':
+      case "email":
         // 邮箱验证码登录
         if (!code) {
-          throw new BadRequestException('请输入验证码');
+          throw new BadRequestException("请输入验证码");
         }
         user = await this.prisma.user.findFirst({
           where: {
@@ -86,30 +90,30 @@ export class UserLoginService {
         break;
 
       default:
-        throw new BadRequestException('不支持的登录方式');
+        throw new BadRequestException("不支持的登录方式");
     }
 
     if (!user) {
-      throw new UnauthorizedException('用户不存在或已被禁用');
+      throw new UnauthorizedException("用户不存在或已被禁用");
     }
 
     // 密码验证
-    if (login_type === 'username') {
+    if (login_type === "username") {
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        throw new UnauthorizedException('密码错误');
+        throw new UnauthorizedException("密码错误");
       }
     } else {
       // 验证码验证（这里需要实现验证码验证逻辑）
       const isValidCode = await this.verifyCode(username, code, login_type);
       if (!isValidCode) {
-        throw new UnauthorizedException('验证码错误或已过期');
+        throw new UnauthorizedException("验证码错误或已过期");
       }
     }
 
     // 检查用户状态
     if (user.status !== 1) {
-      throw new UnauthorizedException('用户账号已被禁用');
+      throw new UnauthorizedException("用户账号已被禁用");
     }
 
     // 生成JWT token
@@ -121,7 +125,7 @@ export class UserLoginService {
       where: { user_id: user.user_id },
       data: {
         last_login_time: Math.floor(Date.now() / 1000),
-        last_login_ip: '', // 可以从request中获取
+        last_login_ip: "", // 可以从request中获取
       },
     });
 
@@ -130,7 +134,7 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '登录成功',
+      message: "登录成功",
       data: {
         token,
         user: userWithoutPassword,
@@ -141,7 +145,7 @@ export class UserLoginService {
   async sendMobileCode(mobile: string, type: string) {
     // 验证手机号格式
     if (!this.validateMobile(mobile)) {
-      throw new BadRequestException('手机号格式不正确');
+      throw new BadRequestException("手机号格式不正确");
     }
 
     // 检查发送频率限制
@@ -158,14 +162,14 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '验证码发送成功',
+      message: "验证码发送成功",
       data: null,
     };
   }
 
   async checkMobile(mobile: string) {
     if (!this.validateMobile(mobile)) {
-      throw new BadRequestException('手机号格式不正确');
+      throw new BadRequestException("手机号格式不正确");
     }
 
     const user = await this.prisma.user.findFirst({
@@ -174,7 +178,7 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '检查成功',
+      message: "检查成功",
       data: {
         exists: !!user,
       },
@@ -183,7 +187,7 @@ export class UserLoginService {
 
   async checkEmail(email: string) {
     if (!this.validateEmail(email)) {
-      throw new BadRequestException('邮箱格式不正确');
+      throw new BadRequestException("邮箱格式不正确");
     }
 
     const user = await this.prisma.user.findFirst({
@@ -192,7 +196,7 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '检查成功',
+      message: "检查成功",
       data: {
         exists: !!user,
       },
@@ -203,13 +207,13 @@ export class UserLoginService {
     const { mobile, code, new_password, confirm_password } = body;
 
     if (new_password !== confirm_password) {
-      throw new BadRequestException('两次密码输入不一致');
+      throw new BadRequestException("两次密码输入不一致");
     }
 
     // 验证手机号和验证码
-    const isValidCode = await this.verifyCode(mobile, code, 'forget_password');
+    const isValidCode = await this.verifyCode(mobile, code, "forget_password");
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     const user = await this.prisma.user.findFirst({
@@ -217,7 +221,7 @@ export class UserLoginService {
     });
 
     if (!user) {
-      throw new BadRequestException('用户不存在');
+      throw new BadRequestException("用户不存在");
     }
 
     // 加密新密码
@@ -231,7 +235,7 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '密码重置成功',
+      message: "密码重置成功",
       data: null,
     };
   }
@@ -239,15 +243,17 @@ export class UserLoginService {
   async getWechatLoginUrl(redirectUrl?: string) {
     // 生成微信登录URL
     const appId = process.env.WECHAT_APP_ID;
-    const redirectUri = encodeURIComponent(redirectUrl || process.env.WECHAT_REDIRECT_URI);
+    const redirectUri = encodeURIComponent(
+      redirectUrl || process.env.WECHAT_REDIRECT_URI,
+    );
     const state = Math.random().toString(36).substr(2);
-    const scope = 'snsapi_login';
+    const scope = "snsapi_login";
 
     const url = `https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}#wechat_redirect`;
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         url,
         state,
@@ -261,7 +267,7 @@ export class UserLoginService {
     const userInfo = await this.getWechatUserInfo(accessToken);
 
     // 检查是否已绑定用户
-    let user = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: { wechat_openid: userInfo.openid, is_delete: 0 },
     });
 
@@ -269,7 +275,7 @@ export class UserLoginService {
       // 未绑定用户，返回微信信息供前端处理
       return {
         code: 200,
-        message: '获取成功',
+        message: "获取成功",
         data: {
           need_bind: true,
           wechat_info: userInfo,
@@ -285,7 +291,7 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '登录成功',
+      message: "登录成功",
       data: {
         token,
         user: userWithoutPassword,
@@ -297,9 +303,9 @@ export class UserLoginService {
     const { wechat_info, mobile, code } = body;
 
     // 验证手机验证码
-    const isValidCode = await this.verifyCode(mobile, code, 'bind_mobile');
+    const isValidCode = await this.verifyCode(mobile, code, "bind_mobile");
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     // 检查手机号是否已存在
@@ -319,14 +325,17 @@ export class UserLoginService {
       });
 
       // 生成JWT token
-      const payload = { userId: existingUser.user_id, username: existingUser.username };
+      const payload = {
+        userId: existingUser.user_id,
+        username: existingUser.username,
+      };
       const token = this.jwtService.sign(payload);
 
       const { password: _, ...userWithoutPassword } = existingUser;
 
       return {
         code: 200,
-        message: '绑定成功',
+        message: "绑定成功",
         data: {
           token,
           user: userWithoutPassword,
@@ -341,7 +350,7 @@ export class UserLoginService {
           wechat_openid: wechat_info.openid,
           wechat_nickname: wechat_info.nickname,
           wechat_headimgurl: wechat_info.headimgurl,
-          password: '', // 微信用户初始密码为空
+          password: "", // 微信用户初始密码为空
           add_time: Math.floor(Date.now() / 1000),
           status: 1,
         },
@@ -355,7 +364,7 @@ export class UserLoginService {
 
       return {
         code: 200,
-        message: '注册并绑定成功',
+        message: "注册并绑定成功",
         data: {
           token,
           user: userWithoutPassword,
@@ -381,7 +390,7 @@ export class UserLoginService {
     });
 
     if (existingUser) {
-      throw new BadRequestException('该微信账号已被其他用户绑定');
+      throw new BadRequestException("该微信账号已被其他用户绑定");
     }
 
     // 绑定微信
@@ -396,7 +405,7 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '绑定成功',
+      message: "绑定成功",
       data: null,
     };
   }
@@ -413,7 +422,7 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '解绑成功',
+      message: "解绑成功",
       data: null,
     };
   }
@@ -431,27 +440,27 @@ export class UserLoginService {
 
   async getWechatMessage(body: any) {
     // 处理微信推送消息
-    console.log('收到微信消息:', body);
+    console.log("收到微信消息:", body);
 
-    return 'success';
+    return "success";
   }
 
   async wechatEvent(body: any) {
     // 处理微信用户操作事件
-    console.log('收到微信事件:', body);
+    console.log("收到微信事件:", body);
 
-    return 'success';
+    return "success";
   }
 
   async getUserMobile(body: any) {
     // 获取手机号（微信小程序）
-    console.log('获取手机号:', body);
+    console.log("获取手机号:", body);
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
-        mobile: '13800138000', // 示例数据
+        mobile: "13800138000", // 示例数据
       },
     };
   }
@@ -464,7 +473,7 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '更新成功',
+      message: "更新成功",
       data: null,
     };
   }
@@ -475,20 +484,20 @@ export class UserLoginService {
       appId: process.env.WECHAT_APP_ID,
       timestamp: Math.floor(Date.now() / 1000),
       nonceStr: Math.random().toString(36).substr(2),
-      signature: '', // 需要生成签名
+      signature: "", // 需要生成签名
       url: url,
     };
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: config,
     };
   }
 
   async sendEmailCode(email: string, type: string) {
     if (!this.validateEmail(email)) {
-      throw new BadRequestException('邮箱格式不正确');
+      throw new BadRequestException("邮箱格式不正确");
     }
 
     // 检查发送频率限制
@@ -505,7 +514,7 @@ export class UserLoginService {
 
     return {
       code: 200,
-      message: '验证码发送成功',
+      message: "验证码发送成功",
       data: null,
     };
   }
@@ -543,7 +552,11 @@ export class UserLoginService {
     console.log(`保存验证码: ${account} - ${type} - ${code}`);
   }
 
-  private async verifyCode(account: string, code: string, type: string): Promise<boolean> {
+  private async verifyCode(
+    account: string,
+    code: string,
+    type: string,
+  ): Promise<boolean> {
     // 验证验证码
     console.log(`验证验证码: ${account} - ${type} - ${code}`);
     return true; // 示例实现
@@ -552,16 +565,16 @@ export class UserLoginService {
   private async getWechatAccessToken(code: string): Promise<string> {
     // 获取微信access_token
     console.log(`获取微信access_token: ${code}`);
-    return 'mock_access_token';
+    return "mock_access_token";
   }
 
   private async getWechatUserInfo(accessToken: string): Promise<any> {
     // 获取微信用户信息
     console.log(`获取微信用户信息: ${accessToken}`);
     return {
-      openid: 'mock_openid',
-      nickname: '测试用户',
-      headimgurl: 'https://example.com/avatar.jpg',
+      openid: "mock_openid",
+      nickname: "测试用户",
+      headimgurl: "https://example.com/avatar.jpg",
     };
   }
 }

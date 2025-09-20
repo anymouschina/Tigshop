@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { MailTemplateType } from './dto/mail-template.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { MailTemplateType } from "./dto/mail-template.dto";
 
 @Injectable()
 export class MailTemplateService {
@@ -85,7 +85,7 @@ export class MailTemplateService {
       };
     }
     return {
-      template_id: 'desc',
+      template_id: "desc",
     };
   }
 
@@ -95,7 +95,7 @@ export class MailTemplateService {
     });
 
     if (!result) {
-      throw new Error('邮件模板不存在');
+      throw new Error("邮件模板不存在");
     }
 
     return result;
@@ -103,18 +103,18 @@ export class MailTemplateService {
 
   async create(data: any): Promise<any> {
     // 验证模板代码不能为空
-    if (!data.template_code || data.template_code.trim() === '') {
-      throw new Error('模板代码不能为空');
+    if (!data.template_code || data.template_code.trim() === "") {
+      throw new Error("模板代码不能为空");
     }
 
     // 验证模板主题不能为空
-    if (!data.template_subject || data.template_subject.trim() === '') {
-      throw new Error('模板主题不能为空');
+    if (!data.template_subject || data.template_subject.trim() === "") {
+      throw new Error("模板主题不能为空");
     }
 
     // 验证模板内容不能为空
-    if (!data.template_content || data.template_content.trim() === '') {
-      throw new Error('模板内容不能为空');
+    if (!data.template_content || data.template_content.trim() === "") {
+      throw new Error("模板内容不能为空");
     }
 
     // 检查模板代码是否已存在
@@ -125,7 +125,7 @@ export class MailTemplateService {
     });
 
     if (existingTemplate) {
-      throw new Error('模板代码已存在');
+      throw new Error("模板代码已存在");
     }
 
     const result = await this.prisma.mailTemplates.create({
@@ -149,26 +149,38 @@ export class MailTemplateService {
     });
 
     if (!mailTemplate) {
-      throw new Error('邮件模板不存在');
+      throw new Error("邮件模板不存在");
     }
 
     // 验证模板代码不能为空
-    if (data.template_code !== undefined && (!data.template_code || data.template_code.trim() === '')) {
-      throw new Error('模板代码不能为空');
+    if (
+      data.template_code !== undefined &&
+      (!data.template_code || data.template_code.trim() === "")
+    ) {
+      throw new Error("模板代码不能为空");
     }
 
     // 验证模板主题不能为空
-    if (data.template_subject !== undefined && (!data.template_subject || data.template_subject.trim() === '')) {
-      throw new Error('模板主题不能为空');
+    if (
+      data.template_subject !== undefined &&
+      (!data.template_subject || data.template_subject.trim() === "")
+    ) {
+      throw new Error("模板主题不能为空");
     }
 
     // 验证模板内容不能为空
-    if (data.template_content !== undefined && (!data.template_content || data.template_content.trim() === '')) {
-      throw new Error('模板内容不能为空');
+    if (
+      data.template_content !== undefined &&
+      (!data.template_content || data.template_content.trim() === "")
+    ) {
+      throw new Error("模板内容不能为空");
     }
 
     // 检查模板代码是否已存在（排除当前模板）
-    if (data.template_code && data.template_code !== mailTemplate.template_code) {
+    if (
+      data.template_code &&
+      data.template_code !== mailTemplate.template_code
+    ) {
       const existingTemplate = await this.prisma.mailTemplates.findFirst({
         where: {
           template_code: data.template_code,
@@ -177,17 +189,20 @@ export class MailTemplateService {
       });
 
       if (existingTemplate) {
-        throw new Error('模板代码已存在');
+        throw new Error("模板代码已存在");
       }
     }
 
     const updateData: any = {
       last_modify: new Date(),
     };
-    if (data.template_code !== undefined) updateData.template_code = data.template_code;
+    if (data.template_code !== undefined)
+      updateData.template_code = data.template_code;
     if (data.is_html !== undefined) updateData.is_html = data.is_html;
-    if (data.template_subject !== undefined) updateData.template_subject = data.template_subject;
-    if (data.template_content !== undefined) updateData.template_content = data.template_content;
+    if (data.template_subject !== undefined)
+      updateData.template_subject = data.template_subject;
+    if (data.template_content !== undefined)
+      updateData.template_content = data.template_content;
     if (data.type !== undefined) updateData.type = data.type;
 
     const result = await this.prisma.mailTemplates.update({
@@ -198,23 +213,33 @@ export class MailTemplateService {
     return result;
   }
 
-  async updateField(templateId: number, field: string, value: any): Promise<boolean> {
+  async updateField(
+    templateId: number,
+    field: string,
+    value: any,
+  ): Promise<boolean> {
     const mailTemplate = await this.prisma.mailTemplates.findUnique({
       where: { template_id: templateId },
     });
 
     if (!mailTemplate) {
-      throw new Error('邮件模板不存在');
+      throw new Error("邮件模板不存在");
     }
 
     // 验证字段
-    const allowedFields = ['template_code', 'is_html', 'template_subject', 'template_content', 'type'];
+    const allowedFields = [
+      "template_code",
+      "is_html",
+      "template_subject",
+      "template_content",
+      "type",
+    ];
     if (!allowedFields.includes(field)) {
-      throw new Error('不支持的字段');
+      throw new Error("不支持的字段");
     }
 
     // 如果更新模板代码，检查是否已存在
-    if (field === 'template_code' && value !== mailTemplate.template_code) {
+    if (field === "template_code" && value !== mailTemplate.template_code) {
       const existingTemplate = await this.prisma.mailTemplates.findFirst({
         where: {
           template_code: value,
@@ -223,7 +248,7 @@ export class MailTemplateService {
       });
 
       if (existingTemplate) {
-        throw new Error('模板代码已存在');
+        throw new Error("模板代码已存在");
       }
     }
 
@@ -244,7 +269,7 @@ export class MailTemplateService {
     });
 
     if (!mailTemplate) {
-      throw new Error('邮件模板不存在');
+      throw new Error("邮件模板不存在");
     }
 
     const result = await this.prisma.mailTemplates.delete({
@@ -277,7 +302,7 @@ export class MailTemplateService {
   async getAllMailTemplates(): Promise<any[]> {
     const results = await this.prisma.mailTemplates.findMany({
       orderBy: {
-        template_id: 'desc',
+        template_id: "desc",
       },
     });
 
@@ -295,21 +320,24 @@ export class MailTemplateService {
   }
 
   // 预览模板内容（变量替换示例）
-  async previewTemplate(templateId: number, variables: any = {}): Promise<string> {
+  async previewTemplate(
+    templateId: number,
+    variables: any = {},
+  ): Promise<string> {
     const template = await this.prisma.mailTemplates.findUnique({
       where: { template_id: templateId },
     });
 
     if (!template) {
-      throw new Error('邮件模板不存在');
+      throw new Error("邮件模板不存在");
     }
 
     let content = template.template_content;
     let subject = template.template_subject;
 
     // 替换变量 {$variable_name}
-    Object.keys(variables).forEach(key => {
-      const regex = new RegExp(`\\{\\$${key}\\}`, 'g');
+    Object.keys(variables).forEach((key) => {
+      const regex = new RegExp(`\\{\\$${key}\\}`, "g");
       content = content.replace(regex, variables[key]);
       subject = subject.replace(regex, variables[key]);
     });

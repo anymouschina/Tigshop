@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   StatementQueryDto,
   StatementDetailDto,
@@ -9,8 +9,8 @@ import {
   DeleteStatementDto,
   BatchDeleteStatementDto,
   STATEMENT_TYPE,
-  STATEMENT_STATUS
-} from './statement.dto';
+  STATEMENT_STATUS,
+} from "./statement.dto";
 
 @Injectable()
 export class StatementService {
@@ -18,17 +18,17 @@ export class StatementService {
 
   async findAll(query: StatementQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       user_id = 0,
       shop_id = 0,
       type = -1,
       status = -1,
-      start_date = '',
-      end_date = '',
+      start_date = "",
+      end_date = "",
       page = 1,
       size = 15,
-      sort_field = 'id',
-      sort_order = 'desc',
+      sort_field = "id",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -158,7 +158,7 @@ export class StatementService {
     });
 
     if (!statement) {
-      throw new Error('账单记录不存在');
+      throw new Error("账单记录不存在");
     }
 
     return statement;
@@ -171,7 +171,7 @@ export class StatementService {
     });
 
     if (!user) {
-      throw new Error('用户不存在');
+      throw new Error("用户不存在");
     }
 
     // 检查店铺是否存在（如果提供了）
@@ -181,7 +181,7 @@ export class StatementService {
       });
 
       if (!shop) {
-        throw new Error('店铺不存在');
+        throw new Error("店铺不存在");
       }
     }
 
@@ -192,13 +192,13 @@ export class StatementService {
       });
 
       if (!order) {
-        throw new Error('订单不存在');
+        throw new Error("订单不存在");
       }
     }
 
     // 检查金额不能为负数
     if (data.amount < 0) {
-      throw new Error('金额不能为负数');
+      throw new Error("金额不能为负数");
     }
 
     const statement = await this.prisma.statement.create({
@@ -219,7 +219,7 @@ export class StatementService {
     });
 
     if (!statement) {
-      throw new Error('账单记录不存在');
+      throw new Error("账单记录不存在");
     }
 
     // 状态变更检查
@@ -229,12 +229,12 @@ export class StatementService {
         if (data.status === 1 || data.status === 2 || data.status === 3) {
           // 允许状态变更
         } else {
-          throw new Error('无效的状态变更');
+          throw new Error("无效的状态变更");
         }
       }
       // 其他状态不允许变更
       else {
-        throw new Error('当前状态不允许变更');
+        throw new Error("当前状态不允许变更");
       }
     }
 
@@ -260,12 +260,12 @@ export class StatementService {
     });
 
     if (!statement) {
-      throw new Error('账单记录不存在');
+      throw new Error("账单记录不存在");
     }
 
     // 只有待审核状态可以删除
     if (statement.status !== 0) {
-      throw new Error('只有待审核状态的账单记录可以删除');
+      throw new Error("只有待审核状态的账单记录可以删除");
     }
 
     await this.prisma.statement.delete({
@@ -287,7 +287,7 @@ export class StatementService {
     });
 
     if (statements.length !== ids.length) {
-      throw new Error('只能删除待审核状态的账单记录');
+      throw new Error("只能删除待审核状态的账单记录");
     }
 
     await this.prisma.statement.deleteMany({
@@ -303,7 +303,7 @@ export class StatementService {
 
   async getStatementStats() {
     const stats = await this.prisma.statement.groupBy({
-      by: ['status'],
+      by: ["status"],
       _count: {
         status: true,
       },
@@ -314,7 +314,7 @@ export class StatementService {
       result[i] = 0;
     }
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       result[stat.status] = stat._count.status;
     });
 
@@ -338,7 +338,7 @@ export class StatementService {
           },
         },
       },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
     });
   }
 
@@ -366,7 +366,7 @@ export class StatementService {
           },
         },
       },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
     });
   }
 
@@ -383,7 +383,7 @@ export class StatementService {
     }
 
     const result = await this.prisma.statement.groupBy({
-      by: ['type'],
+      by: ["type"],
       where,
       _sum: {
         amount: true,
@@ -398,7 +398,7 @@ export class StatementService {
       stats[i] = { total_amount: 0, count: 0 };
     }
 
-    result.forEach(stat => {
+    result.forEach((stat) => {
       stats[stat.type] = {
         total_amount: stat._sum.amount || 0,
         count: stat._count._all || 0,
@@ -413,7 +413,7 @@ export class StatementService {
     const endDate = new Date(year + 1, 0, 1);
 
     const result = await this.prisma.statement.groupBy({
-      by: ['type'],
+      by: ["type"],
       where: {
         status: 1,
         create_time: {

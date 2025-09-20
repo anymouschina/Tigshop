@@ -1,7 +1,10 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service';
-import { CreateProductGiftDto, UpdateProductGiftDto } from './dto/product-gift.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../database/prisma.service";
+import {
+  CreateProductGiftDto,
+  UpdateProductGiftDto,
+} from "./dto/product-gift.dto";
 
 @Injectable()
 export class ProductGiftService {
@@ -89,7 +92,7 @@ export class ProductGiftService {
     });
 
     if (!item) {
-      throw new Error('赠品不存在');
+      throw new Error("赠品不存在");
     }
 
     return item;
@@ -158,7 +161,7 @@ export class ProductGiftService {
           },
         },
       },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
     });
   }
 

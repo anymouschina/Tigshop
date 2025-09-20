@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class UserFeedbackService {
@@ -21,12 +21,12 @@ export class UserFeedbackService {
     const [feedbacks, total] = await Promise.all([
       this.prisma.userFeedback.findMany({
         where,
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         skip,
         take: size,
         include: {
           replies: {
-            orderBy: { add_time: 'desc' },
+            orderBy: { add_time: "desc" },
           },
         },
       }),
@@ -53,13 +53,13 @@ export class UserFeedbackService {
       },
       include: {
         replies: {
-          orderBy: { add_time: 'desc' },
+          orderBy: { add_time: "desc" },
         },
       },
     });
 
     if (!feedback) {
-      throw new HttpException('反馈不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("反馈不存在", HttpStatus.NOT_FOUND);
     }
 
     return feedback;
@@ -98,7 +98,7 @@ export class UserFeedbackService {
     });
 
     if (!existingFeedback) {
-      throw new HttpException('反馈不存在或已处理', HttpStatus.BAD_REQUEST);
+      throw new HttpException("反馈不存在或已处理", HttpStatus.BAD_REQUEST);
     }
 
     const updateData: any = {};
@@ -125,7 +125,7 @@ export class UserFeedbackService {
     });
 
     if (!feedback) {
-      throw new HttpException('反馈不存在或已处理', HttpStatus.BAD_REQUEST);
+      throw new HttpException("反馈不存在或已处理", HttpStatus.BAD_REQUEST);
     }
 
     // 删除相关回复
@@ -146,10 +146,10 @@ export class UserFeedbackService {
    */
   async getFeedbackTypes() {
     return [
-      { id: 1, name: '功能建议' },
-      { id: 2, name: '问题反馈' },
-      { id: 3, name: '投诉建议' },
-      { id: 4, name: '其他' },
+      { id: 1, name: "功能建议" },
+      { id: 2, name: "问题反馈" },
+      { id: 3, name: "投诉建议" },
+      { id: 4, name: "其他" },
     ];
   }
 
@@ -158,10 +158,10 @@ export class UserFeedbackService {
    */
   async getFeedbackStatus() {
     return [
-      { id: 0, name: '待处理' },
-      { id: 1, name: '处理中' },
-      { id: 2, name: '已处理' },
-      { id: 3, name: '已关闭' },
+      { id: 0, name: "待处理" },
+      { id: 1, name: "处理中" },
+      { id: 2, name: "已处理" },
+      { id: 3, name: "已关闭" },
     ];
   }
 
@@ -177,7 +177,7 @@ export class UserFeedbackService {
     });
 
     if (!feedback) {
-      throw new HttpException('反馈不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("反馈不存在", HttpStatus.NOT_FOUND);
     }
 
     const reply = await this.prisma.feedbackReply.create({
@@ -201,7 +201,7 @@ export class UserFeedbackService {
 
     return {
       url: imageUrl,
-      message: '上传成功',
+      message: "上传成功",
     };
   }
 }

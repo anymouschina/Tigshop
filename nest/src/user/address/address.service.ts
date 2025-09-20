@@ -3,8 +3,8 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
-} from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateAddressDto,
   UpdateAddressDto,
@@ -15,7 +15,7 @@ import {
   AddressListResponse,
   AddressResponse,
   SuccessResponse,
-} from './dto/address.dto';
+} from "./dto/address.dto";
 
 @Injectable()
 export class AddressService {
@@ -24,7 +24,10 @@ export class AddressService {
   /**
    * 获取用户地址列表 - 对齐PHP版本 user/address/list
    */
-  async getUserAddressList(userId: number, addressListDto: AddressListDto): Promise<AddressListResponse> {
+  async getUserAddressList(
+    userId: number,
+    addressListDto: AddressListDto,
+  ): Promise<AddressListResponse> {
     const { page = 1, size = 15 } = addressListDto;
     const skip = (page - 1) * size;
 
@@ -33,7 +36,7 @@ export class AddressService {
         where: { user_id: userId },
         skip,
         take: size,
-        orderBy: { is_default: 'desc' },
+        orderBy: { is_default: "desc" },
       }),
       (this.databaseService as any).user_address.count({
         where: { user_id: userId },
@@ -41,7 +44,7 @@ export class AddressService {
     ]);
 
     return {
-      records: addresses.map(address => this.formatAddressResponse(address)),
+      records: addresses.map((address) => this.formatAddressResponse(address)),
       total,
     };
   }
@@ -49,7 +52,10 @@ export class AddressService {
   /**
    * 获取地址详情 - 对齐PHP版本 user/address/detail
    */
-  async getAddressDetail(userId: number, addressDetailDto: AddressDetailDto): Promise<AddressResponse> {
+  async getAddressDetail(
+    userId: number,
+    addressDetailDto: AddressDetailDto,
+  ): Promise<AddressResponse> {
     const { id } = addressDetailDto;
 
     const address = await (this.databaseService as any).user_address.findFirst({
@@ -60,7 +66,7 @@ export class AddressService {
     });
 
     if (!address) {
-      throw new NotFoundException('地址不存在');
+      throw new NotFoundException("地址不存在");
     }
 
     return {
@@ -71,7 +77,10 @@ export class AddressService {
   /**
    * 创建用户地址 - 对齐PHP版本 user/address/create
    */
-  async createAddress(userId: number, createAddressDto: CreateAddressDto): Promise<SuccessResponse> {
+  async createAddress(
+    userId: number,
+    createAddressDto: CreateAddressDto,
+  ): Promise<SuccessResponse> {
     const {
       consignee,
       mobile,
@@ -87,7 +96,7 @@ export class AddressService {
 
     // 验证地区ID和名称数量是否匹配
     if (region_ids.length !== region_names.length) {
-      throw new BadRequestException('地区ID和名称数量不匹配');
+      throw new BadRequestException("地区ID和名称数量不匹配");
     }
 
     // 如果设置为默认地址，先将其他地址设为非默认
@@ -105,8 +114,8 @@ export class AddressService {
         consignee,
         mobile,
         telephone,
-        region_ids: region_ids.join(','),
-        region_names: region_names.join(','),
+        region_ids: region_ids.join(","),
+        region_names: region_names.join(","),
         address,
         postcode,
         email,
@@ -116,7 +125,7 @@ export class AddressService {
     });
 
     return {
-      message: '收货地址添加成功',
+      message: "收货地址添加成功",
       address_id: newAddress.address_id,
     };
   }
@@ -124,7 +133,10 @@ export class AddressService {
   /**
    * 更新用户地址 - 对齐PHP版本 user/address/update
    */
-  async updateAddress(userId: number, updateAddressDto: UpdateAddressDto): Promise<SuccessResponse> {
+  async updateAddress(
+    userId: number,
+    updateAddressDto: UpdateAddressDto,
+  ): Promise<SuccessResponse> {
     const {
       id,
       consignee,
@@ -140,7 +152,9 @@ export class AddressService {
     } = updateAddressDto;
 
     // 验证地址是否存在
-    const existingAddress = await (this.databaseService as any).user_address.findFirst({
+    const existingAddress = await (
+      this.databaseService as any
+    ).user_address.findFirst({
       where: {
         address_id: id,
         user_id: userId,
@@ -148,12 +162,12 @@ export class AddressService {
     });
 
     if (!existingAddress) {
-      throw new NotFoundException('地址不存在');
+      throw new NotFoundException("地址不存在");
     }
 
     // 验证地区ID和名称数量是否匹配
     if (region_ids.length !== region_names.length) {
-      throw new BadRequestException('地区ID和名称数量不匹配');
+      throw new BadRequestException("地区ID和名称数量不匹配");
     }
 
     // 如果设置为默认地址，先将其他地址设为非默认
@@ -165,14 +179,16 @@ export class AddressService {
     }
 
     // 更新地址
-    const updatedAddress = await (this.databaseService as any).user_address.update({
+    const updatedAddress = await (
+      this.databaseService as any
+    ).user_address.update({
       where: { address_id: id },
       data: {
         consignee,
         mobile,
         telephone,
-        region_ids: region_ids.join(','),
-        region_names: region_names.join(','),
+        region_ids: region_ids.join(","),
+        region_names: region_names.join(","),
         address,
         postcode,
         email,
@@ -182,7 +198,7 @@ export class AddressService {
     });
 
     return {
-      message: '收货地址更新成功',
+      message: "收货地址更新成功",
       address_id: updatedAddress.address_id,
     };
   }
@@ -190,11 +206,16 @@ export class AddressService {
   /**
    * 删除用户地址 - 对齐PHP版本 user/address/delete
    */
-  async deleteAddress(userId: number, deleteAddressDto: DeleteAddressDto): Promise<SuccessResponse> {
+  async deleteAddress(
+    userId: number,
+    deleteAddressDto: DeleteAddressDto,
+  ): Promise<SuccessResponse> {
     const { id } = deleteAddressDto;
 
     // 验证地址是否存在
-    const existingAddress = await (this.databaseService as any).user_address.findFirst({
+    const existingAddress = await (
+      this.databaseService as any
+    ).user_address.findFirst({
       where: {
         address_id: id,
         user_id: userId,
@@ -202,7 +223,7 @@ export class AddressService {
     });
 
     if (!existingAddress) {
-      throw new NotFoundException('地址不存在');
+      throw new NotFoundException("地址不存在");
     }
 
     // 删除地址
@@ -211,14 +232,17 @@ export class AddressService {
     });
 
     return {
-      message: '删除成功',
+      message: "删除成功",
     };
   }
 
   /**
    * 设置默认地址 - 对齐PHP版本 user/address/setSelected
    */
-  async setDefaultAddress(userId: number, setDefaultAddressDto: SetDefaultAddressDto): Promise<SuccessResponse> {
+  async setDefaultAddress(
+    userId: number,
+    setDefaultAddressDto: SetDefaultAddressDto,
+  ): Promise<SuccessResponse> {
     const { id } = setDefaultAddressDto;
 
     // 验证地址是否存在
@@ -230,13 +254,13 @@ export class AddressService {
     });
 
     if (!existingAddress) {
-      throw new NotFoundException('地址不存在');
+      throw new NotFoundException("地址不存在");
     }
 
     // 如果已经是默认地址，直接返回
     if (existingAddress.isDefault === 1) {
       return {
-        message: '设置成功',
+        message: "设置成功",
       };
     }
 
@@ -253,7 +277,7 @@ export class AddressService {
     });
 
     return {
-      message: '设置成功',
+      message: "设置成功",
     };
   }
 
@@ -261,7 +285,9 @@ export class AddressService {
    * 获取用户默认地址
    */
   async getDefaultAddress(userId: number): Promise<AddressResponse | null> {
-    const defaultAddress = await (this.databaseService as any).user_address.findFirst({
+    const defaultAddress = await (
+      this.databaseService as any
+    ).user_address.findFirst({
       where: {
         user_id: userId,
         is_default: 1,
@@ -270,14 +296,18 @@ export class AddressService {
 
     if (!defaultAddress) {
       // 如果没有默认地址，返回第一个地址
-      const firstAddress = await (this.databaseService as any).user_address.findFirst({
+      const firstAddress = await (
+        this.databaseService as any
+      ).user_address.findFirst({
         where: { user_id: userId },
-        orderBy: { address_id: 'asc' },
+        orderBy: { address_id: "asc" },
       });
 
-      return firstAddress ? {
-        address: this.formatAddressResponse(firstAddress),
-      } : null;
+      return firstAddress
+        ? {
+            address: this.formatAddressResponse(firstAddress),
+          }
+        : null;
     }
 
     return {
@@ -297,9 +327,14 @@ export class AddressService {
   /**
    * 批量删除地址
    */
-  async batchDeleteAddresses(userId: number, addressIds: number[]): Promise<SuccessResponse> {
+  async batchDeleteAddresses(
+    userId: number,
+    addressIds: number[],
+  ): Promise<SuccessResponse> {
     // 验证地址是否存在
-    const existingAddresses = await (this.databaseService as any).user_address.findMany({
+    const existingAddresses = await (
+      this.databaseService as any
+    ).user_address.findMany({
       where: {
         address_id: { in: addressIds },
         user_id: userId,
@@ -307,7 +342,7 @@ export class AddressService {
     });
 
     if (existingAddresses.length !== addressIds.length) {
-      throw new NotFoundException('部分地址不存在');
+      throw new NotFoundException("部分地址不存在");
     }
 
     // 删除地址
@@ -319,7 +354,7 @@ export class AddressService {
     });
 
     return {
-      message: '批量删除成功',
+      message: "批量删除成功",
     };
   }
 
@@ -332,8 +367,10 @@ export class AddressService {
       consignee: address.consignee,
       mobile: address.mobile,
       telephone: address.telephone,
-      region_ids: address.region_ids ? address.region_ids.split(',').map((id: string) => parseInt(id)) : [],
-      region_names: address.region_names ? address.region_names.split(',') : [],
+      region_ids: address.region_ids
+        ? address.region_ids.split(",").map((id: string) => parseInt(id))
+        : [],
+      region_names: address.region_names ? address.region_names.split(",") : [],
       address: address.address,
       postcode: address.postcode,
       email: address.email,

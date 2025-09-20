@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import Redis from 'ioredis';
+import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import { InjectRedis } from "@nestjs-modules/ioredis";
+import Redis from "ioredis";
 
 export interface CacheOptions {
   ttl?: number; // 过期时间（秒）
@@ -22,7 +22,7 @@ export interface CacheStats {
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private defaultTTL = 3600; // 默认1小时
-  private keyPrefix = 'tigshop:';
+  private keyPrefix = "tigshop:";
   private stats = {
     hitCount: 0,
     missCount: 0,
@@ -41,21 +41,21 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private async testConnection(): Promise<void> {
     try {
       await this.redis.ping();
-      console.log('Redis connection established successfully');
+      console.log("Redis connection established successfully");
     } catch (error) {
-      console.error('Redis connection failed:', error);
+      console.error("Redis connection failed:", error);
       throw error;
     }
   }
 
   // 基本操作
-  async set(key: string, value: any, options?: CacheOptions): Promise<'OK'> {
+  async set(key: string, value: any, options?: CacheOptions): Promise<"OK"> {
     const fullKey = this.getFullKey(key, options?.keyPrefix);
     const serializedValue = JSON.stringify(value);
     const ttl = options?.ttl || this.defaultTTL;
 
     if (ttl > 0) {
-      return this.redis.set(fullKey, serializedValue, 'EX', ttl);
+      return this.redis.set(fullKey, serializedValue, "EX", ttl);
     } else {
       return this.redis.set(fullKey, serializedValue);
     }
@@ -90,7 +90,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.redis.exists(fullKey);
   }
 
-  async expire(key: string, seconds: number, options?: CacheOptions): Promise<boolean> {
+  async expire(
+    key: string,
+    seconds: number,
+    options?: CacheOptions,
+  ): Promise<boolean> {
     const fullKey = this.getFullKey(key, options?.keyPrefix);
     return this.redis.expire(fullKey, seconds);
   }
@@ -101,7 +105,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   // 批量操作
-  async mset(data: Record<string, any>, options?: CacheOptions): Promise<'OK'> {
+  async mset(data: Record<string, any>, options?: CacheOptions): Promise<"OK"> {
     const fullKeyData: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(data)) {
@@ -113,10 +117,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async mget(keys: string[], options?: CacheOptions): Promise<any[]> {
-    const fullKeys = keys.map(key => this.getFullKey(key, options?.keyPrefix));
+    const fullKeys = keys.map((key) =>
+      this.getFullKey(key, options?.keyPrefix),
+    );
     const values = await this.redis.mget(fullKeys);
 
-    return values.map(value => {
+    return values.map((value) => {
       if (value === null) return null;
       try {
         return JSON.parse(value);
@@ -127,12 +133,21 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   // 哈希操作
-  async hset(key: string, field: string, value: any, options?: CacheOptions): Promise<number> {
+  async hset(
+    key: string,
+    field: string,
+    value: any,
+    options?: CacheOptions,
+  ): Promise<number> {
     const fullKey = this.getFullKey(key, options?.keyPrefix);
     return this.redis.hset(fullKey, field, JSON.stringify(value));
   }
 
-  async hget<T = any>(key: string, field: string, options?: CacheOptions): Promise<T | null> {
+  async hget<T = any>(
+    key: string,
+    field: string,
+    options?: CacheOptions,
+  ): Promise<T | null> {
     const fullKey = this.getFullKey(key, options?.keyPrefix);
     const value = await this.redis.hget(fullKey, field);
 
@@ -144,7 +159,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async hgetall<T = Record<string, any>>(key: string, options?: CacheOptions): Promise<T> {
+  async hgetall<T = Record<string, any>>(
+    key: string,
+    options?: CacheOptions,
+  ): Promise<T> {
     const fullKey = this.getFullKey(key, options?.keyPrefix);
     const result = await this.redis.hgetall(fullKey);
 
@@ -163,13 +181,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   // 列表操作
   async lpush(key: string, ...values: any[]): Promise<number> {
     const fullKey = this.getFullKey(key);
-    const serializedValues = values.map(v => JSON.stringify(v));
+    const serializedValues = values.map((v) => JSON.stringify(v));
     return this.redis.lpush(fullKey, ...serializedValues);
   }
 
   async rpush(key: string, ...values: any[]): Promise<number> {
     const fullKey = this.getFullKey(key);
-    const serializedValues = values.map(v => JSON.stringify(v));
+    const serializedValues = values.map((v) => JSON.stringify(v));
     return this.redis.rpush(fullKey, ...serializedValues);
   }
 
@@ -202,11 +220,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.redis.llen(fullKey);
   }
 
-  async lrange<T = any>(key: string, start: number, stop: number): Promise<T[]> {
+  async lrange<T = any>(
+    key: string,
+    start: number,
+    stop: number,
+  ): Promise<T[]> {
     const fullKey = this.getFullKey(key);
     const values = await this.redis.lrange(fullKey, start, stop);
 
-    return values.map(value => {
+    return values.map((value) => {
       try {
         return JSON.parse(value);
       } catch {
@@ -218,7 +240,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   // 集合操作
   async sadd(key: string, ...members: any[]): Promise<number> {
     const fullKey = this.getFullKey(key);
-    const serializedMembers = members.map(m => JSON.stringify(m));
+    const serializedMembers = members.map((m) => JSON.stringify(m));
     return this.redis.sadd(fullKey, ...serializedMembers);
   }
 
@@ -226,7 +248,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const fullKey = this.getFullKey(key);
     const members = await this.redis.smembers(fullKey);
 
-    return members.map(member => {
+    return members.map((member) => {
       try {
         return JSON.parse(member);
       } catch {
@@ -242,7 +264,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async srem(key: string, ...members: any[]): Promise<number> {
     const fullKey = this.getFullKey(key);
-    const serializedMembers = members.map(m => JSON.stringify(m));
+    const serializedMembers = members.map((m) => JSON.stringify(m));
     return this.redis.srem(fullKey, ...serializedMembers);
   }
 
@@ -257,11 +279,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.redis.zadd(fullKey, ...serializedScoreMembers);
   }
 
-  async zrange<T = any>(key: string, start: number, stop: number): Promise<T[]> {
+  async zrange<T = any>(
+    key: string,
+    start: number,
+    stop: number,
+  ): Promise<T[]> {
     const fullKey = this.getFullKey(key);
     const members = await this.redis.zrange(fullKey, start, stop);
 
-    return members.map(member => {
+    return members.map((member) => {
       try {
         return JSON.parse(member);
       } catch {
@@ -285,7 +311,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
     const members = await command;
 
-    return members.map(member => {
+    return members.map((member) => {
       try {
         return JSON.parse(member);
       } catch {
@@ -318,12 +344,20 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.getOrSet(key, factory, options);
   }
 
-  async increment(key: string, increment = 1, options?: CacheOptions): Promise<number> {
+  async increment(
+    key: string,
+    increment = 1,
+    options?: CacheOptions,
+  ): Promise<number> {
     const fullKey = this.getFullKey(key, options?.keyPrefix);
     return this.redis.incrby(fullKey, increment);
   }
 
-  async decrement(key: string, decrement = 1, options?: CacheOptions): Promise<number> {
+  async decrement(
+    key: string,
+    decrement = 1,
+    options?: CacheOptions,
+  ): Promise<number> {
     const fullKey = this.getFullKey(key, options?.keyPrefix);
     return this.redis.decrby(fullKey, decrement);
   }
@@ -338,18 +372,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.redis.del(...keys);
   }
 
-  async clearAll(): Promise<'OK'> {
+  async clearAll(): Promise<"OK"> {
     return this.redis.flushall();
   }
 
-  async clearDb(): Promise<'OK'> {
+  async clearDb(): Promise<"OK"> {
     return this.redis.flushdb();
   }
 
   // 统计信息
   async getStats(): Promise<CacheStats> {
-    const info = await this.redis.info('memory');
-    const infoLines = info.split('\n');
+    const info = await this.redis.info("memory");
+    const infoLines = info.split("\n");
 
     let usedMemory = 0;
     let connectedClients = 0;
@@ -357,19 +391,20 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     let keyspaceMisses = 0;
 
     for (const line of infoLines) {
-      if (line.startsWith('used_memory:')) {
-        usedMemory = parseInt(line.split(':')[1].trim());
-      } else if (line.startsWith('connected_clients:')) {
-        connectedClients = parseInt(line.split(':')[1].trim());
-      } else if (line.startsWith('keyspace_hits:')) {
-        keyspaceHits = parseInt(line.split(':')[1].trim());
-      } else if (line.startsWith('keyspace_misses:')) {
-        keyspaceMisses = parseInt(line.split(':')[1].trim());
+      if (line.startsWith("used_memory:")) {
+        usedMemory = parseInt(line.split(":")[1].trim());
+      } else if (line.startsWith("connected_clients:")) {
+        connectedClients = parseInt(line.split(":")[1].trim());
+      } else if (line.startsWith("keyspace_hits:")) {
+        keyspaceHits = parseInt(line.split(":")[1].trim());
+      } else if (line.startsWith("keyspace_misses:")) {
+        keyspaceMisses = parseInt(line.split(":")[1].trim());
       }
     }
 
     const totalRequests = this.stats.hitCount + this.stats.missCount;
-    const hitRate = totalRequests > 0 ? (this.stats.hitCount / totalRequests) * 100 : 0;
+    const hitRate =
+      totalRequests > 0 ? (this.stats.hitCount / totalRequests) * 100 : 0;
 
     return {
       hitCount: this.stats.hitCount,
@@ -398,7 +433,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.redis.quit();
     } catch (error) {
-      console.error('Error closing Redis connection:', error);
+      console.error("Error closing Redis connection:", error);
     }
   }
 
@@ -409,8 +444,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     ttl: number = 30,
   ): Promise<boolean> {
     const fullKey = this.getFullKey(`lock:${key}`);
-    const result = await this.redis.set(fullKey, value, 'EX', ttl, 'NX');
-    return result === 'OK';
+    const result = await this.redis.set(fullKey, value, "EX", ttl, "NX");
+    return result === "OK";
   }
 
   async releaseLock(key: string, value: string): Promise<boolean> {
@@ -472,7 +507,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       end
     `;
 
-    const result = await this.redis.eval(
+    const result = (await this.redis.eval(
       script,
       1,
       fullKey,
@@ -480,7 +515,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       limit,
       window,
       now,
-    ) as [number, number, number];
+    )) as [number, number, number];
 
     return {
       allowed: result[0] === 1,

@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import { Injectable } from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   AdminRoleQueryDto,
   AdminRoleDetailDto,
@@ -7,8 +7,8 @@ import {
   UpdateAdminRoleDto,
   DeleteAdminRoleDto,
   BatchDeleteAdminRoleDto,
-  ROLE_STATUS
-} from './admin-role.dto';
+  ROLE_STATUS,
+} from "./admin-role.dto";
 
 @Injectable()
 export class AdminRoleService {
@@ -16,12 +16,12 @@ export class AdminRoleService {
 
   async findAll(query: AdminRoleQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       status = -1,
       page = 1,
       size = 15,
-      sort_field = 'id',
-      sort_order = 'desc',
+      sort_field = "id",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -36,7 +36,7 @@ export class AdminRoleService {
     // admin_role has no status field in schema; ignore status filter
 
     const orderBy: any = {};
-    orderBy[sort_field === 'id' ? 'role_id' : sort_field] = sort_order;
+    orderBy[sort_field === "id" ? "role_id" : sort_field] = sort_order;
 
     const skip = (page - 1) * size;
 
@@ -65,7 +65,7 @@ export class AdminRoleService {
     });
 
     if (!admin_role) {
-      throw new Error('角色不存在');
+      throw new Error("角色不存在");
     }
 
     return admin_role;
@@ -77,7 +77,7 @@ export class AdminRoleService {
     });
 
     if (existingRole) {
-      throw new Error('角色名称已存在');
+      throw new Error("角色名称已存在");
     }
 
     const admin_role = await this.databaseService.admin_role.create({
@@ -97,7 +97,7 @@ export class AdminRoleService {
     });
 
     if (!admin_role) {
-      throw new Error('角色不存在');
+      throw new Error("角色不存在");
     }
 
     if (data.name && data.name !== admin_role.role_name) {
@@ -106,7 +106,7 @@ export class AdminRoleService {
       });
 
       if (existingRole) {
-        throw new Error('角色名称已存在');
+        throw new Error("角色名称已存在");
       }
     }
 
@@ -129,7 +129,7 @@ export class AdminRoleService {
     });
 
     if (!admin_role) {
-      throw new Error('角色不存在');
+      throw new Error("角色不存在");
     }
 
     const adminCount = await this.databaseService.admin_user.count({
@@ -137,7 +137,7 @@ export class AdminRoleService {
     });
 
     if (adminCount > 0) {
-      throw new Error('该角色下还有管理员，无法删除');
+      throw new Error("该角色下还有管理员，无法删除");
     }
 
     await this.databaseService.admin_role.delete({
@@ -175,7 +175,7 @@ export class AdminRoleService {
     });
 
     if (!admin_role) {
-      throw new Error('角色不存在');
+      throw new Error("角色不存在");
     }
 
     // admin_role has no status field; treat as no-op and return current record
@@ -190,7 +190,7 @@ export class AdminRoleService {
         role_desc: true,
         authority_list: true,
       },
-      orderBy: { role_id: 'asc' },
+      orderBy: { role_id: "asc" },
     });
   }
 

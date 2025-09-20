@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 @Injectable()
 export class ConfigService {
@@ -74,7 +74,7 @@ export class ConfigService {
       };
     }
     return {
-      id: 'desc',
+      id: "desc",
     };
   }
 
@@ -84,7 +84,7 @@ export class ConfigService {
     });
 
     if (!result) {
-      throw new Error('配置项不存在');
+      throw new Error("配置项不存在");
     }
 
     return result;
@@ -92,13 +92,13 @@ export class ConfigService {
 
   async create(data: any): Promise<any> {
     // 验证业务代码不能为空
-    if (!data.biz_code || data.biz_code.trim() === '') {
-      throw new Error('配置代码不能为空');
+    if (!data.biz_code || data.biz_code.trim() === "") {
+      throw new Error("配置代码不能为空");
     }
 
     // 验证配置值不能为空
     if (data.biz_val === undefined || data.biz_val === null) {
-      throw new Error('配置值不能为空');
+      throw new Error("配置值不能为空");
     }
 
     // 检查业务代码是否已存在
@@ -109,7 +109,7 @@ export class ConfigService {
     });
 
     if (existingConfig) {
-      throw new Error('配置代码已存在');
+      throw new Error("配置代码已存在");
     }
 
     const result = await this.prisma.config.create({
@@ -130,17 +130,23 @@ export class ConfigService {
     });
 
     if (!config) {
-      throw new Error('配置项不存在');
+      throw new Error("配置项不存在");
     }
 
     // 验证业务代码不能为空
-    if (data.biz_code !== undefined && (!data.biz_code || data.biz_code.trim() === '')) {
-      throw new Error('配置代码不能为空');
+    if (
+      data.biz_code !== undefined &&
+      (!data.biz_code || data.biz_code.trim() === "")
+    ) {
+      throw new Error("配置代码不能为空");
     }
 
     // 验证配置值不能为空
-    if (data.biz_val !== undefined && (data.biz_val === undefined || data.biz_val === null)) {
-      throw new Error('配置值不能为空');
+    if (
+      data.biz_val !== undefined &&
+      (data.biz_val === undefined || data.biz_val === null)
+    ) {
+      throw new Error("配置值不能为空");
     }
 
     // 检查业务代码是否已存在（排除当前配置）
@@ -153,7 +159,7 @@ export class ConfigService {
       });
 
       if (existingConfig) {
-        throw new Error('配置代码已存在');
+        throw new Error("配置代码已存在");
       }
     }
 
@@ -177,17 +183,17 @@ export class ConfigService {
     });
 
     if (!config) {
-      throw new Error('配置项不存在');
+      throw new Error("配置项不存在");
     }
 
     // 验证字段
-    const allowedFields = ['biz_code', 'biz_val'];
+    const allowedFields = ["biz_code", "biz_val"];
     if (!allowedFields.includes(field)) {
-      throw new Error('不支持的字段');
+      throw new Error("不支持的字段");
     }
 
     // 如果更新业务代码，检查是否已存在
-    if (field === 'biz_code' && value !== config.biz_code) {
+    if (field === "biz_code" && value !== config.biz_code) {
       const existingConfig = await this.prisma.config.findFirst({
         where: {
           biz_code: value,
@@ -196,14 +202,14 @@ export class ConfigService {
       });
 
       if (existingConfig) {
-        throw new Error('配置代码已存在');
+        throw new Error("配置代码已存在");
       }
     }
 
     const result = await this.prisma.config.update({
       where: { id },
       data: {
-        [field]: field === 'biz_val' ? String(value) : value,
+        [field]: field === "biz_val" ? String(value) : value,
         update_time: new Date(),
       },
     });
@@ -217,7 +223,7 @@ export class ConfigService {
     });
 
     if (!config) {
-      throw new Error('配置项不存在');
+      throw new Error("配置项不存在");
     }
 
     const result = await this.prisma.config.delete({
@@ -278,7 +284,7 @@ export class ConfigService {
     });
 
     const configMap: Record<string, any> = {};
-    results.forEach(config => {
+    results.forEach((config) => {
       configMap[config.biz_code] = config.biz_val;
     });
 
@@ -289,12 +295,12 @@ export class ConfigService {
   async getAllConfigs(): Promise<Record<string, any>> {
     const results = await this.prisma.config.findMany({
       orderBy: {
-        id: 'desc',
+        id: "desc",
       },
     });
 
     const configMap: Record<string, any> = {};
-    results.forEach(config => {
+    results.forEach((config) => {
       configMap[config.biz_code] = config.biz_val;
     });
 
@@ -305,15 +311,15 @@ export class ConfigService {
   async getConfigsByGroup(): Promise<Record<string, any[]>> {
     const results = await this.prisma.config.findMany({
       orderBy: {
-        id: 'desc',
+        id: "desc",
       },
     });
 
     const groupedConfigs: Record<string, any[]> = {};
 
-    results.forEach(config => {
+    results.forEach((config) => {
       // 根据业务代码前缀进行分组
-      const prefix = config.biz_code.split('_')[0];
+      const prefix = config.biz_code.split("_")[0];
       if (!groupedConfigs[prefix]) {
         groupedConfigs[prefix] = [];
       }
@@ -366,7 +372,10 @@ export class ConfigService {
   }
 
   // 获取数值配置值
-  async getNumberConfig(bizCode: string, defaultValue?: number): Promise<number> {
+  async getNumberConfig(
+    bizCode: string,
+    defaultValue?: number,
+  ): Promise<number> {
     const configValue = await this.getConfigByCode(bizCode);
     if (!configValue) {
       if (defaultValue !== undefined) {
@@ -384,12 +393,17 @@ export class ConfigService {
   }
 
   // 获取布尔配置值
-  async getBooleanConfig(bizCode: string, defaultValue: boolean = false): Promise<boolean> {
+  async getBooleanConfig(
+    bizCode: string,
+    defaultValue: boolean = false,
+  ): Promise<boolean> {
     const configValue = await this.getConfigByCode(bizCode);
     if (!configValue) {
       return defaultValue;
     }
 
-    return configValue === 'true' || configValue === '1' || configValue === 'yes';
+    return (
+      configValue === "true" || configValue === "1" || configValue === "yes"
+    );
   }
 }

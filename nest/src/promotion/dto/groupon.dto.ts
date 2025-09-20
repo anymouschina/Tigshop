@@ -1,6 +1,13 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsArray, Min, Max } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsArray,
+  Min,
+  Max,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class GrouponQueryDto {
   @IsOptional()
@@ -21,11 +28,11 @@ export class GrouponQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'product_team_id';
+  sort_field?: string = "product_team_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @Type(() => Number)
@@ -39,8 +46,8 @@ export class GrouponQueryDto {
 
   @IsOptional()
   @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      return value.split(',').map((date: string) => date.trim());
+    if (typeof value === "string") {
+      return value.split(",").map((date: string) => date.trim());
     }
     return value;
   })

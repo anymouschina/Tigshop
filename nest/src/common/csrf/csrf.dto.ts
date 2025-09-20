@@ -1,6 +1,17 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsInt, MaxLength, IsDate } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsInt,
+  MaxLength,
+  IsDate,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class CsrfQueryDto {
   @IsOptional()
@@ -36,11 +47,11 @@ export class CsrfQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 }
 
 export class CsrfDetailDto {
@@ -77,17 +88,17 @@ export class CreateCsrfDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  description?: string = '';
+  description?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(45)
-  ip?: string = '';
+  ip?: string = "";
 
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  user_agent?: string = '';
+  user_agent?: string = "";
 
   @IsOptional()
   @Type(() => Date)
@@ -165,15 +176,15 @@ export class BatchDeleteCsrfDto {
 }
 
 export const CSRF_TYPE = {
-  0: '表单提交',
-  1: 'API调用',
-  2: '文件上传',
-  3: '删除操作',
-  4: '修改操作',
-  5: '其他操作',
+  0: "表单提交",
+  1: "API调用",
+  2: "文件上传",
+  3: "删除操作",
+  4: "修改操作",
+  5: "其他操作",
 };
 
 export const CSRF_STATUS = {
-  0: '禁用',
-  1: '启用',
+  0: "禁用",
+  1: "启用",
 };

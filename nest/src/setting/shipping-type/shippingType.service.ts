@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateShippingTypeDto,
   UpdateShippingTypeDto,
   ShippingTypeQueryDto,
   ShippingTypeStatus,
-  ShippingTypeConfigDto
-} from './dto/shippingType.dto';
+  ShippingTypeConfigDto,
+} from "./dto/shippingType.dto";
 
 @Injectable()
 export class ShippingTypeService {
@@ -19,8 +23,8 @@ export class ShippingTypeService {
       page = 1,
       size = 15,
       status,
-      sortField = 'type_id',
-      sortOrder = 'desc'
+      sortField = "type_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -34,7 +38,7 @@ export class ShippingTypeService {
         { code: { contains: keyword } },
         { icon: { contains: keyword } },
         { status: { contains: keyword } },
-        { sort: { contains: keyword } }
+        { sort: { contains: keyword } },
       ];
     }
 
@@ -70,15 +74,13 @@ export class ShippingTypeService {
     });
 
     if (!item) {
-      throw new NotFoundException('配送方式不存在');
+      throw new NotFoundException("配送方式不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateShippingTypeDto) {
-    
-
     const item = await this.prisma.shipping_type.create({
       data: {
         name: createDto.name,
@@ -99,7 +101,7 @@ export class ShippingTypeService {
     });
 
     if (!item) {
-      throw new NotFoundException('配送方式不存在');
+      throw new NotFoundException("配送方式不存在");
     }
 
     const updateData: any = {};
@@ -133,7 +135,7 @@ export class ShippingTypeService {
     });
 
     if (!item) {
-      throw new NotFoundException('配送方式不存在');
+      throw new NotFoundException("配送方式不存在");
     }
 
     await this.prisma.shipping_type.delete({
@@ -150,8 +152,8 @@ export class ShippingTypeService {
   async getConfig(): Promise<ShippingTypeConfigDto> {
     return {
       statusConfig: {
-        [ShippingTypeStatus.DISABLED]: '禁用',
-        [ShippingTypeStatus.ENABLED]: '启用'
+        [ShippingTypeStatus.DISABLED]: "禁用",
+        [ShippingTypeStatus.ENABLED]: "启用",
       },
     };
   }

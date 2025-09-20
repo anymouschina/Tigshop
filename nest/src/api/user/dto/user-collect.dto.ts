@@ -1,16 +1,24 @@
 // @ts-nocheck
-import { IsOptional, IsNumber, IsString, IsArray, IsEnum, Min, Max } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsArray,
+  IsEnum,
+  Min,
+  Max,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export enum CollectSortField {
-  ADD_TIME = 'add_time',
-  PRODUCT_PRICE = 'product_price',
-  PRODUCT_NAME = 'product_name',
+  ADD_TIME = "add_time",
+  PRODUCT_PRICE = "product_price",
+  PRODUCT_NAME = "product_name",
 }
 
 export enum CollectSortOrder {
-  ASC = 'asc',
-  DESC = 'desc',
+  ASC = "asc",
+  DESC = "desc",
 }
 
 export class CollectQueryDto {

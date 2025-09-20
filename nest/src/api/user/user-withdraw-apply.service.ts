@@ -1,6 +1,12 @@
 // @ts-nocheck
-import { Injectable, ConflictException, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   WithdrawQueryDto,
   WithdrawAccountQueryDto,
@@ -11,14 +17,21 @@ import {
   DeleteWithdrawAccountDto,
   WithdrawStatus,
   AccountType,
-} from './dto/user-withdraw-apply.dto';
+} from "./dto/user-withdraw-apply.dto";
 
 @Injectable()
 export class UserWithdrawApplyService {
   constructor(private prisma: PrismaService) {}
 
   async getWithdrawList(userId: number, query: WithdrawQueryDto) {
-    const { page = 1, size = 15, status, keyword, sort_field = 'add_time', sort_order = 'desc' } = query;
+    const {
+      page = 1,
+      size = 15,
+      status,
+      keyword,
+      sort_field = "add_time",
+      sort_order = "desc",
+    } = query;
     const skip = (page - 1) * size;
 
     const where: any = {
@@ -58,7 +71,7 @@ export class UserWithdrawApplyService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         records: withdraws,
         total,
@@ -86,18 +99,19 @@ export class UserWithdrawApplyService {
 
     const accounts = await this.prisma.userWithdrawAccount.findMany({
       where,
-      orderBy: { add_time: 'desc' },
+      orderBy: { add_time: "desc" },
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: accounts,
     };
   }
 
   async createWithdrawAccount(userId: number, body: CreateWithdrawAccountDto) {
-    const { account_type, account_name, account_no, identity, bank_name } = body;
+    const { account_type, account_name, account_no, identity, bank_name } =
+      body;
 
     // 检查账号数量限制
     const accountCount = await this.prisma.userWithdrawAccount.count({
@@ -108,7 +122,7 @@ export class UserWithdrawApplyService {
     });
 
     if (accountCount >= 15) {
-      throw new ForbiddenException('最多添加15个提现账号');
+      throw new ForbiddenException("最多添加15个提现账号");
     }
 
     // 检查是否已存在相同账号
@@ -122,7 +136,7 @@ export class UserWithdrawApplyService {
     });
 
     if (existingAccount) {
-      throw new ConflictException('该提现账号已存在');
+      throw new ConflictException("该提现账号已存在");
     }
 
     const account = await this.prisma.userWithdrawAccount.create({
@@ -139,15 +153,20 @@ export class UserWithdrawApplyService {
 
     return {
       code: 200,
-      message: '添加成功',
+      message: "添加成功",
       data: {
         account_id: account.account_id,
       },
     };
   }
 
-  async updateWithdrawAccount(userId: number, accountId: number, body: UpdateWithdrawAccountDto) {
-    const { account_type, account_name, account_no, identity, bank_name } = body;
+  async updateWithdrawAccount(
+    userId: number,
+    accountId: number,
+    body: UpdateWithdrawAccountDto,
+  ) {
+    const { account_type, account_name, account_no, identity, bank_name } =
+      body;
 
     // 检查账号是否存在
     const account = await this.prisma.userWithdrawAccount.findFirst({
@@ -159,7 +178,7 @@ export class UserWithdrawApplyService {
     });
 
     if (!account) {
-      throw new NotFoundException('提现账号不存在');
+      throw new NotFoundException("提现账号不存在");
     }
 
     // 检查是否已存在相同账号（排除当前账号）
@@ -174,7 +193,7 @@ export class UserWithdrawApplyService {
     });
 
     if (existingAccount) {
-      throw new ConflictException('该提现账号已存在');
+      throw new ConflictException("该提现账号已存在");
     }
 
     await this.prisma.userWithdrawAccount.update({
@@ -190,7 +209,7 @@ export class UserWithdrawApplyService {
 
     return {
       code: 200,
-      message: '更新成功',
+      message: "更新成功",
       data: null,
     };
   }
@@ -205,12 +224,12 @@ export class UserWithdrawApplyService {
     });
 
     if (!account) {
-      throw new NotFoundException('提现账号不存在');
+      throw new NotFoundException("提现账号不存在");
     }
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: account,
     };
   }
@@ -225,7 +244,7 @@ export class UserWithdrawApplyService {
     });
 
     if (!account) {
-      throw new NotFoundException('提现账号不存在');
+      throw new NotFoundException("提现账号不存在");
     }
 
     await this.prisma.userWithdrawAccount.update({
@@ -235,7 +254,7 @@ export class UserWithdrawApplyService {
 
     return {
       code: 200,
-      message: '删除成功',
+      message: "删除成功",
       data: null,
     };
   }
@@ -250,11 +269,11 @@ export class UserWithdrawApplyService {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     if (amount > user.balance) {
-      throw new BadRequestException('提现金额大于账户可用余额');
+      throw new BadRequestException("提现金额大于账户可用余额");
     }
 
     // 生成提现单号
@@ -319,7 +338,7 @@ export class UserWithdrawApplyService {
           data: {
             user_id: userId,
             balance: amount,
-            change_desc: '提现申请',
+            change_desc: "提现申请",
             change_type: 2, // 提现类型
             add_time: Math.floor(Date.now() / 1000),
           },
@@ -343,7 +362,7 @@ export class UserWithdrawApplyService {
 
       return {
         code: 200,
-        message: '申请成功',
+        message: "申请成功",
         data: {
           withdraw_id: result.id,
           withdraw_sn: withdrawSn,
@@ -352,52 +371,53 @@ export class UserWithdrawApplyService {
         },
       };
     } catch (error) {
-      throw new BadRequestException('提现申请失败：' + error.message);
+      throw new BadRequestException("提现申请失败：" + error.message);
     }
   }
 
   async getWithdrawStats(userId: number) {
-    const [totalWithdraw, pendingWithdraw, successWithdraw, rejectedWithdraw] = await Promise.all([
-      this.prisma.userWithdrawApply.aggregate({
-        where: {
-          user_id: userId,
-          is_delete: 0,
-        },
-        _sum: { amount: true },
-        _count: true,
-      }),
-      this.prisma.userWithdrawApply.aggregate({
-        where: {
-          user_id: userId,
-          status: WithdrawStatus.PENDING,
-          is_delete: 0,
-        },
-        _sum: { amount: true },
-        _count: true,
-      }),
-      this.prisma.userWithdrawApply.aggregate({
-        where: {
-          user_id: userId,
-          status: WithdrawStatus.APPROVED,
-          is_delete: 0,
-        },
-        _sum: { amount: true },
-        _count: true,
-      }),
-      this.prisma.userWithdrawApply.aggregate({
-        where: {
-          user_id: userId,
-          status: WithdrawStatus.REJECTED,
-          is_delete: 0,
-        },
-        _sum: { amount: true },
-        _count: true,
-      }),
-    ]);
+    const [totalWithdraw, pendingWithdraw, successWithdraw, rejectedWithdraw] =
+      await Promise.all([
+        this.prisma.userWithdrawApply.aggregate({
+          where: {
+            user_id: userId,
+            is_delete: 0,
+          },
+          _sum: { amount: true },
+          _count: true,
+        }),
+        this.prisma.userWithdrawApply.aggregate({
+          where: {
+            user_id: userId,
+            status: WithdrawStatus.PENDING,
+            is_delete: 0,
+          },
+          _sum: { amount: true },
+          _count: true,
+        }),
+        this.prisma.userWithdrawApply.aggregate({
+          where: {
+            user_id: userId,
+            status: WithdrawStatus.APPROVED,
+            is_delete: 0,
+          },
+          _sum: { amount: true },
+          _count: true,
+        }),
+        this.prisma.userWithdrawApply.aggregate({
+          where: {
+            user_id: userId,
+            status: WithdrawStatus.REJECTED,
+            is_delete: 0,
+          },
+          _sum: { amount: true },
+          _count: true,
+        }),
+      ]);
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         total_amount: totalWithdraw._sum.amount || 0,
         total_count: totalWithdraw._count,
@@ -416,23 +436,23 @@ export class UserWithdrawApplyService {
     const settings = await this.prisma.systemConfig.findMany({
       where: {
         config_key: {
-          in: ['withdraw_min_amount', 'withdraw_fee_rate', 'withdraw_fee_min'],
+          in: ["withdraw_min_amount", "withdraw_fee_rate", "withdraw_fee_min"],
         },
       },
     });
 
     const config: any = {};
-    settings.forEach(setting => {
+    settings.forEach((setting) => {
       config[setting.config_key] = setting.config_value;
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
-        min_amount: parseFloat(config.withdraw_min_amount || '1'),
-        fee_rate: parseFloat(config.withdraw_fee_rate || '0'),
-        fee_min: parseFloat(config.withdraw_fee_min || '0'),
+        min_amount: parseFloat(config.withdraw_min_amount || "1"),
+        fee_rate: parseFloat(config.withdraw_fee_rate || "0"),
+        fee_min: parseFloat(config.withdraw_fee_min || "0"),
       },
     };
   }
@@ -440,35 +460,37 @@ export class UserWithdrawApplyService {
   // 私有方法
   private generateWithdrawSn(): string {
     const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
     return `WD${timestamp}${random}`;
   }
 
   private getAccountTypeName(accountType: number): string {
     switch (accountType) {
       case AccountType.BANK:
-        return '银行卡';
+        return "银行卡";
       case AccountType.ALIPAY:
-        return '支付宝';
+        return "支付宝";
       case AccountType.WECHAT:
-        return '微信';
+        return "微信";
       case AccountType.PAYPAL:
-        return 'PayPal';
+        return "PayPal";
       default:
-        return '其他';
+        return "其他";
     }
   }
 
   private getStatusText(status: number): string {
     switch (status) {
       case WithdrawStatus.PENDING:
-        return '待审核';
+        return "待审核";
       case WithdrawStatus.APPROVED:
-        return '已通过';
+        return "已通过";
       case WithdrawStatus.REJECTED:
-        return '已拒绝';
+        return "已拒绝";
       default:
-        return '未知状态';
+        return "未知状态";
     }
   }
 }

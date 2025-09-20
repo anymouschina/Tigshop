@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateArticleCategoryDto,
   UpdateArticleCategoryDto,
   ArticleCategoryQueryDto,
   ArticleCategoryStatus,
-  ArticleCategoryConfigDto
-} from './dto/articleCategory.dto';
+  ArticleCategoryConfigDto,
+} from "./dto/articleCategory.dto";
 
 @Injectable()
 export class ArticleCategoryService {
@@ -19,8 +23,8 @@ export class ArticleCategoryService {
       page = 1,
       size = 15,
       status,
-      sortField = 'category_id',
-      sortOrder = 'desc'
+      sortField = "category_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -33,7 +37,7 @@ export class ArticleCategoryService {
         { name: { contains: keyword } },
         { parent_id: { contains: keyword } },
         { sort: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -69,15 +73,13 @@ export class ArticleCategoryService {
     });
 
     if (!item) {
-      throw new NotFoundException('文章分类不存在');
+      throw new NotFoundException("文章分类不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateArticleCategoryDto) {
-    
-
     const item = await this.prisma.article_category.create({
       data: {
         name: createDto.name,
@@ -96,7 +98,7 @@ export class ArticleCategoryService {
     });
 
     if (!item) {
-      throw new NotFoundException('文章分类不存在');
+      throw new NotFoundException("文章分类不存在");
     }
 
     const updateData: any = {};
@@ -124,7 +126,7 @@ export class ArticleCategoryService {
     });
 
     if (!item) {
-      throw new NotFoundException('文章分类不存在');
+      throw new NotFoundException("文章分类不存在");
     }
 
     await this.prisma.article_category.delete({
@@ -141,8 +143,8 @@ export class ArticleCategoryService {
   async getConfig(): Promise<ArticleCategoryConfigDto> {
     return {
       statusConfig: {
-        [ArticleCategoryStatus.DISABLED]: '禁用',
-        [ArticleCategoryStatus.ENABLED]: '启用'
+        [ArticleCategoryStatus.DISABLED]: "禁用",
+        [ArticleCategoryStatus.ENABLED]: "启用",
       },
     };
   }

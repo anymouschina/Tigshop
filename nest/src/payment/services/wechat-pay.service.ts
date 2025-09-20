@@ -1,7 +1,12 @@
 // @ts-nocheck
-import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { createHash, createHmac } from 'crypto';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  InternalServerErrorException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { createHash, createHmac } from "crypto";
 
 @Injectable()
 export class WechatPayService {
@@ -13,11 +18,18 @@ export class WechatPayService {
   private readonly baseUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.appId = this.configService.get<string>('WECHAT_APP_ID') || 'mock_app_id';
-    this.mchId = this.configService.get<string>('WECHAT_MCH_ID') || 'mock_mch_id';
-    this.apiKey = this.configService.get<string>('WECHAT_API_KEY') || 'mock_api_key';
-    this.notifyUrl = this.configService.get<string>('WECHAT_NOTIFY_URL') || 'https://your-domain.com/api/payments/callback';
-    this.baseUrl = this.configService.get<string>('WECHAT_BASE_URL') || 'https://api.mch.weixin.qq.com';
+    this.appId =
+      this.configService.get<string>("WECHAT_APP_ID") || "mock_app_id";
+    this.mchId =
+      this.configService.get<string>("WECHAT_MCH_ID") || "mock_mch_id";
+    this.apiKey =
+      this.configService.get<string>("WECHAT_API_KEY") || "mock_api_key";
+    this.notifyUrl =
+      this.configService.get<string>("WECHAT_NOTIFY_URL") ||
+      "https://your-domain.com/api/payments/callback";
+    this.baseUrl =
+      this.configService.get<string>("WECHAT_BASE_URL") ||
+      "https://api.mch.weixin.qq.com";
   }
 
   /**
@@ -36,12 +48,12 @@ export class WechatPayService {
         appid: this.appId,
         mch_id: this.mchId,
         nonce_str: this.generateNonceStr(),
-        body: payment.description || '商品购买',
+        body: payment.description || "商品购买",
         out_trade_no: payment.paymentSn,
         total_fee: Math.round(payment.amount * 100), // 转换为分
-        spbill_create_ip: '127.0.0.1',
+        spbill_create_ip: "127.0.0.1",
         notify_url: this.notifyUrl,
-        trade_type: 'NATIVE', // 扫码支付
+        trade_type: "NATIVE", // 扫码支付
         product_id: payment.paymentSn,
       };
 
@@ -52,26 +64,31 @@ export class WechatPayService {
       const xml = this.buildXml({ ...order, sign });
 
       // 模拟调用微信支付API
-      const response = await this.callWechatPayApi('/pay/unifiedorder', xml);
+      const response = await this.callWechatPayApi("/pay/unifiedorder", xml);
 
       // 解析响应
       const result = this.parseXmlResponse(response);
 
-      if (result.return_code === 'SUCCESS' && result.result_code === 'SUCCESS') {
+      if (
+        result.return_code === "SUCCESS" &&
+        result.result_code === "SUCCESS"
+      ) {
         return {
           paymentSn: payment.paymentSn,
           amount: payment.amount,
           paymentUrl: result.code_url,
           qrCode: this.generateQrCode(result.code_url),
           prepayId: result.prepay_id,
-          message: '微信支付创建成功',
+          message: "微信支付创建成功",
         };
       } else {
-        throw new BadRequestException(`微信支付创建失败: ${result.return_msg || result.err_code_des}`);
+        throw new BadRequestException(
+          `微信支付创建失败: ${result.return_msg || result.err_code_des}`,
+        );
       }
     } catch (error) {
-      this.logger.error('创建微信支付失败:', error);
-      throw new InternalServerErrorException('创建微信支付失败');
+      this.logger.error("创建微信支付失败:", error);
+      throw new InternalServerErrorException("创建微信支付失败");
     }
   }
 
@@ -92,13 +109,13 @@ export class WechatPayService {
       const sign = this.generateSign(order);
       const xml = this.buildXml({ ...order, sign });
 
-      const response = await this.callWechatPayApi('/pay/orderquery', xml);
+      const response = await this.callWechatPayApi("/pay/orderquery", xml);
       const result = this.parseXmlResponse(response);
 
-      if (result.return_code === 'SUCCESS') {
+      if (result.return_code === "SUCCESS") {
         return {
           paymentSn,
-          status: result.trade_state === 'SUCCESS' ? 'PAID' : 'PENDING',
+          status: result.trade_state === "SUCCESS" ? "PAID" : "PENDING",
           transactionId: result.transaction_id,
           amount: Number(result.total_fee) / 100,
           paidTime: result.time_end,
@@ -108,8 +125,8 @@ export class WechatPayService {
         throw new BadRequestException(`查询支付状态失败: ${result.return_msg}`);
       }
     } catch (error) {
-      this.logger.error('查询支付状态失败:', error);
-      throw new InternalServerErrorException('查询支付状态失败');
+      this.logger.error("查询支付状态失败:", error);
+      throw new InternalServerErrorException("查询支付状态失败");
     }
   }
 
@@ -133,29 +150,38 @@ export class WechatPayService {
         out_refund_no: refundData.refundSn,
         total_fee: Math.round(refundData.amount * 100),
         refund_fee: Math.round(refundData.amount * 100),
-        refund_desc: refundData.reason || '用户申请退款',
+        refund_desc: refundData.reason || "用户申请退款",
       };
 
       const sign = this.generateSign(order);
       const xml = this.buildXml({ ...order, sign });
 
-      const response = await this.callWechatPayApi('/secapi/pay/refund', xml, true);
+      const response = await this.callWechatPayApi(
+        "/secapi/pay/refund",
+        xml,
+        true,
+      );
       const result = this.parseXmlResponse(response);
 
-      if (result.return_code === 'SUCCESS' && result.result_code === 'SUCCESS') {
+      if (
+        result.return_code === "SUCCESS" &&
+        result.result_code === "SUCCESS"
+      ) {
         return {
           refundSn: refundData.refundSn,
           paymentSn: refundData.paymentSn,
           refundId: result.refund_id,
-          status: 'PROCESSING',
-          message: '退款申请成功',
+          status: "PROCESSING",
+          message: "退款申请成功",
         };
       } else {
-        throw new BadRequestException(`申请退款失败: ${result.return_msg || result.err_code_des}`);
+        throw new BadRequestException(
+          `申请退款失败: ${result.return_msg || result.err_code_des}`,
+        );
       }
     } catch (error) {
-      this.logger.error('申请退款失败:', error);
-      throw new InternalServerErrorException('申请退款失败');
+      this.logger.error("申请退款失败:", error);
+      throw new InternalServerErrorException("申请退款失败");
     }
   }
 
@@ -176,10 +202,10 @@ export class WechatPayService {
       const sign = this.generateSign(order);
       const xml = this.buildXml({ ...order, sign });
 
-      const response = await this.callWechatPayApi('/pay/refundquery', xml);
+      const response = await this.callWechatPayApi("/pay/refundquery", xml);
       const result = this.parseXmlResponse(response);
 
-      if (result.return_code === 'SUCCESS') {
+      if (result.return_code === "SUCCESS") {
         return {
           refundSn,
           status: this.mapRefundStatus(result.refund_status_0),
@@ -192,8 +218,8 @@ export class WechatPayService {
         throw new BadRequestException(`查询退款状态失败: ${result.return_msg}`);
       }
     } catch (error) {
-      this.logger.error('查询退款状态失败:', error);
-      throw new InternalServerErrorException('查询退款状态失败');
+      this.logger.error("查询退款状态失败:", error);
+      throw new InternalServerErrorException("查询退款状态失败");
     }
   }
 
@@ -208,7 +234,7 @@ export class WechatPayService {
       const generatedSign = this.generateSign(params);
       return sign === generatedSign;
     } catch (error) {
-      this.logger.error('验证回调签名失败:', error);
+      this.logger.error("验证回调签名失败:", error);
       return false;
     }
   }
@@ -225,13 +251,16 @@ export class WechatPayService {
    */
   private generateSign(params: any): string {
     const sortedParams = Object.keys(params)
-      .filter(key => params[key] !== undefined && params[key] !== '')
+      .filter((key) => params[key] !== undefined && params[key] !== "")
       .sort()
-      .map(key => `${key}=${params[key]}`)
-      .join('&');
+      .map((key) => `${key}=${params[key]}`)
+      .join("&");
 
     const stringSignTemp = `${sortedParams}&key=${this.apiKey}`;
-    return createHash('md5').update(stringSignTemp, 'utf8').digest('hex').toUpperCase();
+    return createHash("md5")
+      .update(stringSignTemp, "utf8")
+      .digest("hex")
+      .toUpperCase();
   }
 
   /**
@@ -239,8 +268,8 @@ export class WechatPayService {
    */
   private buildXml(params: any): string {
     const xmlContent = Object.keys(params)
-      .map(key => `<${key}><![CDATA[${params[key]}]]></${key}>`)
-      .join('');
+      .map((key) => `<${key}><![CDATA[${params[key]}]]></${key}>`)
+      .join("");
 
     return `<xml>${xmlContent}</xml>`;
   }
@@ -264,11 +293,18 @@ export class WechatPayService {
   /**
    * 调用微信支付API
    */
-  private async callWechatPayApi(path: string, xml: string, useCert = false): Promise<string> {
+  private async callWechatPayApi(
+    path: string,
+    xml: string,
+    useCert = false,
+  ): Promise<string> {
     // 模拟API调用，实际项目中应该使用真实的HTTP请求
-    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+    if (
+      process.env.NODE_ENV === "development" ||
+      process.env.NODE_ENV === "test"
+    ) {
       // 返回模拟数据
-      if (path === '/pay/unifiedorder') {
+      if (path === "/pay/unifiedorder") {
         return `<xml>
           <return_code><![CDATA[SUCCESS]]></return_code>
           <return_msg><![CDATA[OK]]></return_msg>
@@ -281,7 +317,7 @@ export class WechatPayService {
           <trade_type><![CDATA[NATIVE]]></trade_type>
           <code_url><![CDATA[weixin://wxpay/bizpayurl?pr=${Math.random().toString(36).substr(2)}]]></code_url>
         </xml>`;
-      } else if (path === '/pay/orderquery') {
+      } else if (path === "/pay/orderquery") {
         return `<xml>
           <return_code><![CDATA[SUCCESS]]></return_code>
           <return_msg><![CDATA[OK]]></return_msg>
@@ -289,13 +325,16 @@ export class WechatPayService {
           <mch_id><![CDATA[${this.mchId}]]></mch_id>
           <nonce_str><![CDATA[${this.generateNonceStr()}]]></nonce_str>
           <sign><![CDATA[MOCK_SIGN]]></sign>
-          <out_trade_no><![CDATA[${xml.match(/out_trade_no><!\[CDATA\[([^\]]+)\]\]/)?.[1] || ''}]]></out_trade_no>
+          <out_trade_no><![CDATA[${xml.match(/out_trade_no><!\[CDATA\[([^\]]+)\]\]/)?.[1] || ""}]]></out_trade_no>
           <trade_state><![CDATA[SUCCESS]]></trade_state>
           <transaction_id><![CDATA[mock_transaction_id_${Date.now()}]]></transaction_id>
-          <time_end><![CDATA[${new Date().toISOString().replace(/[-:T.]/g, '').substr(0, 14)}]]></time_end>
-          <total_fee><![CDATA[${xml.match(/total_fee><!\[CDATA\[([^\]]+)\]\]/)?.[1] || '0'}]]></total_fee>
+          <time_end><![CDATA[${new Date()
+            .toISOString()
+            .replace(/[-:T.]/g, "")
+            .substr(0, 14)}]]></time_end>
+          <total_fee><![CDATA[${xml.match(/total_fee><!\[CDATA\[([^\]]+)\]\]/)?.[1] || "0"}]]></total_fee>
         </xml>`;
-      } else if (path === '/secapi/pay/refund') {
+      } else if (path === "/secapi/pay/refund") {
         return `<xml>
           <return_code><![CDATA[SUCCESS]]></return_code>
           <return_msg><![CDATA[OK]]></return_msg>
@@ -306,7 +345,7 @@ export class WechatPayService {
           <result_code><![CDATA[SUCCESS]]></result_code>
           <refund_id><![CDATA[mock_refund_id_${Date.now()}]]></refund_id>
         </xml>`;
-      } else if (path === '/pay/refundquery') {
+      } else if (path === "/pay/refundquery") {
         return `<xml>
           <return_code><![CDATA[SUCCESS]]></return_code>
           <return_msg><![CDATA[OK]]></return_msg>
@@ -314,18 +353,21 @@ export class WechatPayService {
           <mch_id><![CDATA[${this.mchId}]]></mch_id>
           <nonce_str><![CDATA[${this.generateNonceStr()}]]></nonce_str>
           <sign><![CDATA[MOCK_SIGN]]></sign>
-          <out_refund_no><![CDATA[${xml.match(/out_refund_no><!\[CDATA\[([^\]]+)\]\]/)?.[1] || ''}]]></out_refund_no>
+          <out_refund_no><![CDATA[${xml.match(/out_refund_no><!\[CDATA\[([^\]]+)\]\]/)?.[1] || ""}]]></out_refund_no>
           <refund_status_0><![CDATA[SUCCESS]]></refund_status_0>
           <refund_id_0><![CDATA[mock_refund_id_${Date.now()}]]></refund_id_0>
-          <refund_fee_0><![CDATA[${xml.match(/refund_fee><!\[CDATA\[([^\]]+)\]\]/)?.[1] || '0'}]]></refund_fee_0>
-          <refund_success_time_0><![CDATA[${new Date().toISOString().replace(/[-:T.]/g, '').substr(0, 14)}]]></refund_success_time_0>
+          <refund_fee_0><![CDATA[${xml.match(/refund_fee><!\[CDATA\[([^\]]+)\]\]/)?.[1] || "0"}]]></refund_fee_0>
+          <refund_success_time_0><![CDATA[${new Date()
+            .toISOString()
+            .replace(/[-:T.]/g, "")
+            .substr(0, 14)}]]></refund_success_time_0>
         </xml>`;
       }
     }
 
     // 实际环境中的真实API调用
     // 这里应该使用实际的HTTP请求库如axios来调用微信支付API
-    throw new InternalServerErrorException('微信支付API调用未实现');
+    throw new InternalServerErrorException("微信支付API调用未实现");
   }
 
   /**
@@ -341,11 +383,11 @@ export class WechatPayService {
    */
   private mapRefundStatus(status: string): string {
     const statusMap: { [key: string]: string } = {
-      'SUCCESS': 'COMPLETED',
-      'REFUNDCLOSE': 'CANCELLED',
-      'PROCESSING': 'PROCESSING',
-      'CHANGE': 'FAILED',
+      SUCCESS: "COMPLETED",
+      REFUNDCLOSE: "CANCELLED",
+      PROCESSING: "PROCESSING",
+      CHANGE: "FAILED",
     };
-    return statusMap[status] || 'FAILED';
+    return statusMap[status] || "FAILED";
   }
 }

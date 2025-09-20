@@ -1,9 +1,13 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { ProductQueryDto } from './dto/product-query.dto';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../database/database.service";
+import { CreateProductDto } from "./dto/create-product.dto";
+import { UpdateProductDto } from "./dto/update-product.dto";
+import { ProductQueryDto } from "./dto/product-query.dto";
 
 @Injectable()
 export class ProductService {
@@ -21,7 +25,7 @@ export class ProductService {
     });
 
     if (existingProduct) {
-      throw new BadRequestException('商品名称已存在');
+      throw new BadRequestException("商品名称已存在");
     }
 
     // 转换DTO为Prisma兼容格式
@@ -84,8 +88,8 @@ export class ProductService {
       isRecommend,
       minPrice,
       maxPrice,
-      sortField = 'productId',
-      sortOrder = 'desc',
+      sortField = "productId",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -175,7 +179,7 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new NotFoundException('商品不存在');
+      throw new NotFoundException("商品不存在");
     }
 
     return product;
@@ -200,12 +204,12 @@ export class ProductService {
       });
 
       if (existingProduct) {
-        throw new BadRequestException('商品名称已存在');
+        throw new BadRequestException("商品名称已存在");
       }
     }
 
     // 使用原始SQL更新商品以绕过XOR类型问题
-    const result = await this.prisma.$queryRaw`
+    const result = (await this.prisma.$queryRaw`
       UPDATE "Product"
       SET
         productName = ${updateProductDto.name || null},
@@ -241,7 +245,7 @@ export class ProductService {
         "updatedAt" = NOW()
       WHERE productId = ${id}
       RETURNING productId, productName, subtitle, description, productPrice, marketPrice, costPrice, productStock, sales, categoryId, brandId, supplierId, image, images, video, videoCover, specType, weight, volume, shippingFee, minBuy, maxBuy, keywords, seoTitle, seoKeywords, seoDescription, sort, isBest, isNew, isHot, isRecommend, productStatus, "createdAt", "updatedAt"
-    ` as any[];
+    `) as any[];
 
     return result[0];
   }
@@ -270,7 +274,7 @@ export class ProductService {
 
     return this.prisma.product.update({
       where: { productId: id },
-      data: { productStatus: status === 'ENABLE' ? 1 : 0 },
+      data: { productStatus: status === "ENABLE" ? 1 : 0 },
     });
   }
 

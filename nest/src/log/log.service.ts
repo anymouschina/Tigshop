@@ -1,25 +1,25 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export enum LogLevel {
-  ERROR = 'error',
-  WARN = 'warn',
-  INFO = 'info',
-  DEBUG = 'debug',
+  ERROR = "error",
+  WARN = "warn",
+  INFO = "info",
+  DEBUG = "debug",
 }
 
 export enum LogCategory {
-  SYSTEM = 'system',
-  USER = 'user',
-  ORDER = 'order',
-  PRODUCT = 'product',
-  PAYMENT = 'payment',
-  AUTH = 'auth',
-  API = 'api',
-  DATABASE = 'database',
-  SECURITY = 'security',
-  PERFORMANCE = 'performance',
+  SYSTEM = "system",
+  USER = "user",
+  ORDER = "order",
+  PRODUCT = "product",
+  PAYMENT = "payment",
+  AUTH = "auth",
+  API = "api",
+  DATABASE = "database",
+  SECURITY = "security",
+  PERFORMANCE = "performance",
 }
 
 export interface LogEntry {
@@ -51,8 +51,8 @@ export interface LogQuery {
   message?: string;
   page?: number;
   limit?: number;
-  sortBy?: 'timestamp' | 'level' | 'category';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "timestamp" | "level" | "category";
+  sortOrder?: "asc" | "desc";
 }
 
 @Injectable()
@@ -80,7 +80,7 @@ export class LogService {
         },
       });
     } catch (error) {
-      console.error('Failed to save log entry:', error);
+      console.error("Failed to save log entry:", error);
     }
   }
 
@@ -126,7 +126,9 @@ export class LogService {
   }
 
   // 分类日志
-  async logApiRequest(entry: Omit<LogEntry, 'level' | 'category'>): Promise<void> {
+  async logApiRequest(
+    entry: Omit<LogEntry, "level" | "category">,
+  ): Promise<void> {
     await this.log({
       ...entry,
       level: LogLevel.INFO,
@@ -134,7 +136,7 @@ export class LogService {
     });
   }
 
-  async logError(entry: Omit<LogEntry, 'level' | 'category'>): Promise<void> {
+  async logError(entry: Omit<LogEntry, "level" | "category">): Promise<void> {
     await this.log({
       ...entry,
       level: LogLevel.ERROR,
@@ -142,7 +144,9 @@ export class LogService {
     });
   }
 
-  async logSecurityEvent(entry: Omit<LogEntry, 'level' | 'category'>): Promise<void> {
+  async logSecurityEvent(
+    entry: Omit<LogEntry, "level" | "category">,
+  ): Promise<void> {
     await this.log({
       ...entry,
       level: LogLevel.WARN,
@@ -150,7 +154,9 @@ export class LogService {
     });
   }
 
-  async logPerformance(entry: Omit<LogEntry, 'level' | 'category'>): Promise<void> {
+  async logPerformance(
+    entry: Omit<LogEntry, "level" | "category">,
+  ): Promise<void> {
     await this.log({
       ...entry,
       level: LogLevel.INFO,
@@ -236,8 +242,8 @@ export class LogService {
   }
 
   private buildOrderBy(query: LogQuery): any {
-    const sortBy = query.sortBy || 'timestamp';
-    const sortOrder = query.sortOrder || 'desc';
+    const sortBy = query.sortBy || "timestamp";
+    const sortOrder = query.sortOrder || "desc";
 
     const orderBy: any = {};
     orderBy[sortBy] = sortOrder;
@@ -278,7 +284,11 @@ export class LogService {
       this.getLogsByCategory(baseWhere),
       this.prisma.log.count({ where: { ...baseWhere, level: LogLevel.ERROR } }),
       this.prisma.log.findMany({
-        where: { ...baseWhere, category: LogCategory.API, response_time: { not: null } },
+        where: {
+          ...baseWhere,
+          category: LogCategory.API,
+          response_time: { not: null },
+        },
         select: { response_time: true },
       }),
       this.getErrorPaths(baseWhere),
@@ -286,9 +296,11 @@ export class LogService {
     ]);
 
     const errorRate = totalLogs > 0 ? (errorLogs / totalLogs) * 100 : 0;
-    const avgResponseTime = apiLogs.length > 0
-      ? apiLogs.reduce((sum, log) => sum + (log.response_time || 0), 0) / apiLogs.length
-      : 0;
+    const avgResponseTime =
+      apiLogs.length > 0
+        ? apiLogs.reduce((sum, log) => sum + (log.response_time || 0), 0) /
+          apiLogs.length
+        : 0;
 
     return {
       totalLogs,
@@ -301,9 +313,11 @@ export class LogService {
     };
   }
 
-  private async getLogsByLevel(baseWhere: any): Promise<Record<LogLevel, number>> {
+  private async getLogsByLevel(
+    baseWhere: any,
+  ): Promise<Record<LogLevel, number>> {
     const results = await this.prisma.log.groupBy({
-      by: ['level'],
+      by: ["level"],
       where: baseWhere,
       _count: { level: true },
     });
@@ -315,16 +329,18 @@ export class LogService {
       [LogLevel.DEBUG]: 0,
     };
 
-    results.forEach(result => {
+    results.forEach((result) => {
       stats[result.level] = result._count.level;
     });
 
     return stats;
   }
 
-  private async getLogsByCategory(baseWhere: any): Promise<Record<LogCategory, number>> {
+  private async getLogsByCategory(
+    baseWhere: any,
+  ): Promise<Record<LogCategory, number>> {
     const results = await this.prisma.log.groupBy({
-      by: ['category'],
+      by: ["category"],
       where: baseWhere,
       _count: { category: true },
     });
@@ -336,46 +352,50 @@ export class LogService {
       [LogLevel.DEBUG]: 0,
     } as any;
 
-    results.forEach(result => {
+    results.forEach((result) => {
       stats[result.category] = result._count.category;
     });
 
     return stats;
   }
 
-  private async getErrorPaths(baseWhere: any): Promise<Array<{ path: string; count: number }>> {
+  private async getErrorPaths(
+    baseWhere: any,
+  ): Promise<Array<{ path: string; count: number }>> {
     const results = await this.prisma.log.groupBy({
-      by: ['path'],
+      by: ["path"],
       where: { ...baseWhere, level: LogLevel.ERROR },
       _count: { path: true },
       orderBy: {
         _count: {
-          path: 'desc',
+          path: "desc",
         },
       },
       take: 10,
     });
 
-    return results.map(result => ({
+    return results.map((result) => ({
       path: result.path,
       count: result._count.path,
     }));
   }
 
-  private async getTopUserAgents(baseWhere: any): Promise<Array<{ userAgent: string; count: number }>> {
+  private async getTopUserAgents(
+    baseWhere: any,
+  ): Promise<Array<{ userAgent: string; count: number }>> {
     const results = await this.prisma.log.groupBy({
-      by: ['user_agent'],
+      by: ["user_agent"],
       where: { ...baseWhere, user_agent: { not: null } },
       _count: { user_agent: true },
       orderBy: {
         _count: {
-          user_agent: 'desc',
+          user_agent: "desc",
         },
       },
       take: 10,
     });
 
-    return results.map(result => ({
+    return results.map((result) => ({
       userAgent: result.user_agent,
       count: result._count.user_agent,
     }));
@@ -402,45 +422,47 @@ export class LogService {
     const where = this.buildWhereClause(query);
     const logs = await this.prisma.log.findMany({
       where,
-      orderBy: { created_at: 'desc' },
+      orderBy: { created_at: "desc" },
       take: 10000, // 限制导出数量
     });
 
     // 转换为CSV格式
     const headers = [
-      'Timestamp',
-      'Level',
-      'Category',
-      'Message',
-      'User ID',
-      'Request ID',
-      'IP',
-      'Path',
-      'Method',
-      'Status Code',
-      'Response Time',
-      'Metadata',
+      "Timestamp",
+      "Level",
+      "Category",
+      "Message",
+      "User ID",
+      "Request ID",
+      "IP",
+      "Path",
+      "Method",
+      "Status Code",
+      "Response Time",
+      "Metadata",
     ];
 
     const csvRows = [
-      headers.join(','),
-      ...logs.map(log => [
-        log.created_at.toISOString(),
-        log.level,
-        log.category,
-        `"${log.message.replace(/"/g, '""')}"`,
-        log.user_id || '',
-        log.request_id || '',
-        log.ip || '',
-        log.path || '',
-        log.method || '',
-        log.status_code || '',
-        log.response_time || '',
-        `"${JSON.stringify(log.metadata).replace(/"/g, '""')}"`,
-      ].join(',')),
+      headers.join(","),
+      ...logs.map((log) =>
+        [
+          log.created_at.toISOString(),
+          log.level,
+          log.category,
+          `"${log.message.replace(/"/g, '""')}"`,
+          log.user_id || "",
+          log.request_id || "",
+          log.ip || "",
+          log.path || "",
+          log.method || "",
+          log.status_code || "",
+          log.response_time || "",
+          `"${JSON.stringify(log.metadata).replace(/"/g, '""')}"`,
+        ].join(","),
+      ),
     ];
 
-    return csvRows.join('\n');
+    return csvRows.join("\n");
   }
 
   // 审计日志
@@ -458,7 +480,7 @@ export class LogService {
   async getUserActivity(userId: number, limit = 50): Promise<any[]> {
     return this.prisma.log.findMany({
       where: { user_id: userId },
-      orderBy: { created_at: 'desc' },
+      orderBy: { created_at: "desc" },
       take: limit,
     });
   }
@@ -467,7 +489,7 @@ export class LogService {
   async getRequestLogs(requestId: string): Promise<any[]> {
     return this.prisma.log.findMany({
       where: { request_id: requestId },
-      orderBy: { created_at: 'asc' },
+      orderBy: { created_at: "asc" },
     });
   }
 }

@@ -1,19 +1,23 @@
 // @ts-nocheck
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { ConfigService } from '../config/config.service';
+import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from "@nestjs/microservices";
+import { ConfigService } from "../config/config.service";
 
 export enum MicroserviceType {
-  USER = 'user',
-  PRODUCT = 'product',
-  ORDER = 'order',
-  PAYMENT = 'payment',
-  NOTIFICATION = 'notification',
-  EMAIL = 'email',
-  SMS = 'sms',
-  ANALYTICS = 'analytics',
-  SEARCH = 'search',
-  FILE = 'file',
+  USER = "user",
+  PRODUCT = "product",
+  ORDER = "order",
+  PAYMENT = "payment",
+  NOTIFICATION = "notification",
+  EMAIL = "email",
+  SMS = "sms",
+  ANALYTICS = "analytics",
+  SEARCH = "search",
+  FILE = "file",
 }
 
 export interface MicroserviceConfig {
@@ -44,15 +48,18 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
       try {
         await this.createClient(config);
       } catch (error) {
-        console.error(`Failed to initialize ${config.type} microservice:`, error);
+        console.error(
+          `Failed to initialize ${config.type} microservice:`,
+          error,
+        );
       }
     }
   }
 
   private getMicroserviceConfigs(): MicroserviceConfig[] {
-    const rabbitmqUrl = this.configService.get('RABBITMQ_URL');
-    const redisUrl = this.configService.get('REDIS_URL');
-    const kafkaBrokers = this.configService.get('KAFKA_BROKERS');
+    const rabbitmqUrl = this.configService.get("RABBITMQ_URL");
+    const redisUrl = this.configService.get("REDIS_URL");
+    const kafkaBrokers = this.configService.get("KAFKA_BROKERS");
 
     return [
       {
@@ -60,7 +67,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         transport: Transport.RMQ,
         options: {
           urls: [rabbitmqUrl],
-          queue: 'user_queue',
+          queue: "user_queue",
           queueOptions: {
             durable: true,
           },
@@ -71,7 +78,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         transport: Transport.RMQ,
         options: {
           urls: [rabbitmqUrl],
-          queue: 'product_queue',
+          queue: "product_queue",
           queueOptions: {
             durable: true,
           },
@@ -82,7 +89,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         transport: Transport.RMQ,
         options: {
           urls: [rabbitmqUrl],
-          queue: 'order_queue',
+          queue: "order_queue",
           queueOptions: {
             durable: true,
           },
@@ -93,7 +100,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         transport: Transport.RMQ,
         options: {
           urls: [rabbitmqUrl],
-          queue: 'payment_queue',
+          queue: "payment_queue",
           queueOptions: {
             durable: true,
           },
@@ -104,7 +111,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         transport: Transport.RMQ,
         options: {
           urls: [rabbitmqUrl],
-          queue: 'notification_queue',
+          queue: "notification_queue",
           queueOptions: {
             durable: true,
           },
@@ -115,7 +122,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         transport: Transport.RMQ,
         options: {
           urls: [rabbitmqUrl],
-          queue: 'email_queue',
+          queue: "email_queue",
           queueOptions: {
             durable: true,
           },
@@ -126,7 +133,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         transport: Transport.RMQ,
         options: {
           urls: [rabbitmqUrl],
-          queue: 'sms_queue',
+          queue: "sms_queue",
           queueOptions: {
             durable: true,
           },
@@ -137,11 +144,11 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         transport: Transport.KAFKA,
         options: {
           client: {
-            clientId: 'analytics_client',
-            brokers: kafkaBrokers.split(','),
+            clientId: "analytics_client",
+            brokers: kafkaBrokers.split(","),
           },
           consumer: {
-            groupId: 'analytics_group',
+            groupId: "analytics_group",
           },
         },
       },
@@ -157,7 +164,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
         transport: Transport.RMQ,
         options: {
           urls: [rabbitmqUrl],
-          queue: 'file_queue',
+          queue: "file_queue",
           queueOptions: {
             durable: true,
           },
@@ -233,7 +240,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   }
 
   async retryConnection(type: MicroserviceType): Promise<void> {
-    const config = this.getMicroserviceConfigs().find(c => c.type === type);
+    const config = this.getMicroserviceConfigs().find((c) => c.type === type);
     if (!config) {
       throw new Error(`Configuration for ${type} microservice not found`);
     }
@@ -249,10 +256,10 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   }
 
   async closeAllConnections(): Promise<void> {
-    const closePromises = Array.from(this.clients.values()).map(client =>
-      client.close().catch(error => {
-        console.error('Error closing microservice connection:', error);
-      })
+    const closePromises = Array.from(this.clients.values()).map((client) =>
+      client.close().catch((error) => {
+        console.error("Error closing microservice connection:", error);
+      }),
     );
 
     await Promise.all(closePromises);
@@ -263,7 +270,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   getConnectionStatus(): Record<MicroserviceType, boolean> {
     const status: Record<MicroserviceType, boolean> = {} as any;
 
-    Object.values(MicroserviceType).forEach(type => {
+    Object.values(MicroserviceType).forEach((type) => {
       status[type] = this.isConnectedTo(type);
     });
 
@@ -275,33 +282,36 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
     const kafkaClient = this.getClient(MicroserviceType.ANALYTICS);
 
     if (!this.isConnectedTo(MicroserviceType.ANALYTICS)) {
-      throw new Error('Analytics microservice (Kafka) is not connected');
+      throw new Error("Analytics microservice (Kafka) is not connected");
     }
 
     try {
       kafkaClient.emit(topic, message);
     } catch (error) {
-      console.error('Error publishing to Kafka:', error);
+      console.error("Error publishing to Kafka:", error);
       throw error;
     }
   }
 
-  async subscribeToKafka(topic: string, callback: (message: any) => void): Promise<void> {
+  async subscribeToKafka(
+    topic: string,
+    callback: (message: any) => void,
+  ): Promise<void> {
     const kafkaClient = this.getClient(MicroserviceType.ANALYTICS);
 
     if (!this.isConnectedTo(MicroserviceType.ANALYTICS)) {
-      throw new Error('Analytics microservice (Kafka) is not connected');
+      throw new Error("Analytics microservice (Kafka) is not connected");
     }
 
     try {
       kafkaClient.connect().then(() => {
-        kafkaClient.send({ cmd: 'subscribe' }, { topic }).subscribe({
+        kafkaClient.send({ cmd: "subscribe" }, { topic }).subscribe({
           next: (message) => callback(message),
-          error: (error) => console.error('Kafka subscription error:', error),
+          error: (error) => console.error("Kafka subscription error:", error),
         });
       });
     } catch (error) {
-      console.error('Error subscribing to Kafka:', error);
+      console.error("Error subscribing to Kafka:", error);
       throw error;
     }
   }
@@ -310,33 +320,36 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
     const redisClient = this.getClient(MicroserviceType.SEARCH);
 
     if (!this.isConnectedTo(MicroserviceType.SEARCH)) {
-      throw new Error('Search microservice (Redis) is not connected');
+      throw new Error("Search microservice (Redis) is not connected");
     }
 
     try {
       redisClient.emit(channel, message);
     } catch (error) {
-      console.error('Error publishing to Redis:', error);
+      console.error("Error publishing to Redis:", error);
       throw error;
     }
   }
 
-  async subscribeToRedis(channel: string, callback: (message: any) => void): Promise<void> {
+  async subscribeToRedis(
+    channel: string,
+    callback: (message: any) => void,
+  ): Promise<void> {
     const redisClient = this.getClient(MicroserviceType.SEARCH);
 
     if (!this.isConnectedTo(MicroserviceType.SEARCH)) {
-      throw new Error('Search microservice (Redis) is not connected');
+      throw new Error("Search microservice (Redis) is not connected");
     }
 
     try {
       redisClient.connect().then(() => {
-        redisClient.send({ cmd: 'subscribe' }, { channel }).subscribe({
+        redisClient.send({ cmd: "subscribe" }, { channel }).subscribe({
           next: (message) => callback(message),
-          error: (error) => console.error('Redis subscription error:', error),
+          error: (error) => console.error("Redis subscription error:", error),
         });
       });
     } catch (error) {
-      console.error('Error subscribing to Redis:', error);
+      console.error("Error subscribing to Redis:", error);
       throw error;
     }
   }
@@ -348,22 +361,22 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
     for (const [type, client] of this.clients.entries()) {
       if (this.isConnectedTo(type)) {
         try {
-          const health = await this.sendPattern(type, 'health_check', {});
+          const health = await this.sendPattern(type, "health_check", {});
           services[type] = {
-            status: 'healthy',
+            status: "healthy",
             health,
             lastCheck: new Date(),
           };
         } catch (error) {
           services[type] = {
-            status: 'unhealthy',
+            status: "unhealthy",
             error: error.message,
             lastCheck: new Date(),
           };
         }
       } else {
         services[type] = {
-          status: 'disconnected',
+          status: "disconnected",
           lastCheck: new Date(),
         };
       }
@@ -378,7 +391,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
     pattern: string,
     data: any,
     instances: string[] = [],
-    strategy: 'round-robin' | 'random' | 'least-connections' = 'round-robin',
+    strategy: "round-robin" | "random" | "least-connections" = "round-robin",
   ): Promise<T> {
     // 如果没有指定实例，使用默认客户端
     if (instances.length === 0) {
@@ -395,12 +408,12 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
 
   private selectInstance(instances: string[], strategy: string): string {
     switch (strategy) {
-      case 'random':
+      case "random":
         return instances[Math.floor(Math.random() * instances.length)];
-      case 'least-connections':
+      case "least-connections":
         // 简化实现，实际需要跟踪连接数
         return instances[0];
-      case 'round-robin':
+      case "round-robin":
       default:
         // 简化的轮询实现
         const index = Date.now() % instances.length;
@@ -409,7 +422,11 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   }
 
   // 事件溯源
-  async publishEvent(eventType: string, eventData: any, aggregateId: string): Promise<void> {
+  async publishEvent(
+    eventType: string,
+    eventData: any,
+    aggregateId: string,
+  ): Promise<void> {
     const event = {
       id: this.generateEventId(),
       type: eventType,
@@ -419,7 +436,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
       version: 1,
     };
 
-    await this.publishToKafka('events', event);
+    await this.publishToKafka("events", event);
   }
 
   async getEventsByAggregate(aggregateId: string): Promise<any[]> {

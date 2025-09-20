@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { Module } from '@nestjs/common';
-import { ProductBatchController } from './product-batch.controller';
-import { ProductBatchService } from './product-batch.service';
-import { PrismaModule } from '../../common/services/prisma.module';
+import { Module } from "@nestjs/common";
+import { ProductBatchController } from "./product-batch.controller";
+import { ProductBatchService } from "./product-batch.service";
+import { PrismaModule } from "../../common/services/prisma.module";
 
 @Module({
   imports: [PrismaModule],

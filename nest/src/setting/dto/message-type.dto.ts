@@ -1,10 +1,19 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, IsArray, Min, Max, IsEnum } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsEnum,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export enum MessageSendType {
-  MEMBER = 1,    // 会员
-  MERCHANT = 2,  // 商家
+  MEMBER = 1, // 会员
+  MERCHANT = 2, // 商家
 }
 
 export class MessageTypeQueryDto {
@@ -26,11 +35,11 @@ export class MessageTypeQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'message_id';
+  sort_field?: string = "message_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @IsEnum(MessageSendType)
@@ -58,7 +67,7 @@ export class CreateMessageTypeDto {
 
   @IsOptional()
   @IsString()
-  describe?: string = '';
+  describe?: string = "";
 
   @IsEnum(MessageSendType)
   @Type(() => Number)

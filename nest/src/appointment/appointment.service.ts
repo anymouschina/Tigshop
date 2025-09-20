@@ -1,6 +1,11 @@
 // @ts-nocheck
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 import {
   CreateAppointmentDto,
   UpdateAppointmentDto,
@@ -12,13 +17,16 @@ import {
   AppointmentType,
   AppointmentStatus,
   PaymentStatus,
-} from './dto/appointment.dto';
+} from "./dto/appointment.dto";
 
 @Injectable()
 export class AppointmentService {
   constructor(private prisma: PrismaService) {}
 
-  async createAppointment(createDto: CreateAppointmentDto, creatorId?: number): Promise<any> {
+  async createAppointment(
+    createDto: CreateAppointmentDto,
+    creatorId?: number,
+  ): Promise<any> {
     // 验证时间冲突
     await this.checkTimeConflict(
       createDto.startTime,
@@ -54,7 +62,9 @@ export class AppointmentService {
         service_id: createDto.serviceId,
         order_id: createDto.orderId,
         status: AppointmentStatus.PENDING,
-        payment_status: createDto.requirePayment ? PaymentStatus.UNPAID : PaymentStatus.PAID,
+        payment_status: createDto.requirePayment
+          ? PaymentStatus.UNPAID
+          : PaymentStatus.PAID,
         creator_id: creatorId,
       },
       include: {
@@ -80,7 +90,7 @@ export class AppointmentService {
     });
 
     // 发送预约确认通知
-    await this.sendAppointmentNotification(appointment, 'created');
+    await this.sendAppointmentNotification(appointment, "created");
 
     return appointment;
   }
@@ -184,8 +194,8 @@ export class AppointmentService {
 
   private buildOrderBy(query: AppointmentQueryDto): any {
     const orderBy: any = {};
-    const sortField = query.sortField || 'start_time';
-    const sortOrder = query.sortOrder || 'asc';
+    const sortField = query.sortField || "start_time";
+    const sortOrder = query.sortOrder || "asc";
 
     orderBy[sortField] = sortOrder;
     return orderBy;
@@ -215,26 +225,30 @@ export class AppointmentService {
         order: true,
         history: {
           orderBy: {
-            created_at: 'desc',
+            created_at: "desc",
           },
         },
       },
     });
 
     if (!appointment) {
-      throw new NotFoundException('预约不存在');
+      throw new NotFoundException("预约不存在");
     }
 
     return appointment;
   }
 
-  async updateAppointment(id: number, updateDto: UpdateAppointmentDto, updaterId?: number): Promise<any> {
+  async updateAppointment(
+    id: number,
+    updateDto: UpdateAppointmentDto,
+    updaterId?: number,
+  ): Promise<any> {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
     });
 
     if (!appointment) {
-      throw new NotFoundException('预约不存在');
+      throw new NotFoundException("预约不存在");
     }
 
     // 如果修改时间，检查冲突
@@ -280,26 +294,30 @@ export class AppointmentService {
     });
 
     // 记录历史
-    await this.recordHistory(id, 'updated', updaterId, updateDto);
+    await this.recordHistory(id, "updated", updaterId, updateDto);
 
     return updatedAppointment;
   }
 
-  async cancelAppointment(id: number, cancelDto: CancelAppointmentDto, cancellerId?: number): Promise<any> {
+  async cancelAppointment(
+    id: number,
+    cancelDto: CancelAppointmentDto,
+    cancellerId?: number,
+  ): Promise<any> {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
     });
 
     if (!appointment) {
-      throw new NotFoundException('预约不存在');
+      throw new NotFoundException("预约不存在");
     }
 
     if (appointment.status === AppointmentStatus.CANCELLED) {
-      throw new BadRequestException('预约已取消');
+      throw new BadRequestException("预约已取消");
     }
 
     if (appointment.status === AppointmentStatus.COMPLETED) {
-      throw new BadRequestException('已完成的预约不能取消');
+      throw new BadRequestException("已完成的预约不能取消");
     }
 
     const cancelledAppointment = await this.prisma.appointment.update({
@@ -334,13 +352,13 @@ export class AppointmentService {
     });
 
     // 记录历史
-    await this.recordHistory(id, 'cancelled', cancellerId, {
+    await this.recordHistory(id, "cancelled", cancellerId, {
       reason: cancelDto.reason,
       notes: cancelDto.notes,
     });
 
     // 发送取消通知
-    await this.sendAppointmentNotification(cancelledAppointment, 'cancelled');
+    await this.sendAppointmentNotification(cancelledAppointment, "cancelled");
 
     return cancelledAppointment;
   }
@@ -355,15 +373,15 @@ export class AppointmentService {
     });
 
     if (!appointment) {
-      throw new NotFoundException('预约不存在');
+      throw new NotFoundException("预约不存在");
     }
 
     if (appointment.status === AppointmentStatus.CANCELLED) {
-      throw new BadRequestException('已取消的预约不能重新安排');
+      throw new BadRequestException("已取消的预约不能重新安排");
     }
 
     if (appointment.status === AppointmentStatus.COMPLETED) {
-      throw new BadRequestException('已完成的预约不能重新安排');
+      throw new BadRequestException("已完成的预约不能重新安排");
     }
 
     // 检查新时间是否冲突
@@ -417,7 +435,7 @@ export class AppointmentService {
     });
 
     // 记录历史
-    await this.recordHistory(id, 'rescheduled', reschedulerId, {
+    await this.recordHistory(id, "rescheduled", reschedulerId, {
       oldStartTime: appointment.start_time,
       oldEndTime: appointment.end_time,
       newStartTime: rescheduleDto.newStartTime,
@@ -427,7 +445,10 @@ export class AppointmentService {
     });
 
     // 发送重新安排通知
-    await this.sendAppointmentNotification(rescheduledAppointment, 'rescheduled');
+    await this.sendAppointmentNotification(
+      rescheduledAppointment,
+      "rescheduled",
+    );
 
     return rescheduledAppointment;
   }
@@ -468,15 +489,12 @@ export class AppointmentService {
     const conflicts = await this.prisma.appointment.findMany({
       where: {
         ...where,
-        OR: [
-          { staff_id: staffId },
-          { customer_id: customerId },
-        ],
+        OR: [{ staff_id: staffId }, { customer_id: customerId }],
       },
     });
 
     if (conflicts.length > 0) {
-      throw new ConflictException('该时间段已有预约冲突');
+      throw new ConflictException("该时间段已有预约冲突");
     }
   }
 
@@ -516,7 +534,7 @@ export class AppointmentService {
     const conflicts = await this.prisma.appointment.count({ where });
 
     if (conflicts > 0) {
-      throw new ConflictException('该服务人员在该时间段已有其他预约');
+      throw new ConflictException("该服务人员在该时间段已有其他预约");
     }
   }
 
@@ -536,7 +554,10 @@ export class AppointmentService {
     });
   }
 
-  private async sendAppointmentNotification(appointment: any, action: string): Promise<void> {
+  private async sendAppointmentNotification(
+    appointment: any,
+    action: string,
+  ): Promise<void> {
     // TODO: 实现通知逻辑
     console.log(`发送预约${action}通知: ${appointment.title}`);
   }
@@ -562,14 +583,17 @@ export class AppointmentService {
         },
       },
       orderBy: {
-        start_time: 'asc',
+        start_time: "asc",
       },
     });
 
     return appointments;
   }
 
-  async getCustomerAppointments(customerId: number, query: AppointmentQueryDto): Promise<any> {
+  async getCustomerAppointments(
+    customerId: number,
+    query: AppointmentQueryDto,
+  ): Promise<any> {
     const where = this.buildWhereClause(query);
     where.customer_id = customerId;
 
@@ -605,7 +629,10 @@ export class AppointmentService {
     };
   }
 
-  async getStaffAppointments(staffId: number, query: AppointmentQueryDto): Promise<any> {
+  async getStaffAppointments(
+    staffId: number,
+    query: AppointmentQueryDto,
+  ): Promise<any> {
     const where = this.buildWhereClause(query);
     where.staff_id = staffId;
 
@@ -654,16 +681,13 @@ export class AppointmentService {
     };
 
     if (userId) {
-      where.OR = [
-        { customer_id: userId },
-        { staff_id: userId },
-      ];
+      where.OR = [{ customer_id: userId }, { staff_id: userId }];
     }
 
     return this.prisma.appointment.findMany({
       where,
       orderBy: {
-        start_time: 'asc',
+        start_time: "asc",
       },
       take: 10,
       include: {
@@ -698,7 +722,7 @@ export class AppointmentService {
     });
 
     const typeStats = await this.prisma.appointment.groupBy({
-      by: ['type'],
+      by: ["type"],
       _count: { id: true },
     });
 
@@ -745,7 +769,7 @@ export class AppointmentService {
         is_enabled: true,
       },
       orderBy: {
-        created_at: 'desc',
+        created_at: "desc",
       },
     });
   }
@@ -756,7 +780,7 @@ export class AppointmentService {
     });
 
     if (!service) {
-      throw new NotFoundException('服务项目不存在');
+      throw new NotFoundException("服务项目不存在");
     }
 
     return service;

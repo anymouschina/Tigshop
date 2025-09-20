@@ -1,7 +1,15 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
-import { CreatePaymentDto, PaymentMethod, PaymentStatus } from './dto/create-payment.dto';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../database/database.service";
+import {
+  CreatePaymentDto,
+  PaymentMethod,
+  PaymentStatus,
+} from "./dto/create-payment.dto";
 
 export interface PaymentResponse {
   paymentId: number;
@@ -22,37 +30,49 @@ export class PaymentService {
   /**
    * 创建支付 - 对齐PHP版本 order/pay/create
    */
-  async createPayment(userId: number, createPaymentDto: CreatePaymentDto): Promise<PaymentResponse> {
-    const { orderId, amount, paymentMethod, channelId, clientIp, userAgent, callbackUrl, remark } = createPaymentDto;
+  async createPayment(
+    userId: number,
+    createPaymentDto: CreatePaymentDto,
+  ): Promise<PaymentResponse> {
+    const {
+      orderId,
+      amount,
+      paymentMethod,
+      channelId,
+      clientIp,
+      userAgent,
+      callbackUrl,
+      remark,
+    } = createPaymentDto;
 
     // 验证订单是否存在且属于当前用户
-    const order = await this.prisma.$queryRaw`
+    const order = (await this.prisma.$queryRaw`
       SELECT * FROM "Order" WHERE id = ${orderId} AND "userId" = ${userId}
-    ` as any[];
+    `) as any[];
 
     if (!order || order.length === 0) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     const orderData = order[0];
 
     // 验证订单状态
-    if (orderData.status !== 'PENDING') {
-      throw new BadRequestException('订单状态不允许支付');
+    if (orderData.status !== "PENDING") {
+      throw new BadRequestException("订单状态不允许支付");
     }
 
     // 验证支付金额
     if (Number(orderData.paymentAmount) !== amount) {
-      throw new BadRequestException('支付金额不正确');
+      throw new BadRequestException("支付金额不正确");
     }
 
     // 检查是否已有支付记录
-    const existingPayment = await this.prisma.$queryRaw`
+    const existingPayment = (await this.prisma.$queryRaw`
       SELECT * FROM "Payment" WHERE "orderId" = ${orderId} AND status = 'SUCCESS'
-    ` as any[];
+    `) as any[];
 
     if (existingPayment && existingPayment.length > 0) {
-      throw new BadRequestException('订单已支付');
+      throw new BadRequestException("订单已支付");
     }
 
     // 生成支付订单号
@@ -66,7 +86,12 @@ export class PaymentService {
     `;
 
     // 根据支付方式生成支付信息
-    const paymentInfo = await this.generatePaymentInfo(paymentMethod, paymentSn, amount, callbackUrl);
+    const paymentInfo = await this.generatePaymentInfo(
+      paymentMethod,
+      paymentSn,
+      amount,
+      callbackUrl,
+    );
 
     return {
       paymentId: (payment as any).id,
@@ -75,7 +100,7 @@ export class PaymentService {
       paymentMethod,
       status: PaymentStatus.PENDING,
       ...paymentInfo,
-      message: '支付创建成功',
+      message: "支付创建成功",
     };
   }
 
@@ -83,15 +108,15 @@ export class PaymentService {
    * 获取支付状态 - 对齐PHP版本 order/pay/status
    */
   async getPaymentStatus(userId: number, paymentId: number) {
-    const payment = await this.prisma.$queryRaw`
+    const payment = (await this.prisma.$queryRaw`
       SELECT p.*, o."userId"
       FROM "Payment" p
       JOIN "Order" o ON p."orderId" = o.id
       WHERE p.id = ${paymentId} AND o."userId" = ${userId}
-    ` as any[];
+    `) as any[];
 
     if (!payment || payment.length === 0) {
-      throw new NotFoundException('支付记录不存在');
+      throw new NotFoundException("支付记录不存在");
     }
 
     const paymentData = payment[0];
@@ -104,7 +129,7 @@ export class PaymentService {
       status: paymentData.status,
       transactionId: paymentData.transactionId,
       paidTime: paymentData.paidTime,
-      message: '查询成功',
+      message: "查询成功",
     };
   }
 
@@ -113,12 +138,12 @@ export class PaymentService {
    */
   async handlePaymentCallback(paymentSn: string, callbackData: any) {
     // 查找支付记录
-    const payment = await this.prisma.$queryRaw`
+    const payment = (await this.prisma.$queryRaw`
       SELECT * FROM "Payment" WHERE "paymentSn" = ${paymentSn}
-    ` as any[];
+    `) as any[];
 
     if (!payment || payment.length === 0) {
-      throw new NotFoundException('支付记录不存在');
+      throw new NotFoundException("支付记录不存在");
     }
 
     const paymentData = payment[0];
@@ -126,7 +151,7 @@ export class PaymentService {
     // 验证回调数据（这里简化处理，实际需要根据支付平台验证签名）
     const isValid = this.validateCallback(callbackData);
     if (!isValid) {
-      throw new BadRequestException('回调验证失败');
+      throw new BadRequestException("回调验证失败");
     }
 
     // 更新支付状态
@@ -153,36 +178,40 @@ export class PaymentService {
       WHERE id = ${paymentData.orderId}
     `;
 
-    return { success: true, message: '回调处理成功' };
+    return { success: true, message: "回调处理成功" };
   }
 
   /**
    * 申请退款 - 对齐PHP版本 order/pay/refund
    */
-  async requestRefund(userId: number, paymentId: number, refundData: { amount?: number; reason?: string }) {
+  async requestRefund(
+    userId: number,
+    paymentId: number,
+    refundData: { amount?: number; reason?: string },
+  ) {
     // 查找支付记录
-    const payment = await this.prisma.$queryRaw`
+    const payment = (await this.prisma.$queryRaw`
       SELECT p.*, o."userId"
       FROM "Payment" p
       JOIN "Order" o ON p."orderId" = o.id
       WHERE p.id = ${paymentId} AND o."userId" = ${userId}
-    ` as any[];
+    `) as any[];
 
     if (!payment || payment.length === 0) {
-      throw new NotFoundException('支付记录不存在');
+      throw new NotFoundException("支付记录不存在");
     }
 
     const paymentData = payment[0];
 
     // 验证支付状态
-    if (paymentData.status !== 'SUCCESS') {
-      throw new BadRequestException('只有支付成功才能申请退款');
+    if (paymentData.status !== "SUCCESS") {
+      throw new BadRequestException("只有支付成功才能申请退款");
     }
 
     // 验证退款金额
     const refundAmount = refundData.amount || Number(paymentData.amount);
     if (refundAmount > Number(paymentData.amount)) {
-      throw new BadRequestException('退款金额不能大于支付金额');
+      throw new BadRequestException("退款金额不能大于支付金额");
     }
 
     // 生成退款单号
@@ -191,19 +220,23 @@ export class PaymentService {
     // 创建退款记录
     const refund = await this.prisma.$queryRaw`
       INSERT INTO "Refund" ("paymentId", "refundSn", "amount", "reason", "status", "createdAt", "updatedAt")
-      VALUES (${paymentId}, ${refundSn}, ${refundAmount}, ${refundData.reason || ''}, 'PENDING', NOW(), NOW())
+      VALUES (${paymentId}, ${refundSn}, ${refundAmount}, ${refundData.reason || ""}, 'PENDING', NOW(), NOW())
       RETURNING *
     `;
 
     // 调用支付平台退款接口（这里简化处理）
-    const refundResult = await this.processRefund(paymentData.paymentMethod, refundSn, refundAmount);
+    const refundResult = await this.processRefund(
+      paymentData.paymentMethod,
+      refundSn,
+      refundAmount,
+    );
 
     return {
       refundId: (refund as any).id,
       refundSn,
       amount: refundAmount,
-      status: 'PENDING',
-      message: '退款申请已提交',
+      status: "PENDING",
+      message: "退款申请已提交",
     };
   }
 
@@ -213,26 +246,26 @@ export class PaymentService {
   async getPaymentMethods() {
     return [
       {
-        id: 'alipay',
-        name: '支付宝',
-        icon: '/images/payment/alipay.png',
-        description: '支付宝支付',
+        id: "alipay",
+        name: "支付宝",
+        icon: "/images/payment/alipay.png",
+        description: "支付宝支付",
         status: 1,
         sort: 1,
       },
       {
-        id: 'wechat',
-        name: '微信支付',
-        icon: '/images/payment/wechat.png',
-        description: '微信支付',
+        id: "wechat",
+        name: "微信支付",
+        icon: "/images/payment/wechat.png",
+        description: "微信支付",
         status: 1,
         sort: 2,
       },
       {
-        id: 'unionpay',
-        name: '银联支付',
-        icon: '/images/payment/unionpay.png',
-        description: '银联支付',
+        id: "unionpay",
+        name: "银联支付",
+        icon: "/images/payment/unionpay.png",
+        description: "银联支付",
         status: 0,
         sort: 3,
       },
@@ -244,7 +277,9 @@ export class PaymentService {
    */
   private generatePaymentSn(): string {
     const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
     return `PAY${timestamp}${random}`;
   }
 
@@ -253,14 +288,21 @@ export class PaymentService {
    */
   private generateRefundSn(): string {
     const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
     return `REF${timestamp}${random}`;
   }
 
   /**
    * 生成支付信息
    */
-  private async generatePaymentInfo(paymentMethod: PaymentMethod, paymentSn: string, amount: number, callbackUrl?: string) {
+  private async generatePaymentInfo(
+    paymentMethod: PaymentMethod,
+    paymentSn: string,
+    amount: number,
+    callbackUrl?: string,
+  ) {
     switch (paymentMethod) {
       case PaymentMethod.ALIPAY:
         return {
@@ -289,13 +331,17 @@ export class PaymentService {
   /**
    * 处理退款
    */
-  private async processRefund(paymentMethod: PaymentMethod, refundSn: string, amount: number): Promise<any> {
+  private async processRefund(
+    paymentMethod: PaymentMethod,
+    refundSn: string,
+    amount: number,
+  ): Promise<any> {
     // 这里应该调用支付平台的退款接口
     // 简化处理，返回模拟结果
     return {
       success: true,
       refundId: refundSn,
-      message: '退款申请已提交',
+      message: "退款申请已提交",
     };
   }
 }

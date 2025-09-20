@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { Test, TestingModule } from '@nestjs/testing';
-import { RolesGuard } from '../guards/roles.guard';
-import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from '../decorators/roles.decorator';
-import { ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
+import { Test, TestingModule } from "@nestjs/testing";
+import { RolesGuard } from "../guards/roles.guard";
+import { Reflector } from "@nestjs/core";
+import { ROLES_KEY } from "../decorators/roles.decorator";
+import { ExecutionContext, HttpException, HttpStatus } from "@nestjs/common";
 
-describe('RolesGuard', () => {
+describe("RolesGuard", () => {
   let guard: RolesGuard;
   let reflector: jest.Mocked<Reflector>;
 
@@ -32,7 +32,7 @@ describe('RolesGuard', () => {
     jest.clearAllMocks();
   });
 
-  describe('canActivate', () => {
+  describe("canActivate", () => {
     let mockContext: ExecutionContext;
 
     beforeEach(() => {
@@ -43,7 +43,7 @@ describe('RolesGuard', () => {
       } as any;
     });
 
-    it('should return true when no roles are required', () => {
+    it("should return true when no roles are required", () => {
       mockReflector.getAllAndOverride.mockReturnValue(null);
 
       const result = guard.canActivate(mockContext);
@@ -55,8 +55,8 @@ describe('RolesGuard', () => {
       ]);
     });
 
-    it('should return false when user is not present in request', () => {
-      const requiredRoles = ['admin'];
+    it("should return false when user is not present in request", () => {
+      const requiredRoles = ["admin"];
       mockReflector.getAllAndOverride.mockReturnValue(requiredRoles);
 
       const mockRequest = {};
@@ -75,8 +75,8 @@ describe('RolesGuard', () => {
       ]);
     });
 
-    it('should return false when user has no roles', () => {
-      const requiredRoles = ['admin'];
+    it("should return false when user has no roles", () => {
+      const requiredRoles = ["admin"];
       mockReflector.getAllAndOverride.mockReturnValue(requiredRoles);
 
       const mockRequest = { user: {} };
@@ -91,11 +91,11 @@ describe('RolesGuard', () => {
       expect(result).toBe(false);
     });
 
-    it('should return false when user roles do not include required role', () => {
-      const requiredRoles = ['admin'];
+    it("should return false when user roles do not include required role", () => {
+      const requiredRoles = ["admin"];
       mockReflector.getAllAndOverride.mockReturnValue(requiredRoles);
 
-      const mockRequest = { user: { roles: ['user'] } };
+      const mockRequest = { user: { roles: ["user"] } };
       const mockSwitchToHttp = {
         getRequest: jest.fn().mockReturnValue(mockRequest),
       };
@@ -107,11 +107,11 @@ describe('RolesGuard', () => {
       expect(result).toBe(false);
     });
 
-    it('should return true when user has one of the required roles', () => {
-      const requiredRoles = ['admin', 'editor'];
+    it("should return true when user has one of the required roles", () => {
+      const requiredRoles = ["admin", "editor"];
       mockReflector.getAllAndOverride.mockReturnValue(requiredRoles);
 
-      const mockRequest = { user: { roles: ['user', 'editor'] } };
+      const mockRequest = { user: { roles: ["user", "editor"] } };
       const mockSwitchToHttp = {
         getRequest: jest.fn().mockReturnValue(mockRequest),
       };
@@ -123,11 +123,11 @@ describe('RolesGuard', () => {
       expect(result).toBe(true);
     });
 
-    it('should return true when user has all required roles', () => {
-      const requiredRoles = ['admin', 'editor'];
+    it("should return true when user has all required roles", () => {
+      const requiredRoles = ["admin", "editor"];
       mockReflector.getAllAndOverride.mockReturnValue(requiredRoles);
 
-      const mockRequest = { user: { roles: ['admin', 'editor', 'user'] } };
+      const mockRequest = { user: { roles: ["admin", "editor", "user"] } };
       const mockSwitchToHttp = {
         getRequest: jest.fn().mockReturnValue(mockRequest),
       };
@@ -139,11 +139,11 @@ describe('RolesGuard', () => {
       expect(result).toBe(true);
     });
 
-    it('should return true when user has the single required role', () => {
-      const requiredRoles = ['admin'];
+    it("should return true when user has the single required role", () => {
+      const requiredRoles = ["admin"];
       mockReflector.getAllAndOverride.mockReturnValue(requiredRoles);
 
-      const mockRequest = { user: { roles: ['admin'] } };
+      const mockRequest = { user: { roles: ["admin"] } };
       const mockSwitchToHttp = {
         getRequest: jest.fn().mockReturnValue(mockRequest),
       };

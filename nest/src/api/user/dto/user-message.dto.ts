@@ -1,5 +1,12 @@
 // @ts-nocheck
-import { IsString, IsNumber, IsEnum, IsOptional, IsArray, ArrayNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  ArrayNotEmpty,
+} from "class-validator";
 
 export class MessageQueryDto {
   @IsOptional()
@@ -11,11 +18,11 @@ export class MessageQueryDto {
   size?: number = 10;
 
   @IsOptional()
-  @IsEnum(['all', 'unread', 'read'])
-  status?: string = 'all';
+  @IsEnum(["all", "unread", "read"])
+  status?: string = "all";
 
   @IsOptional()
-  @IsEnum(['system', 'order', 'promotion', 'service'])
+  @IsEnum(["system", "order", "promotion", "service"])
   message_type?: string;
 
   @IsOptional()

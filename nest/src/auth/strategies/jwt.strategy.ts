@@ -1,28 +1,28 @@
 // @ts-nocheck
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
-import { JwtPayload } from '../auth.service';
-import { Request } from 'express';
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { PassportStrategy } from "@nestjs/passport";
+import { Injectable, UnauthorizedException, Inject } from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
+import { JwtPayload } from "../auth.service";
+import { Request } from "express";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    @Inject('CONFIG') private readonly config: any,
+    @Inject("CONFIG") private readonly config: any,
     private readonly databaseService: DatabaseService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.jwtSecret || 'fallback-secret-key',
+      secretOrKey: config.jwtSecret || "fallback-secret-key",
       passReqToCallback: true, // Pass request to validate method
     });
   }
 
   /**
    * Validate the JWT payload and find the user
-   * 
+   *
    * @param req - Express request object
    * @param payload - JWT payload containing user info
    * @returns User object if valid, throws UnauthorizedException if invalid
@@ -30,28 +30,29 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(req: Request, payload: JwtPayload) {
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Invalid token format');
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      throw new UnauthorizedException("Invalid token format");
     }
-    
-    const token = authHeader.split(' ')[1];
-    
+
+    const token = authHeader.split(" ")[1];
+
     // Check if token is blacklisted
-    const blacklistedToken = await this.databaseService.blacklistedToken.findUnique({
-      where: { token },
-    });
-    
+    const blacklistedToken =
+      await this.databaseService.blacklistedToken.findUnique({
+        where: { token },
+      });
+
     if (blacklistedToken) {
-      throw new UnauthorizedException('Token has been revoked');
+      throw new UnauthorizedException("Token has been revoked");
     }
-    
+
     // Find user
     const user = await this.databaseService.user.findUnique({
       where: { userId: payload.sub },
     });
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException("User not found");
     }
 
     // Strip sensitive information
@@ -59,4 +60,4 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     return user;
   }
-} 
+}

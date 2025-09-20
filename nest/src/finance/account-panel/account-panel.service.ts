@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../database/prisma.service";
 
 @Injectable()
 export class AccountPanelService {
@@ -10,12 +10,13 @@ export class AccountPanelService {
     const { search_start_date, search_end_date } = filter;
 
     // 获取基础统计数据
-    const [totalBalance, totalFrozen, totalIncome, totalExpense] = await Promise.all([
-      this.getTotalBalance(),
-      this.getTotalFrozen(),
-      this.getTotalIncome(search_start_date, search_end_date),
-      this.getTotalExpense(search_start_date, search_end_date),
-    ]);
+    const [totalBalance, totalFrozen, totalIncome, totalExpense] =
+      await Promise.all([
+        this.getTotalBalance(),
+        this.getTotalFrozen(),
+        this.getTotalIncome(search_start_date, search_end_date),
+        this.getTotalExpense(search_start_date, search_end_date),
+      ]);
 
     // 获取账户分布
     const accountDistribution = await this.getAccountDistribution();
@@ -38,7 +39,11 @@ export class AccountPanelService {
 
   async getStatistics() {
     const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [todayStats, monthStats, totalStats] = await Promise.all([
@@ -60,20 +65,20 @@ export class AccountPanelService {
     let dateFormat: string;
 
     switch (period) {
-      case 'week':
+      case "week":
         startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-        dateFormat = '%Y-%m-%d';
+        dateFormat = "%Y-%m-%d";
         break;
-      case 'month':
+      case "month":
         startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-        dateFormat = '%Y-%m-%d';
+        dateFormat = "%Y-%m-%d";
         break;
       default:
         startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
-        dateFormat = '%Y-%m-%d %H';
+        dateFormat = "%Y-%m-%d %H";
     }
 
-    const trend = await this.prisma.$queryRaw`
+    const trend = (await this.prisma.$queryRaw`
       SELECT
         DATE_FORMAT(create_time, ${dateFormat}) as date_key,
         SUM(CASE WHEN change_type > 0 THEN amount ELSE 0 END) as income,
@@ -82,7 +87,7 @@ export class AccountPanelService {
       WHERE create_time >= ${startDate} AND create_time <= ${endDate}
       GROUP BY DATE_FORMAT(create_time, ${dateFormat})
       ORDER BY date_key
-    ` as any[];
+    `) as any[];
 
     return trend;
   }
@@ -101,7 +106,7 @@ export class AccountPanelService {
         },
       },
       orderBy: {
-        user_balance: 'desc',
+        user_balance: "desc",
       },
       take: limit,
     });
@@ -139,7 +144,7 @@ export class AccountPanelService {
         },
         skip,
         take: size,
-        orderBy: { create_time: 'desc' },
+        orderBy: { create_time: "desc" },
       }),
       this.prisma.userBalanceLog.count({ where }),
     ]);
@@ -168,7 +173,10 @@ export class AccountPanelService {
     return result._sum.frozen_balance || 0;
   }
 
-  private async getTotalIncome(startDate?: string, endDate?: string): Promise<number> {
+  private async getTotalIncome(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<number> {
     const where: any = { change_type: { gt: 0 } };
     if (startDate && endDate) {
       where.create_time = {
@@ -186,7 +194,10 @@ export class AccountPanelService {
     return result._sum.amount || 0;
   }
 
-  private async getTotalExpense(startDate?: string, endDate?: string): Promise<number> {
+  private async getTotalExpense(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<number> {
     const where: any = { change_type: { lt: 0 } };
     if (startDate && endDate) {
       where.create_time = {
@@ -205,7 +216,7 @@ export class AccountPanelService {
   }
 
   private async getAccountDistribution() {
-    const distribution = await this.prisma.$queryRaw`
+    const distribution = (await this.prisma.$queryRaw`
       SELECT
         CASE
           WHEN user_balance = 0 THEN '0'
@@ -218,7 +229,7 @@ export class AccountPanelService {
       FROM user
       GROUP BY range
       ORDER BY range
-    ` as any[];
+    `) as any[];
 
     return distribution;
   }
@@ -234,7 +245,7 @@ export class AccountPanelService {
           },
         },
       },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
       take: 10,
     });
   }

@@ -1,12 +1,16 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   CreateAddressDto,
   UpdateAddressDto,
   AddressQueryDto,
   SetSelectedDto,
-} from './dto/user-address.dto';
+} from "./dto/user-address.dto";
 
 @Injectable()
 export class UserAddressService {
@@ -19,7 +23,7 @@ export class UserAddressService {
     const [addresses, total] = await Promise.all([
       this.prisma.user_address.findMany({
         where: { user_id: userId, is_delete: 0 },
-        orderBy: { is_default: 'desc' },
+        orderBy: { is_default: "desc" },
         skip,
         take: size,
       }),
@@ -30,7 +34,7 @@ export class UserAddressService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         records: addresses,
         total,
@@ -50,19 +54,23 @@ export class UserAddressService {
     });
 
     if (!address) {
-      throw new NotFoundException('地址不存在');
+      throw new NotFoundException("地址不存在");
     }
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: address,
     };
   }
 
   async createAddress(userId: number, createDto: CreateAddressDto) {
     // 验证省市区数据
-    await this.validateRegion(createDto.province_id, createDto.city_id, createDto.district_id);
+    await this.validateRegion(
+      createDto.province_id,
+      createDto.city_id,
+      createDto.district_id,
+    );
 
     // 如果设置为默认地址，先将其他地址设为非默认
     if (createDto.is_default === 1) {
@@ -88,7 +96,7 @@ export class UserAddressService {
 
     return {
       code: 200,
-      message: '添加成功',
+      message: "添加成功",
       data: address,
     };
   }
@@ -104,7 +112,7 @@ export class UserAddressService {
     });
 
     if (!existingAddress) {
-      throw new NotFoundException('地址不存在');
+      throw new NotFoundException("地址不存在");
     }
 
     // 验证省市区数据
@@ -140,7 +148,7 @@ export class UserAddressService {
 
     return {
       code: 200,
-      message: '更新成功',
+      message: "更新成功",
       data: address,
     };
   }
@@ -155,12 +163,12 @@ export class UserAddressService {
     });
 
     if (!address) {
-      throw new NotFoundException('地址不存在');
+      throw new NotFoundException("地址不存在");
     }
 
     // 检查是否是默认地址
     if (address.is_default === 1) {
-      throw new BadRequestException('不能删除默认地址');
+      throw new BadRequestException("不能删除默认地址");
     }
 
     // 检查是否有未完成的订单使用该地址
@@ -173,7 +181,7 @@ export class UserAddressService {
     });
 
     if (orderCount > 0) {
-      throw new BadRequestException('该地址有未完成的订单，不能删除');
+      throw new BadRequestException("该地址有未完成的订单，不能删除");
     }
 
     await this.prisma.user_address.update({
@@ -186,7 +194,7 @@ export class UserAddressService {
 
     return {
       code: 200,
-      message: '删除成功',
+      message: "删除成功",
       data: null,
     };
   }
@@ -201,7 +209,7 @@ export class UserAddressService {
     });
 
     if (!address) {
-      throw new NotFoundException('地址不存在');
+      throw new NotFoundException("地址不存在");
     }
 
     await this.prisma.$transaction(async (prisma) => {
@@ -220,7 +228,7 @@ export class UserAddressService {
 
     return {
       code: 200,
-      message: '设置成功',
+      message: "设置成功",
       data: null,
     };
   }
@@ -241,27 +249,27 @@ export class UserAddressService {
           user_id: userId,
           is_delete: 0,
         },
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
       });
 
       if (latestAddress) {
         return {
           code: 200,
-          message: '获取成功',
+          message: "获取成功",
           data: latestAddress,
         };
       }
 
       return {
         code: 200,
-        message: '暂无收货地址',
+        message: "暂无收货地址",
         data: null,
       };
     }
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: address,
     };
   }
@@ -278,7 +286,7 @@ export class UserAddressService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         total,
         default_count: defaultCount,
@@ -297,7 +305,7 @@ export class UserAddressService {
     });
 
     if (!address) {
-      throw new NotFoundException('地址不存在');
+      throw new NotFoundException("地址不存在");
     }
 
     await this.prisma.user_address.updateMany({
@@ -312,7 +320,7 @@ export class UserAddressService {
 
     return {
       code: 200,
-      message: '设置成功',
+      message: "设置成功",
       data: null,
     };
   }
@@ -320,7 +328,7 @@ export class UserAddressService {
   async getRegionData(parentId: number = 0) {
     const regions = await this.prisma.region.findMany({
       where: { parent_id: parentId },
-      orderBy: { sort_order: 'asc' },
+      orderBy: { sort_order: "asc" },
       select: {
         region_id: true,
         region_name: true,
@@ -331,20 +339,24 @@ export class UserAddressService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: regions,
     };
   }
 
   // 私有方法
-  private async validateRegion(provinceId: number, cityId: number, districtId?: number) {
+  private async validateRegion(
+    provinceId: number,
+    cityId: number,
+    districtId?: number,
+  ) {
     // 验证省份
     const province = await this.prisma.region.findFirst({
       where: { region_id: provinceId, region_type: 1 },
     });
 
     if (!province) {
-      throw new BadRequestException('省份信息不正确');
+      throw new BadRequestException("省份信息不正确");
     }
 
     // 验证城市
@@ -353,7 +365,7 @@ export class UserAddressService {
     });
 
     if (!city) {
-      throw new BadRequestException('城市信息不正确');
+      throw new BadRequestException("城市信息不正确");
     }
 
     // 验证区县（如果提供）
@@ -363,7 +375,7 @@ export class UserAddressService {
       });
 
       if (!district) {
-        throw new BadRequestException('区县信息不正确');
+        throw new BadRequestException("区县信息不正确");
       }
     }
   }

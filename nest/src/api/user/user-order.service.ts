@@ -1,7 +1,15 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
-import { UserOrderQueryDto, CancelOrderDto, ConfirmReceiptDto } from './dto/user-order.dto';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
+import {
+  UserOrderQueryDto,
+  CancelOrderDto,
+  ConfirmReceiptDto,
+} from "./dto/user-order.dto";
 
 @Injectable()
 export class UserOrderService {
@@ -52,7 +60,7 @@ export class UserOrderService {
             },
           },
         },
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         skip,
         take: size,
       }),
@@ -60,11 +68,11 @@ export class UserOrderService {
     ]);
 
     // 处理订单状态文本
-    const processedOrders = orders.map(order => ({
+    const processedOrders = orders.map((order) => ({
       ...order,
       order_status_text: this.getOrderStatusText(order.order_status),
       pay_status_text: this.getPayStatusText(order.pay_status),
-      order_items: order.order_items.map(item => ({
+      order_items: order.order_items.map((item) => ({
         ...item,
         product_image: item.product.image,
         product_price: item.product.price,
@@ -73,7 +81,7 @@ export class UserOrderService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         records: processedOrders,
         total,
@@ -118,30 +126,30 @@ export class UserOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     // 获取订单操作日志
     const orderLogs = await this.prisma.order_log.findMany({
       where: { order_id: orderId },
-      orderBy: { add_time: 'desc' },
+      orderBy: { add_time: "desc" },
     });
 
     // 获取支付记录
     const paymentLogs = await this.prisma.pay_log.findMany({
       where: { order_id: orderId },
-      orderBy: { add_time: 'desc' },
+      orderBy: { add_time: "desc" },
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         order: {
           ...order,
           order_status_text: this.getOrderStatusText(order.order_status),
           pay_status_text: this.getPayStatusText(order.pay_status),
-          order_items: order.order_items.map(item => ({
+          order_items: order.order_items.map((item) => ({
             ...item,
             product_image: item.product.image,
             product_price: item.product.price,
@@ -159,17 +167,18 @@ export class UserOrderService {
       is_delete: 0,
     };
 
-    const [pendingPayment, pendingDelivery, pendingReceipt, completed, total] = await Promise.all([
-      this.prisma.order.count({ where: { ...baseWhere, order_status: 1 } }), // 待付款
-      this.prisma.order.count({ where: { ...baseWhere, order_status: 2 } }), // 待发货
-      this.prisma.order.count({ where: { ...baseWhere, order_status: 3 } }), // 待收货
-      this.prisma.order.count({ where: { ...baseWhere, order_status: 4 } }), // 已完成
-      this.prisma.order.count({ where: baseWhere }), // 全部
-    ]);
+    const [pendingPayment, pendingDelivery, pendingReceipt, completed, total] =
+      await Promise.all([
+        this.prisma.order.count({ where: { ...baseWhere, order_status: 1 } }), // 待付款
+        this.prisma.order.count({ where: { ...baseWhere, order_status: 2 } }), // 待发货
+        this.prisma.order.count({ where: { ...baseWhere, order_status: 3 } }), // 待收货
+        this.prisma.order.count({ where: { ...baseWhere, order_status: 4 } }), // 已完成
+        this.prisma.order.count({ where: baseWhere }), // 全部
+      ]);
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         pending_payment: pendingPayment,
         pending_delivery: pendingDelivery,
@@ -191,7 +200,7 @@ export class UserOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在或状态不正确');
+      throw new NotFoundException("订单不存在或状态不正确");
     }
 
     await this.prisma.$transaction(async (prisma) => {
@@ -222,8 +231,8 @@ export class UserOrderService {
         data: {
           order_id: cancelDto.order_id,
           user_id: userId,
-          action: 'cancel',
-          action_text: '用户取消订单',
+          action: "cancel",
+          action_text: "用户取消订单",
           remark: cancelDto.reason,
           add_time: Math.floor(Date.now() / 1000),
         },
@@ -232,7 +241,7 @@ export class UserOrderService {
 
     return {
       code: 200,
-      message: '订单取消成功',
+      message: "订单取消成功",
       data: null,
     };
   }
@@ -247,13 +256,13 @@ export class UserOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     // 只有已完成、已取消或已关闭的订单可以删除
     const deletableStatus = [4, 5, 6, 7]; // 已完成、已关闭、已退款、已取消
     if (!deletableStatus.includes(order.order_status)) {
-      throw new BadRequestException('订单状态不允许删除');
+      throw new BadRequestException("订单状态不允许删除");
     }
 
     await this.prisma.order.update({
@@ -266,7 +275,7 @@ export class UserOrderService {
 
     return {
       code: 200,
-      message: '订单删除成功',
+      message: "订单删除成功",
       data: null,
     };
   }
@@ -282,7 +291,7 @@ export class UserOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在或状态不正确');
+      throw new NotFoundException("订单不存在或状态不正确");
     }
 
     await this.prisma.$transaction(async (prisma) => {
@@ -300,9 +309,9 @@ export class UserOrderService {
         data: {
           order_id: confirmDto.order_id,
           user_id: userId,
-          action: 'confirm_receipt',
-          action_text: '用户确认收货',
-          remark: confirmDto.remark || '',
+          action: "confirm_receipt",
+          action_text: "用户确认收货",
+          remark: confirmDto.remark || "",
           add_time: Math.floor(Date.now() / 1000),
         },
       });
@@ -313,7 +322,7 @@ export class UserOrderService {
 
     return {
       code: 200,
-      message: '确认收货成功',
+      message: "确认收货成功",
       data: null,
     };
   }
@@ -338,11 +347,11 @@ export class UserOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     if (order.order_status < 3) {
-      throw new BadRequestException('订单还未发货');
+      throw new BadRequestException("订单还未发货");
     }
 
     // 获取物流信息
@@ -351,15 +360,17 @@ export class UserOrderService {
     });
 
     if (!shippingInfo) {
-      throw new NotFoundException('物流信息不存在');
+      throw new NotFoundException("物流信息不存在");
     }
 
     // 获取物流轨迹（这里需要集成第三方物流查询API）
-    const shippingTracks = await this.getShippingTracks(shippingInfo.tracking_number);
+    const shippingTracks = await this.getShippingTracks(
+      shippingInfo.tracking_number,
+    );
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         order: {
           order_id: order.order_id,
@@ -389,7 +400,7 @@ export class UserOrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('订单不存在');
+      throw new NotFoundException("订单不存在");
     }
 
     // 检查商品是否还存在且有库存
@@ -418,7 +429,7 @@ export class UserOrderService {
 
     return {
       code: 200,
-      message: '已添加到购物车',
+      message: "已添加到购物车",
       data: {
         added_count: cartItems.length,
       },
@@ -427,25 +438,25 @@ export class UserOrderService {
 
   private getOrderStatusText(status: number): string {
     const statusMap = {
-      0: '已关闭',
-      1: '待付款',
-      2: '待发货',
-      3: '待收货',
-      4: '已完成',
-      5: '已退款',
-      6: '已取消',
-      7: '已取消',
+      0: "已关闭",
+      1: "待付款",
+      2: "待发货",
+      3: "待收货",
+      4: "已完成",
+      5: "已退款",
+      6: "已取消",
+      7: "已取消",
     };
-    return statusMap[status] || '未知状态';
+    return statusMap[status] || "未知状态";
   }
 
   private getPayStatusText(status: number): string {
     const statusMap = {
-      0: '未支付',
-      1: '已支付',
-      2: '已退款',
+      0: "未支付",
+      1: "已支付",
+      2: "已退款",
     };
-    return statusMap[status] || '未知状态';
+    return statusMap[status] || "未知状态";
   }
 
   private async processOrderSettlement(prisma: any, orderId: number) {
@@ -458,14 +469,14 @@ export class UserOrderService {
     // 这里返回示例数据
     return [
       {
-        time: '2024-01-01 10:00:00',
-        location: '北京',
-        status: '已揽收',
+        time: "2024-01-01 10:00:00",
+        location: "北京",
+        status: "已揽收",
       },
       {
-        time: '2024-01-01 18:00:00',
-        location: '上海',
-        status: '运输中',
+        time: "2024-01-01 18:00:00",
+        location: "上海",
+        status: "运输中",
       },
     ];
   }

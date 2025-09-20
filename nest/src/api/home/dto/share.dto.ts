@@ -1,19 +1,25 @@
 // @ts-nocheck
-import { IsNumber, IsString, IsOptional, IsEnum, IsObject } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsObject,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export enum ShareChannel {
-  WECHAT = 'wechat',
-  WECHAT_MOMENTS = 'wechat_moments',
-  QQ = 'qq',
-  WEIBO = 'weibo',
-  DOUYIN = 'douyin',
+  WECHAT = "wechat",
+  WECHAT_MOMENTS = "wechat_moments",
+  QQ = "qq",
+  WEIBO = "weibo",
+  DOUYIN = "douyin",
 }
 
 export enum ShareType {
-  PRODUCT = 'product',
-  ORDER = 'order',
-  SHOP = 'shop',
+  PRODUCT = "product",
+  ORDER = "order",
+  SHOP = "shop",
 }
 
 export class ShareProductDto {

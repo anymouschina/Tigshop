@@ -1,8 +1,11 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/services/prisma.service';
-import { CreatePriceInquiryDto, UpdatePriceInquiryDto } from './dto/price-inquiry.dto';
-import { ResponseUtil } from '../../../common/utils/response.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../common/services/prisma.service";
+import {
+  CreatePriceInquiryDto,
+  UpdatePriceInquiryDto,
+} from "./dto/price-inquiry.dto";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class PriceInquiryService {
@@ -19,15 +22,15 @@ export class PriceInquiryService {
         { phone: { contains: keyword } },
       ];
     }
-    if (status !== undefined && status !== '') {
+    if (status !== undefined && status !== "") {
       where.status = status;
     }
 
     const orderBy: any = {};
     if (sort_field) {
-      orderBy[sort_field] = sort_order || 'desc';
+      orderBy[sort_field] = sort_order || "desc";
     } else {
-      orderBy.id = 'desc';
+      orderBy.id = "desc";
     }
 
     const skip = (page - 1) * size;
@@ -51,7 +54,7 @@ export class PriceInquiryService {
         { phone: { contains: keyword } },
       ];
     }
-    if (status !== undefined && status !== '') {
+    if (status !== undefined && status !== "") {
       where.status = status;
     }
 
@@ -82,7 +85,7 @@ export class PriceInquiryService {
       });
       return result;
     } catch (error) {
-      console.error('创建价格查询失败:', error);
+      console.error("创建价格查询失败:", error);
       return null;
     }
   }
@@ -92,12 +95,20 @@ export class PriceInquiryService {
       const result = await this.prisma.priceInquiry.update({
         where: { id },
         data: {
-          ...(updateData.customer_name && { customer_name: updateData.customer_name }),
+          ...(updateData.customer_name && {
+            customer_name: updateData.customer_name,
+          }),
           ...(updateData.phone && { phone: updateData.phone }),
           ...(updateData.email !== undefined && { email: updateData.email }),
-          ...(updateData.product_name && { product_name: updateData.product_name }),
-          ...(updateData.specification !== undefined && { specification: updateData.specification }),
-          ...(updateData.quantity !== undefined && { quantity: updateData.quantity }),
+          ...(updateData.product_name && {
+            product_name: updateData.product_name,
+          }),
+          ...(updateData.specification !== undefined && {
+            specification: updateData.specification,
+          }),
+          ...(updateData.quantity !== undefined && {
+            quantity: updateData.quantity,
+          }),
           ...(updateData.remark !== undefined && { remark: updateData.remark }),
           ...(updateData.status !== undefined && { status: updateData.status }),
           updated_at: new Date(),
@@ -105,7 +116,7 @@ export class PriceInquiryService {
       });
       return result;
     } catch (error) {
-      console.error('更新价格查询失败:', error);
+      console.error("更新价格查询失败:", error);
       return null;
     }
   }
@@ -117,7 +128,7 @@ export class PriceInquiryService {
       });
       return true;
     } catch (error) {
-      console.error('删除价格查询失败:', error);
+      console.error("删除价格查询失败:", error);
       return false;
     }
   }
@@ -133,7 +144,7 @@ export class PriceInquiryService {
       });
       return true;
     } catch (error) {
-      console.error('批量删除价格查询失败:', error);
+      console.error("批量删除价格查询失败:", error);
       return false;
     }
   }
@@ -151,7 +162,7 @@ export class PriceInquiryService {
       });
       return result;
     } catch (error) {
-      console.error('回复价格查询失败:', error);
+      console.error("回复价格查询失败:", error);
       return null;
     }
   }
@@ -159,8 +170,12 @@ export class PriceInquiryService {
   async getPriceInquiryStatistics() {
     try {
       const total = await this.prisma.priceInquiry.count();
-      const pending = await this.prisma.priceInquiry.count({ where: { status: 0 } });
-      const replied = await this.prisma.priceInquiry.count({ where: { status: 1 } });
+      const pending = await this.prisma.priceInquiry.count({
+        where: { status: 0 },
+      });
+      const replied = await this.prisma.priceInquiry.count({
+        where: { status: 1 },
+      });
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayCount = await this.prisma.priceInquiry.count({
@@ -178,7 +193,7 @@ export class PriceInquiryService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error('获取价格查询统计失败:', error);
+      console.error("获取价格查询统计失败:", error);
       return {
         total: 0,
         pending: 0,

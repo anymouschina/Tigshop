@@ -1,6 +1,10 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateUserWithdrawApplyDto,
   UpdateUserWithdrawApplyDto,
@@ -8,8 +12,8 @@ import {
   WithdrawStatus,
   WithdrawType,
   WithdrawStatisticsDto,
-  UserWithdrawApplyConfigDto
-} from './dto/user-withdraw-apply.dto';
+  UserWithdrawApplyConfigDto,
+} from "./dto/user-withdraw-apply.dto";
 
 @Injectable()
 export class UserWithdrawApplyService {
@@ -23,10 +27,10 @@ export class UserWithdrawApplyService {
       status,
       userId,
       withdrawType,
-      sortField = 'id',
-      sortOrder = 'desc',
+      sortField = "id",
+      sortOrder = "desc",
       startTime,
-      endTime
+      endTime,
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -111,7 +115,7 @@ export class UserWithdrawApplyService {
     });
 
     if (!apply) {
-      throw new NotFoundException('提现申请不存在');
+      throw new NotFoundException("提现申请不存在");
     }
 
     return apply;
@@ -119,14 +123,14 @@ export class UserWithdrawApplyService {
 
   async create(createDto: CreateUserWithdrawApplyDto) {
     if (createDto.amount <= 0) {
-      throw new BadRequestException('提现金额必须大于0');
+      throw new BadRequestException("提现金额必须大于0");
     }
 
     const apply = await this.prisma.user_withdraw_apply.create({
       data: {
         user_id: createDto.userId,
         amount: createDto.amount,
-        postscript: createDto.postscript || '',
+        postscript: createDto.postscript || "",
         withdraw_type: createDto.accountData.type,
         account_name: createDto.accountData.name,
         account_data: JSON.stringify(createDto.accountData),
@@ -154,7 +158,7 @@ export class UserWithdrawApplyService {
     });
 
     if (!apply) {
-      throw new NotFoundException('提现申请不存在');
+      throw new NotFoundException("提现申请不存在");
     }
 
     const updateData: any = {};
@@ -162,11 +166,17 @@ export class UserWithdrawApplyService {
     if (updateDto.status !== undefined) {
       updateData.status = updateDto.status;
 
-      if (updateDto.status === WithdrawStatus.APPROVED && apply.status !== WithdrawStatus.APPROVED) {
+      if (
+        updateDto.status === WithdrawStatus.APPROVED &&
+        apply.status !== WithdrawStatus.APPROVED
+      ) {
         updateData.process_time = Math.floor(Date.now() / 1000);
       }
 
-      if (updateDto.status === WithdrawStatus.COMPLETED && apply.status !== WithdrawStatus.COMPLETED) {
+      if (
+        updateDto.status === WithdrawStatus.COMPLETED &&
+        apply.status !== WithdrawStatus.COMPLETED
+      ) {
         updateData.complete_time = Math.floor(Date.now() / 1000);
       }
     }
@@ -184,11 +194,15 @@ export class UserWithdrawApplyService {
     }
 
     if (updateDto.processTime !== undefined) {
-      updateData.process_time = Math.floor(new Date(updateDto.processTime).getTime() / 1000);
+      updateData.process_time = Math.floor(
+        new Date(updateDto.processTime).getTime() / 1000,
+      );
     }
 
     if (updateDto.completeTime !== undefined) {
-      updateData.complete_time = Math.floor(new Date(updateDto.completeTime).getTime() / 1000);
+      updateData.complete_time = Math.floor(
+        new Date(updateDto.completeTime).getTime() / 1000,
+      );
     }
 
     if (updateDto.tradeNo !== undefined) {
@@ -219,7 +233,7 @@ export class UserWithdrawApplyService {
     });
 
     if (!apply) {
-      throw new NotFoundException('提现申请不存在');
+      throw new NotFoundException("提现申请不存在");
     }
 
     await this.prisma.user_withdraw_apply.delete({
@@ -236,17 +250,17 @@ export class UserWithdrawApplyService {
   async getConfig(): Promise<UserWithdrawApplyConfigDto> {
     return {
       statusConfig: {
-        [WithdrawStatus.PENDING]: '待审核',
-        [WithdrawStatus.APPROVED]: '已通过',
-        [WithdrawStatus.REJECTED]: '已拒绝',
-        [WithdrawStatus.PROCESSING]: '处理中',
-        [WithdrawStatus.COMPLETED]: '已完成',
-        [WithdrawStatus.FAILED]: '已失败',
+        [WithdrawStatus.PENDING]: "待审核",
+        [WithdrawStatus.APPROVED]: "已通过",
+        [WithdrawStatus.REJECTED]: "已拒绝",
+        [WithdrawStatus.PROCESSING]: "处理中",
+        [WithdrawStatus.COMPLETED]: "已完成",
+        [WithdrawStatus.FAILED]: "已失败",
       },
       withdrawTypeConfig: {
-        [WithdrawType.ALIPAY]: '支付宝',
-        [WithdrawType.WECHAT]: '微信',
-        [WithdrawType.BANK]: '银行卡',
+        [WithdrawType.ALIPAY]: "支付宝",
+        [WithdrawType.WECHAT]: "微信",
+        [WithdrawType.BANK]: "银行卡",
       },
       minAmount: 1,
       maxAmount: 50000,
@@ -255,7 +269,9 @@ export class UserWithdrawApplyService {
     };
   }
 
-  async getStatistics(queryDto?: UserWithdrawApplyQueryDto): Promise<WithdrawStatisticsDto> {
+  async getStatistics(
+    queryDto?: UserWithdrawApplyQueryDto,
+  ): Promise<WithdrawStatisticsDto> {
     const where: any = {};
 
     if (queryDto) {
@@ -268,10 +284,14 @@ export class UserWithdrawApplyService {
       if (queryDto.startTime || queryDto.endTime) {
         where.add_time = {};
         if (queryDto.startTime) {
-          where.add_time.gte = Math.floor(new Date(queryDto.startTime).getTime() / 1000);
+          where.add_time.gte = Math.floor(
+            new Date(queryDto.startTime).getTime() / 1000,
+          );
         }
         if (queryDto.endTime) {
-          where.add_time.lte = Math.floor(new Date(queryDto.endTime).getTime() / 1000);
+          where.add_time.lte = Math.floor(
+            new Date(queryDto.endTime).getTime() / 1000,
+          );
         }
       }
     }
@@ -323,7 +343,10 @@ export class UserWithdrawApplyService {
     };
   }
 
-  async getUserWithdrawHistory(userId: number, queryDto: UserWithdrawApplyQueryDto) {
+  async getUserWithdrawHistory(
+    userId: number,
+    queryDto: UserWithdrawApplyQueryDto,
+  ) {
     const modifiedQuery = { ...queryDto, userId };
     return this.findAll(modifiedQuery);
   }

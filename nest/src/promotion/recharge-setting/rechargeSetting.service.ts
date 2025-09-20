@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateRechargeSettingDto,
   UpdateRechargeSettingDto,
   RechargeSettingQueryDto,
   RechargeSettingStatus,
-  RechargeSettingConfigDto
-} from './dto/rechargeSetting.dto';
+  RechargeSettingConfigDto,
+} from "./dto/rechargeSetting.dto";
 
 @Injectable()
 export class RechargeSettingService {
@@ -19,8 +23,8 @@ export class RechargeSettingService {
       page = 1,
       size = 15,
       status,
-      sortField = 'setting_id',
-      sortOrder = 'desc'
+      sortField = "setting_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -31,7 +35,7 @@ export class RechargeSettingService {
       where.OR = [
         { setting_id: { contains: keyword } },
         { status: { contains: keyword } },
-        { sort: { contains: keyword } }
+        { sort: { contains: keyword } },
       ];
     }
 
@@ -67,7 +71,7 @@ export class RechargeSettingService {
     });
 
     if (!item) {
-      throw new NotFoundException('充值设置不存在');
+      throw new NotFoundException("充值设置不存在");
     }
 
     return item;
@@ -75,7 +79,7 @@ export class RechargeSettingService {
 
   async create(createDto: CreateRechargeSettingDto) {
     if (createDto.amount <= 0) {
-      throw new BadRequestException('充值金额必须大于0');
+      throw new BadRequestException("充值金额必须大于0");
     }
 
     const item = await this.prisma.recharge_setting.create({
@@ -97,7 +101,7 @@ export class RechargeSettingService {
     });
 
     if (!item) {
-      throw new NotFoundException('充值设置不存在');
+      throw new NotFoundException("充值设置不存在");
     }
 
     const updateData: any = {};
@@ -128,7 +132,7 @@ export class RechargeSettingService {
     });
 
     if (!item) {
-      throw new NotFoundException('充值设置不存在');
+      throw new NotFoundException("充值设置不存在");
     }
 
     await this.prisma.recharge_setting.delete({
@@ -145,8 +149,8 @@ export class RechargeSettingService {
   async getConfig(): Promise<RechargeSettingConfigDto> {
     return {
       statusConfig: {
-        [RechargeSettingStatus.DISABLED]: '禁用',
-        [RechargeSettingStatus.ENABLED]: '启用'
+        [RechargeSettingStatus.DISABLED]: "禁用",
+        [RechargeSettingStatus.ENABLED]: "启用",
       },
     };
   }

@@ -1,9 +1,12 @@
 // @ts-nocheck
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from "@nestjs/common";
 
 @Injectable()
 export class CaptchaService {
-  private readonly attempts = new Map<string, { count: number; expires: number }>();
+  private readonly attempts = new Map<
+    string,
+    { count: number; expires: number }
+  >();
   private readonly MAX_ATTEMPTS = 3;
   private readonly ATTEMPT_TTL = 120; // 2 minutes
 
@@ -21,7 +24,7 @@ export class CaptchaService {
     }
 
     if (!token) {
-      throw new BadRequestException('需要行为验证');
+      throw new BadRequestException("需要行为验证");
     }
 
     // Here you would validate the captcha token against a real captcha service
@@ -46,7 +49,7 @@ export class CaptchaService {
 
   private async incrementAttempts(tag: string): Promise<void> {
     const currentAttempts = this.getAttempts(tag);
-    const expires = Date.now() + (this.ATTEMPT_TTL * 1000);
+    const expires = Date.now() + this.ATTEMPT_TTL * 1000;
 
     this.attempts.set(tag, {
       count: currentAttempts + 1,

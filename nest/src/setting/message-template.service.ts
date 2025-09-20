@@ -1,15 +1,15 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { MessageTemplateType } from './dto/message-template.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { MessageTemplateType } from "./dto/message-template.dto";
 
 export const MESSAGE_TEMPLATE_TYPE_NAMES = {
-  1: '微信公众号',
-  2: '小程序',
-  3: '短信',
-  4: '站内消息',
-  5: 'APP',
-  6: '钉钉',
+  1: "微信公众号",
+  2: "小程序",
+  3: "短信",
+  4: "站内消息",
+  5: "APP",
+  6: "钉钉",
 };
 
 @Injectable()
@@ -98,7 +98,7 @@ export class MessageTemplateService {
       };
     }
     return {
-      id: 'desc',
+      id: "desc",
     };
   }
 
@@ -111,7 +111,7 @@ export class MessageTemplateService {
     });
 
     if (!result) {
-      throw new Error('消息模板不存在');
+      throw new Error("消息模板不存在");
     }
 
     return {
@@ -127,33 +127,33 @@ export class MessageTemplateService {
         where: { message_id: data.message_id },
       });
       if (!messageType) {
-        throw new Error('消息类型不存在');
+        throw new Error("消息类型不存在");
       }
     }
 
     // 验证模板名称不能为空
-    if (!data.template_name || data.template_name.trim() === '') {
-      throw new Error('模板名称不能为空');
+    if (!data.template_name || data.template_name.trim() === "") {
+      throw new Error("模板名称不能为空");
     }
 
     // 验证模板ID不能为空
-    if (!data.template_id || data.template_id.trim() === '') {
-      throw new Error('模板ID不能为空');
+    if (!data.template_id || data.template_id.trim() === "") {
+      throw new Error("模板ID不能为空");
     }
 
     // 验证模板内容不能为空
-    if (!data.content || data.content.trim() === '') {
-      throw new Error('模板内容不能为空');
+    if (!data.content || data.content.trim() === "") {
+      throw new Error("模板内容不能为空");
     }
 
     const result = await this.prisma.messageTemplate.create({
       data: {
-        message_id: data.message_id || '',
+        message_id: data.message_id || "",
         type: data.type,
         template_name: data.template_name,
-        to_userid: data.to_userid || '',
+        to_userid: data.to_userid || "",
         template_id: data.template_id,
-        template_num: data.template_num || '',
+        template_num: data.template_num || "",
         content: data.content,
       },
       include: {
@@ -170,7 +170,7 @@ export class MessageTemplateService {
     });
 
     if (!messageTemplate) {
-      throw new Error('消息模板不存在');
+      throw new Error("消息模板不存在");
     }
 
     // 验证消息类型是否存在
@@ -179,32 +179,44 @@ export class MessageTemplateService {
         where: { message_id: data.message_id },
       });
       if (!messageType) {
-        throw new Error('消息类型不存在');
+        throw new Error("消息类型不存在");
       }
     }
 
     // 验证模板名称不能为空
-    if (data.template_name !== undefined && (!data.template_name || data.template_name.trim() === '')) {
-      throw new Error('模板名称不能为空');
+    if (
+      data.template_name !== undefined &&
+      (!data.template_name || data.template_name.trim() === "")
+    ) {
+      throw new Error("模板名称不能为空");
     }
 
     // 验证模板ID不能为空
-    if (data.template_id !== undefined && (!data.template_id || data.template_id.trim() === '')) {
-      throw new Error('模板ID不能为空');
+    if (
+      data.template_id !== undefined &&
+      (!data.template_id || data.template_id.trim() === "")
+    ) {
+      throw new Error("模板ID不能为空");
     }
 
     // 验证模板内容不能为空
-    if (data.content !== undefined && (!data.content || data.content.trim() === '')) {
-      throw new Error('模板内容不能为空');
+    if (
+      data.content !== undefined &&
+      (!data.content || data.content.trim() === "")
+    ) {
+      throw new Error("模板内容不能为空");
     }
 
     const updateData: any = {};
     if (data.message_id !== undefined) updateData.message_id = data.message_id;
     if (data.type !== undefined) updateData.type = data.type;
-    if (data.template_name !== undefined) updateData.template_name = data.template_name;
+    if (data.template_name !== undefined)
+      updateData.template_name = data.template_name;
     if (data.to_userid !== undefined) updateData.to_userid = data.to_userid;
-    if (data.template_id !== undefined) updateData.template_id = data.template_id;
-    if (data.template_num !== undefined) updateData.template_num = data.template_num;
+    if (data.template_id !== undefined)
+      updateData.template_id = data.template_id;
+    if (data.template_num !== undefined)
+      updateData.template_num = data.template_num;
     if (data.content !== undefined) updateData.content = data.content;
 
     const result = await this.prisma.messageTemplate.update({
@@ -224,13 +236,20 @@ export class MessageTemplateService {
     });
 
     if (!messageTemplate) {
-      throw new Error('消息模板不存在');
+      throw new Error("消息模板不存在");
     }
 
     // 验证字段
-    const allowedFields = ['template_name', 'type', 'template_id', 'template_num', 'content', 'to_userid'];
+    const allowedFields = [
+      "template_name",
+      "type",
+      "template_id",
+      "template_num",
+      "content",
+      "to_userid",
+    ];
     if (!allowedFields.includes(field)) {
-      throw new Error('不支持的字段');
+      throw new Error("不支持的字段");
     }
 
     const result = await this.prisma.messageTemplate.update({
@@ -249,7 +268,7 @@ export class MessageTemplateService {
     });
 
     if (!messageTemplate) {
-      throw new Error('消息模板不存在');
+      throw new Error("消息模板不存在");
     }
 
     const result = await this.prisma.messageTemplate.delete({
@@ -274,7 +293,7 @@ export class MessageTemplateService {
         message_id: messageId,
       },
       orderBy: {
-        id: 'desc',
+        id: "desc",
       },
       include: {
         message_type: true,
@@ -291,7 +310,7 @@ export class MessageTemplateService {
         type,
       },
       orderBy: {
-        id: 'desc',
+        id: "desc",
       },
       include: {
         message_type: true,
@@ -310,7 +329,7 @@ export class MessageTemplateService {
         },
       },
       orderBy: {
-        id: 'desc',
+        id: "desc",
       },
       include: {
         message_type: true,

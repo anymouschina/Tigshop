@@ -1,11 +1,15 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   CollectQueryDto,
   CollectProductDto,
   CancelCollectDto,
-} from './dto/user-collect.dto';
+} from "./dto/user-collect.dto";
 
 @Injectable()
 export class UserCollectService {
@@ -17,8 +21,8 @@ export class UserCollectService {
       size = 20,
       keyword,
       category_id,
-      sort_field = 'add_time',
-      sort_order = 'desc',
+      sort_field = "add_time",
+      sort_order = "desc",
     } = query;
     const skip = (page - 1) * size;
 
@@ -73,11 +77,11 @@ export class UserCollectService {
     ]);
 
     // 过滤掉已下架或删除的商品
-    const validCollects = collects.filter(collect => collect.product);
+    const validCollects = collects.filter((collect) => collect.product);
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         records: validCollects,
         total: validCollects.length,
@@ -100,7 +104,7 @@ export class UserCollectService {
     });
 
     if (!product) {
-      throw new NotFoundException('商品不存在或已下架');
+      throw new NotFoundException("商品不存在或已下架");
     }
 
     // 检查是否已收藏
@@ -113,7 +117,7 @@ export class UserCollectService {
     });
 
     if (existingCollect) {
-      throw new BadRequestException('商品已收藏');
+      throw new BadRequestException("商品已收藏");
     }
 
     // 添加收藏
@@ -127,7 +131,7 @@ export class UserCollectService {
 
     return {
       code: 200,
-      message: '收藏成功',
+      message: "收藏成功",
       data: collect,
     };
   }
@@ -144,7 +148,7 @@ export class UserCollectService {
     });
 
     if (!collect) {
-      throw new NotFoundException('收藏不存在');
+      throw new NotFoundException("收藏不存在");
     }
 
     await this.prisma.user_collect.update({
@@ -157,7 +161,7 @@ export class UserCollectService {
 
     return {
       code: 200,
-      message: '取消收藏成功',
+      message: "取消收藏成功",
       data: null,
     };
   }
@@ -173,7 +177,7 @@ export class UserCollectService {
 
     return {
       code: 200,
-      message: '检查成功',
+      message: "检查成功",
       data: {
         is_collected: !!collect,
       },
@@ -181,43 +185,39 @@ export class UserCollectService {
   }
 
   async getCollectStatistics(userId: number) {
-    const [
-      total,
-      todayCount,
-      thisMonthCount,
-      categoryStats,
-    ] = await Promise.all([
-      this.prisma.user_collect.count({
-        where: { user_id: userId, is_delete: 0 },
-      }),
-      this.prisma.user_collect.count({
-        where: {
-          user_id: userId,
-          is_delete: 0,
-          add_time: {
-            gte: Math.floor(Date.now() / 1000) - 86400, // 24小时内
+    const [total, todayCount, thisMonthCount, categoryStats] =
+      await Promise.all([
+        this.prisma.user_collect.count({
+          where: { user_id: userId, is_delete: 0 },
+        }),
+        this.prisma.user_collect.count({
+          where: {
+            user_id: userId,
+            is_delete: 0,
+            add_time: {
+              gte: Math.floor(Date.now() / 1000) - 86400, // 24小时内
+            },
           },
-        },
-      }),
-      this.prisma.user_collect.count({
-        where: {
-          user_id: userId,
-          is_delete: 0,
-          add_time: {
-            gte: Math.floor(Date.now() / 1000) - 2592000, // 30天内
+        }),
+        this.prisma.user_collect.count({
+          where: {
+            user_id: userId,
+            is_delete: 0,
+            add_time: {
+              gte: Math.floor(Date.now() / 1000) - 2592000, // 30天内
+            },
           },
-        },
-      }),
-      this.prisma.user_collect.groupBy({
-        by: ['product_id'],
-        where: { user_id: userId, is_delete: 0 },
-        _count: true,
-      }),
-    ]);
+        }),
+        this.prisma.user_collect.groupBy({
+          by: ["product_id"],
+          where: { user_id: userId, is_delete: 0 },
+          _count: true,
+        }),
+      ]);
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: {
         total,
         today_count: todayCount,
@@ -237,18 +237,18 @@ export class UserCollectService {
     });
 
     const collectedMap = {};
-    collects.forEach(collect => {
+    collects.forEach((collect) => {
       collectedMap[collect.product_id] = true;
     });
 
-    const result = productIds.map(productId => ({
+    const result = productIds.map((productId) => ({
       product_id: productId,
       is_collected: !!collectedMap[productId],
     }));
 
     return {
       code: 200,
-      message: '检查成功',
+      message: "检查成功",
       data: result,
     };
   }
@@ -263,11 +263,15 @@ export class UserCollectService {
       },
     });
 
-    const validProductIds = products.map(p => p.product_id);
-    const invalidProductIds = productIds.filter(id => !validProductIds.includes(id));
+    const validProductIds = products.map((p) => p.product_id);
+    const invalidProductIds = productIds.filter(
+      (id) => !validProductIds.includes(id),
+    );
 
     if (invalidProductIds.length > 0) {
-      throw new BadRequestException(`部分商品不存在或已下架: ${invalidProductIds.join(',')}`);
+      throw new BadRequestException(
+        `部分商品不存在或已下架: ${invalidProductIds.join(",")}`,
+      );
     }
 
     // 检查已收藏的商品
@@ -279,12 +283,14 @@ export class UserCollectService {
       },
     });
 
-    const existingProductIds = existingCollects.map(c => c.product_id);
-    const newProductIds = validProductIds.filter(id => !existingProductIds.includes(id));
+    const existingProductIds = existingCollects.map((c) => c.product_id);
+    const newProductIds = validProductIds.filter(
+      (id) => !existingProductIds.includes(id),
+    );
 
     // 批量添加新收藏
     if (newProductIds.length > 0) {
-      const collectData = newProductIds.map(productId => ({
+      const collectData = newProductIds.map((productId) => ({
         user_id: userId,
         product_id: productId,
         add_time: Math.floor(Date.now() / 1000),
@@ -297,7 +303,7 @@ export class UserCollectService {
 
     return {
       code: 200,
-      message: '批量收藏成功',
+      message: "批量收藏成功",
       data: {
         success_count: newProductIds.length,
         skip_count: existingProductIds.length,
@@ -320,7 +326,7 @@ export class UserCollectService {
 
     return {
       code: 200,
-      message: '批量取消收藏成功',
+      message: "批量取消收藏成功",
       data: {
         affected_count: result.count,
       },
@@ -338,7 +344,9 @@ export class UserCollectService {
       },
     });
 
-    const categoryIds = [...new Set(userCategories.map(c => c.product.category_id))];
+    const categoryIds = [
+      ...new Set(userCategories.map((c) => c.product.category_id)),
+    ];
 
     const recommendProducts = await this.prisma.product.findMany({
       where: {
@@ -356,25 +364,25 @@ export class UserCollectService {
           },
         },
       },
-      orderBy: { sort_order: 'asc' },
+      orderBy: { sort_order: "asc" },
       take: limit,
     });
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: recommendProducts,
     };
   }
 
   async getCollectCategories(userId: number) {
     const categoryStats = await this.prisma.user_collect.groupBy({
-      by: ['product_id'],
+      by: ["product_id"],
       where: { user_id: userId, is_delete: 0 },
       _count: true,
     });
 
-    const productIds = categoryStats.map(stat => stat.product_id);
+    const productIds = categoryStats.map((stat) => stat.product_id);
 
     const products = await this.prisma.product.findMany({
       where: { product_id: { in: productIds } },
@@ -389,7 +397,7 @@ export class UserCollectService {
     });
 
     const categoryMap = {};
-    products.forEach(product => {
+    products.forEach((product) => {
       const categoryId = product.category.category_id;
       const categoryName = product.category.category_name;
       if (!categoryMap[categoryId]) {
@@ -404,7 +412,7 @@ export class UserCollectService {
 
     return {
       code: 200,
-      message: '获取成功',
+      message: "获取成功",
       data: Object.values(categoryMap),
     };
   }
@@ -422,14 +430,14 @@ export class UserCollectService {
           },
         },
       },
-      orderBy: { add_time: 'desc' },
+      orderBy: { add_time: "desc" },
       take: limit,
     });
 
     return {
       code: 200,
-      message: '获取成功',
-      data: recentCollects.map(collect => ({
+      message: "获取成功",
+      data: recentCollects.map((collect) => ({
         collect_id: collect.collect_id,
         product: collect.product,
         add_time: collect.add_time,

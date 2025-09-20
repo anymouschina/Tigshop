@@ -1,13 +1,21 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../database/prisma.service";
 
 @Injectable()
 export class PaylogService {
   constructor(private prisma: PrismaService) {}
 
   async getFilterResult(filter: any) {
-    const { page, size, sort_field, sort_order, keyword, pay_status, order_id } = filter;
+    const {
+      page,
+      size,
+      sort_field,
+      sort_order,
+      keyword,
+      pay_status,
+      order_id,
+    } = filter;
 
     const skip = (page - 1) * size;
     const orderBy = { [sort_field]: sort_order };
@@ -55,7 +63,15 @@ export class PaylogService {
   }
 
   async getFilterCount(filter: any): Promise<number> {
-    const { page, size, sort_field, sort_order, keyword, pay_status, order_id } = filter;
+    const {
+      page,
+      size,
+      sort_field,
+      sort_order,
+      keyword,
+      pay_status,
+      order_id,
+    } = filter;
 
     const where: any = {};
     if (keyword) {
@@ -99,7 +115,7 @@ export class PaylogService {
     });
 
     if (!item) {
-      throw new Error('交易日志不存在');
+      throw new Error("交易日志不存在");
     }
 
     return item;
@@ -133,13 +149,13 @@ export class PaylogService {
       success,
       failed,
       total_amount: totalAmount._sum.amount || 0,
-      success_rate: total > 0 ? (success / total * 100).toFixed(2) : 0,
+      success_rate: total > 0 ? ((success / total) * 100).toFixed(2) : 0,
     };
   }
 
   async getPaymentMethodStats() {
     const stats = await this.prisma.payLog.groupBy({
-      by: ['payment_code'],
+      by: ["payment_code"],
       _count: {
         payment_code: true,
       },
@@ -148,7 +164,7 @@ export class PaylogService {
       },
     });
 
-    return stats.map(stat => ({
+    return stats.map((stat) => ({
       payment_code: stat.payment_code,
       count: stat._count.payment_code,
       amount: stat._sum.amount || 0,
@@ -170,7 +186,11 @@ export class PaylogService {
     });
   }
 
-  async updatePayStatus(paylogId: number, status: number, transactionId?: string) {
+  async updatePayStatus(
+    paylogId: number,
+    status: number,
+    transactionId?: string,
+  ) {
     const updateData: any = {
       pay_status: status,
     };

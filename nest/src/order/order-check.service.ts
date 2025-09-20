@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class OrderCheckService {
@@ -18,7 +18,7 @@ export class OrderCheckService {
     });
 
     if (!user) {
-      throw new HttpException('用户不存在', HttpStatus.NOT_FOUND);
+      throw new HttpException("用户不存在", HttpStatus.NOT_FOUND);
     }
 
     // 这里可以添加B2B模式的认证逻辑
@@ -34,16 +34,16 @@ export class OrderCheckService {
       carts: [
         {
           shop_id: 1,
-          shop_name: '默认店铺',
+          shop_name: "默认店铺",
           items: [
             {
               cart_id: 1,
               product_id: 1,
-              product_name: '测试商品',
-              product_image: '/images/product1.jpg',
+              product_name: "测试商品",
+              product_image: "/images/product1.jpg",
               product_price: 99.99,
               quantity: 1,
-              sku_data: '{}',
+              sku_data: "{}",
             },
           ],
         },
@@ -54,14 +54,23 @@ export class OrderCheckService {
   /**
    * 构建购物车促销信息
    */
-  async buildCartPromotion(cartList: any, userId: number, flowType: number, useDefaultCoupon: number = 0, useCouponIds: number[] = []) {
+  async buildCartPromotion(
+    cartList: any,
+    userId: number,
+    flowType: number,
+    useDefaultCoupon: number = 0,
+    useCouponIds: number[] = [],
+  ) {
     // 模拟构建购物车促销信息
     return {
-      carts: cartList.carts.map(shop => ({
+      carts: cartList.carts.map((shop) => ({
         ...shop,
         used_promotions: [],
         promotion_discount: 0,
-        total_amount: shop.items.reduce((sum, item) => sum + item.product_price * item.quantity, 0),
+        total_amount: shop.items.reduce(
+          (sum, item) => sum + item.product_price * item.quantity,
+          0,
+        ),
       })),
     };
   }
@@ -94,10 +103,7 @@ export class OrderCheckService {
   async getAddressList(userId: number) {
     return this.prisma.userAddress.findMany({
       where: { user_id: userId },
-      orderBy: [
-        { is_default: 'desc' },
-        { address_id: 'desc' },
-      ],
+      orderBy: [{ is_default: "desc" }, { address_id: "desc" }],
     });
   }
 
@@ -106,10 +112,10 @@ export class OrderCheckService {
    */
   async getAvailablePaymentType() {
     return [
-      { id: 'wechat', name: '微信支付', status: 1 },
-      { id: 'alipay', name: '支付宝', status: 1 },
-      { id: 'balance', name: '余额支付', status: 1 },
-      { id: 'offline', name: '线下支付', status: 0 },
+      { id: "wechat", name: "微信支付", status: 1 },
+      { id: "alipay", name: "支付宝", status: 1 },
+      { id: "balance", name: "余额支付", status: 1 },
+      { id: "offline", name: "线下支付", status: 0 },
     ];
   }
 
@@ -121,8 +127,13 @@ export class OrderCheckService {
       {
         shop_id: 1,
         shipping_list: [
-          { id: 'express', name: '快递配送', price: 10, description: '全国配送' },
-          { id: 'pickup', name: '到店自提', price: 0, description: '到店自提' },
+          {
+            id: "express",
+            name: "快递配送",
+            price: 10,
+            description: "全国配送",
+          },
+          { id: "pickup", name: "到店自提", price: 0, description: "到店自提" },
         ],
       },
     ];
@@ -191,12 +202,16 @@ export class OrderCheckService {
   /**
    * 根据促销获取优惠券列表
    */
-  async getCouponListByPromotion(cartList: any, useCouponIds: number[], selectUserCouponIds: number[]) {
+  async getCouponListByPromotion(
+    cartList: any,
+    useCouponIds: number[],
+    selectUserCouponIds: number[],
+  ) {
     // 模拟获取可用优惠券
     return [
       {
         coupon_id: 1,
-        coupon_name: '新用户优惠券',
+        coupon_name: "新用户优惠券",
         coupon_money: 10,
         use_start_time: new Date(),
         use_end_time: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -272,7 +287,7 @@ export class OrderCheckService {
     // 模拟检查发票信息
     return {
       can_invoice: true,
-      invoice_content: '商品明细',
+      invoice_content: "商品明细",
     };
   }
 

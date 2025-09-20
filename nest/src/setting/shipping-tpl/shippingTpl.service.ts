@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../database/database.service";
 import {
   CreateShippingTplDto,
   UpdateShippingTplDto,
   ShippingTplQueryDto,
   ShippingTplStatus,
-  ShippingTplConfigDto
-} from './dto/shippingTpl.dto';
+  ShippingTplConfigDto,
+} from "./dto/shippingTpl.dto";
 
 @Injectable()
 export class ShippingTplService {
@@ -19,8 +23,8 @@ export class ShippingTplService {
       page = 1,
       size = 15,
       status,
-      sortField = 'tpl_id',
-      sortOrder = 'desc'
+      sortField = "tpl_id",
+      sortOrder = "desc",
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -32,7 +36,7 @@ export class ShippingTplService {
         { tpl_id: { contains: keyword } },
         { name: { contains: keyword } },
         { is_default: { contains: keyword } },
-        { status: { contains: keyword } }
+        { status: { contains: keyword } },
       ];
     }
 
@@ -68,15 +72,13 @@ export class ShippingTplService {
     });
 
     if (!item) {
-      throw new NotFoundException('运费模板不存在');
+      throw new NotFoundException("运费模板不存在");
     }
 
     return item;
   }
 
   async create(createDto: CreateShippingTplDto) {
-    
-
     const item = await this.prisma.shipping_tpl.create({
       data: {
         name: createDto.name,
@@ -96,7 +98,7 @@ export class ShippingTplService {
     });
 
     if (!item) {
-      throw new NotFoundException('运费模板不存在');
+      throw new NotFoundException("运费模板不存在");
     }
 
     const updateData: any = {};
@@ -127,7 +129,7 @@ export class ShippingTplService {
     });
 
     if (!item) {
-      throw new NotFoundException('运费模板不存在');
+      throw new NotFoundException("运费模板不存在");
     }
 
     await this.prisma.shipping_tpl.delete({
@@ -144,8 +146,8 @@ export class ShippingTplService {
   async getConfig(): Promise<ShippingTplConfigDto> {
     return {
       statusConfig: {
-        [ShippingTplStatus.DISABLED]: '禁用',
-        [ShippingTplStatus.ENABLED]: '启用'
+        [ShippingTplStatus.DISABLED]: "禁用",
+        [ShippingTplStatus.ENABLED]: "启用",
       },
     };
   }

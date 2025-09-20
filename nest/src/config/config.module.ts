@@ -1,18 +1,20 @@
 // @ts-nocheck
-import { Module, Global } from '@nestjs/common';
+import { Module, Global } from "@nestjs/common";
 
 @Global()
 @Module({
   providers: [
     {
-      provide: 'CONFIG',
+      provide: "CONFIG",
       useValue: {
         port: process.env.PORT || 3000,
-        databaseUrl: process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/tigshop',
-        jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
+        databaseUrl:
+          process.env.DATABASE_URL ||
+          "postgresql://username:password@localhost:5432/tigshop",
+        jwtSecret: process.env.JWT_SECRET || "your-secret-key",
       },
     },
   ],
-  exports: ['CONFIG'],
+  exports: ["CONFIG"],
 })
-export class ConfigModule {} 
+export class ConfigModule {}

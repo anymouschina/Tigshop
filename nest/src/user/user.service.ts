@@ -1,8 +1,14 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
-import { AuthService } from '../auth/auth.service';
-import { VerificationCodeService } from '../auth/services/verification-code.service';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { DatabaseService } from "../database/database.service";
+import { AuthService } from "../auth/auth.service";
+import { VerificationCodeService } from "../auth/services/verification-code.service";
 
 @Injectable()
 export class UserService {
@@ -21,7 +27,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException('用户不存在');
+      throw new NotFoundException("用户不存在");
     }
 
     return user;
@@ -59,7 +65,7 @@ export class UserService {
     if (userData.email) {
       const existingUser = await this.findByEmail(userData.email);
       if (existingUser) {
-        throw new BadRequestException('邮箱已被注册');
+        throw new BadRequestException("邮箱已被注册");
       }
     }
 
@@ -67,7 +73,7 @@ export class UserService {
     if (userData.mobile) {
       const existingUser = await this.findByMobile(userData.mobile);
       if (existingUser) {
-        throw new BadRequestException('手机号已被注册');
+        throw new BadRequestException("手机号已被注册");
       }
     }
 
@@ -79,13 +85,16 @@ export class UserService {
   /**
    * 更新用户信息
    */
-  async update(id: number, updateData: {
-    name?: string;
-    email?: string;
-    mobile?: string;
-    avatarUrl?: string;
-    nickname?: string;
-  }) {
+  async update(
+    id: number,
+    updateData: {
+      name?: string;
+      email?: string;
+      mobile?: string;
+      avatarUrl?: string;
+      nickname?: string;
+    },
+  ) {
     await this.findById(id);
 
     return this.databaseService.user.update({
@@ -139,15 +148,15 @@ export class UserService {
     // 检查邮箱是否已注册
     const existingUser = await this.findByEmail(email);
     if (existingUser) {
-      throw new ConflictException('邮箱已被注册');
+      throw new ConflictException("邮箱已被注册");
     }
 
     // 生成验证码
     const code = await this.verificationCodeService.generateEmailCode(email);
 
     return {
-      status: 'success',
-      message: '验证码已发送',
+      status: "success",
+      message: "验证码已发送",
       data: { code }, // 生产环境不返回验证码
     };
   }
@@ -162,7 +171,7 @@ export class UserService {
     const { password, ...userDetails } = user;
 
     return {
-      status: 'success',
+      status: "success",
       data: userDetails,
     };
   }
@@ -177,7 +186,7 @@ export class UserService {
     if (updateData.email) {
       const existingUser = await this.findByEmail(updateData.email);
       if (existingUser && existingUser.user_id !== user_id) {
-        throw new ConflictException('邮箱已被使用');
+        throw new ConflictException("邮箱已被使用");
       }
     }
 
@@ -185,7 +194,7 @@ export class UserService {
     if (updateData.mobile) {
       const existingUser = await this.findByMobile(updateData.mobile);
       if (existingUser && existingUser.user_id !== user_id) {
-        throw new ConflictException('手机号已被使用');
+        throw new ConflictException("手机号已被使用");
       }
     }
 
@@ -197,8 +206,8 @@ export class UserService {
     const { password, ...userDetails } = updatedUser;
 
     return {
-      status: 'success',
-      message: '信息更新成功',
+      status: "success",
+      message: "信息更新成功",
       data: userDetails,
     };
   }
@@ -206,13 +215,20 @@ export class UserService {
   /**
    * 修改密码
    */
-  async modifyPassword(user_id: number, oldPassword: string, newPassword: string) {
+  async modifyPassword(
+    user_id: number,
+    oldPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.findById(user_id);
 
     // 验证旧密码
-    const isValidPassword = await this.authService.validatePassword(oldPassword, user.password);
+    const isValidPassword = await this.authService.validatePassword(
+      oldPassword,
+      user.password,
+    );
     if (!isValidPassword) {
-      throw new UnauthorizedException('原密码错误');
+      throw new UnauthorizedException("原密码错误");
     }
 
     // 加密新密码
@@ -224,8 +240,8 @@ export class UserService {
     });
 
     return {
-      status: 'success',
-      message: '密码修改成功',
+      status: "success",
+      message: "密码修改成功",
     };
   }
 
@@ -234,15 +250,18 @@ export class UserService {
    */
   async modifyMobile(user_id: number, mobile: string, code: string) {
     // 验证短信验证码
-    const isValidCode = await this.verificationCodeService.validateMobileCode(mobile, code);
+    const isValidCode = await this.verificationCodeService.validateMobileCode(
+      mobile,
+      code,
+    );
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     // 检查手机号是否已被使用
     const existingUser = await this.findByMobile(mobile);
     if (existingUser && existingUser.user_id !== user_id) {
-      throw new ConflictException('手机号已被使用');
+      throw new ConflictException("手机号已被使用");
     }
 
     await this.databaseService.user.update({
@@ -254,8 +273,8 @@ export class UserService {
     });
 
     return {
-      status: 'success',
-      message: '手机号修改成功',
+      status: "success",
+      message: "手机号修改成功",
     };
   }
 
@@ -264,15 +283,18 @@ export class UserService {
    */
   async modifyEmail(user_id: number, email: string, code: string) {
     // 验证邮箱验证码
-    const isValidCode = await this.verificationCodeService.validateEmailCode(email, code);
+    const isValidCode = await this.verificationCodeService.validateEmailCode(
+      email,
+      code,
+    );
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     // 检查邮箱是否已被使用
     const existingUser = await this.findByEmail(email);
     if (existingUser && existingUser.user_id !== user_id) {
-      throw new ConflictException('邮箱已被使用');
+      throw new ConflictException("邮箱已被使用");
     }
 
     await this.databaseService.user.update({
@@ -284,8 +306,8 @@ export class UserService {
     });
 
     return {
-      status: 'success',
-      message: '邮箱修改成功',
+      status: "success",
+      message: "邮箱修改成功",
     };
   }
 
@@ -309,7 +331,7 @@ export class UserService {
     });
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         userInfo: {
           user_id: user.user_id,
@@ -336,14 +358,18 @@ export class UserService {
   /**
    * 获取用户浏览历史
    */
-  async getHistoryProduct(user_id: number, page: number = 1, limit: number = 10) {
+  async getHistoryProduct(
+    user_id: number,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     const skip = (page - 1) * limit;
 
     // 这里需要实现浏览历史功能，暂时返回空列表
     // 实际应该从浏览历史表或用户的history_product_ids字段获取
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         list: [],
         pagination: {
@@ -364,8 +390,8 @@ export class UserService {
     // 实际应该更新用户的history_product_ids字段或浏览历史表
 
     return {
-      status: 'success',
-      message: '浏览历史删除成功',
+      status: "success",
+      message: "浏览历史删除成功",
     };
   }
 
@@ -374,7 +400,7 @@ export class UserService {
    */
   async uploadAvatar(user_id: number, file: any) {
     if (!file) {
-      throw new BadRequestException('请选择要上传的文件');
+      throw new BadRequestException("请选择要上传的文件");
     }
 
     // 这里应该实现文件上传逻辑，保存到OSS或本地
@@ -387,8 +413,8 @@ export class UserService {
     });
 
     return {
-      status: 'success',
-      message: '头像上传成功',
+      status: "success",
+      message: "头像上传成功",
       data: { avatarUrl },
     };
   }
@@ -403,8 +429,8 @@ export class UserService {
     });
 
     return {
-      status: 'success',
-      message: '头像修改成功',
+      status: "success",
+      message: "头像修改成功",
     };
   }
 
@@ -414,8 +440,8 @@ export class UserService {
   async logout(user_id: number) {
     // 这里可以实现退出登录的逻辑，如清理session等
     return {
-      status: 'success',
-      message: '退出登录成功',
+      status: "success",
+      message: "退出登录成功",
     };
   }
 
@@ -427,15 +453,15 @@ export class UserService {
 
     // 验证手机号是否属于当前用户
     if (user.mobile !== mobile) {
-      throw new BadRequestException('手机号不属于当前用户');
+      throw new BadRequestException("手机号不属于当前用户");
     }
 
     // 生成验证码
     const code = await this.verificationCodeService.generateMobileCode(mobile);
 
     return {
-      status: 'success',
-      message: '验证码已发送',
+      status: "success",
+      message: "验证码已发送",
       data: { code }, // 生产环境不返回验证码
     };
   }
@@ -448,18 +474,21 @@ export class UserService {
 
     // 验证手机号是否属于当前用户
     if (user.mobile !== mobile) {
-      throw new BadRequestException('手机号不属于当前用户');
+      throw new BadRequestException("手机号不属于当前用户");
     }
 
     // 验证验证码
-    const isValidCode = await this.verificationCodeService.validateMobileCode(mobile, code);
+    const isValidCode = await this.verificationCodeService.validateMobileCode(
+      mobile,
+      code,
+    );
     if (!isValidCode) {
-      throw new BadRequestException('验证码错误或已过期');
+      throw new BadRequestException("验证码错误或已过期");
     }
 
     return {
-      status: 'success',
-      message: '验证码验证成功',
+      status: "success",
+      message: "验证码验证成功",
     };
   }
 
@@ -470,8 +499,8 @@ export class UserService {
     const page = query.page || 1;
     const size = query.size || 15;
     const skip = (page - 1) * size;
-    const sortField = query.sort_field || 'log_id';
-    const sortOrder = query.sort_order || 'DESC';
+    const sortField = query.sort_field || "log_id";
+    const sortOrder = query.sort_order || "DESC";
 
     const [balanceLogs, total] = await Promise.all([
       this.databaseService.user_balance_log.findMany({
@@ -486,7 +515,7 @@ export class UserService {
     ]);
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         records: balanceLogs,
         total,
@@ -502,7 +531,7 @@ export class UserService {
    */
   async getLevelList() {
     const user_ranks = await this.databaseService.user_rank.findMany({
-      orderBy: { min_growth_points: 'asc' },
+      orderBy: { min_growth_points: "asc" },
     });
 
     // 获取等级配置和成长配置
@@ -510,7 +539,7 @@ export class UserService {
     const growConfig = {}; // 从配置服务获取
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         item: user_ranks,
         rank_config: rankConfig,
@@ -528,11 +557,11 @@ export class UserService {
     });
 
     if (!user_rank) {
-      throw new NotFoundException('用户等级不存在');
+      throw new NotFoundException("用户等级不存在");
     }
 
     return {
-      status: 'success',
+      status: "success",
       data: user_rank,
     };
   }
@@ -552,8 +581,8 @@ export class UserService {
     });
 
     return {
-      status: 'success',
-      message: '账户注销成功',
+      status: "success",
+      message: "账户注销成功",
     };
   }
 
@@ -567,7 +596,7 @@ export class UserService {
     });
 
     return {
-      status: 'success',
+      status: "success",
       data: {
         openid: user_authorize?.open_id || null,
       },

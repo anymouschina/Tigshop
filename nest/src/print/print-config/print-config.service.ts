@@ -1,8 +1,11 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/services/prisma.service';
-import { CreatePrintConfigDto, UpdatePrintConfigDto } from './dto/print-config.dto';
-import { ResponseUtil } from '../../../common/utils/response.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../common/services/prisma.service";
+import {
+  CreatePrintConfigDto,
+  UpdatePrintConfigDto,
+} from "./dto/print-config.dto";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class PrintConfigService {
@@ -13,16 +16,14 @@ export class PrintConfigService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     const orderBy: any = {};
     if (sort_field) {
-      orderBy[sort_field] = sort_order || 'desc';
+      orderBy[sort_field] = sort_order || "desc";
     } else {
-      orderBy.id = 'desc';
+      orderBy.id = "desc";
     }
 
     const skip = (page - 1) * size;
@@ -40,9 +41,7 @@ export class PrintConfigService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     return await this.prisma.print_config.count({ where });
@@ -65,7 +64,7 @@ export class PrintConfigService {
       });
       return result;
     } catch (error) {
-      console.error('创建打印配置失败:', error);
+      console.error("创建打印配置失败:", error);
       return null;
     }
   }
@@ -81,7 +80,7 @@ export class PrintConfigService {
       });
       return result;
     } catch (error) {
-      console.error('更新打印配置失败:', error);
+      console.error("更新打印配置失败:", error);
       return null;
     }
   }
@@ -93,7 +92,7 @@ export class PrintConfigService {
       });
       return true;
     } catch (error) {
-      console.error('删除打印配置失败:', error);
+      console.error("删除打印配置失败:", error);
       return false;
     }
   }
@@ -109,7 +108,7 @@ export class PrintConfigService {
       });
       return true;
     } catch (error) {
-      console.error('批量删除打印配置失败:', error);
+      console.error("批量删除打印配置失败:", error);
       return false;
     }
   }
@@ -132,7 +131,7 @@ export class PrintConfigService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error('获取打印配置统计失败:', error);
+      console.error("获取打印配置统计失败:", error);
       return {
         total: 0,
         today_count: 0,

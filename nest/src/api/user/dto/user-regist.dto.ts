@@ -1,13 +1,22 @@
 // @ts-nocheck
-import { IsString, IsEmail, IsMobilePhone, IsEnum, IsOptional, IsNumber, MinLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsMobilePhone,
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  MinLength,
+  Matches,
+} from "class-validator";
 
 export enum RegistType {
-  MOBILE = 'mobile',
-  EMAIL = 'email',
+  MOBILE = "mobile",
+  EMAIL = "email",
 }
 
 export class RegistDto {
-  @IsEnum(RegistType, { message: '注册类型不正确' })
+  @IsEnum(RegistType, { message: "注册类型不正确" })
   regist_type: RegistType = RegistType.MOBILE;
 
   @IsOptional()
@@ -15,11 +24,11 @@ export class RegistDto {
   username?: string;
 
   @IsString()
-  @MinLength(6, { message: '密码长度至少6位' })
+  @MinLength(6, { message: "密码长度至少6位" })
   password: string;
 
   @IsOptional()
-  @IsMobilePhone('zh-CN', { message: '手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "手机号格式不正确" })
   mobile?: string;
 
   @IsOptional()
@@ -27,7 +36,7 @@ export class RegistDto {
   mobile_code?: string;
 
   @IsOptional()
-  @IsEmail({}, { message: '邮箱格式不正确' })
+  @IsEmail({}, { message: "邮箱格式不正确" })
   email?: string;
 
   @IsOptional()
@@ -44,7 +53,7 @@ export class RegistDto {
 }
 
 export class SendEmailCodeDto {
-  @IsEmail({}, { message: '邮箱格式不正确' })
+  @IsEmail({}, { message: "邮箱格式不正确" })
   email: string;
 
   @IsOptional()

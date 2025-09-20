@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { randomBytes } from 'crypto';
+import { Injectable } from "@nestjs/common";
+import { randomBytes } from "crypto";
 
 @Injectable()
 export class CsrfService {
@@ -8,8 +8,8 @@ export class CsrfService {
   private readonly TOKEN_TTL = 3600; // 1 hour
 
   generateToken(): string {
-    const token = randomBytes(32).toString('hex');
-    const expires = Date.now() + (this.TOKEN_TTL * 1000);
+    const token = randomBytes(32).toString("hex");
+    const expires = Date.now() + this.TOKEN_TTL * 1000;
 
     this.tokens.set(token, { expires });
 

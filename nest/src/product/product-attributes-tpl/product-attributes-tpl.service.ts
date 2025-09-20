@@ -1,8 +1,11 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/services/prisma.service';
-import { CreateProductAttributesTplDto, UpdateProductAttributesTplDto } from './dto/product-attributes-tpl.dto';
-import { ResponseUtil } from '../../../common/utils/response.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../common/services/prisma.service";
+import {
+  CreateProductAttributesTplDto,
+  UpdateProductAttributesTplDto,
+} from "./dto/product-attributes-tpl.dto";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class ProductAttributesTplService {
@@ -13,16 +16,14 @@ export class ProductAttributesTplService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     const orderBy: any = {};
     if (sort_field) {
-      orderBy[sort_field] = sort_order || 'desc';
+      orderBy[sort_field] = sort_order || "desc";
     } else {
-      orderBy.id = 'desc';
+      orderBy.id = "desc";
     }
 
     const skip = (page - 1) * size;
@@ -40,9 +41,7 @@ export class ProductAttributesTplService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     return await this.prisma.product_attributes_tpl.count({ where });
@@ -65,12 +64,15 @@ export class ProductAttributesTplService {
       });
       return result;
     } catch (error) {
-      console.error('创建产品属性模板失败:', error);
+      console.error("创建产品属性模板失败:", error);
       return null;
     }
   }
 
-  async updateProductAttributesTpl(id: number, updateData: UpdateProductAttributesTplDto) {
+  async updateProductAttributesTpl(
+    id: number,
+    updateData: UpdateProductAttributesTplDto,
+  ) {
     try {
       const result = await this.prisma.product_attributes_tpl.update({
         where: { id },
@@ -81,7 +83,7 @@ export class ProductAttributesTplService {
       });
       return result;
     } catch (error) {
-      console.error('更新产品属性模板失败:', error);
+      console.error("更新产品属性模板失败:", error);
       return null;
     }
   }
@@ -93,7 +95,7 @@ export class ProductAttributesTplService {
       });
       return true;
     } catch (error) {
-      console.error('删除产品属性模板失败:', error);
+      console.error("删除产品属性模板失败:", error);
       return false;
     }
   }
@@ -109,7 +111,7 @@ export class ProductAttributesTplService {
       });
       return true;
     } catch (error) {
-      console.error('批量删除产品属性模板失败:', error);
+      console.error("批量删除产品属性模板失败:", error);
       return false;
     }
   }
@@ -132,7 +134,7 @@ export class ProductAttributesTplService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error('获取产品属性模板统计失败:', error);
+      console.error("获取产品属性模板统计失败:", error);
       return {
         total: 0,
         today_count: 0,

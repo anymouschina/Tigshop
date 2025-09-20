@@ -1,2 +1,2 @@
 // @ts-nocheck
-export * from './guards/roles.guard';
+export * from "./guards/roles.guard";

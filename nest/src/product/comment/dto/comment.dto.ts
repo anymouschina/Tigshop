@@ -1,5 +1,12 @@
 // @ts-nocheck
-import { IsString, IsNumber, IsOptional, IsEnum, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  Min,
+  Max,
+} from "class-validator";
 
 export enum CommentRating {
   ONE = 1,
@@ -10,9 +17,9 @@ export enum CommentRating {
 }
 
 export enum CommentStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
 }
 
 export class CreateCommentDto {

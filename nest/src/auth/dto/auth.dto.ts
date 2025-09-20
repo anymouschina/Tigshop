@@ -11,24 +11,24 @@ import {
   IsNumber,
   Min,
   Matches,
-} from 'class-validator';
+} from "class-validator";
 
 export enum UserRole {
-  USER = 'user',
-  ADMIN = 'admin',
-  MERCHANT = 'merchant',
+  USER = "user",
+  ADMIN = "admin",
+  MERCHANT = "merchant",
 }
 
 export enum UserStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  BANNED = 'banned',
-  PENDING = 'pending',
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  BANNED = "banned",
+  PENDING = "pending",
 }
 
 export enum RegisterType {
-  MOBILE = 'mobile',
-  EMAIL = 'email',
+  MOBILE = "mobile",
+  EMAIL = "email",
 }
 
 export class RegisterDto {
@@ -84,9 +84,9 @@ export class RegisterDto {
 }
 
 export enum LoginType {
-  PASSWORD = 'password',
-  MOBILE = 'mobile',
-  EMAIL = 'email',
+  PASSWORD = "password",
+  MOBILE = "mobile",
+  EMAIL = "email",
 }
 
 export class LoginDto {

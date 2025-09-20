@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { CreateCouponDto, UpdateCouponDto } from './dto/coupon.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { CreateCouponDto, UpdateCouponDto } from "./dto/coupon.dto";
 
 @Injectable()
 export class CouponService {
@@ -19,7 +19,7 @@ export class CouponService {
     }
 
     const orderBy: any = {};
-    orderBy[filter.sort_field || 'coupon_id'] = filter.sort_order || 'desc';
+    orderBy[filter.sort_field || "coupon_id"] = filter.sort_order || "desc";
 
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
@@ -113,7 +113,7 @@ export class CouponService {
         is_show: 1,
       },
       orderBy: {
-        sort_order: 'asc',
+        sort_order: "asc",
       },
     });
   }

@@ -1,21 +1,32 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { MessageQueryDto, MessageBatchDto } from './dto/user-message.dto';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { MessageQueryDto, MessageBatchDto } from "./dto/user-message.dto";
 
 @Injectable()
 export class UserMessageService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getMessageList(userId: number, queryDto: MessageQueryDto) {
-    const { page = 1, size = 10, status = 'all', message_type, start_date, end_date } = queryDto;
+    const {
+      page = 1,
+      size = 10,
+      status = "all",
+      message_type,
+      start_date,
+      end_date,
+    } = queryDto;
     const skip = (page - 1) * size;
 
     const where: any = { user_id: userId };
 
-    if (status === 'unread') {
+    if (status === "unread") {
       where.is_read = 0;
-    } else if (status === 'read') {
+    } else if (status === "read") {
       where.is_read = 1;
     }
 
@@ -28,7 +39,10 @@ export class UserMessageService {
     }
 
     if (end_date) {
-      where.add_time = { ...where.add_time, lte: new Date(end_date).getTime() / 1000 };
+      where.add_time = {
+        ...where.add_time,
+        lte: new Date(end_date).getTime() / 1000,
+      };
     }
 
     const [messages, total, unreadCount] = await Promise.all([
@@ -36,7 +50,7 @@ export class UserMessageService {
         where,
         skip,
         take: size,
-        orderBy: { add_time: 'desc' },
+        orderBy: { add_time: "desc" },
         select: {
           message_id: true,
           title: true,
@@ -72,7 +86,7 @@ export class UserMessageService {
     });
 
     if (!message) {
-      throw new NotFoundException('消息不存在');
+      throw new NotFoundException("消息不存在");
     }
 
     // 如果消息未读，标记为已读
@@ -95,11 +109,11 @@ export class UserMessageService {
     });
 
     if (!message) {
-      throw new NotFoundException('消息不存在');
+      throw new NotFoundException("消息不存在");
     }
 
     if (message.is_read === 1) {
-      throw new BadRequestException('消息已读');
+      throw new BadRequestException("消息已读");
     }
 
     await this.prisma.user_message.update({
@@ -131,7 +145,7 @@ export class UserMessageService {
     });
 
     if (!message) {
-      throw new NotFoundException('消息不存在');
+      throw new NotFoundException("消息不存在");
     }
 
     await this.prisma.user_message.delete({
@@ -203,7 +217,7 @@ export class UserMessageService {
 
     // 按类型统计
     const typeStats = await this.prisma.user_message.groupBy({
-      by: ['message_type'],
+      by: ["message_type"],
       where: { user_id: userId },
       _count: true,
     });
@@ -221,7 +235,13 @@ export class UserMessageService {
     };
   }
 
-  async createSystemMessage(userId: number, title: string, content: string, messageType: string = 'system', relatedData?: any) {
+  async createSystemMessage(
+    userId: number,
+    title: string,
+    content: string,
+    messageType: string = "system",
+    relatedData?: any,
+  ) {
     const message = await this.prisma.user_message.create({
       data: {
         user_id: userId,
@@ -239,44 +259,43 @@ export class UserMessageService {
 
   async sendOrderMessage(userId: number, orderId: number, orderStatus: string) {
     const statusMessages = {
-      'paid': '订单已支付',
-      'shipped': '订单已发货',
-      'completed': '订单已完成',
-      'cancelled': '订单已取消',
+      paid: "订单已支付",
+      shipped: "订单已发货",
+      completed: "订单已完成",
+      cancelled: "订单已取消",
     };
 
-    const title = statusMessages[orderStatus] || '订单状态更新';
+    const title = statusMessages[orderStatus] || "订单状态更新";
     const content = `您的订单 #${orderId} 状态已更新为：${title}`;
 
-    return await this.createSystemMessage(
-      userId,
-      title,
-      content,
-      'order',
-      { order_id: orderId, order_status: orderStatus }
-    );
+    return await this.createSystemMessage(userId, title, content, "order", {
+      order_id: orderId,
+      order_status: orderStatus,
+    });
   }
 
-  async sendPromotionMessage(userId: number, promotionTitle: string, promotionContent: string, promotionId: number) {
-    const title = '促销活动通知';
+  async sendPromotionMessage(
+    userId: number,
+    promotionTitle: string,
+    promotionContent: string,
+    promotionId: number,
+  ) {
+    const title = "促销活动通知";
     const content = `${promotionTitle}\n${promotionContent}`;
 
-    return await this.createSystemMessage(
-      userId,
-      title,
-      content,
-      'promotion',
-      { promotion_id: promotionId }
-    );
+    return await this.createSystemMessage(userId, title, content, "promotion", {
+      promotion_id: promotionId,
+    });
   }
 
-  async sendServiceMessage(userId: number, title: string, content: string, serviceType: string) {
-    return await this.createSystemMessage(
-      userId,
-      title,
-      content,
-      'service',
-      { service_type: serviceType }
-    );
+  async sendServiceMessage(
+    userId: number,
+    title: string,
+    content: string,
+    serviceType: string,
+  ) {
+    return await this.createSystemMessage(userId, title, content, "service", {
+      service_type: serviceType,
+    });
   }
 }

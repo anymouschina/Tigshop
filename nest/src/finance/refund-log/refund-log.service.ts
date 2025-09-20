@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../prisma.service";
 import {
   RefundLogQueryDto,
   RefundLogDetailDto,
@@ -9,8 +9,8 @@ import {
   DeleteRefundLogDto,
   BatchDeleteRefundLogDto,
   REFUND_LOG_TYPE,
-  REFUND_LOG_STATUS
-} from './refund-log.dto';
+  REFUND_LOG_STATUS,
+} from "./refund-log.dto";
 
 @Injectable()
 export class RefundLogService {
@@ -18,7 +18,7 @@ export class RefundLogService {
 
   async findAll(query: RefundLogQueryDto) {
     const {
-      keyword = '',
+      keyword = "",
       order_id = 0,
       user_id = 0,
       refund_apply_id = 0,
@@ -26,8 +26,8 @@ export class RefundLogService {
       status = -1,
       page = 1,
       size = 15,
-      sort_field = 'id',
-      sort_order = 'desc',
+      sort_field = "id",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -148,7 +148,7 @@ export class RefundLogService {
     });
 
     if (!refundLog) {
-      throw new Error('退款记录不存在');
+      throw new Error("退款记录不存在");
     }
 
     return refundLog;
@@ -161,7 +161,7 @@ export class RefundLogService {
     });
 
     if (!order) {
-      throw new Error('订单不存在');
+      throw new Error("订单不存在");
     }
 
     // 检查用户是否存在
@@ -170,7 +170,7 @@ export class RefundLogService {
     });
 
     if (!user) {
-      throw new Error('用户不存在');
+      throw new Error("用户不存在");
     }
 
     // 检查退款申请是否存在（如果提供了）
@@ -180,13 +180,13 @@ export class RefundLogService {
       });
 
       if (!refundApply) {
-        throw new Error('退款申请不存在');
+        throw new Error("退款申请不存在");
       }
     }
 
     // 检查退款金额不能为负数
     if (data.refund_amount < 0) {
-      throw new Error('退款金额不能为负数');
+      throw new Error("退款金额不能为负数");
     }
 
     const refundLog = await this.prisma.refundLog.create({
@@ -207,7 +207,7 @@ export class RefundLogService {
     });
 
     if (!refundLog) {
-      throw new Error('退款记录不存在');
+      throw new Error("退款记录不存在");
     }
 
     // 状态变更检查
@@ -217,12 +217,12 @@ export class RefundLogService {
         if (data.status === 1 || data.status === 2 || data.status === 3) {
           // 允许状态变更
         } else {
-          throw new Error('无效的状态变更');
+          throw new Error("无效的状态变更");
         }
       }
       // 其他状态不允许变更
       else {
-        throw new Error('当前状态不允许变更');
+        throw new Error("当前状态不允许变更");
       }
     }
 
@@ -248,12 +248,12 @@ export class RefundLogService {
     });
 
     if (!refundLog) {
-      throw new Error('退款记录不存在');
+      throw new Error("退款记录不存在");
     }
 
     // 只有待处理状态可以删除
     if (refundLog.status !== 0) {
-      throw new Error('只有待处理状态的退款记录可以删除');
+      throw new Error("只有待处理状态的退款记录可以删除");
     }
 
     await this.prisma.refundLog.delete({
@@ -275,7 +275,7 @@ export class RefundLogService {
     });
 
     if (refundLogs.length !== ids.length) {
-      throw new Error('只能删除待处理状态的退款记录');
+      throw new Error("只能删除待处理状态的退款记录");
     }
 
     await this.prisma.refundLog.deleteMany({
@@ -291,7 +291,7 @@ export class RefundLogService {
 
   async getRefundLogStats() {
     const stats = await this.prisma.refundLog.groupBy({
-      by: ['status'],
+      by: ["status"],
       _count: {
         status: true,
       },
@@ -302,7 +302,7 @@ export class RefundLogService {
       result[i] = 0;
     }
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       result[stat.status] = stat._count.status;
     });
 
@@ -321,7 +321,7 @@ export class RefundLogService {
           },
         },
       },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
     });
   }
 
@@ -337,7 +337,7 @@ export class RefundLogService {
           },
         },
       },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
     });
   }
 

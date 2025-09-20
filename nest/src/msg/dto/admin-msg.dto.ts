@@ -1,6 +1,15 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, Min, Max, IsArray, ValidateNested } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  Min,
+  Max,
+  IsArray,
+  ValidateNested,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class AdminMsgQueryDto {
   @IsOptional()
@@ -26,20 +35,20 @@ export class AdminMsgQueryDto {
 
   @IsOptional()
   @Transform(({ value }) => {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       try {
         return JSON.parse(value);
       } catch {
-        return { msg_id: 'desc' };
+        return { msg_id: "desc" };
       }
     }
-    return value || { msg_id: 'desc' };
+    return value || { msg_id: "desc" };
   })
-  sort_field?: any = { is_readed: 'asc', msg_id: 'desc' };
+  sort_field?: any = { is_readed: "asc", msg_id: "desc" };
 
   @IsOptional()
   @IsString()
-  sort_order?: string = '';
+  sort_order?: string = "";
 
   @IsOptional()
   @Type(() => Number)
@@ -129,7 +138,7 @@ export class CreateAdminMsgDto {
 
   @IsOptional()
   @IsString()
-  msg_link?: string = '';
+  msg_link?: string = "";
 
   @IsOptional()
   related_data?: any;

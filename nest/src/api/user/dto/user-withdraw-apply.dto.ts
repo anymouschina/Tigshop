@@ -1,6 +1,15 @@
 // @ts-nocheck
-import { IsNumber, IsString, IsOptional, IsEnum, IsArray, IsObject, Min, Max } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsArray,
+  IsObject,
+  Min,
+  Max,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export enum WithdrawStatus {
   PENDING = 0,
@@ -16,14 +25,14 @@ export enum AccountType {
 }
 
 export enum WithdrawSortField {
-  ADD_TIME = 'add_time',
-  AMOUNT = 'amount',
-  FINISHED_TIME = 'finished_time',
+  ADD_TIME = "add_time",
+  AMOUNT = "amount",
+  FINISHED_TIME = "finished_time",
 }
 
 export enum WithdrawSortOrder {
-  ASC = 'asc',
-  DESC = 'desc',
+  ASC = "asc",
+  DESC = "desc",
 }
 
 export class WithdrawQueryDto {

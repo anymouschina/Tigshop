@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/services/prisma.service';
-import { CreateToolDto, UpdateToolDto } from './dto/tool.dto';
-import { ResponseUtil } from '../../../common/utils/response.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../common/services/prisma.service";
+import { CreateToolDto, UpdateToolDto } from "./dto/tool.dto";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class ToolService {
@@ -13,16 +13,14 @@ export class ToolService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     const orderBy: any = {};
     if (sort_field) {
-      orderBy[sort_field] = sort_order || 'desc';
+      orderBy[sort_field] = sort_order || "desc";
     } else {
-      orderBy.id = 'desc';
+      orderBy.id = "desc";
     }
 
     const skip = (page - 1) * size;
@@ -40,9 +38,7 @@ export class ToolService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { name: { contains: keyword } },
-      ];
+      where.OR = [{ name: { contains: keyword } }];
     }
 
     return await this.prisma.tool.count({ where });
@@ -65,7 +61,7 @@ export class ToolService {
       });
       return result;
     } catch (error) {
-      console.error('创建通用工具失败:', error);
+      console.error("创建通用工具失败:", error);
       return null;
     }
   }
@@ -81,7 +77,7 @@ export class ToolService {
       });
       return result;
     } catch (error) {
-      console.error('更新通用工具失败:', error);
+      console.error("更新通用工具失败:", error);
       return null;
     }
   }
@@ -93,7 +89,7 @@ export class ToolService {
       });
       return true;
     } catch (error) {
-      console.error('删除通用工具失败:', error);
+      console.error("删除通用工具失败:", error);
       return false;
     }
   }
@@ -109,7 +105,7 @@ export class ToolService {
       });
       return true;
     } catch (error) {
-      console.error('批量删除通用工具失败:', error);
+      console.error("批量删除通用工具失败:", error);
       return false;
     }
   }
@@ -132,7 +128,7 @@ export class ToolService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error('获取通用工具统计失败:', error);
+      console.error("获取通用工具统计失败:", error);
       return {
         total: 0,
         today_count: 0,

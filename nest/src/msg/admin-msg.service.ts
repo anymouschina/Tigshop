@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export enum MsgType {
   ORDER_NEW = 11,
@@ -154,11 +154,11 @@ export class AdminMsgService {
     // 排序
     const orderBy: any = {};
     if (filter.sort_field && Object.keys(filter.sort_field).length > 0) {
-      Object.keys(filter.sort_field).forEach(field => {
+      Object.keys(filter.sort_field).forEach((field) => {
         orderBy[field] = filter.sort_field[field];
       });
     } else {
-      orderBy.msg_id = 'desc';
+      orderBy.msg_id = "desc";
     }
 
     return query.findMany({
@@ -183,7 +183,7 @@ export class AdminMsgService {
     });
 
     if (!msg) {
-      throw new Error('管理员消息不存在');
+      throw new Error("管理员消息不存在");
     }
 
     return msg;
@@ -191,7 +191,7 @@ export class AdminMsgService {
 
   async setReaded(id: number): Promise<boolean> {
     if (!id) {
-      throw new Error('#id错误');
+      throw new Error("#id错误");
     }
 
     const result = await this.prisma.admin_msg.update({
@@ -202,7 +202,10 @@ export class AdminMsgService {
     return !!result;
   }
 
-  async setAllReaded(shopId: number = 0, vendorId: number = 0): Promise<boolean> {
+  async setAllReaded(
+    shopId: number = 0,
+    vendorId: number = 0,
+  ): Promise<boolean> {
     const where: any = { admin_id: 0 };
 
     if (shopId > 0) {
@@ -225,50 +228,50 @@ export class AdminMsgService {
     const msgTypeArr = [
       {
         cat_id: 1,
-        cat_name: '交易消息',
+        cat_name: "交易消息",
         child: {
-          [MsgType.ORDER_NEW]: '新订单',
-          [MsgType.ORDER_PAY]: '已付款订单',
-          [MsgType.ORDER_FINISH]: '订单完成',
+          [MsgType.ORDER_NEW]: "新订单",
+          [MsgType.ORDER_PAY]: "已付款订单",
+          [MsgType.ORDER_FINISH]: "订单完成",
         },
       },
       {
         cat_id: 2,
-        cat_name: '商品消息',
+        cat_name: "商品消息",
         child: {
-          [MsgType.PRODUCT_LOW_STOCK]: '商品库存预警',
-          [MsgType.PRODUCT_NO_STOCK]: '商品无货',
-          [MsgType.PRODUCT_OFF_SHELF]: '商品下架',
-          [MsgType.PRODUCT_AUDIT]: '商品审核通知',
+          [MsgType.PRODUCT_LOW_STOCK]: "商品库存预警",
+          [MsgType.PRODUCT_NO_STOCK]: "商品无货",
+          [MsgType.PRODUCT_OFF_SHELF]: "商品下架",
+          [MsgType.PRODUCT_AUDIT]: "商品审核通知",
         },
       },
       {
         cat_id: 3,
-        cat_name: '售后服务',
+        cat_name: "售后服务",
         child: {
-          [MsgType.ORDER_CANCEL]: '订单取消',
-          [MsgType.AFTERSALE_APPLY]: '售后申请',
-          [MsgType.WITHDRAW_APPLY]: '提现申请',
-          [MsgType.INVOICE_QUALIFICATION]: '发票资质审核',
-          [MsgType.INVOICE_APPLY]: '发票申请',
+          [MsgType.ORDER_CANCEL]: "订单取消",
+          [MsgType.AFTERSALE_APPLY]: "售后申请",
+          [MsgType.WITHDRAW_APPLY]: "提现申请",
+          [MsgType.INVOICE_QUALIFICATION]: "发票资质审核",
+          [MsgType.INVOICE_APPLY]: "发票申请",
         },
       },
       {
         cat_id: 4,
-        cat_name: '店铺服务',
+        cat_name: "店铺服务",
         child: {
-          [MsgType.SHOP_APPLY]: '店铺入驻申请',
-          [MsgType.SHOP_MODIFY]: '店铺资质修改',
-          [MsgType.SHOP_VIOLATION]: '店铺违规',
+          [MsgType.SHOP_APPLY]: "店铺入驻申请",
+          [MsgType.SHOP_MODIFY]: "店铺资质修改",
+          [MsgType.SHOP_VIOLATION]: "店铺违规",
         },
       },
       {
         cat_id: 5,
-        cat_name: '其它消息',
+        cat_name: "其它消息",
         child: {
-          [MsgType.SYSTEM]: '系统消息',
-          [MsgType.TODO]: '待办任务',
-          [MsgType.FEEDBACK]: '意见反馈',
+          [MsgType.SYSTEM]: "系统消息",
+          [MsgType.TODO]: "待办任务",
+          [MsgType.FEEDBACK]: "意见反馈",
         },
       },
     ];
@@ -288,7 +291,7 @@ export class AdminMsgService {
 
     // 获取未读消息类型统计
     const unreadMsgTypes = await this.prisma.admin_msg.groupBy({
-      by: ['msg_type'],
+      by: ["msg_type"],
       where,
       _count: {
         msg_type: true,
@@ -296,12 +299,12 @@ export class AdminMsgService {
     });
 
     const unreadArr: any = {};
-    unreadMsgTypes.forEach(item => {
+    unreadMsgTypes.forEach((item) => {
       unreadArr[item.msg_type] = item._count.msg_type;
     });
 
     // 构建返回数据结构
-    return msgTypeArr.map(category => {
+    return msgTypeArr.map((category) => {
       const result: any = {
         cat_id: category.cat_id,
         cat_name: category.cat_name,
@@ -332,8 +335,8 @@ export class AdminMsgService {
       data: {
         msg_type: MsgType.ORDER_NEW,
         send_time: Math.floor(Date.now() / 1000),
-        title: '',
-        content: '',
+        title: "",
+        content: "",
         order_id: orderId,
       },
     });
@@ -352,7 +355,7 @@ export class AdminMsgService {
 
       return msg.msg_id;
     } catch (error) {
-      throw new Error('创建消息失败: ' + error.message);
+      throw new Error("创建消息失败: " + error.message);
     }
   }
 }

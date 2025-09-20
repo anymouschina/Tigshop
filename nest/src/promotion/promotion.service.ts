@@ -1,13 +1,22 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { CreatePromotionDto, UpdatePromotionDto, PromotionType, TimeType } from './dto/promotion.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import {
+  CreatePromotionDto,
+  UpdatePromotionDto,
+  PromotionType,
+  TimeType,
+} from "./dto/promotion.dto";
 
 @Injectable()
 export class PromotionService {
   constructor(private prisma: PrismaService) {}
 
-  async getFilterList(filter: any, select: string[] = [], append: string[] = []) {
+  async getFilterList(
+    filter: any,
+    select: string[] = [],
+    append: string[] = [],
+  ) {
     const where: any = {
       is_delete: 0,
       shop_id: filter.shop_id,
@@ -28,7 +37,7 @@ export class PromotionService {
     }
 
     const orderBy: any = {};
-    orderBy[filter.sort_field || 'promotion_id'] = filter.sort_order || 'desc';
+    orderBy[filter.sort_field || "promotion_id"] = filter.sort_order || "desc";
 
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
@@ -41,16 +50,16 @@ export class PromotionService {
     });
 
     // 处理附加字段
-    return promotions.map(promotion => {
+    return promotions.map((promotion) => {
       const result: any = { ...promotion };
 
       // 添加类型文本
-      if (append.includes('type_text')) {
+      if (append.includes("type_text")) {
         result.type_text = this.getTypeText(promotion.promotion_type);
       }
 
       // 添加时间文本
-      if (append.includes('time_text')) {
+      if (append.includes("time_text")) {
         result.time_text = this.getTimeText(promotion);
       }
 
@@ -151,17 +160,17 @@ export class PromotionService {
 
   private getTypeText(type: string): string {
     const typeMap = {
-      [PromotionType.DISCOUNT]: '折扣',
-      [PromotionType.REDUCE]: '满减',
-      [PromotionType.GIFT]: '赠品',
-      [PromotionType.SHIPPING]: '包邮',
+      [PromotionType.DISCOUNT]: "折扣",
+      [PromotionType.REDUCE]: "满减",
+      [PromotionType.GIFT]: "赠品",
+      [PromotionType.SHIPPING]: "包邮",
     };
     return typeMap[type as PromotionType] || type;
   }
 
   private getTimeText(promotion: any): string {
     if (promotion.time_type === TimeType.PERMANENT) {
-      return '长期有效';
+      return "长期有效";
     } else if (promotion.time_type === TimeType.RELATIVE) {
       return `领取后${promotion.delay_day || 0}天生效，有效期${promotion.use_day || 0}天`;
     } else {

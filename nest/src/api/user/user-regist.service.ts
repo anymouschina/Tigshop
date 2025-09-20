@@ -1,12 +1,17 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
-import { SmsService } from '../../../common/sms/sms.service';
-import { EmailService } from '../../../common/email/email.service';
-import { RegistDto } from './dto/user-regist.dto';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import * as bcrypt from "bcrypt";
+import { JwtService } from "@nestjs/jwt";
+import { SmsService } from "../../../common/sms/sms.service";
+import { EmailService } from "../../../common/email/email.service";
+import { RegistDto } from "./dto/user-regist.dto";
 
 @Injectable()
 export class UserRegistService {
@@ -48,12 +53,20 @@ export class UserRegistService {
 
   async regist(registDto: RegistDto) {
     // 检查是否允许注册
-    const shopRegClosed = this.configService.get<string>('SHOP_REG_CLOSED', '0');
-    if (shopRegClosed === '1') {
-      throw new BadRequestException('商城已停止注册！');
+    const shopRegClosed = this.configService.get<string>(
+      "SHOP_REG_CLOSED",
+      "0",
+    );
+    if (shopRegClosed === "1") {
+      throw new BadRequestException("商城已停止注册！");
     }
 
-    const { regist_type, password, salesman_id = 0, referrer_user_id = 0 } = registDto;
+    const {
+      regist_type,
+      password,
+      salesman_id = 0,
+      referrer_user_id = 0,
+    } = registDto;
 
     // 生成用户名
     let username = registDto.username;
@@ -63,10 +76,10 @@ export class UserRegistService {
 
     // 检查用户名是否已存在
     if (await this.checkUsernameExists(username)) {
-      throw new ConflictException('用户名已存在');
+      throw new ConflictException("用户名已存在");
     }
 
-    let userData: any = {
+    const userData: any = {
       username,
       password: await bcrypt.hash(password, 10),
       referrer_user_id,
@@ -76,49 +89,53 @@ export class UserRegistService {
       is_using: 1,
     };
 
-    if (regist_type === 'mobile') {
+    if (regist_type === "mobile") {
       const { mobile, mobile_code } = registDto;
 
       if (!mobile) {
-        throw new BadRequestException('手机号不能为空');
+        throw new BadRequestException("手机号不能为空");
       }
 
       if (!mobile_code) {
-        throw new BadRequestException('短信验证码不能为空');
+        throw new BadRequestException("短信验证码不能为空");
       }
 
       // 验证短信验证码
       const isValid = await this.smsService.checkCode(mobile, mobile_code);
       if (!isValid) {
-        throw new UnauthorizedException('短信验证码错误或已过期，请重试');
+        throw new UnauthorizedException("短信验证码错误或已过期，请重试");
       }
 
       // 检查手机号是否已存在
       if (await this.checkMobileExists(mobile)) {
-        throw new ConflictException('手机号已存在');
+        throw new ConflictException("手机号已存在");
       }
 
       userData.mobile = mobile;
-    } else if (regist_type === 'email') {
+    } else if (regist_type === "email") {
       const { email, email_code } = registDto;
 
       if (!email) {
-        throw new BadRequestException('邮箱不能为空');
+        throw new BadRequestException("邮箱不能为空");
       }
 
       if (!email_code) {
-        throw new BadRequestException('邮箱验证码不能为空');
+        throw new BadRequestException("邮箱验证码不能为空");
       }
 
       // 验证邮箱验证码
-      const isValid = await this.emailService.checkCode(email, email_code, 'register_code');
+      const isValid = await this.emailService.checkCode(
+        email,
+        email_code,
+        "register_code",
+      );
       if (!isValid) {
-        throw new UnauthorizedException('邮箱验证码错误或已过期，请重试');
+        throw new UnauthorizedException("邮箱验证码错误或已过期，请重试");
       }
 
       // 检查邮箱是否已存在
       if (await this.checkEmailExists(email)) {
-        throw new ConflictException('邮箱已存在');
+        throw new ConflictException("邮箱已存在");
       }
 
       userData.email = email;
@@ -160,7 +177,10 @@ export class UserRegistService {
 
   private async addReferrerPoints(referrerUserId: number) {
     // 给推荐人增加积分
-    const referralPoints = this.configService.get<number>('REFERRAL_POINTS', 10);
+    const referralPoints = this.configService.get<number>(
+      "REFERRAL_POINTS",
+      10,
+    );
 
     await this.prisma.user_points.update({
       where: { user_id: referrerUserId },
@@ -176,8 +196,8 @@ export class UserRegistService {
       data: {
         user_id: referrerUserId,
         points: referralPoints,
-        log_type: 'referral',
-        description: '推荐用户注册奖励',
+        log_type: "referral",
+        description: "推荐用户注册奖励",
         add_time: Math.floor(Date.now() / 1000),
       },
     });
@@ -185,17 +205,17 @@ export class UserRegistService {
 
   async sendEmailCode(email: string) {
     if (!email) {
-      throw new BadRequestException('邮箱不能为空');
+      throw new BadRequestException("邮箱不能为空");
     }
 
     // 检查邮箱是否已注册
     if (await this.checkEmailExists(email)) {
-      throw new ConflictException('该邮箱已注册');
+      throw new ConflictException("该邮箱已注册");
     }
 
     // 发送邮箱验证码
-    await this.emailService.sendEmailCode(email, 'register_code');
+    await this.emailService.sendEmailCode(email, "register_code");
 
-    return { message: '发送成功！' };
+    return { message: "发送成功！" };
   }
 }

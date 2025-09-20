@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 @Injectable()
 export class AuthorityService {
@@ -29,7 +29,7 @@ export class AuthorityService {
     return this.prisma.authority.findMany({
       where,
       orderBy: {
-        sort_order: 'asc',
+        sort_order: "asc",
       },
     });
   }

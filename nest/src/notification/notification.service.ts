@@ -1,6 +1,10 @@
 // @ts-nocheck
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 import {
   CreateNotificationDto,
   UpdateNotificationDto,
@@ -11,13 +15,16 @@ import {
   NotificationChannel,
   NotificationPriority,
   NotificationStatus,
-} from './dto/notification.dto';
+} from "./dto/notification.dto";
 
 @Injectable()
 export class NotificationService {
   constructor(private prisma: PrismaService) {}
 
-  async createNotification(createDto: CreateNotificationDto, senderId?: number): Promise<any> {
+  async createNotification(
+    createDto: CreateNotificationDto,
+    senderId?: number,
+  ): Promise<any> {
     const notification = await this.prisma.notification.create({
       data: {
         type: createDto.type,
@@ -50,7 +57,7 @@ export class NotificationService {
     });
 
     if (!notification) {
-      throw new NotFoundException('通知不存在');
+      throw new NotFoundException("通知不存在");
     }
 
     try {
@@ -78,7 +85,10 @@ export class NotificationService {
     }
   }
 
-  private async sendToChannel(notification: any, channel: NotificationChannel): Promise<void> {
+  private async sendToChannel(
+    notification: any,
+    channel: NotificationChannel,
+  ): Promise<void> {
     const recipients = notification.user_id
       ? [notification.user_id]
       : notification.user_ids || [];
@@ -89,7 +99,7 @@ export class NotificationService {
           notification_id: notification.id,
           user_id: userId,
           channel,
-          status: 'pending',
+          status: "pending",
         },
       });
 
@@ -115,7 +125,7 @@ export class NotificationService {
         await this.prisma.notificationLog.update({
           where: { id: notificationLog.id },
           data: {
-            status: 'sent',
+            status: "sent",
             sent_at: new Date(),
           },
         });
@@ -123,7 +133,7 @@ export class NotificationService {
         await this.prisma.notificationLog.update({
           where: { id: notificationLog.id },
           data: {
-            status: 'failed',
+            status: "failed",
             error_message: error.message,
           },
         });
@@ -131,7 +141,10 @@ export class NotificationService {
     }
   }
 
-  private async sendInAppNotification(notification: any, userId: number): Promise<void> {
+  private async sendInAppNotification(
+    notification: any,
+    userId: number,
+  ): Promise<void> {
     // 应用内通知直接保存到数据库
     await this.prisma.userNotification.create({
       data: {
@@ -147,38 +160,50 @@ export class NotificationService {
     });
   }
 
-  private async sendEmailNotification(notification: any, userId: number): Promise<void> {
+  private async sendEmailNotification(
+    notification: any,
+    userId: number,
+  ): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { user_id: userId },
     });
 
     if (!user || !user.email) {
-      throw new Error('用户邮箱不存在');
+      throw new Error("用户邮箱不存在");
     }
 
     // TODO: 集成邮件服务
     console.log(`发送邮件通知到 ${user.email}: ${notification.title}`);
   }
 
-  private async sendSmsNotification(notification: any, userId: number): Promise<void> {
+  private async sendSmsNotification(
+    notification: any,
+    userId: number,
+  ): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { user_id: userId },
     });
 
     if (!user || !user.mobile) {
-      throw new Error('用户手机号不存在');
+      throw new Error("用户手机号不存在");
     }
 
     // TODO: 集成短信服务
     console.log(`发送短信通知到 ${user.mobile}: ${notification.title}`);
   }
 
-  private async sendPushNotification(notification: any, userId: number): Promise<void> {
+  private async sendPushNotification(
+    notification: any,
+    userId: number,
+  ): Promise<void> {
     // TODO: 集成推送服务
     console.log(`发送推送通知到用户 ${userId}: ${notification.title}`);
   }
 
-  private async sendWechatNotification(notification: any, userId: number): Promise<void> {
+  private async sendWechatNotification(
+    notification: any,
+    userId: number,
+  ): Promise<void> {
     // TODO: 集成微信服务
     console.log(`发送微信通知到用户 ${userId}: ${notification.title}`);
   }
@@ -269,8 +294,8 @@ export class NotificationService {
 
   private buildOrderBy(query: NotificationQueryDto): any {
     const orderBy: any = {};
-    const sortField = query.sortField || 'created_at';
-    const sortOrder = query.sortOrder || 'desc';
+    const sortField = query.sortField || "created_at";
+    const sortOrder = query.sortOrder || "desc";
 
     orderBy[sortField] = sortOrder;
     return orderBy;
@@ -299,13 +324,16 @@ export class NotificationService {
     });
 
     if (!notification) {
-      throw new NotFoundException('通知不存在');
+      throw new NotFoundException("通知不存在");
     }
 
     return notification;
   }
 
-  async updateNotification(id: number, updateDto: UpdateNotificationDto): Promise<any> {
+  async updateNotification(
+    id: number,
+    updateDto: UpdateNotificationDto,
+  ): Promise<any> {
     const notification = await this.prisma.notification.update({
       where: { id },
       data: updateDto,
@@ -336,16 +364,16 @@ export class NotificationService {
     });
   }
 
-  async markAsRead(markAsReadDto: MarkAsReadDto, userId?: number): Promise<void> {
+  async markAsRead(
+    markAsReadDto: MarkAsReadDto,
+    userId?: number,
+  ): Promise<void> {
     await this.prisma.notification.updateMany({
       where: {
         id: {
           in: markAsReadDto.notificationIds,
         },
-        OR: [
-          { user_id: userId },
-          { user_ids: { has: userId } },
-        ],
+        OR: [{ user_id: userId }, { user_ids: { has: userId } }],
       },
       data: {
         is_read: true,
@@ -371,10 +399,7 @@ export class NotificationService {
   async markAllAsRead(userId: number): Promise<void> {
     await this.prisma.notification.updateMany({
       where: {
-        OR: [
-          { user_id: userId },
-          { user_ids: { has: userId } },
-        ],
+        OR: [{ user_id: userId }, { user_ids: { has: userId } }],
         is_read: false,
       },
       data: {
@@ -395,7 +420,10 @@ export class NotificationService {
     });
   }
 
-  async getUserNotifications(userId: number, query: NotificationQueryDto): Promise<any> {
+  async getUserNotifications(
+    userId: number,
+    query: NotificationQueryDto,
+  ): Promise<any> {
     const where: any = {
       user_id: userId,
     };
@@ -409,7 +437,7 @@ export class NotificationService {
     }
 
     const orderBy = {
-      created_at: 'desc',
+      created_at: "desc",
     };
 
     const skip = ((query.page || 1) - 1) * (query.size || 15);
@@ -464,7 +492,7 @@ export class NotificationService {
         is_enabled: true,
       },
       orderBy: {
-        created_at: 'desc',
+        created_at: "desc",
       },
     });
   }
@@ -478,7 +506,7 @@ export class NotificationService {
     });
 
     if (!template) {
-      throw new NotFoundException('通知模板不存在');
+      throw new NotFoundException("通知模板不存在");
     }
 
     return template;
@@ -522,12 +550,12 @@ export class NotificationService {
     });
 
     const typeStats = await this.prisma.notification.groupBy({
-      by: ['type'],
+      by: ["type"],
       _count: { id: true },
     });
 
     const channelStats = await this.prisma.notification.groupBy({
-      by: ['channels'],
+      by: ["channels"],
       _count: { id: true },
     });
 

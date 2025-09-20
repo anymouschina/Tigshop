@@ -1,14 +1,15 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../database/prisma.service';
-import { CreateArticleDto, UpdateArticleDto } from './dto/article.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../database/prisma.service";
+import { CreateArticleDto, UpdateArticleDto } from "./dto/article.dto";
 
 @Injectable()
 export class ArticleService {
   constructor(private prisma: PrismaService) {}
 
   async getFilterList(filter: any) {
-    const { page, size, sort_field, sort_order, keyword, category_id, status } = filter;
+    const { page, size, sort_field, sort_order, keyword, category_id, status } =
+      filter;
 
     const skip = (page - 1) * size;
     const orderBy = { [sort_field]: sort_order };
@@ -23,7 +24,7 @@ export class ArticleService {
     if (category_id) {
       where.category_id = parseInt(category_id);
     }
-    if (status !== '') {
+    if (status !== "") {
       where.status = parseInt(status);
     }
 
@@ -52,7 +53,8 @@ export class ArticleService {
   }
 
   async getFilterCount(filter: any): Promise<number> {
-    const { page, size, sort_field, sort_order, keyword, category_id, status } = filter;
+    const { page, size, sort_field, sort_order, keyword, category_id, status } =
+      filter;
 
     const where: any = {};
     if (keyword) {
@@ -64,7 +66,7 @@ export class ArticleService {
     if (category_id) {
       where.category_id = parseInt(category_id);
     }
-    if (status !== '') {
+    if (status !== "") {
       where.status = parseInt(status);
     }
 
@@ -91,7 +93,7 @@ export class ArticleService {
     });
 
     if (!item) {
-      throw new Error('文章不存在');
+      throw new Error("文章不存在");
     }
 
     return item;
@@ -164,7 +166,7 @@ export class ArticleService {
           },
         },
       },
-      orderBy: { create_time: 'desc' },
+      orderBy: { create_time: "desc" },
       take: limit,
     });
   }
@@ -175,7 +177,7 @@ export class ArticleService {
         category_id: categoryId,
         status: 1,
       },
-      orderBy: { sort_order: 'asc', create_time: 'desc' },
+      orderBy: { sort_order: "asc", create_time: "desc" },
       take: limit,
     });
   }

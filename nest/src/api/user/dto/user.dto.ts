@@ -1,5 +1,14 @@
 // @ts-nocheck
-import { IsString, IsEmail, IsMobilePhone, IsOptional, IsNumber, IsEnum, MinLength, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsMobilePhone,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  MinLength,
+  IsDateString,
+} from "class-validator";
 
 export class UpdateUserDto {
   @IsOptional()
@@ -15,11 +24,11 @@ export class UpdateUserDto {
   birthday?: string;
 
   @IsOptional()
-  @IsEmail({}, { message: '邮箱格式不正确' })
+  @IsEmail({}, { message: "邮箱格式不正确" })
   email?: string;
 
   @IsOptional()
-  @IsMobilePhone('zh-CN', { message: '手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "手机号格式不正确" })
   mobile?: string;
 
   @IsOptional()
@@ -31,8 +40,8 @@ export class UpdateUserDto {
   signature?: string;
 
   @IsOptional()
-  @IsEnum(['male', 'female', 'secret'])
-  gender?: 'male' | 'female' | 'secret';
+  @IsEnum(["male", "female", "secret"])
+  gender?: "male" | "female" | "secret";
 }
 
 export class UpdatePasswordDto {
@@ -40,7 +49,7 @@ export class UpdatePasswordDto {
   old_password: string;
 
   @IsString()
-  @MinLength(6, { message: '新密码长度至少6位' })
+  @MinLength(6, { message: "新密码长度至少6位" })
   new_password: string;
 
   @IsString()
@@ -48,7 +57,7 @@ export class UpdatePasswordDto {
 }
 
 export class UpdateMobileDto {
-  @IsMobilePhone('zh-CN', { message: '新手机号格式不正确' })
+  @IsMobilePhone("zh-CN", { message: "新手机号格式不正确" })
   new_mobile: string;
 
   @IsString()
@@ -56,7 +65,7 @@ export class UpdateMobileDto {
 }
 
 export class UpdateEmailDto {
-  @IsEmail({}, { message: '新邮箱格式不正确' })
+  @IsEmail({}, { message: "新邮箱格式不正确" })
   new_email: string;
 
   @IsString()
@@ -83,9 +92,9 @@ export class UserQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'user_id';
+  sort_field?: string = "user_id";
 
   @IsOptional()
   @IsString()
-  sort_order?: string = 'desc';
+  sort_order?: string = "desc";
 }

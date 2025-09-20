@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../common/services/prisma.service';
-import { CreateExampleDto, UpdateExampleDto } from './dto/example.dto';
-import { ResponseUtil } from '../../../common/utils/response.util';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../common/services/prisma.service";
+import { CreateExampleDto, UpdateExampleDto } from "./dto/example.dto";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class ExampleService {
@@ -13,16 +13,14 @@ export class ExampleService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { example_name: { contains: keyword } },
-      ];
+      where.OR = [{ example_name: { contains: keyword } }];
     }
 
     const orderBy: any = {};
     if (sort_field) {
-      orderBy[sort_field] = sort_order || 'desc';
+      orderBy[sort_field] = sort_order || "desc";
     } else {
-      orderBy.id = 'desc';
+      orderBy.id = "desc";
     }
 
     const skip = (page - 1) * size;
@@ -40,9 +38,7 @@ export class ExampleService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [
-        { example_name: { contains: keyword } },
-      ];
+      where.OR = [{ example_name: { contains: keyword } }];
     }
 
     return await this.prisma.example.count({ where });
@@ -66,7 +62,7 @@ export class ExampleService {
       });
       return result;
     } catch (error) {
-      console.error('创建示例失败:', error);
+      console.error("创建示例失败:", error);
       return null;
     }
   }
@@ -76,14 +72,18 @@ export class ExampleService {
       const result = await this.prisma.example.update({
         where: { id },
         data: {
-          ...(updateData.example_name && { example_name: updateData.example_name }),
-          ...(updateData.sort_order !== undefined && { sort_order: updateData.sort_order }),
+          ...(updateData.example_name && {
+            example_name: updateData.example_name,
+          }),
+          ...(updateData.sort_order !== undefined && {
+            sort_order: updateData.sort_order,
+          }),
           updated_at: new Date(),
         },
       });
       return result;
     } catch (error) {
-      console.error('更新示例失败:', error);
+      console.error("更新示例失败:", error);
       return null;
     }
   }
@@ -95,7 +95,7 @@ export class ExampleService {
       });
       return true;
     } catch (error) {
-      console.error('删除示例失败:', error);
+      console.error("删除示例失败:", error);
       return false;
     }
   }
@@ -111,7 +111,7 @@ export class ExampleService {
       });
       return true;
     } catch (error) {
-      console.error('批量删除示例失败:', error);
+      console.error("批量删除示例失败:", error);
       return false;
     }
   }
@@ -134,7 +134,7 @@ export class ExampleService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error('获取示例统计失败:', error);
+      console.error("获取示例统计失败:", error);
       return {
         total: 0,
         today_count: 0,

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export enum GrouponStatus {
   WAITING = 0, // 未开始
@@ -10,10 +10,10 @@ export enum GrouponStatus {
 }
 
 export const GROUPON_STATUS_NAME = {
-  [GrouponStatus.WAITING]: '未开始',
-  [GrouponStatus.IN_PROGRESS]: '进行中',
-  [GrouponStatus.ENDED]: '已结束',
-  [GrouponStatus.CANCELLED]: '已取消',
+  [GrouponStatus.WAITING]: "未开始",
+  [GrouponStatus.IN_PROGRESS]: "进行中",
+  [GrouponStatus.ENDED]: "已结束",
+  [GrouponStatus.CANCELLED]: "已取消",
 };
 
 @Injectable()
@@ -56,13 +56,19 @@ export class GrouponService {
     // 检查活动状态并更新
     const now = Math.floor(Date.now() / 1000);
     for (const result of results) {
-      if (result.end_time < now && result.status === GrouponStatus.IN_PROGRESS) {
+      if (
+        result.end_time < now &&
+        result.status === GrouponStatus.IN_PROGRESS
+      ) {
         await this.prisma.productTeam.update({
           where: { product_team_id: result.product_team_id },
           data: { status: GrouponStatus.ENDED },
         });
         result.status = GrouponStatus.ENDED;
-      } else if (result.start_time > now && result.status === GrouponStatus.WAITING) {
+      } else if (
+        result.start_time > now &&
+        result.status === GrouponStatus.WAITING
+      ) {
         // 活动开始时间已到，更新为进行中
         if (result.start_time <= now) {
           await this.prisma.productTeam.update({
@@ -74,7 +80,7 @@ export class GrouponService {
       }
     }
 
-    return results.map(result => ({
+    return results.map((result) => ({
       ...result,
       status_name: this.getStatusName(result.status),
       start_time_text: this.formatTime(result.start_time),
@@ -107,7 +113,7 @@ export class GrouponService {
     }
 
     // 状态筛选
-    if (filter.status !== undefined && filter.status !== '') {
+    if (filter.status !== undefined && filter.status !== "") {
       where.status = filter.status;
     }
 
@@ -130,7 +136,7 @@ export class GrouponService {
       };
     }
     return {
-      product_team_id: 'desc',
+      product_team_id: "desc",
     };
   }
 
@@ -160,7 +166,7 @@ export class GrouponService {
     });
 
     if (!result) {
-      throw new Error('拼团活动不存在');
+      throw new Error("拼团活动不存在");
     }
 
     // 检查并更新状态
@@ -172,7 +178,10 @@ export class GrouponService {
         where: { product_team_id: id },
         data: { status: GrouponStatus.ENDED },
       });
-    } else if (result.start_time <= now && result.status === GrouponStatus.WAITING) {
+    } else if (
+      result.start_time <= now &&
+      result.status === GrouponStatus.WAITING
+    ) {
       currentStatus = GrouponStatus.IN_PROGRESS;
       await this.prisma.productTeam.update({
         where: { product_team_id: id },
@@ -196,13 +205,15 @@ export class GrouponService {
     const validatedData = await this.getJudge(data);
 
     // 检查活动冲突
-    if (await this.checkActivityIsExist(
-      validatedData.product_id,
-      validatedData.start_time,
-      validatedData.end_time,
-      0
-    )) {
-      throw new Error('当前时间内已存在拼团活动');
+    if (
+      await this.checkActivityIsExist(
+        validatedData.product_id,
+        validatedData.start_time,
+        validatedData.end_time,
+        0,
+      )
+    ) {
+      throw new Error("当前时间内已存在拼团活动");
     }
 
     const itemData = validatedData.items;
@@ -243,20 +254,22 @@ export class GrouponService {
     });
 
     if (!groupon) {
-      throw new Error('拼团活动不存在');
+      throw new Error("拼团活动不存在");
     }
 
     // 验证数据
     const validatedData = await this.getJudge({ ...data, product_team_id: id });
 
     // 检查活动冲突
-    if (await this.checkActivityIsExist(
-      validatedData.product_id,
-      validatedData.start_time,
-      validatedData.end_time,
-      id
-    )) {
-      throw new Error('当前时间内已存在拼团活动');
+    if (
+      await this.checkActivityIsExist(
+        validatedData.product_id,
+        validatedData.start_time,
+        validatedData.end_time,
+        id,
+      )
+    ) {
+      throw new Error("当前时间内已存在拼团活动");
     }
 
     const updateData: any = {
@@ -303,7 +316,7 @@ export class GrouponService {
     });
 
     if (!groupon) {
-      throw new Error('拼团活动不存在');
+      throw new Error("拼团活动不存在");
     }
 
     await this.prisma.$transaction(async (prisma) => {
@@ -333,7 +346,10 @@ export class GrouponService {
     return true;
   }
 
-  async getProductActivityInfo(productId: number, skuId: number = 0): Promise<any> {
+  async getProductActivityInfo(
+    productId: number,
+    skuId: number = 0,
+  ): Promise<any> {
     const now = Math.floor(Date.now() / 1000);
     const where: any = {
       product_id: productId,
@@ -363,7 +379,7 @@ export class GrouponService {
     }
 
     if (!data.items || data.items.length === 0) {
-      throw new Error('请选择参加拼团的商品');
+      throw new Error("请选择参加拼团的商品");
     }
 
     return validatedData;
@@ -373,7 +389,7 @@ export class GrouponService {
     productId: number,
     startTime: number,
     endTime: number,
-    excludeId: number = 0
+    excludeId: number = 0,
   ): Promise<boolean> {
     const conflictingActivities = await this.prisma.seckillItem.findMany({
       where: {
@@ -390,10 +406,10 @@ export class GrouponService {
   }
 
   private getStatusName(status: number): string {
-    return GROUPON_STATUS_NAME[status] || '未知状态';
+    return GROUPON_STATUS_NAME[status] || "未知状态";
   }
 
   private formatTime(timestamp: number): string {
-    return new Date(timestamp * 1000).toLocaleString('zh-CN');
+    return new Date(timestamp * 1000).toLocaleString("zh-CN");
   }
 }

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 export enum SeckillStatus {
   WAITING = 0, // 未开始
@@ -10,10 +10,10 @@ export enum SeckillStatus {
 }
 
 export const SECKILL_STATUS_NAME = {
-  [SeckillStatus.WAITING]: '未开始',
-  [SeckillStatus.IN_PROGRESS]: '进行中',
-  [SeckillStatus.ENDED]: '已结束',
-  [SeckillStatus.CANCELLED]: '已取消',
+  [SeckillStatus.WAITING]: "未开始",
+  [SeckillStatus.IN_PROGRESS]: "进行中",
+  [SeckillStatus.ENDED]: "已结束",
+  [SeckillStatus.CANCELLED]: "已取消",
 };
 
 @Injectable()
@@ -56,13 +56,19 @@ export class SeckillService {
     // 检查活动状态并更新
     const now = Math.floor(Date.now() / 1000);
     for (const result of results) {
-      if (result.end_time < now && result.status === SeckillStatus.IN_PROGRESS) {
+      if (
+        result.end_time < now &&
+        result.status === SeckillStatus.IN_PROGRESS
+      ) {
         await this.prisma.seckill.update({
           where: { seckill_id: result.seckill_id },
           data: { status: SeckillStatus.ENDED },
         });
         result.status = SeckillStatus.ENDED;
-      } else if (result.start_time > now && result.status === SeckillStatus.WAITING) {
+      } else if (
+        result.start_time > now &&
+        result.status === SeckillStatus.WAITING
+      ) {
         // 活动开始时间已到，更新为进行中
         if (result.start_time <= now) {
           await this.prisma.seckill.update({
@@ -74,7 +80,7 @@ export class SeckillService {
       }
     }
 
-    return results.map(result => ({
+    return results.map((result) => ({
       ...result,
       status_name: this.getStatusName(result.status),
       start_time_text: this.formatTime(result.start_time),
@@ -112,7 +118,7 @@ export class SeckillService {
     }
 
     // 状态筛选
-    if (filter.status !== undefined && filter.status !== '') {
+    if (filter.status !== undefined && filter.status !== "") {
       where.status = filter.status;
     }
 
@@ -135,7 +141,7 @@ export class SeckillService {
       };
     }
     return {
-      seckill_id: 'desc',
+      seckill_id: "desc",
     };
   }
 
@@ -171,7 +177,7 @@ export class SeckillService {
     });
 
     if (!result) {
-      throw new Error('秒杀活动不存在');
+      throw new Error("秒杀活动不存在");
     }
 
     // 检查并更新状态
@@ -183,7 +189,10 @@ export class SeckillService {
         where: { seckill_id: id },
         data: { status: SeckillStatus.ENDED },
       });
-    } else if (result.start_time <= now && result.status === SeckillStatus.WAITING) {
+    } else if (
+      result.start_time <= now &&
+      result.status === SeckillStatus.WAITING
+    ) {
       currentStatus = SeckillStatus.IN_PROGRESS;
       await this.prisma.seckill.update({
         where: { seckill_id: id },
@@ -205,13 +214,13 @@ export class SeckillService {
 
     // 验证时间
     if (data.start_time >= data.end_time) {
-      throw new Error('开始时间必须小于结束时间');
+      throw new Error("开始时间必须小于结束时间");
     }
 
     const result = await this.prisma.seckill.create({
       data: {
         seckill_name: data.seckill_name,
-        seckill_remark: data.seckill_remark || '',
+        seckill_remark: data.seckill_remark || "",
         start_time: data.start_time,
         end_time: data.end_time,
         shop_id: data.shop_id,
@@ -247,20 +256,22 @@ export class SeckillService {
     });
 
     if (!seckill) {
-      throw new Error('秒杀活动不存在');
+      throw new Error("秒杀活动不存在");
     }
 
     // 验证时间
     if (data.start_time && data.end_time && data.start_time >= data.end_time) {
-      throw new Error('开始时间必须小于结束时间');
+      throw new Error("开始时间必须小于结束时间");
     }
 
     const updateData: any = {
       update_time: Math.floor(Date.now() / 1000),
     };
 
-    if (data.seckill_name !== undefined) updateData.seckill_name = data.seckill_name;
-    if (data.seckill_remark !== undefined) updateData.seckill_remark = data.seckill_remark;
+    if (data.seckill_name !== undefined)
+      updateData.seckill_name = data.seckill_name;
+    if (data.seckill_remark !== undefined)
+      updateData.seckill_remark = data.seckill_remark;
     if (data.start_time !== undefined) updateData.start_time = data.start_time;
     if (data.end_time !== undefined) updateData.end_time = data.end_time;
     if (data.shop_id !== undefined) updateData.shop_id = data.shop_id;
@@ -309,7 +320,7 @@ export class SeckillService {
     });
 
     if (!seckill) {
-      throw new Error('秒杀活动不存在');
+      throw new Error("秒杀活动不存在");
     }
 
     const updateData: any = {
@@ -363,10 +374,10 @@ export class SeckillService {
   }
 
   private getStatusName(status: number): string {
-    return SECKILL_STATUS_NAME[status] || '未知状态';
+    return SECKILL_STATUS_NAME[status] || "未知状态";
   }
 
   private formatTime(timestamp: number): string {
-    return new Date(timestamp * 1000).toLocaleString('zh-CN');
+    return new Date(timestamp * 1000).toLocaleString("zh-CN");
   }
 }

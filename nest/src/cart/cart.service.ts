@@ -1,7 +1,11 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
-import { Decimal } from '@prisma/client/runtime/library';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../database/database.service";
+import { Decimal } from "@prisma/client/runtime/library";
 
 export interface CartItem {
   cartId: number;
@@ -41,7 +45,12 @@ export class CartService {
    * @param skuId SKU ID
    * @returns 更新后的购物车
    */
-  async addItem(userId: number, productId: number, quantity: number = 1, skuId: number = 0) {
+  async addItem(
+    userId: number,
+    productId: number,
+    quantity: number = 1,
+    skuId: number = 0,
+  ) {
     // 验证商品是否存在且启用
     const product = await this.prisma.product.findUnique({
       where: { productId },
@@ -49,11 +58,11 @@ export class CartService {
     });
 
     if (!product) {
-      throw new NotFoundException('商品不存在');
+      throw new NotFoundException("商品不存在");
     }
 
     if (product.isDelete !== 0) {
-      throw new BadRequestException('商品已下架');
+      throw new BadRequestException("商品已下架");
     }
 
     // 检查库存
@@ -63,13 +72,13 @@ export class CartService {
         where: { skuId },
       });
       if (!sku) {
-        throw new NotFoundException('SKU不存在');
+        throw new NotFoundException("SKU不存在");
       }
       stock = sku.skuStock;
     }
 
     if (stock < quantity) {
-      throw new BadRequestException('库存不足');
+      throw new BadRequestException("库存不足");
     }
 
     // 检查购物车中是否已有该商品（相同SKU）
@@ -87,7 +96,7 @@ export class CartService {
       // 更新数量
       const newQuantity = existingItem.quantity + quantity;
       if (newQuantity > stock) {
-        throw new BadRequestException('库存不足');
+        throw new BadRequestException("库存不足");
       }
 
       cartItem = await this.prisma.cart.update({
@@ -109,7 +118,7 @@ export class CartService {
       });
 
       if (!productData) {
-        throw new NotFoundException('商品信息不完整');
+        throw new NotFoundException("商品信息不完整");
       }
 
       let skuData = null;
@@ -136,7 +145,7 @@ export class CartService {
           userId,
           productId,
           productSn: productData.productSn,
-          picThumb: productData.picThumb || '',
+          picThumb: productData.picThumb || "",
           marketPrice: marketPrice,
           originalPrice: originalPrice,
           quantity,
@@ -167,15 +176,15 @@ export class CartService {
     });
 
     if (!cartItem) {
-      throw new NotFoundException('购物车商品不存在');
+      throw new NotFoundException("购物车商品不存在");
     }
 
     if (cartItem.userId !== userId) {
-      throw new BadRequestException('无权操作此购物车商品');
+      throw new BadRequestException("无权操作此购物车商品");
     }
 
     if (quantity <= 0) {
-      throw new BadRequestException('数量必须大于0');
+      throw new BadRequestException("数量必须大于0");
     }
 
     // 检查库存
@@ -193,7 +202,7 @@ export class CartService {
     }
 
     if (quantity > stock) {
-      throw new BadRequestException('库存不足');
+      throw new BadRequestException("库存不足");
     }
 
     await this.prisma.cart.update({
@@ -219,11 +228,11 @@ export class CartService {
     });
 
     if (!cartItem) {
-      throw new NotFoundException('购物车商品不存在');
+      throw new NotFoundException("购物车商品不存在");
     }
 
     if (cartItem.userId !== userId) {
-      throw new BadRequestException('无权操作此购物车商品');
+      throw new BadRequestException("无权操作此购物车商品");
     }
 
     await this.prisma.cart.delete({
@@ -263,11 +272,11 @@ export class CartService {
         },
       },
       orderBy: {
-        updateTime: 'desc',
+        updateTime: "desc",
       },
     });
 
-    const items = cartItems.map(item => ({
+    const items = cartItems.map((item) => ({
       cartId: item.cartId,
       productId: item.productId,
       productSn: item.productSn,
@@ -285,13 +294,16 @@ export class CartService {
       extraSkuData: item.extraSkuData,
     }));
 
-    const totalPrice = items.reduce((sum, item) => sum + (item.originalPrice * item.quantity), 0);
+    const totalPrice = items.reduce(
+      (sum, item) => sum + item.originalPrice * item.quantity,
+      0,
+    );
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
     const selectedTotalPrice = items
-      .filter(item => item.isChecked === 1)
-      .reduce((sum, item) => sum + (item.originalPrice * item.quantity), 0);
+      .filter((item) => item.isChecked === 1)
+      .reduce((sum, item) => sum + item.originalPrice * item.quantity, 0);
     const selectedTotalQuantity = items
-      .filter(item => item.isChecked === 1)
+      .filter((item) => item.isChecked === 1)
       .reduce((sum, item) => sum + item.quantity, 0);
 
     return {
@@ -316,11 +328,11 @@ export class CartService {
     });
 
     if (!cartItem) {
-      throw new NotFoundException('购物车商品不存在');
+      throw new NotFoundException("购物车商品不存在");
     }
 
     if (cartItem.userId !== userId) {
-      throw new BadRequestException('无权操作此购物车商品');
+      throw new BadRequestException("无权操作此购物车商品");
     }
 
     await this.prisma.cart.update({
@@ -368,7 +380,7 @@ export class CartService {
     });
 
     if (cartItems.length !== cartIds.length) {
-      throw new BadRequestException('部分购物车商品不存在或无权操作');
+      throw new BadRequestException("部分购物车商品不存在或无权操作");
     }
 
     await this.prisma.cart.deleteMany({
