@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Module } from "@nestjs/common";
 import { ArticleModule } from "./article/article.module";
-import { ArticleCategoryModule } from "./article-category/article-category.module";
+import { ArticleCategoryModule } from "./article-category/articleCategory.module";
 import { HomeModule } from "./home/home.module";
 import { ShareModule } from "./share/share.module";
 

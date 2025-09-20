@@ -36,7 +36,6 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/schedule": "^6.0.0",
     "@nestjs/swagger": "^7.3.1",
-    "@nestjs/typeorm": "^10.0.2",
     "@prisma/client": "^5.15.1",
     "@types/handlebars": "^4.0.40",
     "@types/nodemailer": "^6.4.19",
@@ -55,8 +54,7 @@
     "redis": "^5.5.5",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "swagger-ui-express": "^5.0.1",
-    "typeorm": "^0.3.27"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
