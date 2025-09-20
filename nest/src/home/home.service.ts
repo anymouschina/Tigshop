@@ -46,58 +46,296 @@ export class HomeService {
    * 获取应用预览装修数据
    */
   private async getAppPreviewDecorate(previewId: number) {
-    // 模拟获取预览装修数据
-    return {
-      decorate_id: previewId,
-      module_list: this.getMockModuleList(),
-      page_module: this.getMockPageModule(),
-    };
+    try {
+      // 查找预览装修配置，优先使用草稿数据
+      const decorate = await this.prisma.decorate.findFirst({
+        where: {
+          decorate_id: previewId,
+          decorate_type: 1, // TYPE_H5
+        },
+      });
+
+      if (!decorate) {
+        // 如果没有找到装修配置，返回默认配置
+        return {
+          decorate_id: previewId,
+          module_list: this.getMockModuleList(),
+          page_module: this.getMockPageModule(),
+          backgroundImage: "",
+        };
+      }
+
+      // 解析装修数据，优先使用草稿数据
+      let moduleList = this.getMockModuleList();
+      let pageModule = this.getMockPageModule();
+      let backgroundImage = "";
+
+      try {
+        const dataToParse = decorate.draft_data || decorate.data;
+        if (dataToParse) {
+          const parsedData = JSON.parse(dataToParse);
+          return parsedData
+        }
+      } catch (parseError) {
+        console.error('解析预览装修数据失败:', parseError);
+        moduleList = this.getMockModuleList();
+      }
+
+      return {
+        decorate_id: decorate.decorate_id,
+        decorate_title: decorate.decorate_title || "预览页面",
+        module_list: moduleList,
+        page_module: pageModule,
+        backgroundImage: backgroundImage,
+      };
+    } catch (error) {
+      console.error('获取预览装修数据失败:', error);
+      // 出错时返回默认配置
+      return {
+        decorate_id: previewId,
+        module_list: this.getMockModuleList(),
+        page_module: this.getMockPageModule(),
+        backgroundImage: "",
+      };
+    }
   }
 
   /**
    * 获取PC预览装修数据
    */
   private async getPcPreviewDecorate(previewId: number) {
-    // 模拟获取PC预览装修数据
-    return {
-      decorate_id: previewId,
-      module_list: this.getMockModuleList(),
-    };
+    try {
+      // 查找PC预览装修配置，优先使用草稿数据
+      const decorate = await this.prisma.decorate.findFirst({
+        where: {
+          decorate_id: previewId,
+          decorate_type: 2, // TYPE_PC
+        },
+      });
+
+      if (!decorate) {
+        // 如果没有找到装修配置，返回默认配置
+        return {
+          decorate_id: previewId,
+          module_list: this.getMockModuleList(),
+          backgroundImage: "",
+        };
+      }
+
+      // 解析装修数据，优先使用草稿数据
+      let moduleList = this.getMockModuleList();
+      let backgroundImage = "";
+
+      try {
+        const dataToParse = decorate.draft_data || decorate.data;
+        if (dataToParse) {
+          const parsedData = JSON.parse(dataToParse);
+          moduleList = parsedData.module_list || this.getMockModuleList();
+          backgroundImage = parsedData.backgroundImage || "";
+        }
+      } catch (parseError) {
+        console.error('解析PC预览装修数据失败:', parseError);
+        moduleList = this.getMockModuleList();
+      }
+
+      return {
+        decorate_id: decorate.decorate_id,
+        decorate_title: decorate.decorate_title || "PC预览页面",
+        module_list: moduleList,
+        backgroundImage: backgroundImage,
+      };
+    } catch (error) {
+      console.error('获取PC预览装修数据失败:', error);
+      // 出错时返回默认配置
+      return {
+        decorate_id: previewId,
+        module_list: this.getMockModuleList(),
+        backgroundImage: "",
+      };
+    }
   }
 
   /**
    * 获取装修数据
    */
   private async getDecorate(type: number, decorateId: number) {
-    // 模拟获取装修数据
-    return {
-      decorate_id: decorateId,
-      module_list: this.getMockModuleList(),
-      page_module: type === 1 ? this.getMockPageModule() : null,
-    };
+    try {
+      // 查找指定的装修配置
+      const decorate = await this.prisma.decorate.findFirst({
+        where: {
+          decorate_id: decorateId,
+          decorate_type: type,
+          status: true,
+        },
+      });
+
+      if (!decorate) {
+        // 如果没有找到装修配置，返回默认配置
+        return {
+          decorate_id: decorateId,
+          module_list: this.getMockModuleList(),
+          page_module: type === 1 ? this.getMockPageModule() : null,
+          backgroundImage: "",
+        };
+      }
+
+      // 解析装修数据
+      let moduleList = this.getMockModuleList();
+      let pageModule = type === 1 ? this.getMockPageModule() : null;
+      let backgroundImage = "";
+
+      try {
+        if (decorate.data) {
+          const parsedData = JSON.parse(decorate.data);
+          return parsedData
+        }
+      } catch (parseError) {
+        console.error('解析装修数据失败:', parseError);
+        moduleList = this.getMockModuleList();
+      }
+
+      return {
+        decorate_id: decorate.decorate_id,
+        decorate_title: decorate.decorate_title || "装修页面",
+        module_list: moduleList,
+        page_module: pageModule,
+        backgroundImage: backgroundImage,
+      };
+    } catch (error) {
+      console.error('获取装修数据失败:', error);
+      // 出错时返回默认配置
+      return {
+        decorate_id: decorateId,
+        module_list: this.getMockModuleList(),
+        page_module: type === 1 ? this.getMockPageModule() : null,
+        backgroundImage: "",
+      };
+    }
   }
 
   /**
    * 获取应用默认首页
    */
   private async getAppHomeDecorate() {
-    // 模拟获取默认首页
-    return {
-      decorate_id: 1,
-      module_list: this.getMockModuleList(),
-      page_module: this.getMockPageModule(),
-    };
+    try {
+      // 查找启用的首页装修配置 (decorate_type = 1 for H5, is_home = 1 for homepage)
+      const decorate = await this.prisma.decorate.findFirst({
+        where: {
+          decorate_type: 1, // TYPE_H5
+          is_home: 1,       // 首页
+          status: true,      // 启用状态
+          shop_id: 0,        // 默认店铺
+        },
+        orderBy: [
+          { update_time: "desc" },
+          { decorate_id: "desc" },
+        ],
+      });
+
+      if (!decorate) {
+        // 如果没有找到装修配置，返回默认配置
+        return {
+          decorate_id: 1,
+          module_list: this.getMockModuleList(),
+          page_module: this.getMockPageModule(),
+          backgroundImage: "/images/default-background.jpg",
+        };
+      }
+
+      // 解析装修数据
+      let moduleList = [];
+      let pageModule = this.getMockPageModule();
+      let backgroundImage = "";
+
+      try {
+        if (decorate.data) {
+          console.log('Raw decorate.data:', decorate.data);
+          const parsedData = JSON.parse(decorate.data);
+          return parsedData
+        }
+      } catch (parseError) {
+        console.error('解析装修数据失败:', parseError);
+        console.error('Raw data that failed to parse:', decorate.data);
+        moduleList = this.getMockModuleList();
+      }
+
+      return {
+        decorate_id: decorate.decorate_id,
+        decorate_title: decorate.decorate_title || "首页",
+        module_list: moduleList,
+        page_module: pageModule,
+        backgroundImage: backgroundImage || "/images/default-background.jpg",
+      };
+    } catch (error) {
+      console.error('获取首页装修数据失败:', error);
+      // 出错时返回默认配置
+      return {
+        decorate_id: 1,
+        module_list: this.getMockModuleList(),
+        page_module: this.getMockPageModule(),
+        backgroundImage: "/images/default-background.jpg",
+      };
+    }
   }
 
   /**
    * 获取PC默认首页
    */
   private async getPcHomeDecorate() {
-    // 模拟获取PC默认首页
-    return {
-      decorate_id: 2,
-      module_list: this.getMockModuleList(),
-    };
+    try {
+      // 查找启用的PC首页装修配置 (decorate_type = 2 for PC, is_home = 1 for homepage)
+      const decorate = await this.prisma.decorate.findFirst({
+        where: {
+          decorate_type: 2, // TYPE_PC
+          is_home: 1,       // 首页
+          status: true,      // 启用状态
+          shop_id: 0,        // 默认店铺
+        },
+        orderBy: [
+          { update_time: "desc" },
+          { decorate_id: "desc" },
+        ],
+      });
+
+      if (!decorate) {
+        // 如果没有找到装修配置，返回默认配置
+        return {
+          decorate_id: 2,
+          module_list: this.getMockModuleList(),
+          backgroundImage: "",
+        };
+      }
+
+      // 解析装修数据
+      let moduleList = this.getMockModuleList();
+      let backgroundImage = "";
+
+      try {
+        if (decorate.data) {
+          const parsedData = JSON.parse(decorate.data);
+          moduleList = parsedData.module_list || this.getMockModuleList();
+          backgroundImage = parsedData.backgroundImage || "";
+        }
+      } catch (parseError) {
+        console.error('解析PC装修数据失败:', parseError);
+        moduleList = this.getMockModuleList();
+      }
+
+      return {
+        decorate_id: decorate.decorate_id,
+        decorate_title: decorate.decorate_title || "PC首页",
+        module_list: moduleList,
+        backgroundImage: backgroundImage,
+      };
+    } catch (error) {
+      console.error('获取PC首页装修数据失败:', error);
+      // 出错时返回默认配置
+      return {
+        decorate_id: 2,
+        module_list: this.getMockModuleList(),
+        backgroundImage: "",
+      };
+    }
   }
 
   /**
@@ -186,12 +424,15 @@ export class HomeService {
    */
   async getCoupon(query: { shop_id?: number }) {
     const { shop_id = -1 } = query;
+    const now = Math.floor(Date.now() / 1000);
 
     const where: any = {
       is_show: 1,
-      is_delete: 0,
-      valid_date: 1,
-      receive_date: 1,
+      is_delete: false,
+      send_start_date: { lte: now },
+      send_end_date: { gte: now },
+      use_start_date: { lte: now },
+      use_end_date: { gte: now },
     };
 
     if (shop_id > -1) {
@@ -207,8 +448,8 @@ export class HomeService {
     // 格式化金额
     return coupons.map((coupon) => ({
       ...coupon,
-      coupon_money: this.formatAmount(coupon.coupon_money || 0),
-      coupon_discount: this.formatAmount(coupon.coupon_discount || 0),
+      coupon_money: this.formatAmount(Number(coupon.coupon_money || 0)),
+      coupon_discount: this.formatAmount(Number(coupon.coupon_discount || 0)),
     }));
   }
 
@@ -216,7 +457,7 @@ export class HomeService {
    * 获取移动端分类导航
    */
   async getMobileCatNav() {
-    const navItems = await this.prisma.mobileCatNav.findMany({
+    const navItems = await this.prisma.mobile_cat_nav.findMany({
       where: { is_show: 1 },
       orderBy: [{ mobile_cat_nav_id: "desc" }],
     });
@@ -421,7 +662,7 @@ export class HomeService {
    * 获取友情链接
    */
   async getFriendLinks() {
-    const links = await this.prisma.friendLinks.findMany({
+    const links = await this.prisma.friend_links.findMany({
       orderBy: [{ sort_order: "desc" }],
       take: 20,
     });
