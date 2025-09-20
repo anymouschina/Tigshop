@@ -14,12 +14,11 @@ import {
   ApiResponse,
   ApiQuery,
 } from "@nestjs/swagger";
-import { AppConfigService } from "../../config/config.service";
 
 @ApiTags("通用-配置接口")
 @Controller("common/config")
 export class CommonConfigController {
-  constructor(private readonly configService: AppConfigService) {}
+  constructor() {}
 
   @Get("themeSettings")
   @ApiOperation({ summary: "获取主题设置" })
@@ -69,11 +68,7 @@ export class CommonConfigController {
       }
     };
 
-    return {
-      code: 0,
-      data: defaultTheme,
-      message: "success",
-    };
+    return defaultTheme;
   }
 
   @Get("initConfigSettings")
@@ -147,11 +142,7 @@ export class CommonConfigController {
       }
     };
 
-    return {
-      code: 0,
-      data: defaultConfig,
-      message: "success",
-    };
+    return defaultConfig;
   }
 
   // Placeholder for future POST methods

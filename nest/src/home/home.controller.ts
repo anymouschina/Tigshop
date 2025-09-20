@@ -110,6 +110,16 @@ export class HomeController {
   }
 
   /**
+   * 客服设置 - 对齐PHP版本 home/Home/getCustomerServiceConfig
+   */
+  @Get("home/home/getCustomerServiceConfig")
+  @Public()
+  @ApiOperation({ summary: "获取客服设置" })
+  async getCustomerServiceConfig() {
+    return this.homeService.getCustomerServiceConfig();
+  }
+
+  /**
    * PC端友情链接 - 对齐PHP版本 home/Home/friendLinks
    */
   @Get("home/home/friendLinks")

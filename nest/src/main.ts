@@ -82,9 +82,6 @@ async function bootstrap() {
       }),
     );
 
-    // Apply global interceptor to wrap all responses in a data property
-    app.useGlobalInterceptors(new TransformInterceptor());
-
     // Apply global exception filter for consistent error responses
     app.useGlobalFilters(new HttpExceptionFilter());
 
