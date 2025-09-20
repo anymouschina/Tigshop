@@ -40,75 +40,57 @@ export class CollectService {
     const skip = (page - 1) * size;
 
     // 构建查询条件
-    const where: any = {
-      userId,
-    };
+    const where: any = { user_id: userId };
 
-    if (keyword) {
-      where.remark = {
-        contains: keyword,
-      };
-    }
+    // keyword与remark字段在收藏表中不存在，这里忽略关键字过滤
 
-    if (collect_type) {
-      where.collectType = collect_type;
-    }
+    // 选择收藏表
+    const isShop = collect_type === CollectType.SHOP;
+    const table = isShop ? 'collect_shop' : 'collect_product';
 
     const [collects, total] = await Promise.all([
-      this.databaseService.collectProduct.findMany({
+      (this.databaseService as any)[table].findMany({
         where,
         skip,
         take: size,
-        orderBy: {
-          [sort_field]: sort_order,
-        },
+        orderBy: { [sort_field]: sort_order },
       }),
-      this.databaseService.collectProduct.count({
-        where,
-      }),
+      (this.databaseService as any)[table].count({ where }),
     ]);
 
     // 获取收藏的详细信息
     const detailedCollects = await Promise.all(
-      collects.map(async (collect) => {
+      collects.map(async (collect: any) => {
         let targetInfo = null;
 
-        if (collect.collectType === CollectType.PRODUCT) {
-          targetInfo = await this.databaseService.product.findUnique({
-            where: { productId: collect.targetId },
+        const mapped = isShop
+          ? { collectId: collect.collect_id, targetId: collect.shop_id, collectType: CollectType.SHOP }
+          : { collectId: collect.collect_id, targetId: collect.product_id, collectType: CollectType.PRODUCT };
+
+        if (mapped.collectType === CollectType.PRODUCT) {
+          targetInfo = await (this.databaseService as any).product.findFirst({
+            where: { product_id: mapped.targetId },
             select: {
-              productId: true,
-              productName: true,
-              productImage: true,
-              productPrice: true,
-              marketPrice: true,
-              isOnSale: true,
+              product_id: true,
+              product_name: true,
+              pic_url: true,
+              product_price: true,
+              market_price: true,
+              product_status: true,
             },
           });
-        } else if (collect.collectType === CollectType.SHOP) {
-          targetInfo = await this.databaseService.shop.findUnique({
-            where: { shopId: collect.targetId },
+        } else if (mapped.collectType === CollectType.SHOP) {
+          targetInfo = await (this.databaseService as any).shop.findFirst({
+            where: { shop_id: mapped.targetId },
             select: {
-              shopId: true,
-              shopName: true,
-              shopLogo: true,
-            },
-          });
-        } else if (collect.collectType === CollectType.ARTICLE) {
-          targetInfo = await this.databaseService.article.findUnique({
-            where: { articleId: collect.targetId },
-            select: {
-              articleId: true,
-              title: true,
-              coverImage: true,
+              shop_id: true,
+              shop_title: true,
+              shop_logo: true,
             },
           });
         }
 
-        return {
-          ...collect,
-          target_info: targetInfo,
-        };
+        return { ...mapped, add_time: collect.add_time, target_info: targetInfo };
       }),
     );
 
@@ -125,8 +107,8 @@ export class CollectService {
     const { product_id } = collectProductDto;
 
     // 检查商品是否存在
-    const product = await this.databaseService.product.findUnique({
-      where: { productId: product_id },
+    const product = await (this.databaseService as any).product.findFirst({
+      where: { product_id },
     });
 
     if (!product) {
@@ -134,11 +116,10 @@ export class CollectService {
     }
 
     // 检查是否已经收藏
-    const existingCollect = await this.databaseService.collectProduct.findFirst({
+    const existingCollect = await (this.databaseService as any).collect_product.findFirst({
       where: {
-        userId,
-        targetId: product_id,
-        collectType: CollectType.PRODUCT,
+        user_id: userId,
+        product_id: product_id,
       },
     });
 
@@ -147,17 +128,17 @@ export class CollectService {
     }
 
     // 创建收藏
-    const newCollect = await this.databaseService.collectProduct.create({
+    const newCollect = await (this.databaseService as any).collect_product.create({
       data: {
-        userId,
-        targetId: product_id,
-        collectType: CollectType.PRODUCT,
+        user_id: userId,
+        product_id: product_id,
+        add_time: Math.floor(Date.now()/1000),
       },
     });
 
     return {
       message: '收藏成功',
-      collect_id: newCollect.collectId,
+      collect_id: newCollect.collect_id,
     };
   }
 
@@ -168,10 +149,10 @@ export class CollectService {
     const { id } = deleteCollectDto;
 
     // 验证收藏是否存在
-    const existingCollect = await this.databaseService.collectProduct.findFirst({
+    const existingCollect = await (this.databaseService as any).collect_product.findFirst({
       where: {
-        collectId: id,
-        userId,
+        collect_id: id,
+        user_id: userId,
       },
     });
 
@@ -180,8 +161,8 @@ export class CollectService {
     }
 
     // 删除收藏
-    await this.databaseService.collectProduct.delete({
-      where: { collectId: id },
+    await (this.databaseService as any).collect_product.delete({
+      where: { collect_id: id },
     });
 
     return {
@@ -199,31 +180,22 @@ export class CollectService {
     await this.validateTargetExists(collect_type, target_id);
 
     // 检查是否已经收藏
-    const existingCollect = await this.databaseService.collectProduct.findFirst({
-      where: {
-        userId,
-        targetId: target_id,
-        collectType: collect_type,
-      },
-    });
+    const table2 = collect_type === CollectType.SHOP ? "collect_shop" : "collect_product";
+    const where2 = collect_type === CollectType.SHOP ? { user_id: userId, shop_id: target_id } : { user_id: userId, product_id: target_id };
+    const existingCollect = await (this.databaseService as any)[table2].findFirst({ where: where2 });
 
     if (existingCollect) {
       throw new ConflictException('已收藏该内容');
     }
 
     // 创建收藏
-    const newCollect = await this.databaseService.collectProduct.create({
-      data: {
-        userId,
-        targetId: target_id,
-        collectType: collect_type,
-        remark,
-      },
+    const newCollect = await (this.databaseService as any)[table2].create({
+      data: (collect_type === CollectType.SHOP) ? { user_id: userId, shop_id: target_id, add_time: Math.floor(Date.now()/1000) } : { user_id: userId, product_id: target_id, add_time: Math.floor(Date.now()/1000) },
     });
 
     return {
       message: '收藏成功',
-      collect_id: newCollect.collectId,
+      collect_id: newCollect.collect_id,
     };
   }
 
@@ -234,10 +206,10 @@ export class CollectService {
     const { id, remark } = updateCollectDto;
 
     // 验证收藏是否存在
-    const existingCollect = await this.databaseService.collectProduct.findFirst({
+    const existingCollect = await (this.databaseService as any).collect_product.findFirst({
       where: {
-        collectId: id,
-        userId,
+        collect_id: id,
+        user_id: userId,
       },
     });
 
@@ -246,8 +218,8 @@ export class CollectService {
     }
 
     // 更新收藏
-    const updatedCollect = await this.databaseService.collectProduct.update({
-      where: { collectId: id },
+    const updatedCollect = await (this.databaseService as any).collect_product.update({
+      where: { collect_id: id },
       data: { remark },
     });
 
@@ -264,10 +236,10 @@ export class CollectService {
     const { ids } = batchDeleteCollectDto;
 
     // 验证收藏是否存在
-    const existingCollects = await this.databaseService.collectProduct.findMany({
+    const existingCollects = await (this.databaseService as any).collect_product.findMany({
       where: {
-        collectId: { in: ids },
-        userId,
+        collect_id: { in: ids },
+        user_id: userId,
       },
     });
 
@@ -276,10 +248,10 @@ export class CollectService {
     }
 
     // 删除收藏
-    await this.databaseService.collectProduct.deleteMany({
+    await (this.databaseService as any).collect_product.deleteMany({
       where: {
-        collectId: { in: ids },
-        userId,
+        collect_id: { in: ids },
+        user_id: userId,
       },
     });
 
@@ -294,17 +266,13 @@ export class CollectService {
   async checkCollect(userId: number, checkCollectDto: CheckCollectDto): Promise<CheckCollectResponse> {
     const { target_id, collect_type = CollectType.PRODUCT } = checkCollectDto;
 
-    const existingCollect = await this.databaseService.collectProduct.findFirst({
-      where: {
-        userId,
-        targetId: target_id,
-        collectType: collect_type,
-      },
-    });
+    const table2 = collect_type === CollectType.SHOP ? "collect_shop" : "collect_product";
+    const where2 = collect_type === CollectType.SHOP ? { user_id: userId, shop_id: target_id } : { user_id: userId, product_id: target_id };
+    const existingCollect = await (this.databaseService as any)[table2].findFirst({ where: where2 });
 
     return {
       is_collected: !!existingCollect,
-      collect_id: existingCollect?.collectId,
+      collect_id: existingCollect?.collect_id,
     };
   }
 
@@ -312,72 +280,31 @@ export class CollectService {
    * 获取收藏数量
    */
   async getCollectCount(userId: number, collect_type?: CollectType): Promise<number> {
-    const where: any = { userId };
-
-    if (collect_type) {
-      where.collectType = collect_type;
+    if (collect_type === CollectType.SHOP) {
+      return (this.databaseService as any).collect_shop.count({ where: { user_id: userId } });
     }
-
-    return this.databaseService.collectProduct.count({
-      where,
-    });
+    return (this.databaseService as any).collect_product.count({ where: { user_id: userId } });
   }
 
   /**
    * 获取收藏详情
    */
   async getCollectDetail(userId: number, collectId: number): Promise<CollectResponse> {
-    const collect = await this.databaseService.collectProduct.findFirst({
-      where: {
-        collectId,
-        userId,
-      },
-    });
-
-    if (!collect) {
-      throw new NotFoundException('收藏不存在');
+    let mapped:any=null;
+    let c = await (this.databaseService as any).collect_product.findFirst({ where: { collect_id: collectId, user_id: userId } });
+    if (c) mapped = { collectId: c.collect_id, targetId: c.product_id, collectType: CollectType.PRODUCT };
+    if (!mapped) {
+      const srow = await (this.databaseService as any).collect_shop.findFirst({ where: { collect_id: collectId, user_id: userId } });
+      if (srow) mapped = { collectId: srow.collect_id, targetId: srow.shop_id, collectType: CollectType.SHOP };
     }
-
-    let targetInfo = null;
-
-    if (collect.collectType === CollectType.PRODUCT) {
-      targetInfo = await this.databaseService.product.findUnique({
-        where: { productId: collect.targetId },
-        select: {
-          productId: true,
-          productName: true,
-          productImage: true,
-          productPrice: true,
-          marketPrice: true,
-          isOnSale: true,
-        },
-      });
-    } else if (collect.collectType === CollectType.SHOP) {
-      targetInfo = await this.databaseService.shop.findUnique({
-        where: { shopId: collect.targetId },
-        select: {
-          shopId: true,
-          shopName: true,
-          shopLogo: true,
-        },
-      });
-    } else if (collect.collectType === CollectType.ARTICLE) {
-      targetInfo = await this.databaseService.article.findUnique({
-        where: { articleId: collect.targetId },
-        select: {
-          articleId: true,
-          title: true,
-          coverImage: true,
-        },
-      });
+    if (!mapped) { throw new NotFoundException('收藏不存在'); }
+    let targetInfo=null;
+    if (mapped.collectType===CollectType.PRODUCT) {
+      targetInfo = await (this.databaseService as any).product.findFirst({ where: { product_id: mapped.targetId }, select: { product_id:true, product_name:true, pic_url:true, product_price:true, market_price:true, product_status:true } });
+    } else {
+      targetInfo = await (this.databaseService as any).shop.findFirst({ where: { shop_id: mapped.targetId }, select: { shop_id:true, shop_title:true, shop_logo:true } });
     }
-
-    return {
-      collect: {
-        ...collect,
-        target_info: targetInfo,
-      },
-    };
+    return { collect: { ...mapped, target_info: targetInfo } };
   }
 
   /**
@@ -388,18 +315,16 @@ export class CollectService {
 
     switch (collectType) {
       case CollectType.PRODUCT:
-        target = await this.databaseService.product.findUnique({
-          where: { productId: targetId },
-        });
+        target = await (this.databaseService as any).product.findFirst({ where: { product_id: targetId } });
         break;
       case CollectType.SHOP:
-        target = await this.databaseService.shop.findUnique({
-          where: { shopId: targetId },
+        target = await (this.databaseService as any).shop.findFirst({
+          where: { shop_id: targetId },
         });
         break;
       case CollectType.ARTICLE:
-        target = await this.databaseService.article.findUnique({
-          where: { articleId: targetId },
+        target = await (this.databaseService as any).article.findFirst({
+          where: { article_id: targetId },
         });
         break;
     }

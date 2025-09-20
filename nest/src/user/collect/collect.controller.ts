@@ -23,6 +23,7 @@ import {
   CollectResponse,
   SuccessResponse,
   CheckCollectResponse,
+  CollectType,
 } from './dto/collect.dto';
 
 @ApiTags('User Collection Management')
@@ -120,9 +121,9 @@ export class CollectController {
   @Get('products')
   @ApiOperation({ summary: '获取商品收藏列表' })
   async getProductCollects(@Request() req, @Query() collectListDto: CollectListDto): Promise<CollectListResponse> {
-    const productCollectList = {
+    const productCollectList: CollectListDto = {
       ...collectListDto,
-      collect_type: 'product',
+      collect_type: CollectType.PRODUCT,
     };
     return this.collectService.getCollectList(req.user.userId, productCollectList);
   }
@@ -133,9 +134,9 @@ export class CollectController {
   @Get('shops')
   @ApiOperation({ summary: '获取店铺收藏列表' })
   async getShopCollects(@Request() req, @Query() collectListDto: CollectListDto): Promise<CollectListResponse> {
-    const shopCollectList = {
+    const shopCollectList: CollectListDto = {
       ...collectListDto,
-      collect_type: 'shop',
+      collect_type: CollectType.SHOP,
     };
     return this.collectService.getCollectList(req.user.userId, shopCollectList);
   }
@@ -146,9 +147,9 @@ export class CollectController {
   @Get('articles')
   @ApiOperation({ summary: '获取文章收藏列表' })
   async getArticleCollects(@Request() req, @Query() collectListDto: CollectListDto): Promise<CollectListResponse> {
-    const articleCollectList = {
+    const articleCollectList: CollectListDto = {
       ...collectListDto,
-      collect_type: 'article',
+      collect_type: CollectType.ARTICLE,
     };
     return this.collectService.getCollectList(req.user.userId, articleCollectList);
   }
