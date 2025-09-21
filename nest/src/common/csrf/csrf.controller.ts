@@ -25,6 +25,8 @@ import {
 import { Roles } from "../../auth/decorators/roles.decorator";
 import { RolesGuard } from "../../auth/guards/roles.guard";
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { CsrfService as AuthCsrfService } from "../../auth/services/csrf.service";
+import { ResponseUtil } from "../../../common/utils/response.util";
 
 @ApiTags("通用-CSRF保护")
 @Controller("admin/csrf")
@@ -133,5 +135,48 @@ export class CsrfController {
   @ApiOperation({ summary: "清理过期令牌" })
   async cleanupExpiredTokens() {
     return await this.csrfService.cleanupExpiredTokens();
+  }
+}
+
+@ApiTags("公共CSRF")
+@Controller("api/common/csrf")
+export class PublicCsrfController {
+  constructor(
+    private readonly authCsrfService: AuthCsrfService,
+  ) {}
+
+  @ApiOperation({ summary: "创建CSRF令牌" })
+  @Post("create")
+  async create() {
+    const token = this.authCsrfService.generateToken();
+
+    return ResponseUtil.success({
+      csrf_token: token,
+      expires_in: 3600, // 1 hour
+    });
+  }
+
+  @ApiOperation({ summary: "验证CSRF令牌" })
+  @Post("validate")
+  async validate(@Body() body: { csrf_token: string }) {
+    const isValid = this.authCsrfService.validateToken(body.csrf_token);
+
+    if (isValid) {
+      return ResponseUtil.success("CSRF令牌有效");
+    } else {
+      return ResponseUtil.error("CSRF令牌无效或已过期");
+    }
+  }
+
+  @ApiOperation({ summary: "删除CSRF令牌" })
+  @Post("delete")
+  async delete(@Body() body: { csrf_token: string }) {
+    const success = this.authCsrfService.deleteToken(body.csrf_token);
+
+    if (success) {
+      return ResponseUtil.success("CSRF令牌已删除");
+    } else {
+      return ResponseUtil.error("CSRF令牌不存在");
+    }
   }
 }

@@ -39,6 +39,7 @@ import { DecorateModule } from "./common/decorate/decorate.module";
 import { CommonModule } from "./common/common.module";
 import { HomeModule } from "./home/home.module";
 import { VerificationModule } from "./common/verification/verification.module";
+import { CsrfModule } from "./common/csrf/csrf.module";
 import * as path from 'path'
 
 @Module({
@@ -80,6 +81,7 @@ import * as path from 'path'
     CommonModule,
     HomeModule,
     VerificationModule,
+    CsrfModule,
   ],
   controllers: [],
   providers: [
