@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateWechatLiveDto,
   UpdateWechatLiveDto,
@@ -12,10 +12,11 @@ import {
   WechatLiveStatus,
   WechatLiveConfigDto,
 } from "./dto/wechatLive.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class WechatLiveService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: WechatLiveQueryDto) {
     const {

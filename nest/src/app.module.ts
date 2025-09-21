@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 import { APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
 import { UserModule } from "./user/user.module";
 import { ConfigModule } from "./config/config.module";
-import { DatabaseModule } from "./database/database.module";
 import { LoggerModule } from "./common/logger/logger.module";
 import { ApiModule } from "./api/api.module";
 import { UserCouponModule } from "./user/coupon/coupon.module";
@@ -39,11 +38,11 @@ import { CommonModule } from "./common/common.module";
 import { HomeModule } from "./home/home.module";
 import { VerificationModule } from "./common/verification/verification.module";
 import { CsrfModule } from "./common/csrf/csrf.module";
-import * as path from 'path'
+import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
   imports: [
-    DatabaseModule,
+    PrismaModule,
     ConfigModule,
     LoggerModule,
     ScheduleModule.forRoot(),

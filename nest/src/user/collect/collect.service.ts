@@ -5,7 +5,7 @@ import {
   NotFoundException,
   ConflictException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CollectListDto,
   CreateCollectDto,
@@ -20,10 +20,11 @@ import {
   CheckCollectResponse,
   CollectType,
 } from "./dto/collect.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class CollectService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly databaseService: PrismaService) {}
 
   /**
    * 获取收藏列表 - 对齐PHP版本 user/collect/list

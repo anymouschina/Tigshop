@@ -1,5 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
 import {
   AdminRoleQueryDto,
   AdminRoleDetailDto,
@@ -9,10 +8,11 @@ import {
   BatchDeleteAdminRoleDto,
   ROLE_STATUS,
 } from "./admin-role.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class AdminRoleService {
-  constructor(private databaseService: DatabaseService) {}
+  constructor(private databaseService: PrismaService) {}
 
   async findAll(query: AdminRoleQueryDto) {
     const {

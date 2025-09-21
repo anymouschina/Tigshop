@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateProductTeamDto,
   UpdateProductTeamDto,
@@ -12,10 +12,11 @@ import {
   ProductTeamStatus,
   ProductTeamConfigDto,
 } from "./dto/productTeam.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class ProductTeamService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: ProductTeamQueryDto) {
     const {

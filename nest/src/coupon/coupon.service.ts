@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../database/database.service";
+import { PrismaService } from "../prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import {
   CreateCouponDto,
@@ -58,7 +58,7 @@ export interface CouponValidationResponse {
 
 @Injectable()
 export class CouponService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 映射更新DTO到优惠券字段

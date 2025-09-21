@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateTimeDiscountDto,
   UpdateTimeDiscountDto,
@@ -12,10 +12,11 @@ import {
   TimeDiscountStatus,
   TimeDiscountConfigDto,
 } from "./dto/timeDiscount.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class TimeDiscountService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: TimeDiscountQueryDto) {
     const {

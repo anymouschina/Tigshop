@@ -5,9 +5,8 @@ import { PassportModule } from "@nestjs/passport";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { ConfigModule } from "../config/config.module";
-import { DatabaseService } from "../database/database.service";
+import { PrismaService } from "../prisma.service";
 import { ScheduleModule } from "@nestjs/schedule";
-import { DatabaseModule } from "../database/database.module";
 import { CsrfService } from "./services/csrf.service";
 import { CaptchaService } from "./services/captcha.service";
 import { UsernameGeneratorService } from "./services/username-generator.service";
@@ -17,7 +16,6 @@ import { RedisModule } from "../redis/redis.module";
 
 @Module({
   imports: [
-    DatabaseModule,
     RedisModule,
     PassportModule.register({ defaultStrategy: "jwt" }),
     JwtModule.registerAsync({

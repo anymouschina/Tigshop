@@ -4,7 +4,6 @@ import {
   NotFoundException,
   ConflictException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
 import {
   UserCouponListDto,
   AvailableCouponListDto,
@@ -19,12 +18,13 @@ import {
   SuccessResponse,
   CouponStatus,
 } from "./dto/coupon.dto";
+import { PrismaService } from "src/prisma.service";
 
 // NOTE: Prisma schema uses snake_case model/field names and Int timestamps (Unix seconds).
 // This service aligns all queries and mappings accordingly, removing assumptions about relations.
 @Injectable()
 export class UserCouponService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly databaseService: PrismaService) {}
 
   // 获取用户优惠券列表
   async getUserCouponList(

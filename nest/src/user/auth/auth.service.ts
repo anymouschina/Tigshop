@@ -6,7 +6,6 @@ import {
   ConflictException,
   UnauthorizedException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
 import { AuthService } from "../../auth/auth.service";
 import { VerificationCodeService } from "../../auth/services/verification-code.service";
 import { CaptchaService } from "../../auth/services/captcha.service";
@@ -32,11 +31,12 @@ import {
   QuickLoginSettingResponse,
 } from "./dto/auth.dto";
 import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class UserAuthService {
   constructor(
-    private readonly databaseService: DatabaseService,
+    private readonly databaseService: PrismaService,
     private readonly authService: AuthService,
     private readonly verificationCodeService: VerificationCodeService,
     private readonly captchaService: CaptchaService,

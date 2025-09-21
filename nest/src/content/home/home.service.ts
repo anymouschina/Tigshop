@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateHomeDto,
   UpdateHomeDto,
@@ -12,10 +12,11 @@ import {
   HomeStatus,
   HomeConfigDto,
 } from "./dto/home.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class HomeService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: HomeQueryDto) {
     const {

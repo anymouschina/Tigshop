@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateGalleryDto,
   UpdateGalleryDto,
@@ -12,10 +12,11 @@ import {
   GalleryStatus,
   GalleryConfigDto,
 } from "./dto/gallery.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class GalleryService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: GalleryQueryDto) {
     const {

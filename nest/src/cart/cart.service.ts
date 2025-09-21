@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../database/database.service";
+import { PrismaService } from "../prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 
 export interface CartItem {
@@ -35,7 +35,7 @@ export interface CartData {
 
 @Injectable()
 export class CartService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 添加商品到购物车

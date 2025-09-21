@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateArticleCategoryDto,
   UpdateArticleCategoryDto,
@@ -12,10 +12,11 @@ import {
   ArticleCategoryStatus,
   ArticleCategoryConfigDto,
 } from "./dto/articleCategory.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class ArticleCategoryService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: ArticleCategoryQueryDto) {
     const {

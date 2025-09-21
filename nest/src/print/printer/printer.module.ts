@@ -2,10 +2,10 @@
 import { Module } from "@nestjs/common";
 import { PrinterController } from "./printer.controller";
 import { PrinterService } from "./printer.service";
-import { PrismaModule } from "../../common/services/prisma.module";
+
 
 @Module({
-  imports: [PrismaModule],
+  imports: [],
   controllers: [PrinterController],
   providers: [PrinterService],
   exports: [PrinterService],

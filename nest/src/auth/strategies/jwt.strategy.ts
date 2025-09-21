@@ -2,7 +2,7 @@
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { PassportStrategy } from "@nestjs/passport";
 import { Injectable, UnauthorizedException, Inject } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+import { PrismaService } from "../../prisma.service";
 import { JwtPayload } from "../auth.service";
 import { Request } from "express";
 
@@ -10,7 +10,7 @@ import { Request } from "express";
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     @Inject("CONFIG") private readonly config: any,
-    private readonly databaseService: DatabaseService,
+    private readonly databaseService: PrismaService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

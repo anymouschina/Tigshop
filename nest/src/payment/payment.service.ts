@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../database/database.service";
+import { PrismaService } from "../prisma.service";
 import {
   CreatePaymentDto,
   PaymentMethod,
@@ -25,7 +25,7 @@ export interface PaymentResponse {
 
 @Injectable()
 export class PaymentService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 创建支付 - 对齐PHP版本 order/pay/create

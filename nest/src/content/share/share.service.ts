@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateShareDto,
   UpdateShareDto,
@@ -12,10 +12,11 @@ import {
   ShareStatus,
   ShareConfigDto,
 } from "./dto/share.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class ShareService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: ShareQueryDto) {
     const {

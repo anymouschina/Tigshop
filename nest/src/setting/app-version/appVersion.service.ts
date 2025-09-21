@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateAppVersionDto,
   UpdateAppVersionDto,
@@ -12,10 +12,11 @@ import {
   AppVersionStatus,
   AppVersionConfigDto,
 } from "./dto/appVersion.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class AppVersionService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: AppVersionQueryDto) {
     const {

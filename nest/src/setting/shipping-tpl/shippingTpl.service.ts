@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateShippingTplDto,
   UpdateShippingTplDto,
@@ -12,10 +12,11 @@ import {
   ShippingTplStatus,
   ShippingTplConfigDto,
 } from "./dto/shippingTpl.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class ShippingTplService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: ShippingTplQueryDto) {
     const {

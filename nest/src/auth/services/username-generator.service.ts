@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+import { PrismaService } from "../../prisma.service";
 
 @Injectable()
 export class UsernameGeneratorService {
@@ -12,7 +12,7 @@ export class UsernameGeneratorService {
   private readonly USERNAME_LENGTH = 8;
   private readonly MAX_ATTEMPTS = 100;
 
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly databaseService: PrismaService) {}
 
   /**
    * Generate a unique username

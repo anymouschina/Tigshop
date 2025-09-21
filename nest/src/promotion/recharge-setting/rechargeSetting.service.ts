@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateRechargeSettingDto,
   UpdateRechargeSettingDto,
@@ -12,10 +12,11 @@ import {
   RechargeSettingStatus,
   RechargeSettingConfigDto,
 } from "./dto/rechargeSetting.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class RechargeSettingService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: RechargeSettingQueryDto) {
     const {

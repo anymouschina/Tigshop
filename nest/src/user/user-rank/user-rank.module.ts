@@ -2,7 +2,7 @@
 import { Module } from "@nestjs/common";
 import { UserRankService } from "./user-rank.service";
 import { UserRankController } from "./user-rank.controller";
-import { PrismaService } from "../../../database/prisma.service";
+import { PrismaService } from "src/prisma.service";
 
 @Module({
   controllers: [UserRankController],

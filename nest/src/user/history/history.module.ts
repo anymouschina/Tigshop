@@ -2,10 +2,9 @@
 import { Module } from "@nestjs/common";
 import { UserHistoryService } from "./history.service";
 import { UserHistoryController } from "./history.controller";
-import { DatabaseModule } from "../../database/database.module";
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [],
   controllers: [UserHistoryController],
   providers: [UserHistoryService],
   exports: [UserHistoryService],

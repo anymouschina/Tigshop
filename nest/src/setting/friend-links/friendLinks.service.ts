@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateFriendLinksDto,
   UpdateFriendLinksDto,
@@ -12,10 +12,11 @@ import {
   FriendLinksStatus,
   FriendLinksConfigDto,
 } from "./dto/friendLinks.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class FriendLinksService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: FriendLinksQueryDto) {
     const {

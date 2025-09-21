@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateUserInvoiceDto,
   UpdateUserInvoiceDto,
@@ -13,10 +13,11 @@ import {
   TitleType,
   UserInvoiceConfigDto,
 } from "./dto/user-invoice.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class UserInvoiceService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 获取用户发票列表

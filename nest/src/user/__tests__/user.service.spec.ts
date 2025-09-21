@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Test, TestingModule } from "@nestjs/testing";
 import { UserService } from "../user.service";
-import { DatabaseService } from "../../database/database.service";
+
 import { OrderService } from "../../order/order.service";
 import { AppConfigService } from "../../config/config.service";
 import { AuthService } from "../../auth/auth.service";

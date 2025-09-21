@@ -5,7 +5,7 @@ import {
   NotFoundException,
   ConflictException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   HistoryListDto,
   AddHistoryDto,
@@ -18,10 +18,11 @@ import {
   HistoryStatsResponse,
   SuccessResponse,
 } from "./dto/history.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class UserHistoryService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly databaseService: PrismaService) {}
 
   /**
    * 获取用户浏览历史列表 - 对齐PHP版本 user/user/historyProduct

@@ -4,7 +4,6 @@ import {
   NotFoundException,
   ConflictException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
 import {
   CreateAddressDto,
   UpdateAddressDto,
@@ -16,10 +15,11 @@ import {
   AddressResponse,
   SuccessResponse,
 } from "./dto/address.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class AddressService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly databaseService: PrismaService) {}
 
   /**
    * 获取用户地址列表 - 对齐PHP版本 user/address/list

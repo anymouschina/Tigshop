@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { Injectable } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
 import {
   AdminLogQueryDto,
   AdminLogDetailDto,
@@ -10,10 +9,11 @@ import {
   ADMIN_LOG_TYPE,
   ADMIN_LOG_MODULE,
 } from "./admin-log.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class AdminLogService {
-  constructor(private databaseService: DatabaseService) {}
+  constructor(private databaseService: PrismaService) {}
 
   async findAll(query: AdminLogQueryDto) {
     const {

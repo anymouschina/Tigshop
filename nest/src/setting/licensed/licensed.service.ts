@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateLicensedDto,
   UpdateLicensedDto,
@@ -12,10 +12,11 @@ import {
   LicensedStatus,
   LicensedConfigDto,
 } from "./dto/licensed.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class LicensedService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: LicensedQueryDto) {
     const {

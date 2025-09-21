@@ -6,14 +6,14 @@ import {
   ConflictException,
   UnauthorizedException,
 } from "@nestjs/common";
-import { DatabaseService } from "../database/database.service";
+import { PrismaService } from "../prisma.service";
 import { AuthService } from "../auth/auth.service";
 import { VerificationCodeService } from "../auth/services/verification-code.service";
 
 @Injectable()
 export class UserService {
   constructor(
-    private readonly databaseService: DatabaseService,
+    private readonly databaseService: PrismaService,
     private readonly authService: AuthService,
     private readonly verificationCodeService: VerificationCodeService,
   ) {}

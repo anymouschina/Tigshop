@@ -8,12 +8,12 @@ import {
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
-import { DatabaseService } from "../database/database.service";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class AdminService {
   constructor(
-    private readonly databaseService: DatabaseService,
+    private readonly databaseService: PrismaService,
     private readonly jwtService: JwtService,
   ) {}
 

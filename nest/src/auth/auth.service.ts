@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { DatabaseService } from "../database/database.service";
+import { PrismaService } from "../prisma.service";
 import * as crypto from "crypto";
 import * as bcrypt from "bcrypt";
 import { Cron } from "@nestjs/schedule";
@@ -27,6 +27,7 @@ import { CsrfService } from "./services/csrf.service";
 import { CaptchaService } from "./services/captcha.service";
 import { UsernameGeneratorService } from "./services/username-generator.service";
 import { VerificationCodeService } from "./services/verification-code.service";
+import { PrismaService } from "src/prisma.service";
 
 export interface JwtPayload {
   sub: number; // User ID
@@ -42,7 +43,7 @@ export class AuthService implements OnModuleInit {
   constructor(
     private readonly jwtService: JwtService,
     @Inject("CONFIG") private readonly config: any,
-    private readonly databaseService: DatabaseService,
+    private readonly databaseService: PrismaService,
     private readonly csrfService: CsrfService,
     private readonly captchaService: CaptchaService,
     private readonly usernameGeneratorService: UsernameGeneratorService,

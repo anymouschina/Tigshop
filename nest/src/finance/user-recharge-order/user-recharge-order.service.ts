@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateUserRechargeOrderDto,
   UpdateUserRechargeOrderDto,
@@ -14,10 +14,11 @@ import {
   RechargeOrderStatisticsDto,
   UserRechargeOrderConfigDto,
 } from "./dto/user-recharge-order.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class UserRechargeOrderService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 获取充值订单列表

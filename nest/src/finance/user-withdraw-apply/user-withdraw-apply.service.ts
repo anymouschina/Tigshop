@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateUserWithdrawApplyDto,
   UpdateUserWithdrawApplyDto,
@@ -14,10 +14,11 @@ import {
   WithdrawStatisticsDto,
   UserWithdrawApplyConfigDto,
 } from "./dto/user-withdraw-apply.dto";
+import { PrismaService } from "src/prisma.service";
 
 @Injectable()
 export class UserWithdrawApplyService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: UserWithdrawApplyQueryDto) {
     const {

@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateCommentDto,
   UpdateCommentDto,
@@ -13,6 +13,7 @@ import {
   CommentStatus,
   CommentRating,
 } from "./dto/comment.dto";
+import { PrismaService } from "src/prisma.service";
 
 export interface CommentResponse {
   id: number;
@@ -46,7 +47,7 @@ export interface CommentStatsResponse {
 
 @Injectable()
 export class CommentService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 创建评论 - 对齐PHP版本 product/comment/create

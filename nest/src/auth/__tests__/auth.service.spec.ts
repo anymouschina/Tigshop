@@ -3,7 +3,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { AuthService } from "../auth.service";
 import { JwtService } from "@nestjs/jwt";
 import { AppConfigService } from "../../config/config.service";
-import { DatabaseService } from "../../database/database.service";
+
 import { JwtPayload } from "../auth.service";
 import * as bcrypt from "bcrypt";
 

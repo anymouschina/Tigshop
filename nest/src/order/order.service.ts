@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../database/database.service";
+import { PrismaService } from "../prisma.service";
 import { CartService } from "../cart/cart.service";
 
 export interface CreateOrderDto {
@@ -23,7 +23,7 @@ export interface OrderItem {
 @Injectable()
 export class OrderService {
   constructor(
-    private readonly prisma: DatabaseService,
+    private readonly prisma: PrismaService,
     private readonly cartService: CartService,
   ) {}
 

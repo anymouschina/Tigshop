@@ -8,10 +8,9 @@ import { BrandController } from "./brand.controller";
 import { BrandService } from "./brand.service";
 import { CommentModule } from "./comment/comment.module";
 import { SkuModule } from "./sku/sku.module";
-import { DatabaseModule } from "../database/database.module";
 
 @Module({
-  imports: [DatabaseModule, CommentModule, SkuModule],
+  imports: [ CommentModule, SkuModule],
   controllers: [ProductController, CategoryController, BrandController],
   providers: [ProductService, CategoryService, BrandService],
   exports: [ProductService, CategoryService, BrandService],

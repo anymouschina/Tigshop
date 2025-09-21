@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateFavoriteDto,
   GetFavoritesDto,
@@ -13,6 +13,7 @@ import {
   CheckFavoriteDto,
   FavoriteType,
 } from "./dto/favorite.dto";
+import { PrismaService } from "src/prisma.service";
 
 export interface FavoriteResponse {
   id: number;
@@ -40,7 +41,7 @@ export interface FavoriteStatsResponse {
 
 @Injectable()
 export class FavoriteService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 检查是否已收藏

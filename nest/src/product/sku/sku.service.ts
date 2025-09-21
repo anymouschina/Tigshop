@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { DatabaseService } from "../../database/database.service";
+
 import {
   CreateSkuDto,
   UpdateSkuDto,
@@ -14,6 +14,7 @@ import {
   SkuAvailabilityDto,
   SkuPriceUpdateDto,
 } from "./dto/sku.dto";
+import { PrismaService } from "src/prisma.service";
 
 export interface SkuResponse {
   id: number;
@@ -57,7 +58,7 @@ export interface SkuStatsResponse {
 
 @Injectable()
 export class SkuService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * 创建SKU - 对齐PHP版本 product/sku/create
