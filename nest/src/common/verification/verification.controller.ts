@@ -20,7 +20,6 @@ import {
 import { AdminAuthGuard } from "../../../common/guards/admin-auth.guard";
 import { ResponseUtil } from "../../../common/utils/response.util";
 import { CaptchaService } from "src/auth/services/captcha.service";
-import * as svgCaptcha from 'svg-captcha';
 
 @ApiTags("验证码管理")
 @Controller("admin/common/verification")
@@ -136,72 +135,28 @@ export class PublicVerificationController {
   @ApiOperation({ summary: "获取验证码" })
   @Post("captcha")
   async captcha() {
-    // Generate SVG captcha
-    const captcha = svgCaptcha.create({
-      size: 4, // 验证码长度
-      ignoreChars: '0o1i', // 忽略容易混淆的字符
-      noise: 3, // 干扰线数量
-      color: true, // 彩色验证码
-      background: '#f0f0f0', // 背景色
-      width: 120,
-      height: 40,
-      fontSize: 32,
-    });
+    // 生成验证码 (使用默认的空range，与PHP一致)
+    const captchaResult = this.captchaService.generateCaptcha('');
 
-    // 生成验证码key
-    const captchaKey = Math.random().toString(36).substring(2, 15);
-
-    // 存储验证码答案 (在实际应用中，这应该存储在Redis中)
-    // 这里我们暂时使用内存存储，生产环境应该使用Redis
-    const captchaData = {
-      text: captcha.text,
-      expires: Date.now() + 300000, // 5分钟过期
-    };
-
-    // 使用captchaService存储验证码
-    this.captchaService['captchaStorage'] = this.captchaService['captchaStorage'] || new Map();
-    this.captchaService['captchaStorage'].set(captchaKey, captchaData);
-
-    // 将SVG转换为base64
-    const base64Image = Buffer.from(captcha.data).toString('base64');
-    const dataUrl = `data:image/svg+xml;base64,${base64Image}`;
-
-    return ResponseUtil.success({
-      captcha_key: captchaKey,
-      captcha_image: dataUrl,
-      expires_in: 300,
-    });
+    return ResponseUtil.success(captchaResult);
   }
 
   @ApiOperation({ summary: "验证验证码" })
   @Post("verify")
-  async verify(@Body() body: { captcha_key: string; captcha_code: string }) {
-    const { captcha_key, captcha_code } = body;
+  async verify(@Body() body: { range?: string; captcha_uid?: string; captcha_code?: string }) {
+    const { range = '', captcha_uid: uuid, captcha_code } = body;
 
-    // 从存储中获取验证码数据
-    const captchaStorage = this.captchaService['captchaStorage'] as Map<string, any>;
-    const storedCaptcha = captchaStorage?.get(captcha_key);
-
-    if (!storedCaptcha) {
-      return ResponseUtil.error("验证码不存在或已过期");
+    if (!uuid || !captcha_code) {
+      return ResponseUtil.error("验证码参数缺失");
     }
 
-    // 检查验证码是否过期
-    if (Date.now() > storedCaptcha.expires) {
-      captchaStorage.delete(captcha_key);
-      return ResponseUtil.error("验证码已过期");
-    }
-
-    // 验证码不区分大小写
-    const isValid = storedCaptcha.text.toLowerCase() === captcha_code.toLowerCase();
-
-    // 验证后删除存储的验证码（一次性使用）
-    captchaStorage.delete(captcha_key);
+    // 使用captchaService验证验证码
+    const isValid = await this.captchaService.verifyCaptcha(range, uuid, captcha_code);
 
     if (isValid) {
       return ResponseUtil.success("验证码正确");
     } else {
-      return ResponseUtil.error("验证码错误");
+      return ResponseUtil.error("验证码错误或已过期");
     }
   }
 }

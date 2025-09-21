@@ -13,10 +13,12 @@ import { CaptchaService } from "./services/captcha.service";
 import { UsernameGeneratorService } from "./services/username-generator.service";
 import { VerificationCodeService } from "./services/verification-code.service";
 import { WechatOAuthService } from "./services/wechat-oauth.service";
+import { RedisModule } from "../redis/redis.module";
 
 @Module({
   imports: [
     DatabaseModule,
+    RedisModule,
     PassportModule.register({ defaultStrategy: "jwt" }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
