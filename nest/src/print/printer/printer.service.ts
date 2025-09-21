@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../../../common/services/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 import { CreatePrinterDto, UpdatePrinterDto } from "./dto/printer.dto";
 import { ResponseUtil } from "../../../common/utils/response.util";
 
