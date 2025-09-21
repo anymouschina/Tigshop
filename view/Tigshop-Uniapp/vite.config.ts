@@ -6,6 +6,14 @@ export default defineConfig({
         port: 3000,
         host: "0.0.0.0",
         strictPort: true,
+        hmr: {
+            overlay: true, // 显示错误覆盖层
+            port: 3002 // HMR 端口
+        },
+        watch: {
+            usePolling: true, // 在某些环境下启用轮询
+            interval: 1000, // 轮询间隔
+        },
         proxy: {
             // 匹配所有请求
             "/api": {

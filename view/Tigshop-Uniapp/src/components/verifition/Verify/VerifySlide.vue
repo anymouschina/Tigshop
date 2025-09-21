@@ -8,8 +8,7 @@
                     height: imgSize.height
                 }"
             >
-                <image v-if="backImgBase" :src="'data:image/png;base64,' + backImgBase" class="img" />
-
+                <image v-if="backImgBase" :src="backImgBase" class="img" />
                 <view v-if="backImgBase" v-show="showRefresh" class="verify-refresh" @click="refresh"><i class="iconfont-pc icon-refresh" /></view>
                 <up-transition :show="!!tipWords" mode="fade-up">
                     <text :class="'verify-tips ' + (passFlag ? 'suc-bg' : 'err-bg')">{{ tipWords }}</text>
@@ -61,7 +60,7 @@
                             'background-size': imgSize.width + ' ' + imgSize.height
                         }"
                     >
-                        <image v-if="blockBackImgBase" :src="'data:image/png;base64,' + blockBackImgBase" class="img" />
+                        <image v-if="blockBackImgBase" :src="blockBackImgBase" class="img" />
                     </view>
                 </view>
             </view>

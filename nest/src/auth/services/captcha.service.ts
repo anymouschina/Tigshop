@@ -1,134 +1,84 @@
-// @ts-nocheck
-import { Injectable, BadRequestException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import { Injectable } from "@nestjs/common";
 import { RedisService } from "../../redis/redis.service";
 import { v4 as uuidv4 } from "uuid";
+import { createCanvas } from "canvas";
+
+interface CaptchaData {
+  offsetX: number;
+  blockSize: number;
+  secretKey: string;
+  createdAt: number;
+}
 
 @Injectable()
 export class CaptchaService {
-  private readonly attempts = new Map<
-    string,
-    { count: number; expires: number }
-  >();
-  private readonly MAX_ATTEMPTS = 3;
-  private readonly ATTEMPT_TTL = 120; // 2 minutes
+  private readonly CAPTCHA_TTL = 60; // 秒
+  private readonly TOLERANCE = 5;
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly redisService: RedisService,
-  ) {}
+  constructor(private readonly redisService: RedisService) {}
 
-  // 生成验证码
-  generateCaptcha(range: string = ''): {
-    data: string;
-    uuid: string;
-  } {
-    // 生成uuid (使用UUID库)
-    const uuid = uuidv4();
+  /** 生成滑块验证码 */
+  async generateCaptcha() {
+    const token = uuidv4();
+    const secretKey = Math.random().toString(36).substring(2, 10);
 
-    // 生成验证码key (格式: captcha:range:uuid)
-    const captchaKey = `captcha:${range}:${uuid}`;
+    const width = 310;
+    const height = 155;
+    const blockSize = 50;
 
-    // 生成4位验证码 (使用PHP相同的字符集)
-    const chars = '2345678abcdefhijkmnpqrstuvwxyzABCDEFGHJKLMNPQRTUVWXY';
-    let captchaText = '';
-    for (let i = 0; i < 4; i++) {
-      captchaText += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    // 背景画布
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
 
-    // 存储验证码到Redis (1分钟过期，与PHP保持一致)
-    this.redisService.set(captchaKey, {
-      text: captchaText,
-    }, { ttl: 60 });
+    // 背景色
+    ctx.fillStyle = '#ccf2ff';
+    ctx.fillRect(0, 0, width, height);
 
-    // 返回与PHP相同的格式
+    // 随机字符
+    const text = Math.random().toString(36).substring(2, 6);
+    ctx.fillStyle = '#333';
+    ctx.font = '32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, width / 2, height / 2);
+
+    // 滑块位置
+    const offsetX = Math.floor(Math.random() * (width - blockSize - 10)) + 5;
+    const offsetY = Math.floor(Math.random() * (height - blockSize - 10)) + 5;
+
+    // 裁剪滑块
+    const sliderCanvas = createCanvas(blockSize, blockSize);
+    const sliderCtx = sliderCanvas.getContext('2d');
+    sliderCtx.drawImage(canvas, offsetX, offsetY, blockSize, blockSize, 0, 0, blockSize, blockSize);
+
+    // 在背景上挖空（透明）
+    ctx.clearRect(offsetX, offsetY, blockSize, blockSize);
+
+    // 保存 Redis
+    const captchaData: CaptchaData = { offsetX, blockSize, secretKey, createdAt: Date.now() };
+    await this.redisService.set(`captcha:${token}`, captchaData, { ttl: this.CAPTCHA_TTL });
+
     return {
-      data: `data:image/png;base64,${Buffer.from(captchaText).toString('base64')}`,
-      uuid: uuid,
+      originalImageBase64: canvas.toDataURL(),
+      jigsawImageBase64: sliderCanvas.toDataURL(),
+      token,
+      secretKey,
     };
   }
 
-  // 验证验证码 (支持range和uuid参数)
-  async verifyCaptcha(range: string, uuid: string, captchaCode: string): Promise<boolean> {
-    // 构建验证码key
-    const captchaKey = `captcha:${range}:${uuid}`;
+  /** 校验滑块 */
+  async verifySlider(token: string, secretKey: string, x: number, track: number[]): Promise<boolean> {
+    const captcha = await this.redisService.get<CaptchaData>(`captcha:${token}`);
+    if (!captcha || captcha.secretKey !== secretKey) return false;
 
-    // 从Redis获取验证码
-    const storedCaptcha = await this.redisService.get<{ text: string }>(captchaKey);
+    const isValidPosition = Math.abs(x - captcha.offsetX) <= this.TOLERANCE;
+    const isValidTrack = this.validateTrack(track);
 
-    if (!storedCaptcha) {
-      return false;
-    }
-
-    // 验证码不区分大小写
-    const isValid = storedCaptcha.text.toLowerCase() === captchaCode.toLowerCase();
-
-    // 验证后删除 (一次性使用)
-    await this.redisService.del(captchaKey);
-
-    return isValid;
+    await this.redisService.del(`captcha:${token}`);
+    return isValidPosition && isValidTrack;
   }
 
-  async verify(
-    tag: string,
-    token?: string,
-    allowNoCheckTimes: number = this.MAX_ATTEMPTS,
-  ): Promise<boolean> {
-    const attemptKey = `accessTimes:${tag}`;
-    const attempts = this.getAttempts(attemptKey);
-
-    if (attempts <= allowNoCheckTimes) {
-      await this.incrementAttempts(attemptKey);
-      return true;
-    }
-
-    if (!token) {
-      throw new BadRequestException("需要行为验证");
-    }
-
-    // Here you would validate the captcha token against a real captcha service
-    // For now, we'll simulate it
-    return this.validateCaptchaToken(token);
-  }
-
-  private getAttempts(tag: string): number {
-    const attemptData = this.attempts.get(tag);
-
-    if (!attemptData) {
-      return 0;
-    }
-
-    if (Date.now() > attemptData.expires) {
-      this.attempts.delete(tag);
-      return 0;
-    }
-
-    return attemptData.count;
-  }
-
-  private async incrementAttempts(tag: string): Promise<void> {
-    const currentAttempts = this.getAttempts(tag);
-    const expires = Date.now() + this.ATTEMPT_TTL * 1000;
-
-    this.attempts.set(tag, {
-      count: currentAttempts + 1,
-      expires,
-    });
-  }
-
-  private validateCaptchaToken(token: string): boolean {
-    // In a real implementation, you would validate against a captcha service
-    // For now, accept any non-empty token as valid
-    return token && token.length > 0;
-  }
-
-  async trackFailedLogin(username: string): Promise<number> {
-    const tag = `userSignin:${username}`;
-    return this.getAttempts(tag);
-  }
-
-  async requiresCaptcha(username: string): Promise<boolean> {
-    const tag = `userSignin:${username}`;
-    return this.getAttempts(tag) > this.MAX_ATTEMPTS;
+  private validateTrack(track: number[]): boolean {
+    return track && track.length >= 3;
   }
 }
