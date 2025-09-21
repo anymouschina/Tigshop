@@ -139,14 +139,14 @@ export class CsrfController {
 }
 
 @ApiTags("公共CSRF")
-@Controller("api/common/csrf")
+@Controller("common/csrf")
 export class PublicCsrfController {
   constructor(
     private readonly authCsrfService: AuthCsrfService,
   ) {}
 
   @ApiOperation({ summary: "创建CSRF令牌" })
-  @Post("create")
+  @Get("create")
   async create() {
     const token = this.authCsrfService.generateToken();
 
