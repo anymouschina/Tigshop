@@ -19,6 +19,7 @@ import {
 } from "./dto/verification.dto";
 import { AdminAuthGuard } from "../../../common/guards/admin-auth.guard";
 import { ResponseUtil } from "../../../common/utils/response.util";
+import { CaptchaService } from "src/auth/services/captcha.service";
 
 @ApiTags("验证码管理")
 @Controller("admin/common/verification")
@@ -121,5 +122,38 @@ export class VerificationController {
     const statistics =
       await this.verificationService.getVerificationStatistics();
     return ResponseUtil.success(statistics);
+  }
+}
+
+@ApiTags("公共验证码")
+@Controller("common/verification")
+export class PublicVerificationController {
+  constructor(
+    private readonly captchaService: CaptchaService,
+  ) {}
+
+  @ApiOperation({ summary: "获取验证码" })
+  @Post("captcha")
+  async captcha() {
+    // Generate a simple captcha token
+    const captchaToken = Math.random().toString(36).substring(2, 15);
+    console.log(captchaToken,'captchaToken')
+    return ResponseUtil.success({
+      captcha_key: captchaToken,
+      captcha_image: null, // In real implementation, this would contain base64 image
+      expires_in: 300, // 5 minutes
+    });
+  }
+
+  @ApiOperation({ summary: "验证验证码" })
+  @Post("verify")
+  async verify(@Body() body: { captcha_key: string; captcha_code: string }) {
+    const isValid = await this.captchaService.verify(body.captcha_key, body.captcha_code);
+
+    if (isValid) {
+      return ResponseUtil.success("验证码正确");
+    } else {
+      return ResponseUtil.error("验证码错误");
+    }
   }
 }

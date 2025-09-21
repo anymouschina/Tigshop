@@ -38,6 +38,7 @@ import { EmailModule } from "../common/email/email.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
 import { CommonModule } from "./common/common.module";
 import { HomeModule } from "./home/home.module";
+import { VerificationModule } from "./common/verification/verification.module";
 import * as path from 'path'
 
 @Module({
@@ -78,6 +79,7 @@ import * as path from 'path'
     DecorateModule,
     CommonModule,
     HomeModule,
+    VerificationModule,
   ],
   controllers: [],
   providers: [
