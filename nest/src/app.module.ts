@@ -33,12 +33,12 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { MicroservicesModule } from "./microservices/microservices.module";
 import { SmsModule } from "../common/sms/sms.module";
 import { EmailModule } from "../common/email/email.module";
-import { DecorateModule } from "./common/decorate/decorate.module";
 import { CommonModule } from "./common/common.module";
 import { HomeModule } from "./home/home.module";
 import { VerificationModule } from "./common/verification/verification.module";
 import { CsrfModule } from "./common/csrf/csrf.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { DecorateModule } from "./common/decorate/decorate.module";
 
 @Module({
   imports: [
