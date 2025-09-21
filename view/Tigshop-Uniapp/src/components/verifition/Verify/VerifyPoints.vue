@@ -10,6 +10,7 @@
                     'margin-bottom': vSpace + 'px'
                 }"
             >
+            sssss
                 <div v-show="showRefresh" class="verify-refresh" style="z-index: 3" @click="refresh">
                     <i class="iconfont icon-refresh" />
                 </div>
@@ -222,6 +223,7 @@ export default {
                 captchaType: captchaType.value
             };
             reqGet(data).then((res) => {
+                console.log(res,'ressss')
                 if (res.repCode == "0000") {
                     pointBackImgBase.value = res.repData.originalImageBase64;
                     backToken.value = res.repData.token;

@@ -46,7 +46,11 @@ export default defineConfig(({ command, mode }) => {
         // base: getBasePath(),
         server: {
             host: "0.0.0.0",
-            open: true
+            port: 3000,
+            open: true,
+            hmr: {
+                overlay: true
+            }
             // proxy: {
             //     [VITE_REQUEST_URL_PREFIX]: {
             //         target: VITE_BASE_URL, //接口地址
