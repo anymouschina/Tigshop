@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 import { RedisService } from "../redis/redis.service";
 
 export interface TimeRange {

@@ -12,7 +12,7 @@ import {
   FriendLinksStatus,
   FriendLinksConfigDto,
 } from "./dto/friendLinks.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class FriendLinksService {

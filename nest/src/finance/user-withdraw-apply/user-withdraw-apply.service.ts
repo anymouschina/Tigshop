@@ -14,7 +14,7 @@ import {
   WithdrawStatisticsDto,
   UserWithdrawApplyConfigDto,
 } from "./dto/user-withdraw-apply.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class UserWithdrawApplyService {

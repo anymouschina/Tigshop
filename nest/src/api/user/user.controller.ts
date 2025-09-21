@@ -21,7 +21,7 @@ import {
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { UserService } from "./user.service";
-import { PrismaService } from "../../prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 import {
   UpdateUserDto,
   UpdatePasswordDto,

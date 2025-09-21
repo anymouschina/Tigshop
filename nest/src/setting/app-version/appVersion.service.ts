@@ -12,7 +12,7 @@ import {
   AppVersionStatus,
   AppVersionConfigDto,
 } from "./dto/appVersion.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class AppVersionService {

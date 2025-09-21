@@ -9,7 +9,7 @@ import {
   ADMIN_LOG_TYPE,
   ADMIN_LOG_MODULE,
 } from "./admin-log.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class AdminLogService {

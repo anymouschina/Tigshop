@@ -12,7 +12,7 @@ import {
   ShippingTypeStatus,
   ShippingTypeConfigDto,
 } from "./dto/shippingType.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class ShippingTypeService {

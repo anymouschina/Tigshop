@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { PrismaService } from "../prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 import * as path from "path";
 import * as fs from "fs";
 import * as crypto from "crypto";

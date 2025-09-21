@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 import { CreateUserRankDto, UpdateUserRankDto } from "./dto/user-rank.dto";
 
 @Injectable()

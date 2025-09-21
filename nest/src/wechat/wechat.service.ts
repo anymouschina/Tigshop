@@ -7,7 +7,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { catchError, firstValueFrom, map } from "rxjs";
-import { PrismaService } from "../prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 import * as fs from "fs";
 import * as path from "path";
 import { AppLoggerService } from "../common/logger/app-logger.service";

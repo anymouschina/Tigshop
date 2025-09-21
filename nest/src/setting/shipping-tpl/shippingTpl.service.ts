@@ -12,7 +12,7 @@ import {
   ShippingTplStatus,
   ShippingTplConfigDto,
 } from "./dto/shippingTpl.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class ShippingTplService {

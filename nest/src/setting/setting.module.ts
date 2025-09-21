@@ -10,7 +10,7 @@ import { MessageTypeController } from "./message-type.controller";
 import { MessageTypeService } from "./message-type.service";
 import { ConfigController } from "./config.controller";
 import { ConfigService } from "./config.service";
-import { PrismaService } from "../prisma.service";
+
 import { RegionModule } from "./region/region.module";
 import { AppVersionModule } from "./app-version/appVersion.module";
 import { ShippingTplModule } from "./shipping-tpl/shippingTpl.module";
@@ -42,7 +42,7 @@ import { LicensedModule } from "./licensed/licensed.module";
     MailTemplateService,
     MessageTypeService,
     ConfigService,
-    PrismaService,
+    
   ],
   exports: [
     LogisticsCompanyService,

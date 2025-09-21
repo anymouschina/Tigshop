@@ -2,7 +2,7 @@
 import { Module } from "@nestjs/common";
 import { UserRegistController } from "./user-regist.controller";
 import { UserRegistService } from "./user-regist.service";
-import { PrismaService } from "../../prisma/prisma.service";
+
 import { ConfigModule } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { SmsModule } from "../../../common/sms/sms.module";
@@ -21,7 +21,7 @@ import { EmailModule } from "../../../common/email/email.module";
     EmailModule,
   ],
   controllers: [UserRegistController],
-  providers: [UserRegistService, PrismaService],
+  providers: [UserRegistService, ],
   exports: [UserRegistService],
 })
 export class UserRegistModule {}

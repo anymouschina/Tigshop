@@ -14,7 +14,7 @@ import {
   RechargeOrderStatisticsDto,
   UserRechargeOrderConfigDto,
 } from "./dto/user-recharge-order.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class UserRechargeOrderService {

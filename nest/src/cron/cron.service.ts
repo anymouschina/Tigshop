@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { PrismaService } from "../prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 import { RedisService } from "../redis/redis.service";
 import { StatisticService } from "../statistic/statistic.service";
 import { LogService } from "../log/log.service";

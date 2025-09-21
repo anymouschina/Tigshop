@@ -13,7 +13,7 @@ import {
   CommentStatus,
   CommentRating,
 } from "./dto/comment.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 export interface CommentResponse {
   id: number;

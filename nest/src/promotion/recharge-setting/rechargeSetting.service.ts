@@ -12,7 +12,7 @@ import {
   RechargeSettingStatus,
   RechargeSettingConfigDto,
 } from "./dto/rechargeSetting.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class RechargeSettingService {

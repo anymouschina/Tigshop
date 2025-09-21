@@ -14,7 +14,7 @@ import {
   SkuAvailabilityDto,
   SkuPriceUpdateDto,
 } from "./dto/sku.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 export interface SkuResponse {
   id: number;

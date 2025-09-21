@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 export const CATEGORY_SHOW_STATUS = {
   0: "隐藏",

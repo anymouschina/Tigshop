@@ -18,7 +18,8 @@ import {
   SuccessResponse,
   CouponStatus,
 } from "./dto/coupon.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
+// import { PrismaService } from "src/prisma/prisma.service";
 
 // NOTE: Prisma schema uses snake_case model/field names and Int timestamps (Unix seconds).
 // This service aligns all queries and mappings accordingly, removing assumptions about relations.

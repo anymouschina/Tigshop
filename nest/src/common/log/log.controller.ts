@@ -16,7 +16,7 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
-import { PrismaService } from "../../prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @ApiTags("通用-日志统计")
 @Controller("common")

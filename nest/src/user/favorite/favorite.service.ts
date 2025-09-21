@@ -13,7 +13,7 @@ import {
   CheckFavoriteDto,
   FavoriteType,
 } from "./dto/favorite.dto";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 export interface FavoriteResponse {
   id: number;

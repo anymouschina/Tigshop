@@ -2,7 +2,7 @@
 import { Module } from "@nestjs/common";
 import { UserLoginController } from "./user-login.controller";
 import { UserLoginService } from "./user-login.service";
-import { PrismaService } from "../../prisma.service";
+
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 
@@ -20,7 +20,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
     }),
   ],
   controllers: [UserLoginController],
-  providers: [UserLoginService, PrismaService],
+  providers: [UserLoginService, ],
   exports: [UserLoginService],
 })
 export class UserLoginModule {}

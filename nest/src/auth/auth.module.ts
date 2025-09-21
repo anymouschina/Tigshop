@@ -5,7 +5,7 @@ import { PassportModule } from "@nestjs/passport";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { ConfigModule } from "../config/config.module";
-import { PrismaService } from "../prisma.service";
+
 import { ScheduleModule } from "@nestjs/schedule";
 import { CsrfService } from "./services/csrf.service";
 import { CaptchaService } from "./services/captcha.service";

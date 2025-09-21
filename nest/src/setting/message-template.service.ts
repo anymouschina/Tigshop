@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 import { MessageTemplateType } from "./dto/message-template.dto";
 
 export const MESSAGE_TEMPLATE_TYPE_NAMES = {

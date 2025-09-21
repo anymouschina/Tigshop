@@ -8,8 +8,7 @@ import {
   BatchDeleteAdminRoleDto,
   ROLE_STATUS,
 } from "./admin-role.dto";
-import { PrismaService } from "src/prisma.service";
-
+import { PrismaService } from "src/prisma/prisma.service";
 @Injectable()
 export class AdminRoleService {
   constructor(private databaseService: PrismaService) {}

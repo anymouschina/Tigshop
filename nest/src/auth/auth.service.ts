@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { PrismaService } from "../prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 import * as crypto from "crypto";
 import * as bcrypt from "bcrypt";
 import { Cron } from "@nestjs/schedule";
@@ -27,7 +27,7 @@ import { CsrfService } from "./services/csrf.service";
 import { CaptchaService } from "./services/captcha.service";
 import { UsernameGeneratorService } from "./services/username-generator.service";
 import { VerificationCodeService } from "./services/verification-code.service";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 export interface JwtPayload {
   sub: number; // User ID

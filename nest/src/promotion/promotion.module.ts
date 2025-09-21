@@ -14,7 +14,7 @@ import { GrouponService } from "./groupon.service";
 import { BargainService } from "./bargain.service";
 import { PointsExchangeService } from "./points-exchange.service";
 import { SignInService } from "./sign-in.service";
-import { PrismaService } from "../prisma.service";
+
 import { ProductTeamModule } from "./product-team/productTeam.module";
 import { RechargeSettingModule } from "./recharge-setting/rechargeSetting.module";
 import { TimeDiscountModule } from "./time-discount/timeDiscount.module";
@@ -44,7 +44,6 @@ import { WechatLiveModule } from "./wechat-live/wechatLive.module";
     BargainService,
     PointsExchangeService,
     SignInService,
-    PrismaService,
   ],
   exports: [
     PromotionService,
