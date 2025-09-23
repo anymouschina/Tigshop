@@ -8,7 +8,7 @@ import { OrderModule } from "../order/order.module";
 @Module({
   imports: [OrderModule],
   controllers: [AdminMsgController],
-  providers: [AdminMsgService, ],
+  providers: [AdminMsgService],
   exports: [AdminMsgService],
 })
 export class MsgModule {}

@@ -30,7 +30,7 @@ export class CaptchaService {
 
     // 先创建背景画布（包含所有干扰元素）
     const backgroundCanvas = createCanvas(width, height);
-    const bgCtx = backgroundCanvas.getContext('2d');
+    const bgCtx = backgroundCanvas.getContext("2d");
 
     // 添加背景干扰
     this.addBackgroundNoise(bgCtx, width, height);
@@ -45,7 +45,7 @@ export class CaptchaService {
 
     // 创建最终显示的背景画布（带挖空）
     const finalCanvas = createCanvas(width, height);
-    const finalCtx = finalCanvas.getContext('2d');
+    const finalCtx = finalCanvas.getContext("2d");
 
     // 复制完整背景
     finalCtx.drawImage(backgroundCanvas, 0, 0);
@@ -55,11 +55,21 @@ export class CaptchaService {
 
     // 从完整背景中裁剪滑块
     const sliderCanvas = createCanvas(blockSize, blockSize);
-    const sliderCtx = sliderCanvas.getContext('2d');
-    sliderCtx.drawImage(backgroundCanvas, offsetX, offsetY, blockSize, blockSize, 0, 0, blockSize, blockSize);
+    const sliderCtx = sliderCanvas.getContext("2d");
+    sliderCtx.drawImage(
+      backgroundCanvas,
+      offsetX,
+      offsetY,
+      blockSize,
+      blockSize,
+      0,
+      0,
+      blockSize,
+      blockSize,
+    );
 
     // 为滑块添加边框
-    sliderCtx.strokeStyle = '#ff0000';
+    sliderCtx.strokeStyle = "#ff0000";
     sliderCtx.lineWidth = 2;
     sliderCtx.strokeRect(0, 0, blockSize, blockSize);
 
@@ -68,10 +78,12 @@ export class CaptchaService {
       offsetX,
       blockSize,
       secretKey,
-      createdAt: Date.now()
+      createdAt: Date.now(),
     };
-    console.log(captchaData,'captchaData')
-    await this.redisService.set(`captcha:${token}`, captchaData, { ttl: this.CAPTCHA_TTL });
+    console.log(captchaData, "captchaData");
+    await this.redisService.set(`captcha:${token}`, captchaData, {
+      ttl: this.CAPTCHA_TTL,
+    });
 
     return {
       originalImageBase64: finalCanvas.toDataURL(),
@@ -87,23 +99,35 @@ export class CaptchaService {
   }
 
   /** 校验滑块 */
-  async verifySlider(token: string, secretKey: string, x: number, track: number[], startTime?: number): Promise<boolean> {
-    const captcha = await this.redisService.get<CaptchaData>(`captcha:${token}`);
-    console.log(captcha,'captcha')
+  async verifySlider(
+    token: string,
+    secretKey: string,
+    x: number,
+    track: number[],
+    startTime?: number,
+  ): Promise<boolean> {
+    const captcha = await this.redisService.get<CaptchaData>(
+      `captcha:${token}`,
+    );
+    console.log(captcha, "captcha");
     if (!captcha) {
-      console.log('❌ 验证失败: 找不到验证码数据, token:', token);
+      console.log("❌ 验证失败: 找不到验证码数据, token:", token);
       return false;
     }
 
-    console.log('🔍 验证调试信息:');
-    console.log('  - 前端X坐标:', x);
-    console.log('  - 后端offsetX:', captcha.offsetX);
-    console.log('  - 容差:', this.TOLERANCE);
-    console.log('  - 位置差异:', Math.abs(x - captcha.offsetX));
+    console.log("🔍 验证调试信息:");
+    console.log("  - 前端X坐标:", x);
+    console.log("  - 后端offsetX:", captcha.offsetX);
+    console.log("  - 容差:", this.TOLERANCE);
+    console.log("  - 位置差异:", Math.abs(x - captcha.offsetX));
 
     // 如果没有提供secretKey或使用默认值，跳过secretKey验证
-    if (secretKey && secretKey !== "default-secret-key" && captcha.secretKey !== secretKey) {
-      console.log('❌ 验证失败: secretKey不匹配');
+    if (
+      secretKey &&
+      secretKey !== "default-secret-key" &&
+      captcha.secretKey !== secretKey
+    ) {
+      console.log("❌ 验证失败: secretKey不匹配");
       return false;
     }
 
@@ -125,31 +149,32 @@ export class CaptchaService {
       }
     }
 
-    console.log('  - 位置验证:', isValidPosition ? '✅ 通过' : '❌ 失败');
+    console.log("  - 位置验证:", isValidPosition ? "✅ 通过" : "❌ 失败");
 
     // 时间验证
     const now = Date.now();
     const duration = startTime ? now - startTime : 0;
-    const isValidTime = duration >= this.MIN_DURATION && duration <= this.MAX_DURATION;
-    console.log('  - 滑动时间:', duration, 'ms');
-    console.log('  - 时间验证:', isValidTime ? '✅ 通过' : '❌ 失败');
+    const isValidTime =
+      duration >= this.MIN_DURATION && duration <= this.MAX_DURATION;
+    console.log("  - 滑动时间:", duration, "ms");
+    console.log("  - 时间验证:", isValidTime ? "✅ 通过" : "❌ 失败");
 
     // 轨迹验证 - 兼容PHP实现的宽松验证
     let isValidTrack = this.validateTrack(track);
-    console.log('  - 轨迹数据:', track);
-    console.log('  - 轨迹验证:', isValidTrack ? '✅ 通过' : '❌ 失败');
+    console.log("  - 轨迹数据:", track);
+    console.log("  - 轨迹验证:", isValidTrack ? "✅ 通过" : "❌ 失败");
 
     // 如果轨迹验证失败但位置验证通过，且轨迹不为空，则放宽轨迹验证
     if (!isValidTrack && isValidPosition && track && track.length > 0) {
       isValidTrack = true;
-      console.log('  - 🔄 轨迹验证放宽: 位置正确且有轨迹数据');
+      console.log("  - 🔄 轨迹验证放宽: 位置正确且有轨迹数据");
     }
 
     // 使用后立即删除
     await this.redisService.del(`captcha:${token}`);
 
     const finalResult = isValidPosition && isValidTime && isValidTrack;
-    console.log('  - 最终结果:', finalResult ? '✅ 通过' : '❌ 失败');
+    console.log("  - 最终结果:", finalResult ? "✅ 通过" : "❌ 失败");
 
     return finalResult;
   }
@@ -158,8 +183,8 @@ export class CaptchaService {
   private addBackgroundNoise(ctx: any, width: number, height: number) {
     // 渐变背景
     const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, '#e6f3ff');
-    gradient.addColorStop(1, '#b3d9ff');
+    gradient.addColorStop(0, "#e6f3ff");
+    gradient.addColorStop(1, "#b3d9ff");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
@@ -170,9 +195,12 @@ export class CaptchaService {
       ctx.beginPath();
       ctx.moveTo(Math.random() * width, Math.random() * height);
       ctx.bezierCurveTo(
-        Math.random() * width, Math.random() * height,
-        Math.random() * width, Math.random() * height,
-        Math.random() * width, Math.random() * height
+        Math.random() * width,
+        Math.random() * height,
+        Math.random() * width,
+        Math.random() * height,
+        Math.random() * width,
+        Math.random() * height,
       );
       ctx.stroke();
     }
@@ -181,20 +209,26 @@ export class CaptchaService {
     for (let i = 0; i < 50; i++) {
       ctx.fillStyle = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.5)`;
       ctx.beginPath();
-      ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 2, 0, Math.PI * 2);
+      ctx.arc(
+        Math.random() * width,
+        Math.random() * height,
+        Math.random() * 2,
+        0,
+        Math.PI * 2,
+      );
       ctx.fill();
     }
   }
 
   /** 添加文本 */
   private addText(ctx: any, text: string, width: number, height: number) {
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 32px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.fillStyle = "#333";
+    ctx.font = "bold 32px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
     // 文本阴影
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
@@ -202,7 +236,7 @@ export class CaptchaService {
     ctx.fillText(text, width / 2, height / 2);
 
     // 重置阴影
-    ctx.shadowColor = 'transparent';
+    ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
@@ -215,23 +249,30 @@ export class CaptchaService {
 
     // 创建半透明覆盖层
     const overlayCanvas = createCanvas(size, size);
-    const overlayCtx = overlayCanvas.getContext('2d');
+    const overlayCtx = overlayCanvas.getContext("2d");
 
     // 添加半透明白色背景
-    overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    overlayCtx.fillStyle = "rgba(255, 255, 255, 0.3)";
     overlayCtx.fillRect(0, 0, size, size);
 
     // 添加边框
-    overlayCtx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    overlayCtx.strokeStyle = "rgba(0, 0, 0, 0.5)";
     overlayCtx.lineWidth = 2;
     overlayCtx.strokeRect(0, 0, size, size);
 
     // 添加内部阴影效果
-    const gradient = overlayCtx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
-    gradient.addColorStop(1, 'rgba(200, 200, 200, 0.2)');
+    const gradient = overlayCtx.createRadialGradient(
+      size / 2,
+      size / 2,
+      0,
+      size / 2,
+      size / 2,
+      size / 2,
+    );
+    gradient.addColorStop(0, "rgba(255, 255, 255, 0.4)");
+    gradient.addColorStop(1, "rgba(200, 200, 200, 0.2)");
     overlayCtx.fillStyle = gradient;
-    overlayCtx.fillRect(2, 2, size-4, size-4);
+    overlayCtx.fillRect(2, 2, size - 4, size - 4);
 
     // 将覆盖层绘制到最终画布上
     ctx.drawImage(overlayCanvas as any, x, y);
@@ -240,15 +281,15 @@ export class CaptchaService {
   /** 验证滑动轨迹 */
   private validateTrack(track: number[]): boolean {
     if (!track || track.length === 0) {
-      console.log('  - 轨迹验证失败: 轨迹为空');
+      console.log("  - 轨迹验证失败: 轨迹为空");
       return false;
     }
 
-    console.log('  - 轨迹长度:', track.length);
+    console.log("  - 轨迹长度:", track.length);
 
     // 简化轨迹验证，只要有轨迹就通过
     if (track.length >= 3) {
-      console.log('  - 轨迹验证: ✅ 通过 (长度足够)');
+      console.log("  - 轨迹验证: ✅ 通过 (长度足够)");
       return true;
     }
 
@@ -258,7 +299,7 @@ export class CaptchaService {
     const lastPoint = track[track.length - 1];
     const distance = Math.abs(lastPoint - firstPoint);
 
-    console.log('  - 轨迹距离:', distance);
+    console.log("  - 轨迹距离:", distance);
 
     // 验证轨迹是否连续
     let hasBackward = false;
@@ -281,9 +322,13 @@ export class CaptchaService {
     }
 
     // 放宽验证条件
-    const isValid = hasBackward || hasAcceleration || points > 5 || distance > 50;
-    console.log('  - 轨迹验证:', isValid ? '✅ 通过' : '❌ 失败',
-                `回拖:${hasBackward}, 加速:${hasAcceleration}, 点数:${points}, 距离:${distance}`);
+    const isValid =
+      hasBackward || hasAcceleration || points > 5 || distance > 50;
+    console.log(
+      "  - 轨迹验证:",
+      isValid ? "✅ 通过" : "❌ 失败",
+      `回拖:${hasBackward}, 加速:${hasAcceleration}, 点数:${points}, 距离:${distance}`,
+    );
 
     return isValid;
   }

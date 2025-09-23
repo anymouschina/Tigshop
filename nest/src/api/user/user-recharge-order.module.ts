@@ -3,10 +3,9 @@ import { Module } from "@nestjs/common";
 import { UserRechargeOrderController } from "./user-recharge-order.controller";
 import { UserRechargeOrderService } from "./user-recharge-order.service";
 
-
 @Module({
   controllers: [UserRechargeOrderController],
-  providers: [UserRechargeOrderService, ],
+  providers: [UserRechargeOrderService],
   exports: [UserRechargeOrderService],
 })
 export class UserRechargeOrderModule {}

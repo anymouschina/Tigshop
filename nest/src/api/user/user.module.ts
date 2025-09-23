@@ -11,7 +11,7 @@ import { UserOauthModule } from "./user-oauth.module";
 @Module({
   imports: [ConfigModule, SmsModule, EmailModule, UserOauthModule],
   controllers: [UserController],
-  providers: [UserService, ],
+  providers: [UserService],
   exports: [UserService],
 })
 export class UserModule {}

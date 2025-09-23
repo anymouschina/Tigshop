@@ -5,7 +5,7 @@ export class ResponseUtil {
   }
 
   static error(message: string = "Error", code: number = 400) {
-    return  null;
+    return null;
   }
 
   static paginate(items: any[], total: number, page: number, size: number) {

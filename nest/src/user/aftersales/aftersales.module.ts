@@ -5,7 +5,7 @@ import { AftersalesService } from "./aftersales.service";
 
 @Module({
   controllers: [AftersalesController],
-  providers: [AftersalesService, ],
+  providers: [AftersalesService],
   exports: [AftersalesService],
 })
 export class AftersalesModule {}

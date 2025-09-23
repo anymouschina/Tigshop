@@ -67,17 +67,17 @@ export class HomeService {
 
       // 解析装修数据，优先使用草稿数据
       let moduleList = this.getMockModuleList();
-      let pageModule = this.getMockPageModule();
-      let backgroundImage = "";
+      const pageModule = this.getMockPageModule();
+      const backgroundImage = "";
 
       try {
         const dataToParse = decorate.draft_data || decorate.data;
         if (dataToParse) {
           const parsedData = JSON.parse(dataToParse);
-          return parsedData
+          return parsedData;
         }
       } catch (parseError) {
-        console.error('解析预览装修数据失败:', parseError);
+        console.error("解析预览装修数据失败:", parseError);
         moduleList = this.getMockModuleList();
       }
 
@@ -89,7 +89,7 @@ export class HomeService {
         backgroundImage: backgroundImage,
       };
     } catch (error) {
-      console.error('获取预览装修数据失败:', error);
+      console.error("获取预览装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: previewId,
@@ -134,7 +134,7 @@ export class HomeService {
           backgroundImage = parsedData.backgroundImage || "";
         }
       } catch (parseError) {
-        console.error('解析PC预览装修数据失败:', parseError);
+        console.error("解析PC预览装修数据失败:", parseError);
         moduleList = this.getMockModuleList();
       }
 
@@ -145,7 +145,7 @@ export class HomeService {
         backgroundImage: backgroundImage,
       };
     } catch (error) {
-      console.error('获取PC预览装修数据失败:', error);
+      console.error("获取PC预览装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: previewId,
@@ -181,16 +181,16 @@ export class HomeService {
 
       // 解析装修数据
       let moduleList = this.getMockModuleList();
-      let pageModule = type === 1 ? this.getMockPageModule() : null;
-      let backgroundImage = "";
+      const pageModule = type === 1 ? this.getMockPageModule() : null;
+      const backgroundImage = "";
 
       try {
         if (decorate.data) {
           const parsedData = JSON.parse(decorate.data);
-          return parsedData
+          return parsedData;
         }
       } catch (parseError) {
-        console.error('解析装修数据失败:', parseError);
+        console.error("解析装修数据失败:", parseError);
         moduleList = this.getMockModuleList();
       }
 
@@ -202,7 +202,7 @@ export class HomeService {
         backgroundImage: backgroundImage,
       };
     } catch (error) {
-      console.error('获取装修数据失败:', error);
+      console.error("获取装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: decorateId,
@@ -222,14 +222,11 @@ export class HomeService {
       const decorate = await this.prisma.decorate.findFirst({
         where: {
           decorate_type: 1, // TYPE_H5
-          is_home: 1,       // 首页
-          status: true,      // 启用状态
-          shop_id: 0,        // 默认店铺
+          is_home: 1, // 首页
+          status: true, // 启用状态
+          shop_id: 0, // 默认店铺
         },
-        orderBy: [
-          { update_time: "desc" },
-          { decorate_id: "desc" },
-        ],
+        orderBy: [{ update_time: "desc" }, { decorate_id: "desc" }],
       });
 
       if (!decorate) {
@@ -244,18 +241,18 @@ export class HomeService {
 
       // 解析装修数据
       let moduleList = [];
-      let pageModule = this.getMockPageModule();
-      let backgroundImage = "";
+      const pageModule = this.getMockPageModule();
+      const backgroundImage = "";
 
       try {
         if (decorate.data) {
-          console.log('Raw decorate.data:', decorate.data);
+          console.log("Raw decorate.data:", decorate.data);
           const parsedData = JSON.parse(decorate.data);
-          return parsedData
+          return parsedData;
         }
       } catch (parseError) {
-        console.error('解析装修数据失败:', parseError);
-        console.error('Raw data that failed to parse:', decorate.data);
+        console.error("解析装修数据失败:", parseError);
+        console.error("Raw data that failed to parse:", decorate.data);
         moduleList = this.getMockModuleList();
       }
 
@@ -267,7 +264,7 @@ export class HomeService {
         backgroundImage: backgroundImage || "/images/default-background.jpg",
       };
     } catch (error) {
-      console.error('获取首页装修数据失败:', error);
+      console.error("获取首页装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: 1,
@@ -287,14 +284,11 @@ export class HomeService {
       const decorate = await this.prisma.decorate.findFirst({
         where: {
           decorate_type: 2, // TYPE_PC
-          is_home: 1,       // 首页
-          status: true,      // 启用状态
-          shop_id: 0,        // 默认店铺
+          is_home: 1, // 首页
+          status: true, // 启用状态
+          shop_id: 0, // 默认店铺
         },
-        orderBy: [
-          { update_time: "desc" },
-          { decorate_id: "desc" },
-        ],
+        orderBy: [{ update_time: "desc" }, { decorate_id: "desc" }],
       });
 
       if (!decorate) {
@@ -317,7 +311,7 @@ export class HomeService {
           backgroundImage = parsedData.backgroundImage || "";
         }
       } catch (parseError) {
-        console.error('解析PC装修数据失败:', parseError);
+        console.error("解析PC装修数据失败:", parseError);
         moduleList = this.getMockModuleList();
       }
 
@@ -328,7 +322,7 @@ export class HomeService {
         backgroundImage: backgroundImage,
       };
     } catch (error) {
-      console.error('获取PC首页装修数据失败:', error);
+      console.error("获取PC首页装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: 2,
@@ -474,10 +468,10 @@ export class HomeService {
         where: { decorate_sn: decorateSn },
       });
       if (item) {
-        const parsedData = JSON.parse(item.data || '[]');
+        const parsedData = JSON.parse(item.data || "[]");
         return {
-         ...item,
-         data:parsedData
+          ...item,
+          data: parsedData,
         };
       }
 
@@ -490,7 +484,7 @@ export class HomeService {
           picThumb: "/images/nav/home.png",
           picActiveThumb: "/images/nav/home-active.png",
           picLink: "/pages/index/index",
-          sort: 1
+          sort: 1,
         },
         {
           picId: 2,
@@ -499,7 +493,7 @@ export class HomeService {
           picThumb: "/images/nav/category.png",
           picActiveThumb: "/images/nav/category-active.png",
           picLink: "/pages/category/index",
-          sort: 2
+          sort: 2,
         },
         {
           picId: 3,
@@ -508,7 +502,7 @@ export class HomeService {
           picThumb: "/images/nav/cart.png",
           picActiveThumb: "/images/nav/cart-active.png",
           picLink: "/pages/cart/index",
-          sort: 3
+          sort: 3,
         },
         {
           picId: 4,
@@ -517,8 +511,8 @@ export class HomeService {
           picThumb: "/images/nav/user.png",
           picActiveThumb: "/images/nav/user-active.png",
           picLink: "/pages/user/index",
-          sort: 4
-        }
+          sort: 4,
+        },
       ];
 
       return {
@@ -527,14 +521,14 @@ export class HomeService {
         decorate_name: "移动端导航",
         data: {
           data: {
-            navList: defaultNavList
-          }
+            navList: defaultNavList,
+          },
         },
         navList: defaultNavList,
-        shop_id: 0
+        shop_id: 0,
       };
     } catch (error) {
-      console.error('Error fetching mobile nav:', error);
+      console.error("Error fetching mobile nav:", error);
       // 返回默认导航数据 - 使用PHP版本期望的字段结构
       const defaultNavList = [
         {
@@ -544,7 +538,7 @@ export class HomeService {
           picThumb: "/images/nav/home.png",
           picActiveThumb: "/images/nav/home-active.png",
           picLink: "/pages/index/index",
-          sort: 1
+          sort: 1,
         },
         {
           picId: 2,
@@ -553,7 +547,7 @@ export class HomeService {
           picThumb: "/images/nav/category.png",
           picActiveThumb: "/images/nav/category-active.png",
           picLink: "/pages/category/index",
-          sort: 2
+          sort: 2,
         },
         {
           picId: 3,
@@ -562,7 +556,7 @@ export class HomeService {
           picThumb: "/images/nav/cart.png",
           picActiveThumb: "/images/nav/cart-active.png",
           picLink: "/pages/cart/index",
-          sort: 3
+          sort: 3,
         },
         {
           picId: 4,
@@ -571,8 +565,8 @@ export class HomeService {
           picThumb: "/images/nav/user.png",
           picActiveThumb: "/images/nav/user-active.png",
           picLink: "/pages/user/index",
-          sort: 4
-        }
+          sort: 4,
+        },
       ];
 
       return {
@@ -581,8 +575,8 @@ export class HomeService {
         decorate_name: "移动端导航",
         data: defaultNavList,
         navList: defaultNavList,
-        shop_id: 0
-      }
+        shop_id: 0,
+      };
     }
   }
 
@@ -597,7 +591,7 @@ export class HomeService {
 
       return item || {};
     } catch (error) {
-      console.error('Error fetching member decorate:', error);
+      console.error("Error fetching member decorate:", error);
       // 返回默认个人中心数据
       return {
         id: 2,
@@ -609,10 +603,10 @@ export class HomeService {
             { name: "我的订单", icon: "order", url: "/user/orders" },
             { name: "收货地址", icon: "address", url: "/user/address" },
             { name: "优惠券", icon: "coupon", url: "/user/coupons" },
-            { name: "设置", icon: "settings", url: "/user/settings" }
-          ]
+            { name: "设置", icon: "settings", url: "/user/settings" },
+          ],
         }),
-        shop_id: 0
+        shop_id: 0,
       };
     }
   }

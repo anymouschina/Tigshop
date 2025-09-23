@@ -31,7 +31,7 @@ export class UserDecorateService {
         materialVideo: "",
         maxWaitTime: 3,
         redirectType: "0",
-        redirectUrl: ""
+        redirectUrl: "",
       };
     } catch (error) {
       console.error("获取开屏广告失败:", error);
@@ -68,7 +68,7 @@ export class UserDecorateService {
         },
       });
 
-      return navigation.map(nav => ({
+      return navigation.map((nav) => ({
         id: nav.id,
         name: nav.name,
         icon: nav.icon,
@@ -182,10 +182,7 @@ export class UserDecorateService {
             type: "banner",
             id: "banner-1",
             config: {
-              images: [
-                "/images/banner1.jpg",
-                "/images/banner2.jpg",
-              ],
+              images: ["/images/banner1.jpg", "/images/banner2.jpg"],
               autoPlay: true,
               interval: 3000,
             },
@@ -196,10 +193,26 @@ export class UserDecorateService {
             config: {
               columns: 4,
               items: [
-                { name: "新品", icon: "/images/nav/new.png", url: "/pages/list/new" },
-                { name: "热卖", icon: "/images/nav/hot.png", url: "/pages/list/hot" },
-                { name: "优惠", icon: "/images/nav/sale.png", url: "/pages/list/sale" },
-                { name: "品牌", icon: "/images/nav/brand.png", url: "/pages/list/brand" },
+                {
+                  name: "新品",
+                  icon: "/images/nav/new.png",
+                  url: "/pages/list/new",
+                },
+                {
+                  name: "热卖",
+                  icon: "/images/nav/hot.png",
+                  url: "/pages/list/hot",
+                },
+                {
+                  name: "优惠",
+                  icon: "/images/nav/sale.png",
+                  url: "/pages/list/sale",
+                },
+                {
+                  name: "品牌",
+                  icon: "/images/nav/brand.png",
+                  url: "/pages/list/brand",
+                },
               ],
             },
           },
@@ -224,11 +237,13 @@ export class UserDecorateService {
         },
       });
 
-      return decorate ? {
-        id: decorate.id,
-        config: decorate.config,
-        components: decorate.components,
-      } : { components: [] };
+      return decorate
+        ? {
+            id: decorate.id,
+            config: decorate.config,
+            components: decorate.components,
+          }
+        : { components: [] };
     } catch (error) {
       console.error("获取分类页装修配置失败:", error);
       throw new Error("获取失败");
@@ -251,11 +266,13 @@ export class UserDecorateService {
         },
       });
 
-      return decorate ? {
-        id: decorate.id,
-        config: decorate.config,
-        components: decorate.components,
-      } : { components: [] };
+      return decorate
+        ? {
+            id: decorate.id,
+            config: decorate.config,
+            components: decorate.components,
+          }
+        : { components: [] };
     } catch (error) {
       console.error("获取购物车页装修配置失败:", error);
       throw new Error("获取失败");
@@ -278,11 +295,13 @@ export class UserDecorateService {
         },
       });
 
-      return decorate ? {
-        id: decorate.id,
-        config: decorate.config,
-        components: decorate.components,
-      } : { components: [] };
+      return decorate
+        ? {
+            id: decorate.id,
+            config: decorate.config,
+            components: decorate.components,
+          }
+        : { components: [] };
     } catch (error) {
       console.error("获取用户中心页装修配置失败:", error);
       throw new Error("获取失败");
@@ -305,11 +324,13 @@ export class UserDecorateService {
         },
       });
 
-      return decorate ? {
-        id: decorate.id,
-        config: decorate.config,
-        components: decorate.components,
-      } : { components: [] };
+      return decorate
+        ? {
+            id: decorate.id,
+            config: decorate.config,
+            components: decorate.components,
+          }
+        : { components: [] };
     } catch (error) {
       console.error("获取商品详情页装修配置失败:", error);
       throw new Error("获取失败");
@@ -319,7 +340,10 @@ export class UserDecorateService {
   /**
    * 跟踪广告点击
    */
-  async trackAdClick(userId: number, body: { adId: number; adType: string; position: string }) {
+  async trackAdClick(
+    userId: number,
+    body: { adId: number; adType: string; position: string },
+  ) {
     try {
       await this.prisma.adStatistics.create({
         data: {

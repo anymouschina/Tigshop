@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import {
   DecorateQueryDto,
@@ -7,7 +7,7 @@ import {
   DECORATE_TYPE,
   DECORATE_STATUS,
   DECORATE_PLATFORM,
-} from './decorate.dto';
+} from "./decorate.dto";
 
 @Injectable()
 export class DecorateService {
@@ -21,8 +21,8 @@ export class DecorateService {
       status,
       page = 1,
       size = 10,
-      sort_field = 'update_time',
-      sort_order = 'desc',
+      sort_field = "update_time",
+      sort_order = "desc",
     } = query;
 
     const where: any = {};
@@ -71,14 +71,24 @@ export class DecorateService {
     });
 
     if (!decorate) {
-      throw new Error('装修页面不存在');
+      throw new Error("装修页面不存在");
     }
 
     return decorate;
   }
 
   async create(createDecorateDto: CreateDecorateDto) {
-    const { decorate_title, data, draft_data, decorate_type, is_home, shop_id, status, locale_id, parent_id } = createDecorateDto;
+    const {
+      decorate_title,
+      data,
+      draft_data,
+      decorate_type,
+      is_home,
+      shop_id,
+      status,
+      locale_id,
+      parent_id,
+    } = createDecorateDto;
 
     const decorate = await this.prisma.decorate.create({
       data: {
@@ -106,7 +116,7 @@ export class DecorateService {
     });
 
     if (!existingDecorate) {
-      throw new Error('装修页面不存在');
+      throw new Error("装修页面不存在");
     }
 
     const updatePayload: any = { ...updateData };
@@ -129,14 +139,14 @@ export class DecorateService {
     });
 
     if (!existingDecorate) {
-      throw new Error('装修页面不存在');
+      throw new Error("装修页面不存在");
     }
 
     await this.prisma.decorate.delete({
       where: { decorate_id: id },
     });
 
-    return { message: '删除成功' };
+    return { message: "删除成功" };
   }
 
   async batchRemove(ids: number[]) {
@@ -145,7 +155,7 @@ export class DecorateService {
     });
 
     if (existingDecorates.length !== ids.length) {
-      throw new Error('部分装修页面不存在');
+      throw new Error("部分装修页面不存在");
     }
 
     await this.prisma.decorate.deleteMany({
@@ -161,7 +171,7 @@ export class DecorateService {
     });
 
     if (!existingDecorate) {
-      throw new Error('装修页面不存在');
+      throw new Error("装修页面不存在");
     }
 
     const decorate = await this.prisma.decorate.update({
@@ -183,7 +193,7 @@ export class DecorateService {
     ]);
 
     const typeStats = await this.prisma.decorate.groupBy({
-      by: ['decorate_type'],
+      by: ["decorate_type"],
       _count: {
         decorate_type: true,
       },
@@ -193,7 +203,7 @@ export class DecorateService {
       total,
       enabled,
       disabled,
-      type_stats: typeStats.map(stat => ({
+      type_stats: typeStats.map((stat) => ({
         type: stat.decorate_type,
         count: stat._count.decorate_type,
       })),
@@ -215,27 +225,31 @@ export class DecorateService {
     });
 
     if (!decorate) {
-      throw new Error('装修页面不存在');
+      throw new Error("装修页面不存在");
     }
 
     return {
       ...decorate,
-      preview_data: JSON.parse(decorate.data || '{}'),
+      preview_data: JSON.parse(decorate.data || "{}"),
     };
   }
 
-  async copyDecorate(id: number, copyData: { name?: string; description?: string }) {
+  async copyDecorate(
+    id: number,
+    copyData: { name?: string; description?: string },
+  ) {
     const sourceDecorate = await this.prisma.decorate.findUnique({
       where: { decorate_id: id },
     });
 
     if (!sourceDecorate) {
-      throw new Error('源装修页面不存在');
+      throw new Error("源装修页面不存在");
     }
 
     const decorate = await this.prisma.decorate.create({
       data: {
-        decorate_title: copyData.name || `${sourceDecorate.decorate_title}_副本`,
+        decorate_title:
+          copyData.name || `${sourceDecorate.decorate_title}_副本`,
         data: sourceDecorate.data,
         draft_data: sourceDecorate.draft_data,
         decorate_type: sourceDecorate.decorate_type,

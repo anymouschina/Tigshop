@@ -1,6 +1,9 @@
 // @ts-nocheck
 import { Module } from "@nestjs/common";
-import { VerificationController, PublicVerificationController } from "./verification.controller";
+import {
+  VerificationController,
+  PublicVerificationController,
+} from "./verification.controller";
 import { VerificationService } from "./verification.service";
 
 import { AuthModule } from "../../auth/auth.module";

@@ -1,6 +1,14 @@
 // @ts-nocheck
-import { IsOptional, IsString, IsNumber, IsBoolean, Min, Max, IsArray } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  Min,
+  Max,
+  IsArray,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 export class ArticleQueryDto {
   @IsOptional()
@@ -21,11 +29,11 @@ export class ArticleQueryDto {
 
   @IsOptional()
   @IsString()
-  sort_field?: string = 'id';
+  sort_field?: string = "id";
 
   @IsOptional()
   @IsString()
-  sort_order?: 'asc' | 'desc' = 'desc';
+  sort_order?: "asc" | "desc" = "desc";
 
   @IsOptional()
   @Type(() => Number)
@@ -50,7 +58,7 @@ export class CreateArticleDto {
 
   @IsOptional()
   @IsString()
-  summary?: string = '';
+  summary?: string = "";
 
   @IsString()
   content: string;
@@ -77,7 +85,7 @@ export class CreateArticleDto {
 
   @IsOptional()
   @IsString()
-  cover_image?: string = '';
+  cover_image?: string = "";
 }
 
 export class UpdateArticleDto {

@@ -40,6 +40,12 @@ import { RedisModule } from "../redis/redis.module";
     VerificationCodeService,
     WechatOAuthService,
   ],
-  exports: [AuthService, CsrfService, CaptchaService, VerificationCodeService, WechatOAuthService],
+  exports: [
+    AuthService,
+    CsrfService,
+    CaptchaService,
+    VerificationCodeService,
+    WechatOAuthService,
+  ],
 })
 export class AuthModule {}

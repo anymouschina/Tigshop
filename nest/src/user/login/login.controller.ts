@@ -47,8 +47,14 @@ export class LoginController {
   @Post("user/login/sendMobileCode")
   @Public()
   @ApiOperation({ summary: "发送手机验证码" })
-  async sendMobileCode(@Body() body: { mobile: string; event: string }) {
-    return this.loginService.sendMobileCode(body.mobile, body.event);
+  async sendMobileCode(
+    @Body() body: { mobile: string; event: string; verify_token: string },
+  ) {
+    return this.loginService.sendMobileCode(
+      body.mobile,
+      body.event,
+      body.verify_token,
+    );
   }
 
   /**

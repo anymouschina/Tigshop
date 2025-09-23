@@ -21,7 +21,7 @@ import { EmailModule } from "../../../common/email/email.module";
     EmailModule,
   ],
   controllers: [UserRegistController],
-  providers: [UserRegistService, ],
+  providers: [UserRegistService],
   exports: [UserRegistService],
 })
 export class UserRegistModule {}

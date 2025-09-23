@@ -9,15 +9,15 @@ interface CSSProperties {
 }
 
 export interface CaptchaCoordinates {
-  offsetX: number;  // 后端生成的X坐标
-  offsetY: number;  // 后端生成的Y坐标
+  offsetX: number; // 后端生成的X坐标
+  offsetY: number; // 后端生成的Y坐标
   blockSize: number; // 滑块大小
 }
 
 export interface DisplayCoordinates {
-  displayX: number;  // 前端显示的X坐标
-  displayY: number;  // 前端显示的Y坐标
-  displayWidth: number;  // 前端显示宽度
+  displayX: number; // 前端显示的X坐标
+  displayY: number; // 前端显示的Y坐标
+  displayWidth: number; // 前端显示宽度
   displayHeight: number; // 前端显示高度
 }
 
@@ -30,7 +30,7 @@ export class CaptchaCoordinateConverter {
    */
   static calculateDisplayCoordinates(
     backendCoords: CaptchaCoordinates,
-    displaySize: { width: number; height: number }
+    displaySize: { width: number; height: number },
   ): DisplayCoordinates {
     const { offsetX, offsetY, blockSize } = backendCoords;
     const { width, height } = displaySize;
@@ -47,7 +47,7 @@ export class CaptchaCoordinateConverter {
       displayX: offsetX * scaleX,
       displayY: offsetY * scaleY,
       displayWidth: blockSize * scaleX,
-      displayHeight: blockSize * scaleY
+      displayHeight: blockSize * scaleY,
     };
   }
 
@@ -59,7 +59,7 @@ export class CaptchaCoordinateConverter {
    */
   static convertToBackendCoordinate(
     dragX: number,
-    displaySize: { width: number; height: number }
+    displaySize: { width: number; height: number },
   ): number {
     const originalWidth = 310;
     const scaleX = displaySize.width / originalWidth;
@@ -80,7 +80,7 @@ export class CaptchaCoordinateConverter {
     dragX: number,
     backendCoords: CaptchaCoordinates,
     displaySize: { width: number; height: number },
-    tolerance: number = 3
+    tolerance: number = 3,
   ): boolean {
     const backendX = this.convertToBackendCoordinate(dragX, displaySize);
     const distance = Math.abs(backendX - backendCoords.offsetX);
@@ -96,18 +96,21 @@ export class CaptchaCoordinateConverter {
    */
   static calculateSliderStyle(
     backendCoords: CaptchaCoordinates,
-    displaySize: { width: number; height: number }
+    displaySize: { width: number; height: number },
   ): CSSProperties {
-    const displayCoords = this.calculateDisplayCoordinates(backendCoords, displaySize);
+    const displayCoords = this.calculateDisplayCoordinates(
+      backendCoords,
+      displaySize,
+    );
 
     return {
-      position: 'absolute' as const,
+      position: "absolute" as const,
       left: `${displayCoords.displayX}px`,
       top: `${displayCoords.displayY}px`,
       width: `${displayCoords.displayWidth}px`,
       height: `${displayCoords.displayHeight}px`,
-      cursor: 'move',
-      userSelect: 'none' as const,
+      cursor: "move",
+      userSelect: "none" as const,
       zIndex: 10,
     };
   }
@@ -120,19 +123,22 @@ export class CaptchaCoordinateConverter {
    */
   static calculateHoleStyle(
     backendCoords: CaptchaCoordinates,
-    displaySize: { width: number; height: number }
+    displaySize: { width: number; height: number },
   ): CSSProperties {
-    const displayCoords = this.calculateDisplayCoordinates(backendCoords, displaySize);
+    const displayCoords = this.calculateDisplayCoordinates(
+      backendCoords,
+      displaySize,
+    );
 
     return {
-      position: 'absolute' as const,
+      position: "absolute" as const,
       left: `${displayCoords.displayX}px`,
       top: `${displayCoords.displayY}px`,
       width: `${displayCoords.displayWidth}px`,
       height: `${displayCoords.displayHeight}px`,
-      backgroundColor: 'rgba(255, 255, 255, 0.3)',
-      border: '2px solid rgba(0, 0, 0, 0.5)',
-      borderRadius: '4px',
+      backgroundColor: "rgba(255, 255, 255, 0.3)",
+      border: "2px solid rgba(0, 0, 0, 0.5)",
+      borderRadius: "4px",
       zIndex: 5,
     };
   }
@@ -162,7 +168,7 @@ export class CaptchaCoordinateConverter {
 
     return {
       track,
-      startTime: startTimeValue
+      startTime: startTimeValue,
     };
   }
 }

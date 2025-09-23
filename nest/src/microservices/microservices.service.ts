@@ -54,13 +54,24 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   }
 
   private getMicroserviceConfigs(): MicroserviceConfig[] {
-    const rabbitmqUrl = this.configService.get("RABBITMQ_URL") || "amqp://localhost:5672";
-    const redisUrl = this.configService.get("REDIS_URL") || "redis://localhost:6379";
+    const rabbitmqUrl =
+      this.configService.get("RABBITMQ_URL") || "amqp://localhost:5672";
+    const redisUrl =
+      this.configService.get("REDIS_URL") || "redis://localhost:6379";
     // const kafkaBrokers = this.configService.get("KAFKA_BROKERS")?.split(",") || ["127.0.0.1:9092"];
 
     return [
       // RabbitMQ 微服务
-      ...["USER", "PRODUCT", "ORDER", "PAYMENT", "NOTIFICATION", "EMAIL", "SMS", "FILE"].map((type) => ({
+      ...[
+        "USER",
+        "PRODUCT",
+        "ORDER",
+        "PAYMENT",
+        "NOTIFICATION",
+        "EMAIL",
+        "SMS",
+        "FILE",
+      ].map((type) => ({
         type: MicroserviceType[type as keyof typeof MicroserviceType],
         transport: Transport.RMQ,
         options: {
@@ -119,20 +130,32 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
     return this.isConnected.get(type) || false;
   }
 
-  async sendPattern<T = any>(type: MicroserviceType, pattern: string, data: any): Promise<T> {
+  async sendPattern<T = any>(
+    type: MicroserviceType,
+    pattern: string,
+    data: any,
+  ): Promise<T> {
     const client = this.getClient(type);
     if (!this.isConnectedTo(type)) throw new Error(`${type} is not connected`);
     return client.send<T>({ cmd: pattern }, data).toPromise();
   }
 
-  async emitEvent(type: MicroserviceType, pattern: string, data: any): Promise<void> {
+  async emitEvent(
+    type: MicroserviceType,
+    pattern: string,
+    data: any,
+  ): Promise<void> {
     const client = this.getClient(type);
     if (!this.isConnectedTo(type)) throw new Error(`${type} is not connected`);
     client.emit({ cmd: pattern }, data);
   }
 
   async closeAllConnections(): Promise<void> {
-    await Promise.all(Array.from(this.clients.values()).map((c) => c.close().catch(console.error)));
+    await Promise.all(
+      Array.from(this.clients.values()).map((c) =>
+        c.close().catch(console.error),
+      ),
+    );
     this.clients.clear();
     this.isConnected.clear();
   }

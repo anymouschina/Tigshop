@@ -129,9 +129,7 @@ export class VerificationController {
 @ApiTags("公共验证码")
 @Controller("common/verification")
 export class PublicVerificationController {
-  constructor(
-    private readonly captchaService: CaptchaService,
-  ) {}
+  constructor(private readonly captchaService: CaptchaService) {}
 
   @ApiOperation({ summary: "获取滑块验证码" })
   @Post("captcha")
@@ -155,7 +153,7 @@ export class PublicVerificationController {
         token: captchaResult.token,
         secretKey: captchaResult.secretKey,
         backToken: captchaResult.token,
-      }
+      },
     };
 
     return response;
@@ -163,16 +161,20 @@ export class PublicVerificationController {
 
   @ApiOperation({ summary: "验证滑块验证码" })
   @Post("verify")
-  async verify(@Body() body: {
-    token?: string;
-    secretKey?: string;
-    x?: number;
-    track?: number[];
-    startTime?: number;
-    captchaType?: string;
-    pointJson?: string;
-  }) {
-    const { token, secretKey, x, track, startTime, captchaType, pointJson } = body;
+  async verify(
+    @Body()
+    body: {
+      token?: string;
+      secretKey?: string;
+      x?: number;
+      track?: number[];
+      startTime?: number;
+      captchaType?: string;
+      pointJson?: string;
+    },
+  ) {
+    const { token, secretKey, x, track, startTime, captchaType, pointJson } =
+      body;
 
     // 支持前端Vue组件的pointJson格式
     let finalX = x;
@@ -194,7 +196,7 @@ export class PublicVerificationController {
         finalTrack = this.generateRealisticTrack(finalX);
         finalStartTime = Date.now() - 1500; // 假设1.5秒前开始
       } catch (error) {
-        console.error('pointJson解析失败:', error);
+        console.error("pointJson解析失败:", error);
         return ResponseUtil.error("pointJson格式错误或解密失败");
       }
     }
@@ -209,8 +211,8 @@ export class PublicVerificationController {
       repMsg: "验证成功",
       resultData: {
         token: finalToken,
-        captchaType: captchaType || "blockPuzzle"
-      }
+        captchaType: captchaType || "blockPuzzle",
+      },
     };
   }
 
@@ -233,7 +235,11 @@ export class PublicVerificationController {
         const parsed = JSON.parse(pointJson);
         results.push({ method: "直接JSON解析", success: true, data: parsed });
       } catch (e) {
-        results.push({ method: "直接JSON解析", success: false, error: e.message });
+        results.push({
+          method: "直接JSON解析",
+          success: false,
+          error: e.message,
+        });
       }
 
       // 2. 尝试AES解密
@@ -248,23 +254,32 @@ export class PublicVerificationController {
 
       // 3. 尝试Base64解码后解析
       try {
-        const base64Decoded = Buffer.from(pointJson, 'base64').toString('utf8');
+        const base64Decoded = Buffer.from(pointJson, "base64").toString("utf8");
         const parsed = JSON.parse(base64Decoded);
-        results.push({ method: "Base64解码", success: true, data: parsed, base64Decoded });
+        results.push({
+          method: "Base64解码",
+          success: true,
+          data: parsed,
+          base64Decoded,
+        });
       } catch (e) {
-        results.push({ method: "Base64解码", success: false, error: e.message });
+        results.push({
+          method: "Base64解码",
+          success: false,
+          error: e.message,
+        });
       }
 
       return {
         pointJson,
-        secretKey: secretKey ? secretKey.substring(0, 8) + '...' : undefined,
-        results
+        secretKey: secretKey ? secretKey.substring(0, 8) + "..." : undefined,
+        results,
       };
     } catch (error) {
       return {
         pointJson,
-        secretKey: secretKey ? secretKey.substring(0, 8) + '...' : undefined,
-        error: error.message
+        secretKey: secretKey ? secretKey.substring(0, 8) + "..." : undefined,
+        error: error.message,
       };
     }
   }
@@ -289,12 +304,12 @@ export class PublicVerificationController {
         success: true,
         offsetX: captchaData.offsetX,
         blockSize: captchaData.blockSize,
-        message: "请在测试中使用这个offsetX值"
+        message: "请在测试中使用这个offsetX值",
       };
     } catch (error) {
       return {
         error: "获取offsetX失败",
-        details: error.message
+        details: error.message,
       };
     }
   }
@@ -302,23 +317,21 @@ export class PublicVerificationController {
   // 兼容前端API格式的验证接口
   @ApiOperation({ summary: "兼容前端验证接口" })
   @Post("check")
-  async check(@Body() body: {
-    captchaType?: string;
-    pointJson?: string;
-    token?: string;
-  }) {
+  async check(
+    @Body() body: { captchaType?: string; pointJson?: string; token?: string },
+  ) {
     const { captchaType = "blockPuzzle", pointJson, token } = body;
-    console.log('checkccc', body)
+    console.log("checkccc", body);
 
     if (!pointJson || !token) {
-      return null
+      return null;
     }
 
     // 临时返回成功，跳过所有验证逻辑
     return {
       token: token,
-      captchaType: captchaType
-    }
+      captchaType: captchaType,
+    };
   }
 
   /**

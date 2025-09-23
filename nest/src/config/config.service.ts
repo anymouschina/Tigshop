@@ -11,7 +11,10 @@ export class AppConfigService {
   }
 
   get databaseUrl(): string {
-    return this.configService.get<string>("DATABASE_URL", "postgresql://username:password@localhost:5432/tigshop");
+    return this.configService.get<string>(
+      "DATABASE_URL",
+      "postgresql://username:password@localhost:5432/tigshop",
+    );
   }
 
   get wechatAppId(): string {

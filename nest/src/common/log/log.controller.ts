@@ -31,8 +31,9 @@ export class LogController {
   @ApiQuery({ name: "type", required: false, description: "日志类型" })
   @ApiResponse({ status: 200, description: "记录成功" })
   async log(
-    @Query() query: { click?: string; page?: string; action?: string; type?: string },
-    @Request() req: any
+    @Query()
+    query: { click?: string; page?: string; action?: string; type?: string },
+    @Request() req: any,
   ) {
     try {
       // 获取用户信息或IP地址
@@ -73,8 +74,9 @@ export class LogController {
   @ApiOperation({ summary: "记录用户行为日志 (POST方式)" })
   @ApiResponse({ status: 200, description: "记录成功" })
   async logPost(
-    @Body() body: { click?: string; page?: string; action?: string; type?: string },
-    @Request() req: any
+    @Body()
+    body: { click?: string; page?: string; action?: string; type?: string },
+    @Request() req: any,
   ) {
     try {
       // 获取用户信息或IP地址

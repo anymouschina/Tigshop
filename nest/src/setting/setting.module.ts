@@ -42,7 +42,6 @@ import { LicensedModule } from "./licensed/licensed.module";
     MailTemplateService,
     MessageTypeService,
     ConfigService,
-    
   ],
   exports: [
     LogisticsCompanyService,

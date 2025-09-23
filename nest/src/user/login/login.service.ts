@@ -2,6 +2,8 @@
 import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { JwtService } from "@nestjs/jwt";
+import { CaptchaService } from "../../auth/services/captcha.service";
+import { RedisService } from "../../redis/redis.service";
 import * as bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 
@@ -10,6 +12,8 @@ export class LoginService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private captchaService: CaptchaService,
+    private redisService: RedisService,
   ) {}
 
   /**
@@ -224,35 +228,84 @@ export class LoginService {
   }
 
   /**
-   * 发送手机验证码
+   * 发送手机验证码 - 对齐PHP实现
    */
-  async sendMobileCode(mobile: string, event: string) {
+  async sendMobileCode(mobile: string, event: string, verifyToken: string) {
     if (!mobile) {
       throw new HttpException("手机号不能为空", HttpStatus.BAD_REQUEST);
     }
 
-    // 验证码验证（简化版）
-    // 这里应该验证行为验证码
-    // 暂时跳过
+    // 设置默认event为login，与PHP实现一致
+    if (!event) {
+      event = "login";
+    }
+
+    // 行为验证 - 使用CaptchaService验证verifyToken
+    if (!verifyToken) {
+      throw new HttpException("验证令牌不能为空", HttpStatus.BAD_REQUEST);
+    }
+
+    // 这里简化验证，实际应该根据verifyToken验证行为验证码
+    // 与PHP的CaptchaService->check()方法对应
+    const isValidBehavior = await this.verifyBehaviorToken(verifyToken);
+    if (!isValidBehavior) {
+      throw new HttpException("行为验证失败", HttpStatus.BAD_REQUEST);
+    }
 
     try {
-      // 模拟发送验证码
+      // 生成6位验证码
       const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // 存储验证码（实际应该使用Redis）
-      await this.prisma.verificationCode.create({
-        data: {
-          target: mobile,
-          code,
-          type: "mobile",
-          event,
-          expired_at: new Date(Date.now() + 5 * 60 * 1000), // 5分钟过期
-        },
-      });
+      // 使用Redis存储验证码，与PHP实现一致
+      // PHP使用key pattern: {event}mobileCode:{mobile}
+      const redisKey = `${event}mobileCode:${mobile}`;
+      const expiration = 120; // 2分钟过期，与PHP一致
 
-      return { message: "发送成功" };
+      await this.redisService.set(
+        redisKey,
+        {
+          code,
+          mobile,
+          event,
+          created_at: Date.now(),
+        },
+        { ttl: expiration },
+      );
+
+      // TODO: 集成实际的短信发送服务
+      // PHP使用Aliyun SMS服务，这里暂时模拟
+      console.log(`短信验证码已发送至 ${mobile}: ${code}`);
+
+      return {
+        message: "发送成功",
+        data: {
+          mobile,
+          event,
+          key: redisKey,
+        },
+      };
     } catch (error) {
+      console.error("发送短信验证码失败:", error);
       throw new HttpException("发送失败", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * 验证行为令牌 - 简化实现
+   */
+  private async verifyBehaviorToken(verifyToken: string): Promise<boolean> {
+    try {
+      // 这里应该验证滑块验证码或其他行为验证
+      // 与PHP的CaptchaService->check()对应
+      // 暂时简化实现，返回true
+      // 实际使用时需要调用captchaService.verifySlider()或类似方法
+
+      // 检查Redis中是否存在验证token
+      const captchaData = await this.captchaService.getCaptchaData(verifyToken);
+      return !!captchaData;
+    } catch (error) {
+      console.error("行为验证失败:", error);
+      return false;
     }
   }
 
@@ -310,34 +363,37 @@ export class LoginService {
   }
 
   /**
-   * 验证手机验证码
+   * 验证手机验证码 - 使用Redis存储
    */
   private async validateMobileCode(
     mobile: string,
     code: string,
     event: string,
   ): Promise<boolean> {
-    const verification = await this.prisma.verificationCode.findFirst({
-      where: {
-        target: mobile,
-        code,
-        type: "mobile",
-        event,
-        expired_at: { gt: new Date() },
-        used: false,
-      },
-    });
+    try {
+      // 使用Redis key pattern: {event}mobileCode:{mobile}
+      const redisKey = `${event}mobileCode:${mobile}`;
+      const verificationData = await this.redisService.get<any>(redisKey);
 
-    if (verification) {
-      // 标记为已使用
-      await this.prisma.verificationCode.update({
-        where: { id: verification.id },
-        data: { used: true },
-      });
+      if (!verificationData) {
+        console.log(`验证码不存在或已过期: ${redisKey}`);
+        return false;
+      }
+
+      if (verificationData.code !== code) {
+        console.log(`验证码不匹配: 期望${verificationData.code}, 实际${code}`);
+        return false;
+      }
+
+      // 验证成功，删除Redis中的验证码（一次性使用）
+      await this.redisService.del(redisKey);
+      console.log(`验证码验证成功并已删除: ${redisKey}`);
+
       return true;
+    } catch (error) {
+      console.error("验证手机验证码失败:", error);
+      return false;
     }
-
-    return false;
   }
 
   /**

@@ -4,7 +4,7 @@ import { CsrfController, PublicCsrfController } from "./csrf.controller";
 import { CsrfService } from "./csrf.service";
 import { AuthModule } from "../../auth/auth.module";
 @Module({
-  imports: [ AuthModule],
+  imports: [AuthModule],
   controllers: [CsrfController, PublicCsrfController],
   providers: [CsrfService],
   exports: [CsrfService],

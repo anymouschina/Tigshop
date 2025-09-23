@@ -10,7 +10,7 @@ import { CommentModule } from "./comment/comment.module";
 import { SkuModule } from "./sku/sku.module";
 
 @Module({
-  imports: [ CommentModule, SkuModule],
+  imports: [CommentModule, SkuModule],
   controllers: [ProductController, CategoryController, BrandController],
   providers: [ProductService, CategoryService, BrandService],
   exports: [ProductService, CategoryService, BrandService],

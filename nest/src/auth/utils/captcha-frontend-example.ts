@@ -67,24 +67,35 @@ export class CaptchaFrontend {
     `;
 
     // 获取元素引用
-    this.backgroundImage = this.container.querySelector('.background-image') as HTMLImageElement;
-    this.sliderImage = this.container.querySelector('.slider-image') as HTMLImageElement;
-    this.slider = this.container.querySelector('.slider') as HTMLElement;
-    this.holeOverlay = this.container.querySelector('.hole-overlay') as HTMLElement;
+    this.backgroundImage = this.container.querySelector(
+      ".background-image",
+    ) as HTMLImageElement;
+    this.sliderImage = this.container.querySelector(
+      ".slider-image",
+    ) as HTMLImageElement;
+    this.slider = this.container.querySelector(".slider") as HTMLElement;
+    this.holeOverlay = this.container.querySelector(
+      ".hole-overlay",
+    ) as HTMLElement;
   }
 
   private bindEvents() {
-    const sliderButton = this.container.querySelector('.slider-button') as HTMLElement;
+    const sliderButton = this.container.querySelector(
+      ".slider-button",
+    ) as HTMLElement;
 
     // 鼠标事件
-    sliderButton.addEventListener('mousedown', this.handleMouseDown.bind(this));
-    document.addEventListener('mousemove', this.handleMouseMove.bind(this));
-    document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    sliderButton.addEventListener("mousedown", this.handleMouseDown.bind(this));
+    document.addEventListener("mousemove", this.handleMouseMove.bind(this));
+    document.addEventListener("mouseup", this.handleMouseUp.bind(this));
 
     // 触摸事件
-    sliderButton.addEventListener('touchstart', this.handleTouchStart.bind(this));
-    document.addEventListener('touchmove', this.handleTouchMove.bind(this));
-    document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+    sliderButton.addEventListener(
+      "touchstart",
+      this.handleTouchStart.bind(this),
+    );
+    document.addEventListener("touchmove", this.handleTouchMove.bind(this));
+    document.addEventListener("touchend", this.handleTouchEnd.bind(this));
   }
 
   async loadCaptcha(captchaData: CaptchaData) {
@@ -96,7 +107,7 @@ export class CaptchaFrontend {
     // 加载图片
     await Promise.all([
       this.loadImage(this.backgroundImage, captchaData.originalImageBase64),
-      this.loadImage(this.sliderImage, captchaData.jigsawImageBase64)
+      this.loadImage(this.sliderImage, captchaData.jigsawImageBase64),
     ]);
 
     // 重置滑块位置
@@ -112,14 +123,16 @@ export class CaptchaFrontend {
   }
 
   private resetSlider() {
-    this.slider.style.left = '0px';
-    this.slider.style.top = '0px';
-    this.slider.style.display = 'block';
+    this.slider.style.left = "0px";
+    this.slider.style.top = "0px";
+    this.slider.style.display = "block";
 
-    const sliderButton = this.container.querySelector('.slider-button') as HTMLElement;
-    sliderButton.style.left = '0px';
+    const sliderButton = this.container.querySelector(
+      ".slider-button",
+    ) as HTMLElement;
+    sliderButton.style.left = "0px";
 
-    this.holeOverlay.style.display = 'none';
+    this.holeOverlay.style.display = "none";
     this.currentX = 0;
   }
 
@@ -156,8 +169,10 @@ export class CaptchaFrontend {
     this.startX = clientX;
     this.track = [0];
 
-    const sliderButton = this.container.querySelector('.slider-button') as HTMLElement;
-    sliderButton.style.background = '#0056b3';
+    const sliderButton = this.container.querySelector(
+      ".slider-button",
+    ) as HTMLElement;
+    sliderButton.style.background = "#0056b3";
   }
 
   private updateDrag(clientX: number) {
@@ -171,7 +186,9 @@ export class CaptchaFrontend {
     this.currentX = Math.max(0, Math.min(deltaX, trackWidth - sliderWidth));
 
     // 更新滑块位置
-    const sliderButton = this.container.querySelector('.slider-button') as HTMLElement;
+    const sliderButton = this.container.querySelector(
+      ".slider-button",
+    ) as HTMLElement;
     sliderButton.style.left = `${this.currentX}px`;
 
     // 更新拼图滑块位置
@@ -188,8 +205,10 @@ export class CaptchaFrontend {
 
     this.isDragging = false;
 
-    const sliderButton = this.container.querySelector('.slider-button') as HTMLElement;
-    sliderButton.style.background = '#007bff';
+    const sliderButton = this.container.querySelector(
+      ".slider-button",
+    ) as HTMLElement;
+    sliderButton.style.background = "#007bff";
 
     // 验证
     await this.verifyCaptcha();
@@ -202,10 +221,10 @@ export class CaptchaFrontend {
       // 转换坐标
       const backendX = this.convertToBackendCoordinate(this.currentX);
 
-      const response = await fetch('/common/verification/verify', {
-        method: 'POST',
+      const response = await fetch("/common/verification/verify", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           token: this.captchaData.token,
@@ -227,8 +246,8 @@ export class CaptchaFrontend {
         setTimeout(() => this.resetSlider(), 1500);
       }
     } catch (error) {
-      console.error('验证失败:', error);
-      this.showError('网络错误');
+      console.error("验证失败:", error);
+      this.showError("网络错误");
       setTimeout(() => this.resetSlider(), 1500);
     }
   }
@@ -248,19 +267,19 @@ export class CaptchaFrontend {
   }
 
   private showSuccess() {
-    const info = this.container.querySelector('.captcha-info') as HTMLElement;
-    info.textContent = '验证成功！';
-    info.style.color = '#28a745';
+    const info = this.container.querySelector(".captcha-info") as HTMLElement;
+    info.textContent = "验证成功！";
+    info.style.color = "#28a745";
 
     // 隐藏滑块
-    this.slider.style.display = 'none';
-    this.holeOverlay.style.display = 'none';
+    this.slider.style.display = "none";
+    this.holeOverlay.style.display = "none";
   }
 
   private showError(message: string) {
-    const info = this.container.querySelector('.captcha-info') as HTMLElement;
+    const info = this.container.querySelector(".captcha-info") as HTMLElement;
     info.textContent = message;
-    info.style.color = '#dc3545';
+    info.style.color = "#dc3545";
   }
 }
 
@@ -269,21 +288,21 @@ export function initializeCaptcha(containerId: string) {
   const captcha = new CaptchaFrontend(containerId);
 
   // 获取验证码
-  fetch('/common/verification/captcha', {
-    method: 'POST',
+  fetch("/common/verification/captcha", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   })
-  .then(response => response.json())
-  .then(data => {
-    if (data.code === 0) {
-      captcha.loadCaptcha(data.data);
-    }
-  })
-  .catch(error => {
-    console.error('获取验证码失败:', error);
-  });
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.code === 0) {
+        captcha.loadCaptcha(data.data);
+      }
+    })
+    .catch((error) => {
+      console.error("获取验证码失败:", error);
+    });
 
   return captcha;
 }

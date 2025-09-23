@@ -141,9 +141,7 @@ export class CsrfController {
 @ApiTags("公共CSRF")
 @Controller("common/csrf")
 export class PublicCsrfController {
-  constructor(
-    private readonly authCsrfService: AuthCsrfService,
-  ) {}
+  constructor(private readonly authCsrfService: AuthCsrfService) {}
 
   @ApiOperation({ summary: "创建CSRF令牌" })
   @Get("create")

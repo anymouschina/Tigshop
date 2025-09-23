@@ -20,7 +20,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
     }),
   ],
   controllers: [UserLoginController],
-  providers: [UserLoginService, ],
+  providers: [UserLoginService],
   exports: [UserLoginService],
 })
 export class UserLoginModule {}

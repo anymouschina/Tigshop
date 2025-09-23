@@ -8,12 +8,7 @@ import {
   Query,
   Request,
 } from "@nestjs/common";
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery,
-} from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 
 @ApiTags("通用-配置接口")
 @Controller("common/config")
@@ -65,7 +60,7 @@ export class CommonConfigController {
         categoryPageTitle: "商品分类 - TigShop商城",
         cartPageTitle: "购物车 - TigShop商城",
         userPageTitle: "个人中心 - TigShop商城",
-      }
+      },
     };
 
     return defaultTheme;
@@ -139,7 +134,7 @@ export class CommonConfigController {
         apiKey: "",
         apiSecret: "",
         signature: "【TigShop】",
-      }
+      },
     };
 
     return defaultConfig;

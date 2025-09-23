@@ -8,7 +8,7 @@ import { ConfigModule } from "@nestjs/config";
 @Module({
   imports: [ConfigModule],
   controllers: [UserSignController],
-  providers: [UserSignService, ],
+  providers: [UserSignService],
   exports: [UserSignService],
 })
 export class UserSignModule {}

@@ -29,8 +29,8 @@ export class WechatService {
    * @returns 返回access_token
    */
   private async getAccessToken(): Promise<string> {
-    const appId = this.configService.get<string>('WECHAT_APP_ID');
-    const appSecret = this.configService.get<string>('WECHAT_APP_SECRET');
+    const appId = this.configService.get<string>("WECHAT_APP_ID");
+    const appSecret = this.configService.get<string>("WECHAT_APP_SECRET");
 
     if (!appId || !appSecret) {
       this.logger.error("WeChat configuration is missing");

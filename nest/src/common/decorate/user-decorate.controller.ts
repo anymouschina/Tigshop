@@ -25,10 +25,16 @@ export class UserDecorateController {
 
   @Get("discrete/getOpenAdvertising")
   @ApiOperation({ summary: "获取开屏广告" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiQuery({ name: "position", required: false, description: "广告位置" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getOpenAdvertising(@Query() query: { platform?: string; position?: string }) {
+  async getOpenAdvertising(
+    @Query() query: { platform?: string; position?: string },
+  ) {
     const platform = query.platform || "h5";
     const position = query.position || "open";
     return this.userDecorateService.getOpenAdvertising(platform, position);
@@ -36,7 +42,11 @@ export class UserDecorateController {
 
   @Get("discrete/getBanner")
   @ApiOperation({ summary: "获取轮播图" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiQuery({ name: "position", required: false, description: "轮播图位置" })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getBanner(@Query() query: { platform?: string; position?: string }) {
@@ -47,10 +57,16 @@ export class UserDecorateController {
 
   @Get("discrete/getNavigation")
   @ApiOperation({ summary: "获取导航菜单" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiQuery({ name: "position", required: false, description: "导航位置" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getNavigation(@Query() query: { platform?: string; position?: string }) {
+  async getNavigation(
+    @Query() query: { platform?: string; position?: string },
+  ) {
     const platform = query.platform || "h5";
     const position = query.position || "bottom";
     return this.userDecorateService.getNavigation(platform, position);
@@ -58,7 +74,11 @@ export class UserDecorateController {
 
   @Get("discrete/getFloatAd")
   @ApiOperation({ summary: "获取浮动广告" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiQuery({ name: "position", required: false, description: "浮动广告位置" })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getFloatAd(@Query() query: { platform?: string; position?: string }) {
@@ -69,7 +89,11 @@ export class UserDecorateController {
 
   @Get("discrete/getPopupAd")
   @ApiOperation({ summary: "获取弹窗广告" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiQuery({ name: "position", required: false, description: "弹窗位置" })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getPopupAd(@Query() query: { platform?: string; position?: string }) {
@@ -80,7 +104,11 @@ export class UserDecorateController {
 
   @Get("discrete/getHomePage")
   @ApiOperation({ summary: "获取首页装修配置" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getHomePage(@Query() query: { platform?: string }) {
     const platform = query.platform || "h5";
@@ -89,7 +117,11 @@ export class UserDecorateController {
 
   @Get("discrete/getCategoryPage")
   @ApiOperation({ summary: "获取分类页装修配置" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getCategoryPage(@Query() query: { platform?: string }) {
     const platform = query.platform || "h5";
@@ -98,7 +130,11 @@ export class UserDecorateController {
 
   @Get("discrete/getCartPage")
   @ApiOperation({ summary: "获取购物车页装修配置" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getCartPage(@Query() query: { platform?: string }) {
     const platform = query.platform || "h5";
@@ -107,7 +143,11 @@ export class UserDecorateController {
 
   @Get("discrete/getUserPage")
   @ApiOperation({ summary: "获取用户中心页装修配置" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getUserPage(@Query() query: { platform?: string }) {
     const platform = query.platform || "h5";
@@ -116,7 +156,11 @@ export class UserDecorateController {
 
   @Get("discrete/getProductPage")
   @ApiOperation({ summary: "获取商品详情页装修配置" })
-  @ApiQuery({ name: "platform", required: false, description: "平台类型：h5,app,mini" })
+  @ApiQuery({
+    name: "platform",
+    required: false,
+    description: "平台类型：h5,app,mini",
+  })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getProductPage(@Query() query: { platform?: string }) {
     const platform = query.platform || "h5";
@@ -139,7 +183,9 @@ export class UserDecorateController {
   @Post("discrete/trackAdView")
   @ApiOperation({ summary: "跟踪广告曝光" })
   @ApiResponse({ status: 200, description: "记录成功" })
-  async trackAdView(@Body() body: { adId: number; adType: string; position: string }) {
+  async trackAdView(
+    @Body() body: { adId: number; adType: string; position: string },
+  ) {
     return this.userDecorateService.trackAdView(body);
   }
 }
