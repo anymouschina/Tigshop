@@ -2,7 +2,7 @@
   "extends": "@vue/tsconfig/tsconfig.json",
   "compilerOptions": {
     "strict": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
