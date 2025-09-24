@@ -13,10 +13,10 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { LoginService } from "./login.service";
 import { Public } from "../../auth/decorators/public.decorator";
-import { SendMobileCodeDto, SendEmailCodeDto } from "../../api/user/dto/user-login.dto";
+import { SendMobileCodeDto, SendEmailCodeDto, LoginDto } from "./dto/user-login";
 
 @ApiTags("User Authentication")
-@Controller("api")
+@Controller("user")
 export class LoginController {
   constructor(private readonly loginService: LoginService) {}
 
@@ -38,15 +38,23 @@ export class LoginController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "用户登录" })
-  async signin(@Body() loginData: any, @Request() req) {
+  async signin(
+    @Body(new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true }
+    })) loginDto: LoginDto,
+    @Request() req
+  ) {
     const clientIp = req.ip;
-    return this.loginService.signin(loginData, clientIp);
+    return this.loginService.signin(loginDto, clientIp);
   }
 
   /**
    * 发送手机验证码 - 对齐PHP版本 user/Login/sendMobileCode
    */
-  @Post("user/login/sendMobileCode")
+  @Post("login/sendMobileCode")
   @Public()
   @ApiOperation({ summary: "发送手机验证码" })
   async sendMobileCode(
@@ -57,11 +65,9 @@ export class LoginController {
       transformOptions: { enableImplicitConversion: true }
     })) sendMobileCodeDto: SendMobileCodeDto,
   ) {
-    return this.loginService.sendMobileCode(
-      sendMobileCodeDto.mobile,
-      sendMobileCodeDto.event,
-      sendMobileCodeDto.verify_token,
-    );
+    console.log(sendMobileCodeDto,'sendMobileCodeDto')
+    return {}
+    //  this.loginService.sendMobileCode(sendMobileCodeDto);
   }
 
   /**

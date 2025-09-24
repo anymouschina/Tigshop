@@ -15,16 +15,16 @@ import { OrderCheckService } from "./order-check.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("Order Checkout")
-@Controller("api")
+@Controller("order")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class OrderCheckController {
   constructor(private readonly orderCheckService: OrderCheckService) {}
 
   /**
-   * 购物车结算 - 对齐PHP版本 order/Check/index
+   * 购物车结算 - 对齐PHP版本 Check/index
    */
-  @Post("order/check/index")
+  @Post("check/index")
   @ApiOperation({ summary: "购物车结算" })
   async index(
     @Request() req,
@@ -123,9 +123,9 @@ export class OrderCheckController {
   }
 
   /**
-   * 更新结算信息 - 对齐PHP版本 order/Check/update
+   * 更新结算信息 - 对齐PHP版本 Check/update
    */
-  @Post("order/check/update")
+  @Post("check/update")
   @ApiOperation({ summary: "更新结算信息" })
   async update(
     @Request() req,
@@ -196,18 +196,18 @@ export class OrderCheckController {
   }
 
   /**
-   * 获取可用支付方式 - 对齐PHP版本 order/Check/getAvailablePaymentType
+   * 获取可用支付方式 - 对齐PHP版本 Check/getAvailablePaymentType
    */
-  @Get("order/check/getAvailablePaymentType")
+  @Get("check/getAvailablePaymentType")
   @ApiOperation({ summary: "获取可用支付方式" })
   async getAvailablePaymentType() {
     return this.orderCheckService.getAvailablePaymentType();
   }
 
   /**
-   * 获取店铺配送方式 - 对齐PHP版本 order/Check/getStoreShippingType
+   * 获取店铺配送方式 - 对齐PHP版本 Check/getStoreShippingType
    */
-  @Get("order/check/getStoreShippingType")
+  @Get("check/getStoreShippingType")
   @ApiOperation({ summary: "获取店铺配送方式" })
   async getStoreShippingType(
     @Query()
@@ -238,9 +238,9 @@ export class OrderCheckController {
   }
 
   /**
-   * 更新优惠券 - 对齐PHP版本 order/Check/updateCoupon
+   * 更新优惠券 - 对齐PHP版本 Check/updateCoupon
    */
-  @Post("order/check/updateCoupon")
+  @Post("check/updateCoupon")
   @ApiOperation({ summary: "更新优惠券" })
   async updateCoupon(
     @Request() req,
@@ -338,9 +338,9 @@ export class OrderCheckController {
   }
 
   /**
-   * 提交订单 - 对齐PHP版本 order/Check/submit
+   * 提交订单 - 对齐PHP版本 Check/submit
    */
-  @Post("order/check/submit")
+  @Post("check/submit")
   @ApiOperation({ summary: "提交订单" })
   async submit(
     @Request() req,
@@ -390,9 +390,9 @@ export class OrderCheckController {
   }
 
   /**
-   * 记录发票信息 - 对齐PHP版本 order/Check/getInvoice
+   * 记录发票信息 - 对齐PHP版本 Check/getInvoice
    */
-  @Get("order/check/getInvoice")
+  @Get("check/getInvoice")
   @ApiOperation({ summary: "记录发票信息" })
   async getInvoice(
     @Request() req,

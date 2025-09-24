@@ -3,7 +3,7 @@ import { APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
 import { UserModule } from "./user/user.module";
 import { ConfigModule } from "./config/config.module";
 import { LoggerModule } from "./common/logger/logger.module";
-import { ApiModule } from "./api/api.module";
+// import { ApiModule } from "./api/api.module";
 import { UserCouponModule } from "./user/coupon/coupon.module";
 import { LoginModule } from "./user/login/login.module";
 import { AddressModule } from "./user/address/address.module";
@@ -53,7 +53,7 @@ import { DecorateModule } from "./common/decorate/decorate.module";
     AddressModule,
     UserCompanyModule,
     FeedbackModule,
-    ApiModule,
+    // ApiModule,
     AuthModule,
     AdminModule,
     ProductModule,

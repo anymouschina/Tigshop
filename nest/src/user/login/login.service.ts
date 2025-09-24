@@ -60,57 +60,63 @@ export class LoginService {
   }
 
   /**
-   * 用户登录
+   * 用户登录 - 对齐前端参数
    */
   async signin(loginData: any, clientIp: string) {
     const {
-      login_type,
+      loginType,
       username,
       password,
       mobile,
-      mobile_code,
+      mobileCode,
       email,
-      email_code,
+      emailCode,
+      verifyToken,
     } = loginData;
 
-    // CSRF验证
-    if (loginData.csrfToken) {
-      // 这里应该验证CSRF token
-      // 暂时跳过
+    // 验证码验证（如果有 verifyToken）
+    if (verifyToken) {
+      try {
+        const isValidBehavior = await this.verifyBehaviorToken(verifyToken);
+        if (!isValidBehavior) {
+          console.log('行为验证失败');
+          // 不阻止登录，只是记录日志
+        }
+      } catch (error) {
+        console.log('行为验证异常:', error);
+        // 不阻止登录，只是记录异常
+      }
     }
 
     let user;
 
-    if (login_type === "password") {
+    if (loginType === "password") {
       // 密码登录
       if (!username) {
         throw new HttpException("用户名不能为空", HttpStatus.BAD_REQUEST);
       }
-
-      // 验证码验证（简化版）
-      if (loginData.verify_token) {
-        // 这里应该验证行为验证码
-        // 暂时跳过
+      if (!password) {
+        throw new HttpException("密码不能为空", HttpStatus.BAD_REQUEST);
       }
 
       user = await this.getUserByPassword(username, password);
-    } else if (login_type === "mobile") {
-      // 手机登录
-      if (!mobile || !mobile_code) {
+    } else if (loginType === "mobile") {
+      // 手机验证码登录
+      if (!mobile || !mobileCode) {
         throw new HttpException(
           "手机号和验证码不能为空",
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      user = await this.getUserByMobileCode(mobile, mobile_code);
-    } else if (login_type === "email") {
-      // 邮箱登录
-      if (!email || !email_code) {
+      user = await this.getUserByMobileCode(mobile, mobileCode, "login");
+    } else if (loginType === "email") {
+      // 邮箱验证码登录
+      if (!email || !emailCode) {
         throw new HttpException("邮箱和验证码不能为空", HttpStatus.BAD_REQUEST);
       }
 
-      user = await this.getUserByEmailCode(email, email_code);
+      user = await this.getUserByEmailCode(email, emailCode, "register_code");
     } else {
       throw new HttpException("不支持的登录方式", HttpStatus.BAD_REQUEST);
     }
@@ -133,6 +139,10 @@ export class LoginService {
       token,
       user_id: user.user_id,
       username: user.username,
+      mobile: user.mobile,
+      email: user.email,
+      nickname: user.nickname,
+      avatar: user.avatar,
     };
   }
 
@@ -161,9 +171,9 @@ export class LoginService {
   /**
    * 根据手机号验证码获取用户
    */
-  private async getUserByMobileCode(mobile: string, code: string) {
+  private async getUserByMobileCode(mobile: string, code: string, event: string = "login") {
     // 验证手机验证码
-    const isValidCode = await this.validateMobileCode(mobile, code, "login");
+    const isValidCode = await this.validateMobileCode(mobile, code, event);
     if (!isValidCode) {
       throw new HttpException("手机验证码错误或已过期", HttpStatus.BAD_REQUEST);
     }
@@ -183,13 +193,9 @@ export class LoginService {
   /**
    * 根据邮箱验证码获取用户
    */
-  private async getUserByEmailCode(email: string, code: string) {
+  private async getUserByEmailCode(email: string, code: string, event: string = "register_code") {
     // 验证邮箱验证码
-    const isValidCode = await this.validateEmailCode(
-      email,
-      code,
-      "register_code",
-    );
+    const isValidCode = await this.validateEmailCode(email, code, event);
     if (!isValidCode) {
       throw new HttpException("邮箱验证码错误或已过期", HttpStatus.BAD_REQUEST);
     }
@@ -228,81 +234,101 @@ export class LoginService {
   }
 
   /**
-   * 发送手机验证码 - 对齐PHP实现
+   * 发送验证码 - 支持手机号和邮箱
    */
-  async sendMobileCode(mobile: string, event: string, verifyToken: string) {
-    if (!mobile) {
-      throw new HttpException("手机号不能为空", HttpStatus.BAD_REQUEST);
+  async sendMobileCode(data: any) {
+    const { mobile, email, event, verifyToken } = data;
+    console.log(mobile, email, event, verifyToken,'mobile, email, event, verifyToken')
+    // 验证参数
+    if (!mobile && !email) {
+      throw new HttpException("手机号需要提供一个", HttpStatus.BAD_REQUEST);
     }
 
-    // 设置默认event为login，与PHP实现一致
-    if (!event) {
-      event = "login";
-    }
+    const defaultEvent = event || "login";
 
-    // 行为验证 - 使用CaptchaService验证verifyToken
-    if (!verifyToken) {
+    // 行为验证
+    if (!verify_token) {
       throw new HttpException("验证令牌不能为空", HttpStatus.BAD_REQUEST);
     }
 
-    // 这里简化验证，实际应该根据verifyToken验证行为验证码
-    // 与PHP的CaptchaService->check()方法对应
-    const isValidBehavior = await this.verifyBehaviorToken(verifyToken);
+    const isValidBehavior = await this.verifyBehaviorToken(verify_token);
     if (!isValidBehavior) {
       throw new HttpException("行为验证失败", HttpStatus.BAD_REQUEST);
     }
 
     try {
-      // 生成6位验证码
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      // 生成6位验证码 - 临时固定为0000用于测试
+      const code = "0000";
 
-      // 使用Redis存储验证码，与PHP实现一致
-      // PHP使用key pattern: {event}mobileCode:{mobile}
-      const redisKey = `${event}mobileCode:${mobile}`;
-      const expiration = 120; // 2分钟过期，与PHP一致
+      // 根据是手机号还是邮箱分别处理
+      if (mobile) {
+        const redisKey = `${defaultEvent}mobileCode:${mobile}`;
+        const expiration = 120;
 
-      await this.redisService.set(
-        redisKey,
-        {
-          code,
+        await this.redisService.set(
+          redisKey,
+          {
+            code,
+            mobile,
+            event: defaultEvent,
+            created_at: Date.now(),
+          },
+          { ttl: expiration },
+        );
+
+        console.log(`短信验证码已发送至 ${mobile}: ${code}`);
+
+        return {
           mobile,
-          event,
-          created_at: Date.now(),
-        },
-        { ttl: expiration },
-      );
-
-      // TODO: 集成实际的短信发送服务
-      // PHP使用Aliyun SMS服务，这里暂时模拟
-      console.log(`短信验证码已发送至 ${mobile}: ${code}`);
-
-      return {
-        message: "发送成功",
-        data: {
-          mobile,
-          event,
+          event: defaultEvent,
           key: redisKey,
-        },
-      };
+        };
+      } else if (email) {
+        const redisKey = `${defaultEvent}emailCode:${email}`;
+        const expiration = 120;
+
+        await this.redisService.set(
+          redisKey,
+          {
+            code,
+            email,
+            event: defaultEvent,
+            created_at: Date.now(),
+          },
+          { ttl: expiration },
+        );
+
+        console.log(`邮箱验证码已发送至 ${email}: ${code}`);
+
+        return {
+          email,
+          event: defaultEvent,
+          key: redisKey,
+        };
+      }
     } catch (error) {
-      console.error("发送短信验证码失败:", error);
+      console.error("发送验证码失败:", error);
       throw new HttpException("发送失败", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   /**
-   * 验证行为令牌 - 简化实现
+   * 验证行为令牌 - 临时简化实现用于测试
    */
   private async verifyBehaviorToken(verifyToken: string): Promise<boolean> {
     try {
-      // 这里应该验证滑块验证码或其他行为验证
-      // 与PHP的CaptchaService->check()对应
-      // 暂时简化实现，返回true
-      // 实际使用时需要调用captchaService.verifySlider()或类似方法
+      // 临时测试：直接返回true，跳过行为验证
+      console.log("临时跳过行为验证，token:", verifyToken);
+      return true;
 
-      // 检查Redis中是否存在验证token
-      const captchaData = await this.captchaService.getCaptchaData(verifyToken);
-      return !!captchaData;
+      // 原始验证逻辑（暂时注释掉）
+      // // 这里应该验证滑块验证码或其他行为验证
+      // // 与PHP的CaptchaService->check()对应
+      // // 实际使用时需要调用captchaService.verifySlider()或类似方法
+
+      // // 检查Redis中是否存在验证token
+      // const captchaData = await this.captchaService.getCaptchaData(verifyToken);
+      // return !!captchaData;
     } catch (error) {
       console.error("行为验证失败:", error);
       return false;
@@ -333,8 +359,8 @@ export class LoginService {
     }
 
     try {
-      // 生成6位验证码
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      // 生成6位验证码 - 临时固定为0000用于测试
+      const code = "0000";
 
       // 使用Redis存储验证码，与PHP实现一致
       const redisKey = `${event}emailCode:${email}`;
@@ -351,12 +377,9 @@ export class LoginService {
       console.log(`邮箱验证码已发送至 ${email}: ${code}`);
 
       return {
-        message: "发送成功",
-        data: {
-          email,
-          event,
-          key: redisKey
-        }
+        email,
+        event,
+        key: redisKey
       };
     } catch (error) {
       console.error("发送邮箱验证码失败:", error);
@@ -419,34 +442,37 @@ export class LoginService {
   }
 
   /**
-   * 验证邮箱验证码
+   * 验证邮箱验证码 - 使用Redis存储
    */
   private async validateEmailCode(
     email: string,
     code: string,
     event: string,
   ): Promise<boolean> {
-    const verification = await this.prisma.verificationCode.findFirst({
-      where: {
-        target: email,
-        code,
-        type: "email",
-        event,
-        expired_at: { gt: new Date() },
-        used: false,
-      },
-    });
+    try {
+      // 使用Redis key pattern: {event}emailCode:{email}
+      const redisKey = `${event}emailCode:${email}`;
+      const verificationData = await this.redisService.get<any>(redisKey);
 
-    if (verification) {
-      // 标记为已使用
-      await this.prisma.verificationCode.update({
-        where: { id: verification.id },
-        data: { used: true },
-      });
+      if (!verificationData) {
+        console.log(`邮箱验证码不存在或已过期: ${redisKey}`);
+        return false;
+      }
+
+      if (verificationData.code !== code) {
+        console.log(`邮箱验证码不匹配: 期望${verificationData.code}, 实际${code}`);
+        return false;
+      }
+
+      // 验证成功，删除Redis中的验证码（一次性使用）
+      await this.redisService.del(redisKey);
+      console.log(`邮箱验证码验证成功并已删除: ${redisKey}`);
+
       return true;
+    } catch (error) {
+      console.error("验证邮箱验证码失败:", error);
+      return false;
     }
-
-    return false;
   }
 
   /**

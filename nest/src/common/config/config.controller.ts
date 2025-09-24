@@ -72,6 +72,8 @@ export class CommonConfigController {
   async getInitConfigSettings() {
     // 默认初始化配置
     const defaultConfig = {
+      shopRegClosed:0,
+      openEmailRegister:1,
       site: {
         siteName: "TigShop商城",
         siteUrl: "https://www.tigshop.com",

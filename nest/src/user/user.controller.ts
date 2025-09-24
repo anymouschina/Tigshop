@@ -26,14 +26,14 @@ import { Public } from "../auth/decorators/public.decorator";
 import { FileInterceptor } from "@nestjs/platform-express";
 
 @ApiTags("User Management")
-@Controller("api")
+@Controller("user")
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   /**
-   * 用户注册 - 对齐PHP版本 user/regist/registAct
+   * 用户注册 - 对齐PHP版本 regist/registAct
    */
-  @Post("user/regist/registAct")
+  @Post("regist/registAct")
   @Public()
   @ApiOperation({ summary: "用户注册" })
   async register(@Body() registerData: any) {
@@ -41,9 +41,9 @@ export class UserController {
   }
 
   /**
-   * 发送注册邮件验证码 - 对齐PHP版本 user/regist/sendEmailCode
+   * 发送注册邮件验证码 - 对齐PHP版本 regist/sendEmailCode
    */
-  @Post("user/regist/sendEmailCode")
+  @Post("regist/sendEmailCode")
   @Public()
   @ApiOperation({ summary: "发送注册邮件验证码" })
   async sendRegisterEmailCode(@Body() body: { email: string }) {
@@ -51,9 +51,9 @@ export class UserController {
   }
 
   /**
-   * 获取当前用户信息 - 对齐PHP版本 user/user/detail
+   * 获取当前用户信息 - 对齐PHP版本 detail
    */
-  @Get("user/user/detail")
+  @Get("detail")
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取当前用户信息" })
   async getUserDetail(@Request() req) {
@@ -61,9 +61,9 @@ export class UserController {
   }
 
   /**
-   * 更新用户信息 - 对齐PHP版本 user/user/updateInformation
+   * 更新用户信息 - 对齐PHP版本 updateInformation
    */
-  @Post("user/user/updateInformation")
+  @Post("updateInformation")
   @ApiBearerAuth()
   @ApiOperation({ summary: "更新用户信息" })
   async updateInformation(@Request() req, @Body() updateData: any) {
@@ -71,9 +71,9 @@ export class UserController {
   }
 
   /**
-   * 修改密码 - 对齐PHP版本 user/user/modifyPassword
+   * 修改密码 - 对齐PHP版本 modifyPassword
    */
-  @Post("user/user/modifyPassword")
+  @Post("modifyPassword")
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改密码" })
   async modifyPassword(
@@ -88,9 +88,9 @@ export class UserController {
   }
 
   /**
-   * 修改手机号 - 对齐PHP版本 user/user/modifyMobile
+   * 修改手机号 - 对齐PHP版本 modifyMobile
    */
-  @Post("user/user/modifyMobile")
+  @Post("modifyMobile")
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改手机号" })
   async modifyMobile(
@@ -105,9 +105,9 @@ export class UserController {
   }
 
   /**
-   * 修改邮箱 - 对齐PHP版本 user/user/modifyEmail
+   * 修改邮箱 - 对齐PHP版本 modifyEmail
    */
-  @Post("user/user/modifyEmail")
+  @Post("modifyEmail")
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改邮箱" })
   async modifyEmail(
@@ -122,9 +122,9 @@ export class UserController {
   }
 
   /**
-   * 获取用户中心数据 - 对齐PHP版本 user/user/memberCenter
+   * 获取用户中心数据 - 对齐PHP版本 memberCenter
    */
-  @Get("user/user/memberCenter")
+  @Get("memberCenter")
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户中心数据" })
   async getMemberCenter(@Request() req) {
@@ -132,9 +132,9 @@ export class UserController {
   }
 
   /**
-   * 获取用户浏览历史 - 对齐PHP版本 user/user/historyProduct
+   * 获取用户浏览历史 - 对齐PHP版本 historyProduct
    */
-  @Get("user/user/historyProduct")
+  @Get("historyProduct")
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户浏览历史" })
   async getHistoryProduct(
@@ -146,9 +146,9 @@ export class UserController {
   }
 
   /**
-   * 删除浏览历史 - 对齐PHP版本 user/user/delHistoryProduct
+   * 删除浏览历史 - 对齐PHP版本 delHistoryProduct
    */
-  @Post("user/user/delHistoryProduct")
+  @Post("delHistoryProduct")
   @ApiBearerAuth()
   @ApiOperation({ summary: "删除浏览历史" })
   async deleteHistoryProduct(
@@ -162,9 +162,9 @@ export class UserController {
   }
 
   /**
-   * 上传用户头像 - 对齐PHP版本 user/user/uploadImg
+   * 上传用户头像 - 对齐PHP版本 uploadImg
    */
-  @Post("user/user/uploadImg")
+  @Post("uploadImg")
   @ApiBearerAuth()
   @ApiOperation({ summary: "上传用户头像" })
   @UseInterceptors(FileInterceptor("file"))
@@ -177,9 +177,9 @@ export class UserController {
   }
 
   /**
-   * 修改头像 - 对齐PHP版本 user/user/modifyAvatar
+   * 修改头像 - 对齐PHP版本 modifyAvatar
    */
-  @Post("user/user/modifyAvatar")
+  @Post("modifyAvatar")
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改头像" })
   async modifyAvatar(@Request() req, @Body() body: { avatar: string }) {
@@ -187,9 +187,9 @@ export class UserController {
   }
 
   /**
-   * 用户退出登录 - 对齐PHP版本 user/user/logout
+   * 用户退出登录 - 对齐PHP版本 logout
    */
-  @Post("user/user/logout")
+  @Post("logout")
   @ApiBearerAuth()
   @ApiOperation({ summary: "用户退出登录" })
   async logout(@Request() req) {
@@ -197,9 +197,9 @@ export class UserController {
   }
 
   /**
-   * 发送修改密码验证码 - 对齐PHP版本 user/user/sendMobileCodeByModifyPassword
+   * 发送修改密码验证码 - 对齐PHP版本 sendMobileCodeByModifyPassword
    */
-  @Post("user/user/sendMobileCodeByModifyPassword")
+  @Post("sendMobileCodeByModifyPassword")
   @ApiBearerAuth()
   @ApiOperation({ summary: "发送修改密码验证码" })
   async sendPasswordChangeCode(
@@ -213,9 +213,9 @@ export class UserController {
   }
 
   /**
-   * 验证修改密码验证码 - 对齐PHP版本 user/user/checkModifyPasswordMobileCode
+   * 验证修改密码验证码 - 对齐PHP版本 checkModifyPasswordMobileCode
    */
-  @Post("user/user/checkModifyPasswordMobileCode")
+  @Post("checkModifyPasswordMobileCode")
   @ApiBearerAuth()
   @ApiOperation({ summary: "验证修改密码验证码" })
   async checkPasswordChangeCode(
@@ -230,9 +230,9 @@ export class UserController {
   }
 
   /**
-   * 账户金额变动列表 - 对齐PHP版本 user/Account/list
+   * 账户金额变动列表 - 对齐PHP版本 Account/list
    */
-  @Get("user/account/list")
+  @Get("account/list")
   @ApiBearerAuth()
   @ApiOperation({ summary: "账户金额变动列表" })
   async getBalanceLogList(
@@ -249,9 +249,9 @@ export class UserController {
   }
 
   /**
-   * 获取用户等级列表 - 对齐PHP版本 user/user/levelList
+   * 获取用户等级列表 - 对齐PHP版本 levelList
    */
-  @Get("user/user/levelList")
+  @Get("levelList")
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户等级列表" })
   async getLevelList() {
@@ -259,9 +259,9 @@ export class UserController {
   }
 
   /**
-   * 获取用户等级信息 - 对齐PHP版本 user/user/levelInfo
+   * 获取用户等级信息 - 对齐PHP版本 levelInfo
    */
-  @Get("user/user/levelInfo")
+  @Get("levelInfo")
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户等级信息" })
   async getLevelInfo(@Query("rank_id") rankId: number) {
@@ -269,9 +269,9 @@ export class UserController {
   }
 
   /**
-   * 注销账户 - 对齐PHP版本 user/user/close
+   * 注销账户 - 对齐PHP版本 close
    */
-  @Post("user/user/close")
+  @Post("close")
   @ApiBearerAuth()
   @ApiOperation({ summary: "注销账户" })
   async closeAccount(@Request() req) {
@@ -279,9 +279,9 @@ export class UserController {
   }
 
   /**
-   * 获取用户OpenId - 对齐PHP版本 user/user/userOpenId
+   * 获取用户OpenId - 对齐PHP版本 userOpenId
    */
-  @Get("user/user/userOpenId")
+  @Get("userOpenId")
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户OpenId" })
   async getUserOpenId(@Request() req) {

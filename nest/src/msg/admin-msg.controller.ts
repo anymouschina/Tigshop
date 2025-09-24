@@ -15,13 +15,13 @@ import { AdminMsgService, MsgType } from "./admin-msg.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("Admin Message")
-@Controller("api")
+@Controller("admin")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AdminMsgController {
   constructor(private readonly adminMsgService: AdminMsgService) {}
 
-  @Get("admin/msg/index")
+  @Get("msg/index")
   @ApiOperation({ summary: "获取管理员消息列表" })
   async index(
     @Query()
@@ -62,20 +62,20 @@ export class AdminMsgController {
     };
   }
 
-  @Get("admin/msg/detail/:id")
+  @Get("msg/detail/:id")
   @ApiOperation({ summary: "获取消息详情" })
   async detail(@Param("id") id: number) {
     return this.adminMsgService.getDetail(Number(id));
   }
 
-  @Post("admin/msg/setReaded")
+  @Post("msg/setReaded")
   @ApiOperation({ summary: "设置消息已读" })
   async setReaded(@Body() body: { id: number }) {
     const result = await this.adminMsgService.setReaded(body.id);
     return { success: result };
   }
 
-  @Post("admin/msg/setAllReaded")
+  @Post("msg/setAllReaded")
   @ApiOperation({ summary: "设置所有消息已读" })
   async setAllReaded(@Body() body: { shop_id?: number; vendor_id?: number }) {
     const result = await this.adminMsgService.setAllReaded(
@@ -85,7 +85,7 @@ export class AdminMsgController {
     return { success: result };
   }
 
-  @Get("admin/msg/getMsgType")
+  @Get("msg/getMsgType")
   @ApiOperation({ summary: "获取消息类型" })
   async getMsgType(@Query() query: { shop_id?: number; vendor_id?: number }) {
     return this.adminMsgService.getMsgType(
