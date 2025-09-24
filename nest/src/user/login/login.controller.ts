@@ -8,10 +8,12 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  ValidationPipe,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { LoginService } from "./login.service";
 import { Public } from "../../auth/decorators/public.decorator";
+import { SendMobileCodeDto, SendEmailCodeDto } from "../../api/user/dto/user-login.dto";
 
 @ApiTags("User Authentication")
 @Controller("api")
@@ -48,12 +50,17 @@ export class LoginController {
   @Public()
   @ApiOperation({ summary: "发送手机验证码" })
   async sendMobileCode(
-    @Body() body: { mobile: string; event: string; verify_token: string },
+    @Body(new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true }
+    })) sendMobileCodeDto: SendMobileCodeDto,
   ) {
     return this.loginService.sendMobileCode(
-      body.mobile,
-      body.event,
-      body.verify_token,
+      sendMobileCodeDto.mobile,
+      sendMobileCodeDto.event,
+      sendMobileCodeDto.verify_token,
     );
   }
 
@@ -63,8 +70,19 @@ export class LoginController {
   @Post("user/login/sendEmailCode")
   @Public()
   @ApiOperation({ summary: "发送邮箱验证码" })
-  async sendEmailCode(@Body() body: { email: string; event: string }) {
-    return this.loginService.sendEmailCode(body.email, body.event);
+  async sendEmailCode(
+    @Body(new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true }
+    })) sendEmailCodeDto: SendEmailCodeDto,
+  ) {
+    return this.loginService.sendEmailCode(
+      sendEmailCodeDto.email,
+      sendEmailCodeDto.event,
+      sendEmailCodeDto.verify_token,
+    );
   }
 
   /**

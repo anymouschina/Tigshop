@@ -38,7 +38,11 @@ export class SendMobileCodeDto {
   mobile: string;
 
   @IsString()
-  type: string; // register, login, forget_password, bind_mobile
+  @IsOptional()
+  event?: string = "login"; // 默认为 login，与PHP实现一致
+
+  @IsString()
+  verify_token: string; // 行为验证令牌，与PHP实现一致
 }
 
 export class CheckMobileDto {
@@ -102,7 +106,11 @@ export class SendEmailCodeDto {
   email: string;
 
   @IsString()
-  type: string; // register, forget_password, bind_email
+  @IsOptional()
+  event?: string = "register_code"; // 默认为 register_code，与PHP实现一致
+
+  @IsString()
+  verify_token: string; // 行为验证令牌，与PHP实现一致
 }
 
 export class ChangePasswordDto {

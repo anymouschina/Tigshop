@@ -310,34 +310,56 @@ export class LoginService {
   }
 
   /**
-   * 发送邮箱验证码
+   * 发送邮箱验证码 - 对齐PHP实现
    */
-  async sendEmailCode(email: string, event: string) {
+  async sendEmailCode(email: string, event: string, verifyToken: string) {
     if (!email) {
       throw new HttpException("邮箱不能为空", HttpStatus.BAD_REQUEST);
     }
 
-    // 验证码验证（简化版）
-    // 这里应该验证行为验证码
-    // 暂时跳过
+    // 设置默认event为register_code，与PHP实现一致
+    if (!event) {
+      event = "register_code";
+    }
+
+    // 行为验证
+    if (!verifyToken) {
+      throw new HttpException("验证令牌不能为空", HttpStatus.BAD_REQUEST);
+    }
+
+    const isValidBehavior = await this.verifyBehaviorToken(verifyToken);
+    if (!isValidBehavior) {
+      throw new HttpException("行为验证失败", HttpStatus.BAD_REQUEST);
+    }
 
     try {
-      // 模拟发送验证码
+      // 生成6位验证码
       const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // 存储验证码（实际应该使用Redis）
-      await this.prisma.verificationCode.create({
-        data: {
-          target: email,
-          code,
-          type: "email",
-          event,
-          expired_at: new Date(Date.now() + 5 * 60 * 1000), // 5分钟过期
-        },
-      });
+      // 使用Redis存储验证码，与PHP实现一致
+      const redisKey = `${event}emailCode:${email}`;
+      const expiration = 120; // 2分钟过期，与PHP一致
 
-      return { message: "发送成功" };
+      await this.redisService.set(redisKey, {
+        code,
+        email,
+        event,
+        created_at: Date.now()
+      }, { ttl: expiration });
+
+      // TODO: 集成实际的邮件发送服务
+      console.log(`邮箱验证码已发送至 ${email}: ${code}`);
+
+      return {
+        message: "发送成功",
+        data: {
+          email,
+          event,
+          key: redisKey
+        }
+      };
     } catch (error) {
+      console.error("发送邮箱验证码失败:", error);
       throw new HttpException("发送失败", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
