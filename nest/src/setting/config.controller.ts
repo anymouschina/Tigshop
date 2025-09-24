@@ -23,6 +23,7 @@ import {
 } from "./dto/config.dto";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
+import { Public } from "../auth/decorators/public.decorator";
 import {
   ApiTags,
   ApiOperation,
@@ -332,6 +333,18 @@ export class ConfigController {
       code: 200,
       message: "获取成功",
       data: result,
+    };
+  }
+
+  @Post("init")
+  @Public()
+  @ApiOperation({ summary: "初始化系统配置设置" })
+  @ApiResponse({ status: 200, description: "初始化成功" })
+  async initConfigSettings() {
+    await this.configService.initConfigSettings();
+    return {
+      code: 200,
+      message: "配置设置初始化成功",
     };
   }
 }
