@@ -134,29 +134,14 @@ export class PublicVerificationController {
   @ApiOperation({ summary: "获取滑块验证码" })
   @Post("captcha")
   async captcha(@Body() body: { captchaType?: string }) {
-    // 生成滑块验证码
     const captchaResult = await this.captchaService.generateCaptcha();
 
-    // 兼容前端Vue组件的响应格式
-    const response = {
-      originalImageBase64: captchaResult.originalImageBase64,
+    return {
       jigsawImageBase64: captchaResult.jigsawImageBase64,
-      token: captchaResult.token,
+      originalImageBase64: captchaResult.originalImageBase64,
       secretKey: captchaResult.secretKey,
-      // 添加前端需要的额外信息
-      captchaType: body?.captchaType || "blockPuzzle",
-      repCode: "0000",
-      repMsg: "操作成功",
-      resultData: {
-        originalImageBase64: captchaResult.originalImageBase64,
-        jigsawImageBase64: captchaResult.jigsawImageBase64,
-        token: captchaResult.token,
-        secretKey: captchaResult.secretKey,
-        backToken: captchaResult.token,
-      },
+      token: captchaResult.token,
     };
-
-    return response;
   }
 
   @ApiOperation({ summary: "验证滑块验证码" })
