@@ -1,1 +1,0 @@
-{"version":3,"file":"reset.js","sourceRoot":"","sources":["reset.ts"],"names":[],"mappings":"AAAA,OAAO,OAAO,4BAAwB;AAEtC,MAAM,CAAC,MAAM,cAAc,GAAG,CAAC,IAAe,EAAE,EAAE;IAC9C,OAAO,OAAO,CAAC;QACX,GAAG,EAAE,2BAA2B;QAChC,MAAM,EAAE,MAAM;QACd,IAAI;KACP,CAAC,CAAC;AACP,CAAC,CAAC"}

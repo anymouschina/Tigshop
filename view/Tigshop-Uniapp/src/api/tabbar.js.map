@@ -1,1 +1,0 @@
-{"version":3,"file":"tabbar.js","sourceRoot":"","sources":["tabbar.ts"],"names":[],"mappings":"AAAA,OAAO,OAAO,yBAAwB;AAGtC,MAAM,CAAC,MAAM,YAAY,GAAG,GAAG,EAAE;IAC7B,OAAO,OAAO,CAAqB;QAC/B,GAAG,EAAE,qBAAqB;QAC1B,MAAM,EAAE,KAAK;KAChB,CAAC,CAAC;AACP,CAAC,CAAC"}
