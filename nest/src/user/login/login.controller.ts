@@ -13,7 +13,11 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { LoginService } from "./login.service";
 import { Public } from "../../auth/decorators/public.decorator";
-import { SendMobileCodeDto, SendEmailCodeDto, LoginDto } from "./dto/user-login";
+import {
+  SendMobileCodeDto,
+  SendEmailCodeDto,
+  LoginDto,
+} from "./dto/user-login";
 
 @ApiTags("User Authentication")
 @Controller("user")
@@ -39,13 +43,16 @@ export class LoginController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "用户登录" })
   async signin(
-    @Body(new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transformOptions: { enableImplicitConversion: true }
-    })) loginDto: LoginDto,
-    @Request() req
+    @Body(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    )
+    loginDto: LoginDto,
+    @Request() req,
   ) {
     const clientIp = req.ip;
     return this.loginService.signin(loginDto, clientIp);
@@ -58,15 +65,18 @@ export class LoginController {
   @Public()
   @ApiOperation({ summary: "发送手机验证码" })
   async sendMobileCode(
-    @Body(new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transformOptions: { enableImplicitConversion: true }
-    })) sendMobileCodeDto: SendMobileCodeDto,
+    @Body(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    )
+    sendMobileCodeDto: SendMobileCodeDto,
   ) {
-    console.log(sendMobileCodeDto,'sendMobileCodeDto')
-    return {}
+    console.log(sendMobileCodeDto, "sendMobileCodeDto");
+    return {};
     //  this.loginService.sendMobileCode(sendMobileCodeDto);
   }
 
@@ -77,12 +87,15 @@ export class LoginController {
   @Public()
   @ApiOperation({ summary: "发送邮箱验证码" })
   async sendEmailCode(
-    @Body(new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transformOptions: { enableImplicitConversion: true }
-    })) sendEmailCodeDto: SendEmailCodeDto,
+    @Body(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    )
+    sendEmailCodeDto: SendEmailCodeDto,
   ) {
     return this.loginService.sendEmailCode(
       sendEmailCodeDto.email,

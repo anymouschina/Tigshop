@@ -3,6 +3,8 @@
  * 将后端验证码转换为前端Vue组件需要的格式
  */
 
+import * as crypto from "crypto";
+
 export interface VueCaptchaRequest {
   captchaType?: string;
 }
@@ -135,8 +137,7 @@ export class VueCaptchaAdapter {
   static aesEncrypt(text: string, secretKey: string): string {
     try {
       // 在Node.js环境中使用crypto模块
-      if (typeof require !== "undefined") {
-        const crypto = require("crypto");
+      if (typeof window === "undefined") {
         return this.aesEncryptNode(text, secretKey, crypto);
       }
 
@@ -149,7 +150,7 @@ export class VueCaptchaAdapter {
     } catch (error) {
       console.error("AES加密失败:", error);
       // 降级为Base64编码
-      return btoa(text);
+      return Buffer.from(text).toString("base64");
     }
   }
 
@@ -174,7 +175,7 @@ export class VueCaptchaAdapter {
   static aesEncryptBrowser(text: string, secretKey: string): string {
     // 为了简单起见，使用一个固定的IV（实际应该随机生成）
     const iv = "ABCDEFGHIJKLMNOP";
-    const ivBase64 = btoa(iv);
+    const ivBase64 = Buffer.from(iv).toString("base64");
 
     // 模拟加密过程（实际应该使用Web Crypto API）
     // 这里使用一个简单的XOR加密作为演示
@@ -186,7 +187,7 @@ export class VueCaptchaAdapter {
       encrypted += String.fromCharCode(charCode);
     }
 
-    const encryptedBase64 = btoa(encrypted);
+    const encryptedBase64 = Buffer.from(encrypted).toString("base64");
 
     return ivBase64 + encryptedBase64;
   }
@@ -214,7 +215,7 @@ export class VueCaptchaAdapter {
 
     if (secretKey) {
       // 这里应该实现AES加密，暂时返回Base64编码
-      return btoa(combined);
+      return Buffer.from(combined).toString("base64");
     }
 
     return combined;

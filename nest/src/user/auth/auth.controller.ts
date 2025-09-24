@@ -1,9 +1,5 @@
 // @ts-nocheck
-import {
-  Controller,
-  Get,
-  Query,
-} from "@nestjs/common";
+import { Controller, Get, Query } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { UserAuthService } from "./auth.service";
 import { Public } from "../../auth/decorators/public.decorator";

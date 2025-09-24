@@ -79,11 +79,11 @@ export class LoginService {
       try {
         const isValidBehavior = await this.verifyBehaviorToken(verifyToken);
         if (!isValidBehavior) {
-          console.log('行为验证失败');
+          console.log("行为验证失败");
           // 不阻止登录，只是记录日志
         }
       } catch (error) {
-        console.log('行为验证异常:', error);
+        console.log("行为验证异常:", error);
         // 不阻止登录，只是记录异常
       }
     }
@@ -171,7 +171,11 @@ export class LoginService {
   /**
    * 根据手机号验证码获取用户
    */
-  private async getUserByMobileCode(mobile: string, code: string, event: string = "login") {
+  private async getUserByMobileCode(
+    mobile: string,
+    code: string,
+    event: string = "login",
+  ) {
     // 验证手机验证码
     const isValidCode = await this.validateMobileCode(mobile, code, event);
     if (!isValidCode) {
@@ -193,7 +197,11 @@ export class LoginService {
   /**
    * 根据邮箱验证码获取用户
    */
-  private async getUserByEmailCode(email: string, code: string, event: string = "register_code") {
+  private async getUserByEmailCode(
+    email: string,
+    code: string,
+    event: string = "register_code",
+  ) {
     // 验证邮箱验证码
     const isValidCode = await this.validateEmailCode(email, code, event);
     if (!isValidCode) {
@@ -238,7 +246,13 @@ export class LoginService {
    */
   async sendMobileCode(data: any) {
     const { mobile, email, event, verifyToken } = data;
-    console.log(mobile, email, event, verifyToken,'mobile, email, event, verifyToken')
+    console.log(
+      mobile,
+      email,
+      event,
+      verifyToken,
+      "mobile, email, event, verifyToken",
+    );
     // 验证参数
     if (!mobile && !email) {
       throw new HttpException("手机号需要提供一个", HttpStatus.BAD_REQUEST);
@@ -366,12 +380,16 @@ export class LoginService {
       const redisKey = `${event}emailCode:${email}`;
       const expiration = 120; // 2分钟过期，与PHP一致
 
-      await this.redisService.set(redisKey, {
-        code,
-        email,
-        event,
-        created_at: Date.now()
-      }, { ttl: expiration });
+      await this.redisService.set(
+        redisKey,
+        {
+          code,
+          email,
+          event,
+          created_at: Date.now(),
+        },
+        { ttl: expiration },
+      );
 
       // TODO: 集成实际的邮件发送服务
       console.log(`邮箱验证码已发送至 ${email}: ${code}`);
@@ -379,7 +397,7 @@ export class LoginService {
       return {
         email,
         event,
-        key: redisKey
+        key: redisKey,
       };
     } catch (error) {
       console.error("发送邮箱验证码失败:", error);
@@ -460,7 +478,9 @@ export class LoginService {
       }
 
       if (verificationData.code !== code) {
-        console.log(`邮箱验证码不匹配: 期望${verificationData.code}, 实际${code}`);
+        console.log(
+          `邮箱验证码不匹配: 期望${verificationData.code}, 实际${code}`,
+        );
         return false;
       }
 
