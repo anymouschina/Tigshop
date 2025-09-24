@@ -75,9 +75,7 @@ export class LoginController {
     )
     sendMobileCodeDto: SendMobileCodeDto,
   ) {
-    console.log(sendMobileCodeDto, "sendMobileCodeDto");
-    return {};
-    //  this.loginService.sendMobileCode(sendMobileCodeDto);
+    return this.loginService.sendMobileCode(sendMobileCodeDto);
   }
 
   /**

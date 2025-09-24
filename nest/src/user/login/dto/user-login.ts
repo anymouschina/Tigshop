@@ -5,6 +5,9 @@ import {
   IsMobilePhone,
   IsEnum,
   IsOptional,
+  MinLength,
+  MaxLength,
+  Matches,
   validate,
   ValidationError,
 } from "class-validator";
@@ -48,7 +51,10 @@ export class LoginDto {
 
 export class SendMobileCodeDto {
   @IsOptional()
-  @IsMobilePhone("zh-CN", { message: "手机号格式不正确" })
+  @IsString()
+  @MinLength(11, { message: "手机号长度不能少于11位" })
+  @MaxLength(14, { message: "手机号长度不能超过14位" })
+  @Matches(/^(86)?1[3-9]\d{9,10}$/, { message: "手机号格式不正确" })
   mobile?: string;
 
   @IsOptional()

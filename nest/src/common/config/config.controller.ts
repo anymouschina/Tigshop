@@ -32,6 +32,14 @@ export class CommonConfigController {
     return this.commonConfigService.getInitConfigSettings();
   }
 
+  @Get("mobileAreaCode")
+  @ApiOperation({ summary: "获取手机区号配置" })
+  @ApiResponse({ status: 200, description: "获取成功" })
+  async getMobileAreaCode() {
+    // 从数据库获取手机区号配置
+    return this.commonConfigService.getMobileAreaCode();
+  }
+
   // Placeholder for future POST methods
   // @Post("themeSettings")
   // @Post("initConfigSettings")

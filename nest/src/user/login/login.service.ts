@@ -261,11 +261,11 @@ export class LoginService {
     const defaultEvent = event || "login";
 
     // 行为验证
-    if (!verify_token) {
+    if (!verifyToken) {
       throw new HttpException("验证令牌不能为空", HttpStatus.BAD_REQUEST);
     }
 
-    const isValidBehavior = await this.verifyBehaviorToken(verify_token);
+    const isValidBehavior = await this.verifyBehaviorToken(verifyToken);
     if (!isValidBehavior) {
       throw new HttpException("行为验证失败", HttpStatus.BAD_REQUEST);
     }
@@ -276,14 +276,20 @@ export class LoginService {
 
       // 根据是手机号还是邮箱分别处理
       if (mobile) {
-        const redisKey = `${defaultEvent}mobileCode:${mobile}`;
+        // 处理国际格式手机号，移除国家代码86
+        let normalizedMobile = mobile;
+        if (mobile.startsWith('86') && mobile.length > 11) {
+          normalizedMobile = mobile.substring(2);
+        }
+
+        const redisKey = `${defaultEvent}mobileCode:${normalizedMobile}`;
         const expiration = 120;
 
         await this.redisService.set(
           redisKey,
           {
             code,
-            mobile,
+            mobile: normalizedMobile,
             event: defaultEvent,
             created_at: Date.now(),
           },
@@ -293,7 +299,7 @@ export class LoginService {
         console.log(`短信验证码已发送至 ${mobile}: ${code}`);
 
         return {
-          mobile,
+          mobile: normalizedMobile,
           event: defaultEvent,
           key: redisKey,
         };
