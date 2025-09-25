@@ -278,7 +278,7 @@ export class LoginService {
       if (mobile) {
         // 处理国际格式手机号，移除国家代码86
         let normalizedMobile = mobile;
-        if (mobile.startsWith('86') && mobile.length > 11) {
+        if (mobile.startsWith("86") && mobile.length > 11) {
           normalizedMobile = mobile.substring(2);
         }
 

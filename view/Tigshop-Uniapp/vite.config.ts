@@ -17,14 +17,14 @@ export default defineConfig({
         proxy: {
             // 匹配所有请求
            "/api": {
-                target: "http://localhost:3001",
-                changeOrigin: true,
+                target: "http://localhost:3000",
+                // changeOrigin: true,
                 // logLevel: 'debug', // Vite 代理日志
-                ws: true,
+                // ws: true
             },
             "/static": {
-                target: "http://localhost:3001", // 转发到3001端口
-                changeOrigin: true // 开启跨域
+                target: "http://localhost:3000", // 转发到3001端口
+                // changeOrigin: true // 开启跨域
                 // 不需要重写路径，因为我们要转发所有请求
                 // rewrite: (path) => path.replace(/^\/api/, "")
             }

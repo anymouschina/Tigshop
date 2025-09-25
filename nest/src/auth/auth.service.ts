@@ -42,9 +42,8 @@ export interface JwtPayload {
 
 @Injectable()
 export class AuthService implements OnModuleInit {
-  private readonly logger = new Logger(AuthService.name)
+  private readonly logger = new Logger(AuthService.name);
   constructor(
-    
     private readonly jwtService: JwtService,
     @Inject("CONFIG") private readonly config: any,
     private readonly databaseService: PrismaService,
@@ -251,7 +250,7 @@ export class AuthService implements OnModuleInit {
       registerDto.mobile,
       registerDto.mobile_code,
     );
-    this.logger.log(`====>isValidMobileCode ${isValidMobileCode}`)
+    this.logger.log(`====>isValidMobileCode ${isValidMobileCode}`);
     if (!isValidMobileCode) {
       throw new BadRequestException("手机验证码错误或已过期");
     }
@@ -572,6 +571,14 @@ export class AuthService implements OnModuleInit {
     mobile: string,
     code: string,
   ): Promise<boolean> {
+    // 开发环境特殊处理：允许000000验证码通过
+    if (process.env.NODE_ENV === "development" && code === "000000") {
+      this.logger.log(
+        `开发环境使用测试验证码000000通过验证，手机号：${mobile}`,
+      );
+      return true;
+    }
+
     // TODO: 实现短信验证码验证逻辑
     // 这里需要连接短信服务，验证验证码是否正确
     return true; // 临时返回true，实际需要验证
@@ -584,6 +591,12 @@ export class AuthService implements OnModuleInit {
     email: string,
     code: string,
   ): Promise<boolean> {
+    // 开发环境特殊处理：允许000000验证码通过
+    if (process.env.NODE_ENV === "development" && code === "000000") {
+      this.logger.log(`开发环境使用测试验证码000000通过验证，邮箱：${email}`);
+      return true;
+    }
+
     // TODO: 实现邮箱验证码验证逻辑
     // 这里需要连接邮件服务，验证验证码是否正确
     return true; // 临时返回true，实际需要验证
@@ -597,9 +610,17 @@ export class AuthService implements OnModuleInit {
     code: string,
   ): Promise<boolean> {
     try {
+      // 开发环境特殊处理：允许000000验证码通过
+      if (process.env.NODE_ENV === "development" && code === "000000") {
+        this.logger.log(
+          `开发环境使用测试验证码000000通过验证，手机号：${mobile}`,
+        );
+        return true;
+      }
+
       // 处理国际格式手机号，移除国家代码86
       let normalizedMobile = mobile;
-      if (mobile.startsWith('86') && mobile.length > 11) {
+      if (mobile.startsWith("86") && mobile.length > 11) {
         normalizedMobile = mobile.substring(2);
       }
 
@@ -621,7 +642,7 @@ export class AuthService implements OnModuleInit {
 
       return false;
     } catch (error) {
-      console.error('验证手机验证码时发生错误:', error);
+      console.error("验证手机验证码时发生错误:", error);
       return false;
     }
   }

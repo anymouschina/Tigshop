@@ -198,7 +198,7 @@ export class PublicVerificationController {
       finalSecretKey || "",
       finalX,
       finalTrack || [],
-      finalStartTime
+      finalStartTime,
     );
 
     if (!isValid) {
@@ -322,7 +322,7 @@ export class PublicVerificationController {
     // 收集调试信息
     const debugInfo = {
       request: body,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     if (!pointJson || !token) {
@@ -333,9 +333,9 @@ export class PublicVerificationController {
           captchaType,
           pointJson: pointJson || null,
           token: token || null,
-          debug: debugInfo
+          debug: debugInfo,
         },
-        path: "/api/common/verification/check"
+        path: "/api/common/verification/check",
       };
     }
 
@@ -347,7 +347,10 @@ export class PublicVerificationController {
 
       // 使用新的verifyPointJson方法，对齐PHP实现
       // PHP代码：$service->check($data['token'], $data['pointJson']);
-      const isValid = await this.captchaService.verifyPointJson(token, pointJson);
+      const isValid = await this.captchaService.verifyPointJson(
+        token,
+        pointJson,
+      );
 
       debugInfo.validationResult = isValid;
 
@@ -357,8 +360,8 @@ export class PublicVerificationController {
           pointJson,
           token,
           debug: debugInfo,
-          reason: "滑块位置不匹配或验证条件不满足"
-        }
+          reason: "滑块位置不匹配或验证条件不满足",
+        };
       }
 
       // 对齐PHP返回格式
@@ -366,20 +369,20 @@ export class PublicVerificationController {
         captchaType: captchaType,
         pointJson: pointJson,
         token: token,
-      }
+      };
     } catch (error) {
       debugInfo.error = {
         name: error.constructor.name,
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       };
 
       return {
         captchaType,
         pointJson,
         token,
-        debug: debugInfo
-      }
+        debug: debugInfo,
+      };
     }
   }
 

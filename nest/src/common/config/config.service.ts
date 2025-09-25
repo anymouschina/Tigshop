@@ -260,22 +260,19 @@ export class CommonConfigService {
       // 从数据库获取手机区号配置
       const areaCodes = await this.prisma.area_code.findMany({
         where: {
-          is_available: 1
+          is_available: 1,
         },
-        orderBy: [
-          { is_default: 'desc' },
-          { id: 'asc' }
-        ]
+        orderBy: [{ is_default: "desc" }, { id: "asc" }],
       });
 
       // 转换为前端需要的格式
-      return areaCodes.map(area => ({
+      return areaCodes.map((area) => ({
         label: `+${area.code}`,
         id: area.id,
         code: area.code,
         name: area.name,
         isAvailable: area.is_available,
-        isDefault: area.is_default
+        isDefault: area.is_default,
       }));
     } catch (error) {
       console.error("获取手机区号配置失败:", error);
@@ -287,7 +284,7 @@ export class CommonConfigService {
           code: "86",
           name: "中国",
           isAvailable: 1,
-          isDefault: 1
+          isDefault: 1,
         },
         {
           label: "+44",
@@ -295,8 +292,8 @@ export class CommonConfigService {
           code: "44",
           name: "美国",
           isAvailable: 1,
-          isDefault: 0
-        }
+          isDefault: 0,
+        },
       ];
     }
   }
@@ -322,7 +319,8 @@ export class CommonConfigService {
     defaultValue: boolean = false,
   ): number {
     const value = this.getConfigValue(configs, bizCode);
-    const boolValue = value === "1" || value === "true" || value === "yes" || defaultValue;
+    const boolValue =
+      value === "1" || value === "true" || value === "yes" || defaultValue;
     return boolValue ? 1 : 0;
   }
 
@@ -339,7 +337,7 @@ export class CommonConfigService {
     if (!value) return defaultValue;
 
     // 对于 themeStyle 直接返回字符串
-    if (bizCode === 'themeStyle' || returnAsString) {
+    if (bizCode === "themeStyle" || returnAsString) {
       return value;
     }
 

@@ -13,7 +13,7 @@ import { VerificationCodeService } from "../auth/services/verification-code.serv
 
 @Injectable()
 export class UserService {
-  private readonly logger = new Logger(UserService.name)
+  private readonly logger = new Logger(UserService.name);
   constructor(
     private readonly databaseService: PrismaService,
     private readonly authService: AuthService,

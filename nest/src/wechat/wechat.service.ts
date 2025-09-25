@@ -13,7 +13,6 @@ import * as fs from "fs";
 import * as path from "path";
 @Injectable()
 export class WechatService {
-
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,

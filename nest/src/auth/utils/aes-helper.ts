@@ -60,7 +60,11 @@ export function aesDecrypt(encryptedText: string, secretKey: string): string {
       }
 
       const algorithm = finalKey.length === 16 ? "aes-128-ecb" : "aes-256-ecb";
-      const decipher = crypto.createDecipheriv(algorithm, finalKey, Buffer.alloc(0));
+      const decipher = crypto.createDecipheriv(
+        algorithm,
+        finalKey,
+        Buffer.alloc(0),
+      );
 
       let decrypted = decipher.update(encryptedText, "base64", "utf8");
       decrypted += decipher.final("utf8");
@@ -78,7 +82,12 @@ export function aesDecrypt(encryptedText: string, secretKey: string): string {
         const iv = Buffer.from(encryptedText.substring(0, 24), "base64");
         const encrypted = encryptedText.substring(24);
 
-        console.log("  - CBC模式 - IV长度:", iv.length, "加密数据长度:", encrypted.length);
+        console.log(
+          "  - CBC模式 - IV长度:",
+          iv.length,
+          "加密数据长度:",
+          encrypted.length,
+        );
 
         const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
         let decrypted = decipher.update(encrypted, "base64", "utf8");

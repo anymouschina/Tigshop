@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { RedisService } from "../../redis/redis.service";
 import { v4 as uuidv4 } from "uuid";
 import { createCanvas } from "canvas";
@@ -13,10 +13,11 @@ interface CaptchaData {
 
 @Injectable()
 export class CaptchaService {
+  private readonly logger = new Logger(CaptchaService.name);
   private readonly CAPTCHA_TTL = 60; // 秒
-  private readonly TOLERANCE = 30; // 进一步增大容差，提高兼容性
-  private readonly MIN_DURATION = 100; // 最小滑动时间（毫秒）
-  private readonly MAX_DURATION = 60000; // 最大滑动时间（毫秒）
+  private readonly TOLERANCE = 10; // 减少容差，增加验证严格性
+  private readonly MIN_DURATION = 500; // 增加最小滑动时间，防止机器人
+  private readonly MAX_DURATION = 30000; // 减少最大滑动时间
 
   constructor(private readonly redisService: RedisService) {}
 
@@ -69,7 +70,7 @@ export class CaptchaService {
       blockSize,
       blockSize,
       0,
-      offsetY,  // 在滑块画布中保持垂直位置
+      offsetY, // 在滑块画布中保持垂直位置
       blockSize,
       blockSize,
     );
@@ -86,7 +87,7 @@ export class CaptchaService {
       secretKey,
       createdAt: Date.now(),
     };
-    console.log(captchaData, "captchaData");
+    this.logger.debug(`生成验证码数据: ${JSON.stringify(captchaData)}`);
     await this.redisService.set(`captcha:${token}`, captchaData, {
       ttl: this.CAPTCHA_TTL,
     });
@@ -115,106 +116,111 @@ export class CaptchaService {
     const captcha = await this.redisService.get<CaptchaData>(
       `captcha:${token}`,
     );
-    console.log(captcha, "captcha");
+
     if (!captcha) {
-      console.log("❌ 验证失败: 找不到验证码数据, token:", token);
+      this.logger.warn(`验证失败: 找不到验证码数据, token: ${token}`);
       return false;
     }
 
-    console.error("🔍 验证调试信息:");
-    console.error("  - 前端X坐标:", x);
-    console.error("  - 后端offsetX:", captcha.offsetX);
-    console.error("  - 容差:", this.TOLERANCE);
-    console.error("  - 位置差异:", Math.abs(x - captcha.offsetX));
-    console.error("  - 是否在容差范围内:", Math.abs(x - captcha.offsetX) <= this.TOLERANCE);
-
-    // 如果没有提供secretKey或使用默认值，跳过secretKey验证
-    if (
-      secretKey &&
-      secretKey !== "default-secret-key" &&
-      captcha.secretKey !== secretKey
-    ) {
-      console.log("❌ 验证失败: secretKey不匹配");
+    // 严格验证secretKey
+    if (captcha.secretKey !== secretKey) {
+      this.logger.warn(
+        `验证失败: secretKey不匹配, 期望: ${captcha.secretKey}, 实际: ${secretKey}`,
+      );
       return false;
     }
 
-    // 位置验证 - 兼容PHP实现的多重验证策略
-    let isValidPosition = Math.abs(x - captcha.offsetX) <= this.TOLERANCE;
+    // 检查验证码是否过期
+    const now = Date.now();
+    if (now - captcha.createdAt > this.CAPTCHA_TTL * 1000) {
+      this.logger.warn(
+        `验证失败: 验证码已过期, 创建时间: ${captcha.createdAt}, 当前时间: ${now}`,
+      );
+      return false;
+    }
 
-    // 如果直接验证失败，尝试比例转换验证（兼容不同前端实现）
+    // 位置验证 - 使用严格容差
+    const positionDiff = Math.abs(x - captcha.offsetX);
+    const isValidPosition = positionDiff <= this.TOLERANCE;
+
+    // 如果位置验证失败，不再进行比例转换验证，直接拒绝
     if (!isValidPosition) {
-      // 尝试常见的前端显示宽度比例
-      const commonDisplayWidths = [500, 800, 1000, 1200];
-      for (const displayWidth of commonDisplayWidths) {
-        const scaleX = displayWidth / 310; // 310是后端原始宽度
-        const adjustedX = Math.round(x / scaleX);
-        if (Math.abs(adjustedX - captcha.offsetX) <= this.TOLERANCE) {
-          isValidPosition = true;
-          console.log(`  - 🔄 比例转换验证成功: 使用${displayWidth}px宽度转换`);
-          break;
-        }
+      this.logger.warn(
+        `位置验证失败: 前端X=${x}, 后端offsetX=${captcha.offsetX}, 差异=${positionDiff}, 容差=${this.TOLERANCE}`,
+      );
+      return false;
+    }
+
+    // 时间验证 - 必须提供startTime
+    if (!startTime) {
+      this.logger.warn("时间验证失败: 缺少开始时间");
+      return false;
+    }
+
+    const duration = now - startTime;
+    const isValidTime =
+      duration >= this.MIN_DURATION && duration <= this.MAX_DURATION;
+
+    if (!isValidTime) {
+      this.logger.warn(
+        `时间验证失败: 滑动时间=${duration}ms, 要求范围=${this.MIN_DURATION}-${this.MAX_DURATION}ms`,
+      );
+      return false;
+    }
+
+    // 轨迹验证 - 必须提供有效轨迹
+    if (!track || track.length < 5) {
+      this.logger.warn(
+        `轨迹验证失败: 轨迹数据不足, 长度=${track?.length || 0}`,
+      );
+      return false;
+    }
+
+    // 验证轨迹是否为连续递增（模拟真实滑动）
+    let isTrackValid = true;
+    for (let i = 1; i < track.length; i++) {
+      if (track[i] <= track[i - 1]) {
+        isTrackValid = false;
+        break;
       }
     }
 
-    console.error("  - 位置验证:", isValidPosition ? "✅ 通过" : "❌ 失败");
+    if (!isTrackValid) {
+      this.logger.warn(
+        `轨迹验证失败: 轨迹不是连续递增, ${JSON.stringify(track)}`,
+      );
+      return false;
+    }
 
-    // 时间验证
-    const now = Date.now();
-    const duration = startTime ? now - startTime : 0;
-    const isValidTime =
-      duration >= this.MIN_DURATION && duration <= this.MAX_DURATION;
-    console.error("  - 滑动时间:", duration, "ms");
-    console.error("  - 时间范围要求:", this.MIN_DURATION, "-", this.MAX_DURATION, "ms");
-    console.error("  - 时间验证:", isValidTime ? "✅ 通过" : "❌ 失败");
-
-    // 轨迹验证 - 兼容PHP实现的宽松验证
-    let isValidTrack = this.validateTrack(track);
-    console.error("  - 轨迹数据:", JSON.stringify(track, null, 2));
-    console.error("  - 轨迹验证:", isValidTrack ? "✅ 通过" : "❌ 失败");
-
-    // 如果轨迹验证失败但位置验证通过，且轨迹不为空，则放宽轨迹验证
-    if (!isValidTrack && isValidPosition && track && track.length > 0) {
-      isValidTrack = true;
-      console.error("  - 🔄 轨迹验证放宽: 位置正确且有轨迹数据");
+    // 验证轨迹距离是否合理
+    const trackDistance = track[track.length - 1] - track[0];
+    if (Math.abs(trackDistance - x) > this.TOLERANCE * 2) {
+      this.logger.warn(
+        `轨迹验证失败: 轨迹距离与点击位置不匹配, 轨迹距离=${trackDistance}, 点击位置=${x}`,
+      );
+      return false;
     }
 
     // 使用后立即删除
     await this.redisService.del(`captcha:${token}`);
 
-    const finalResult = isValidPosition && isValidTime && isValidTrack;
-    console.error("  - 最终结果分解:");
-    console.error("    * 位置验证:", isValidPosition);
-    console.error("    * 时间验证:", isValidTime);
-    console.error("    * 轨迹验证:", isValidTrack);
-    console.error("  - 最终结果:", finalResult ? "✅ 通过" : "❌ 失败");
-    console.error("=== 滑块验证码调试结束 ===");
-
-    return finalResult;
+    this.logger.log(
+      `滑块验证通过: 位置差异=${positionDiff}, 滑动时间=${duration}ms, 轨迹长度=${track.length}`,
+    );
+    return true;
   }
 
   /** 直接验证pointJson - 对齐PHP实现 */
-  async verifyPointJson(
-    token: string,
-    pointJson: string,
-  ): Promise<boolean> {
-    // 强制输出调试信息
-    console.error("=== 滑块验证码调试开始 ===");
-    console.error("pointJson原始数据:", pointJson);
-    console.error("token:", token);
-
+  async verifyPointJson(token: string, pointJson: string): Promise<boolean> {
     // 获取验证码数据
     const captcha = await this.redisService.get<CaptchaData>(
       `captcha:${token}`,
     );
 
     if (!captcha) {
-      console.log("❌ 验证失败: 找不到验证码数据, token:", token);
+      this.logger.warn(`验证失败: 找不到验证码数据, token: ${token}`);
       return false;
     }
-
-    console.error("🔍 pointJson验证调试信息:");
-    console.error("  - 验证码数据:", JSON.stringify(captcha, null, 2));
-    console.error("  - pointJson:", pointJson);
 
     // 直接使用前端aesEncrypt方式解密
     let parsedData: any;
@@ -222,48 +228,26 @@ export class CaptchaService {
 
     // 只尝试AES解密（前端使用的加密方式）
     try {
-      console.error("使用前端AES加密方式解密...");
-      console.error("加密数据:", pointJson);
-      console.error("使用密钥:", captcha.secretKey);
-
       // 使用前端相同的加密逻辑进行解密
       parsedData = parsePointJson(pointJson, captcha.secretKey);
       parseSuccess = true;
-      console.error("✅ AES解密成功:", JSON.stringify(parsedData, null, 2));
+      this.logger.debug(`AES解密成功: ${JSON.stringify(parsedData)}`);
     } catch (e) {
-      console.error("❌ AES解密失败:", e.message);
+      this.logger.warn(`AES解密失败: ${e.message}`);
 
-      // 如果AES解密失败，但pointJson看起来像Base64编码的，可能是其他格式
-      // 直接生成一个模拟的验证数据用于测试
-      console.error("⚠️ 生成模拟验证数据进行测试...");
-      parsedData = {
-        x: captcha.offsetX, // 使用正确的X坐标
-        y: 5.0,
-        track: this.generateDefaultTrack(captcha.offsetX),
-        startTime: Date.now() - 1500
-      };
-      parseSuccess = true;
-      console.error("✅ 使用模拟数据:", JSON.stringify(parsedData, null, 2));
+      // 如果AES解密失败，直接返回失败，不再使用模拟数据
+      this.logger.warn("pointJson解密失败，验证失败");
+      return false;
     }
 
-    console.error("✅ 解析成功，数据:", parsedData);
-
     // 使用现有的verifySlider方法进行验证
-    const result = this.verifySlider(
+    const result = await this.verifySlider(
       token,
       parsedData.secretKey || captcha.secretKey,
       parsedData.x || 0,
       parsedData.track || [],
-      parsedData.startTime || Date.now()
+      parsedData.startTime || Date.now(),
     );
-
-    console.error("🔍 验证结果汇总:");
-    console.error("  - 解析的X坐标:", parsedData.x);
-    console.error("  - 实际offsetX:", captcha.offsetX);
-    console.error("  - 位置差异:", Math.abs(parsedData.x - captcha.offsetX));
-    console.error("  - 容差范围:", this.TOLERANCE);
-    console.error("  - 位置是否匹配:", Math.abs(parsedData.x - captcha.offsetX) <= this.TOLERANCE);
-    console.error("  - 最终验证结果:", result);
 
     return result;
   }
@@ -389,16 +373,13 @@ export class CaptchaService {
   /** 验证滑动轨迹 */
   private validateTrack(track: number[]): boolean {
     if (!track || track.length === 0) {
-      console.log("  - 轨迹验证失败: 轨迹为空");
+      this.logger.warn("轨迹验证失败: 轨迹为空");
       return false;
     }
 
-    console.log("  - 轨迹长度:", track.length);
-
-    // 简化轨迹验证，只要有轨迹就通过
-    if (track.length >= 3) {
-      console.log("  - 轨迹验证: ✅ 通过 (长度足够)");
-      return true;
+    if (track.length < 3) {
+      this.logger.warn(`轨迹验证失败: 轨迹长度不足, 长度=${track.length}`);
+      return false;
     }
 
     // 计算轨迹特征
@@ -406,8 +387,6 @@ export class CaptchaService {
     const firstPoint = track[0];
     const lastPoint = track[track.length - 1];
     const distance = Math.abs(lastPoint - firstPoint);
-
-    console.log("  - 轨迹距离:", distance);
 
     // 验证轨迹是否连续
     let hasBackward = false;
@@ -429,14 +408,14 @@ export class CaptchaService {
       }
     }
 
-    // 放宽验证条件
-    const isValid =
-      hasBackward || hasAcceleration || points > 5 || distance > 50;
-    console.log(
-      "  - 轨迹验证:",
-      isValid ? "✅ 通过" : "❌ 失败",
-      `回拖:${hasBackward}, 加速:${hasAcceleration}, 点数:${points}, 距离:${distance}`,
-    );
+    // 严格验证条件：需要有人类特征
+    const isValid = hasBackward || hasAcceleration;
+
+    if (!isValid) {
+      this.logger.debug(
+        `轨迹验证缺乏人类特征: 回拖=${hasBackward}, 加速=${hasAcceleration}, 点数=${points}, 距离=${distance}`,
+      );
+    }
 
     return isValid;
   }
