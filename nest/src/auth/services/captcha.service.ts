@@ -54,9 +54,14 @@ export class CaptchaService {
     // 在最终背景上挖空并添加阴影效果
     this.createHole(finalCtx, offsetX, offsetY, blockSize);
 
-    // 从完整背景中裁剪滑块
-    const sliderCanvas = createCanvas(blockSize, blockSize);
+    // 创建滑块图片：保持原图高度，宽度为blockSize
+    const sliderCanvas = createCanvas(blockSize, height);
     const sliderCtx = sliderCanvas.getContext("2d");
+
+    // 先用透明背景填充整个滑块画布
+    sliderCtx.clearRect(0, 0, blockSize, height);
+
+    // 从完整背景中裁剪滑块部分（只裁剪实际滑块大小的区域）
     sliderCtx.drawImage(
       backgroundCanvas,
       offsetX,
@@ -64,15 +69,15 @@ export class CaptchaService {
       blockSize,
       blockSize,
       0,
-      0,
+      offsetY,  // 在滑块画布中保持垂直位置
       blockSize,
       blockSize,
     );
 
-    // 为滑块添加边框
+    // 为滑块添加边框（只在实际滑块区域添加）
     sliderCtx.strokeStyle = "#ff0000";
     sliderCtx.lineWidth = 2;
-    sliderCtx.strokeRect(0, 0, blockSize, blockSize);
+    sliderCtx.strokeRect(0, offsetY, blockSize, blockSize);
 
     // 保存 Redis
     const captchaData: CaptchaData = {
