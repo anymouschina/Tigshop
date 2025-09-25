@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
+  Logger,
 } from "@nestjs/common";
 import { AuthService } from "../../auth/auth.service";
 import { VerificationCodeService } from "../../auth/services/verification-code.service";
@@ -122,9 +123,25 @@ export class UserAuthService {
     const token = await this.getLoginToken(user.user_id);
 
     return {
-      status: "success",
-      data: { token },
+      token,
     };
+  }
+
+  /**
+   * 构建手机号查询条件，处理带区号的情况
+   */
+  private buildMobileQuery(mobile: string) {
+    // 如果是纯数字且长度11位，可能是手机号
+    if (/^\d{11}$/.test(mobile)) {
+      return {
+        OR: [
+          { mobile: mobile }, // 完全匹配（带区号）
+          { mobile: { endsWith: mobile } }, // 以手机号结尾（带区号）
+          { mobile: { contains: mobile } }, // 包含手机号（更宽松的匹配）
+        ]
+      };
+    }
+    return { mobile: mobile }; // 其他情况直接匹配
   }
 
   /**
@@ -133,7 +150,7 @@ export class UserAuthService {
   private async loginByPassword(username: string, password: string) {
     const user = await this.databaseService.user.findFirst({
       where: {
-        OR: [{ username }, { email: username }, { mobile: username }],
+        OR: [{ username }, { email: username }, this.buildMobileQuery(username)],
       },
     });
 
@@ -242,7 +259,7 @@ export class UserAuthService {
     return {
       status: "success",
       message: "注册成功",
-      data: { user_id: user.user_id },
+      user_id: user.user_id,
     };
   }
 
@@ -406,11 +423,8 @@ export class UserAuthService {
       const token = await this.getLoginToken(existingAuth.userId);
 
       return {
-        status: "success",
-        data: {
-          type: 1,
-          token,
-        },
+        type: 1,
+        token,
       };
     }
 
@@ -444,19 +458,13 @@ export class UserAuthService {
       const token = await this.getLoginToken(user.user_id);
 
       return {
-        status: "success",
-        data: {
-          type: 1,
-          token,
-        },
+        type: 1,
+        token,
       };
     } else {
       return {
-        status: "success",
-        data: {
-          type: 2,
-          open_data: openData,
-        },
+        type: 2,
+        open_data: openData,
       };
     }
   }
@@ -584,8 +592,7 @@ export class UserAuthService {
       const token = await this.getLoginToken(user.user_id);
 
       return {
-        status: "success",
-        data: { token },
+        token,
       };
     } else {
       // 已有用户，直接登录
@@ -593,8 +600,7 @@ export class UserAuthService {
       const token = await this.getLoginToken(existingUser.user_id);
 
       return {
-        status: "success",
-        data: { token },
+        token,
       };
     }
   }
@@ -648,16 +654,14 @@ export class UserAuthService {
       const token = await this.getLoginToken(user.user_id);
 
       return {
-        status: "success",
-        data: { token },
+        token,
       };
     } else {
       await this.setLogin(existingUser.user_id);
       const token = await this.getLoginToken(existingUser.user_id);
 
       return {
-        status: "success",
-        data: { token },
+        token,
       };
     }
   }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
 export enum LogLevel {
@@ -57,7 +57,9 @@ export interface LogQuery {
 
 @Injectable()
 export class LogService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    this.logger = new Logger(LogService.name)
+  }
 
   // 记录日志
   async log(entry: LogEntry): Promise<void> {

@@ -466,11 +466,8 @@ export class AuthService implements OnModuleInit {
     );
 
     return {
-      status: "success",
-      data: {
-        token,
-        refreshToken,
-      },
+      token,
+      refreshToken,
     };
   }
 
@@ -491,7 +488,11 @@ export class AuthService implements OnModuleInit {
     // 查找用户（支持用户名、邮箱、手机号登录）
     const user = await this.databaseService.user.findFirst({
       where: {
-        OR: [{ username }, { email: username }, { mobile: username }],
+        OR: [
+          { username },
+          { email: username },
+          this.buildMobileQuery(username)
+        ],
       },
     });
 
@@ -565,6 +566,23 @@ export class AuthService implements OnModuleInit {
     }
 
     return user;
+  }
+
+  /**
+   * 构建手机号查询条件（处理区号）
+   */
+  private buildMobileQuery(mobile: string) {
+    // 如果是纯数字且长度11位，可能是手机号
+    if (/^\d{11}$/.test(mobile)) {
+      return {
+        OR: [
+          { mobile: mobile }, // 完全匹配（带区号）
+          { mobile: { endsWith: mobile } }, // 以手机号结尾（带区号）
+          { mobile: { contains: mobile } }, // 包含手机号（更宽松的匹配）
+        ]
+      };
+    }
+    return { mobile: mobile }; // 其他情况直接匹配
   }
 
   /**
@@ -842,9 +860,7 @@ export class AuthService implements OnModuleInit {
     return {
       status: "success",
       message: "重置密码邮件已发送",
-      data: {
-        resetToken,
-      },
+      resetToken,
     };
   }
 
@@ -1006,9 +1022,7 @@ export class AuthService implements OnModuleInit {
     return {
       status: "success",
       message: "验证邮件已发送",
-      data: {
-        token,
-      },
+      token,
     };
   }
 
@@ -1164,9 +1178,7 @@ export class AuthService implements OnModuleInit {
     return {
       status: "success",
       message: "短信验证码已发送",
-      data: {
-        code, // 测试用，实际生产环境不返回验证码
-      },
+      code, // 测试用，实际生产环境不返回验证码
     };
   }
 

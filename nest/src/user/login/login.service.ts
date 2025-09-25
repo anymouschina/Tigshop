@@ -149,6 +149,23 @@ export class LoginService {
   }
 
   /**
+   * 构建手机号查询条件（处理区号）
+   */
+  private buildMobileQuery(mobile: string) {
+    // 如果是纯数字且长度11位，可能是手机号
+    if (/^\d{11}$/.test(mobile)) {
+      return {
+        OR: [
+          { mobile: mobile }, // 完全匹配（带区号）
+          { mobile: { endsWith: mobile } }, // 以手机号结尾（带区号）
+          { mobile: { contains: mobile } }, // 包含手机号（更宽松的匹配）
+        ]
+      };
+    }
+    return { mobile: mobile }; // 其他情况直接匹配
+  }
+
+  /**
    * 根据用户名密码获取用户
    */
   private async getUserByPassword(username: string, password: string) {
@@ -156,7 +173,11 @@ export class LoginService {
 
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [{ username }, { mobile: username }, { email: username }],
+        OR: [
+          { username },
+          { email: username },
+          this.buildMobileQuery(username)
+        ],
       },
     });
 
