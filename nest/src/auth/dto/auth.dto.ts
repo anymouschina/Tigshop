@@ -34,7 +34,7 @@ export enum RegisterType {
 export class RegisterDto {
   @IsEnum(RegisterType)
   @IsNotEmpty()
-  regist_type: RegisterType;
+  regist_type: RegisterType = RegisterType.MOBILE;
 
   @IsOptional()
   @IsString()

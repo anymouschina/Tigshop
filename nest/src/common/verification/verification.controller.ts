@@ -136,6 +136,7 @@ export class PublicVerificationController {
   async captcha(@Body() body: { captchaType?: string }) {
     const captchaResult = await this.captchaService.generateCaptcha();
 
+    // PHP项目只返回data部分，code和message由中间件处理
     return {
       jigsawImageBase64: captchaResult.jigsawImageBase64,
       originalImageBase64: captchaResult.originalImageBase64,
@@ -186,18 +187,27 @@ export class PublicVerificationController {
       }
     }
 
-    if (!finalToken || !finalSecretKey || finalX === undefined) {
+    if (!finalToken || finalX === undefined) {
       return ResponseUtil.error("滑块验证码参数缺失");
     }
 
-    // 临时返回成功，跳过验证逻辑
+    // 使用CaptchaService进行真正的验证
+    const isValid = await this.captchaService.verifySlider(
+      finalToken,
+      finalSecretKey || "",
+      finalX,
+      finalTrack || [],
+      finalStartTime
+    );
+
+    if (!isValid) {
+      return ResponseUtil.error("验证失败");
+    }
+
+    // PHP项目只返回data部分，code和message由中间件处理
     return {
-      repCode: "0000",
-      repMsg: "验证成功",
-      resultData: {
-        token: finalToken,
-        captchaType: captchaType || "blockPuzzle",
-      },
+      token: finalToken,
+      captchaType: captchaType || "blockPuzzle",
     };
   }
 
@@ -312,11 +322,31 @@ export class PublicVerificationController {
       return null;
     }
 
-    // 临时返回成功，跳过所有验证逻辑
-    return {
-      token: token,
-      captchaType: captchaType,
-    };
+    // 解析pointJson获取验证数据
+    try {
+      const pointData = JSON.parse(pointJson);
+      const isValid = await this.captchaService.verifySlider(
+        token,
+        pointData.secretKey || "",
+        pointData.x,
+        pointData.track || [],
+        pointData.startTime
+      );
+
+      if (!isValid) {
+        return null;
+      }
+
+      // 返回前端期望的格式
+      return {
+        captchaType: captchaType,
+        pointJson: pointJson,
+        token: token,
+      };
+    } catch (error) {
+      console.error("验证失败:", error);
+      return null;
+    }
   }
 
   /**

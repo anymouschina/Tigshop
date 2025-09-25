@@ -27,6 +27,7 @@ import { CsrfService } from "./services/csrf.service";
 import { CaptchaService } from "./services/captcha.service";
 import { UsernameGeneratorService } from "./services/username-generator.service";
 import { VerificationCodeService } from "./services/verification-code.service";
+import { RedisService } from "../redis/redis.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
 export interface JwtPayload {
@@ -48,6 +49,7 @@ export class AuthService implements OnModuleInit {
     private readonly captchaService: CaptchaService,
     private readonly usernameGeneratorService: UsernameGeneratorService,
     private readonly verificationCodeService: VerificationCodeService,
+    private readonly redisService: RedisService,
   ) {}
 
   async onModuleInit() {
@@ -240,12 +242,11 @@ export class AuthService implements OnModuleInit {
       throw new BadRequestException("手机验证码不能为空");
     }
 
-    // 验证手机验证码
-    const isValidMobileCode =
-      await this.verificationCodeService.validateMobileCode(
-        registerDto.mobile,
-        registerDto.mobile_code,
-      );
+    // 验证手机验证码 - 使用与LoginService一致的Redis验证方式
+    const isValidMobileCode = await this.validateMobileCodeFromRedis(
+      registerDto.mobile,
+      registerDto.mobile_code,
+    );
 
     if (!isValidMobileCode) {
       throw new BadRequestException("手机验证码错误或已过期");
@@ -379,12 +380,10 @@ export class AuthService implements OnModuleInit {
       3600 * 24 * 30,
     );
 
+    // PHP项目只返回token，不需要包装在status和data中
     return {
-      status: "success",
-      data: {
-        token,
-        refreshToken,
-      },
+      token,
+      refreshToken,
     };
   }
 
@@ -584,6 +583,43 @@ export class AuthService implements OnModuleInit {
     // TODO: 实现邮箱验证码验证逻辑
     // 这里需要连接邮件服务，验证验证码是否正确
     return true; // 临时返回true，实际需要验证
+  }
+
+  /**
+   * 从Redis验证手机验证码 - 与LoginService保持一致
+   */
+  private async validateMobileCodeFromRedis(
+    mobile: string,
+    code: string,
+  ): Promise<boolean> {
+    try {
+      // 处理国际格式手机号，移除国家代码86
+      let normalizedMobile = mobile;
+      if (mobile.startsWith('86') && mobile.length > 11) {
+        normalizedMobile = mobile.substring(2);
+      }
+
+      // 尝试多种可能的Redis key格式
+      const possibleKeys = [
+        `loginmobileCode:${normalizedMobile}`,
+        `registermobileCode:${normalizedMobile}`,
+        `mobileCode:${normalizedMobile}`,
+      ];
+
+      for (const key of possibleKeys) {
+        const storedData = await this.redisService.get(key);
+        if (storedData && storedData.code === code) {
+          // 验证成功，删除已使用的验证码
+          await this.redisService.del(key);
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('验证手机验证码时发生错误:', error);
+      return false;
+    }
   }
 
   /**

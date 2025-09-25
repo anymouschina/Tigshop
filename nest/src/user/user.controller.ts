@@ -37,7 +37,22 @@ export class UserController {
   @Public()
   @ApiOperation({ summary: "用户注册" })
   async register(@Body() registerData: any) {
-    return this.userService.register(registerData);
+    // 转换前端camelCase字段为后端snake_case字段
+    const convertedData = {
+      regist_type: registerData.registType || 'mobile',
+      username: registerData.username,
+      password: registerData.password,
+      mobile: registerData.mobile,
+      mobile_code: registerData.mobileCode,
+      email: registerData.email,
+      email_code: registerData.emailCode,
+      nickname: registerData.nickname,
+      avatar: registerData.avatar,
+      referrer_user_id: registerData.referrerUserId,
+      salesman_id: registerData.salesmanId,
+    };
+
+    return this.userService.register(convertedData);
   }
 
   /**

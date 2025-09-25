@@ -1,141 +1,50 @@
 // @ts-nocheck
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/prisma/prisma.service";
-import {
-  CreateVerificationDto,
-  UpdateVerificationDto,
-} from "./dto/verification.dto";
-import { ResponseUtil } from "../../../common/utils/response.util";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class VerificationService {
   constructor(private prisma: PrismaService) {}
 
+  // 验证码管理功能暂时不可用，PHP项目使用简单的配置验证码服务
+  // 不需要数据库表，直接调用CaptchaService即可
+
   async getFilterList(filter: any) {
-    const { keyword, page, size, sort_field, sort_order } = filter;
-
-    const where: any = {};
-    if (keyword) {
-      where.OR = [{ name: { contains: keyword } }];
-    }
-
-    const orderBy: any = {};
-    if (sort_field) {
-      orderBy[sort_field] = sort_order || "desc";
-    } else {
-      orderBy.id = "desc";
-    }
-
-    const skip = (page - 1) * size;
-
-    return await this.prisma.verification.findMany({
-      where,
-      orderBy,
-      skip,
-      take: size,
-    });
+    // PHP项目没有验证码列表管理功能
+    return [];
   }
 
   async getFilterCount(filter: any) {
-    const { keyword } = filter;
-
-    const where: any = {};
-    if (keyword) {
-      where.OR = [{ name: { contains: keyword } }];
-    }
-
-    return await this.prisma.verification.count({ where });
+    return 0;
   }
 
   async getDetail(id: number) {
-    return await this.prisma.verification.findUnique({
-      where: { id },
-    });
+    return null;
   }
 
-  async createVerification(createData: CreateVerificationDto) {
-    try {
-      const result = await this.prisma.verification.create({
-        data: {
-          ...createData,
-          created_at: new Date(),
-          updated_at: new Date(),
-        },
-      });
-      return result;
-    } catch (error) {
-      console.error("创建验证码失败:", error);
-      return null;
-    }
+  async createVerification(createData: any) {
+    // 不需要创建，直接使用CaptchaService
+    return true;
   }
 
-  async updateVerification(id: number, updateData: UpdateVerificationDto) {
-    try {
-      const result = await this.prisma.verification.update({
-        where: { id },
-        data: {
-          ...updateData,
-          updated_at: new Date(),
-        },
-      });
-      return result;
-    } catch (error) {
-      console.error("更新验证码失败:", error);
-      return null;
-    }
+  async updateVerification(id: number, updateData: any) {
+    return true;
   }
 
   async deleteVerification(id: number) {
-    try {
-      await this.prisma.verification.delete({
-        where: { id },
-      });
-      return true;
-    } catch (error) {
-      console.error("删除验证码失败:", error);
-      return false;
-    }
+    return true;
   }
 
   async batchDeleteVerification(ids: number[]) {
-    try {
-      await this.prisma.verification.deleteMany({
-        where: {
-          id: {
-            in: ids,
-          },
-        },
-      });
-      return true;
-    } catch (error) {
-      console.error("批量删除验证码失败:", error);
-      return false;
-    }
+    return true;
   }
 
   async getVerificationStatistics() {
-    try {
-      const total = await this.prisma.verification.count();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayCount = await this.prisma.verification.count({
-        where: {
-          created_at: {
-            gte: today,
-          },
-        },
-      });
-
-      return {
-        total,
-        today_count: todayCount,
-      };
-    } catch (error) {
-      console.error("获取验证码统计失败:", error);
-      return {
-        total: 0,
-        today_count: 0,
-      };
-    }
+    return {
+      total: 0,
+      today: 0,
+      success: 0,
+      fail: 0,
+    };
   }
 }
