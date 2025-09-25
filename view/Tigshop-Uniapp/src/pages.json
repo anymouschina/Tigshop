@@ -554,7 +554,7 @@
             "^u--(.*)": "uview-plus/components/u-$1/u-$1.vue",
             "^up-(.*)": "uview-plus/components/u-$1/u-$1.vue",
             "^u-([^-].*)": "uview-plus/components/u-$1/u-$1.vue",
-            "^tig-(.*)": "@/components/tig/tig-$1/tig-$1.vue",
+            "tig-(.*)": "@/components/tig/tig-$1/tig-$1.vue",
             "format-price": "@/components/format-price/format-price.vue",
             "loading-box": "@/components/loading-box/loading-box.vue",
             "empty-box": "@/components/empty-box/empty-box.vue"
