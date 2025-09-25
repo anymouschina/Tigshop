@@ -62,7 +62,7 @@ export class ExampleService {
       });
       return result;
     } catch (error) {
-      console.error("创建示例失败:", error);
+      this.logger.debug("创建示例失败:", error);
       return null;
     }
   }
@@ -83,7 +83,7 @@ export class ExampleService {
       });
       return result;
     } catch (error) {
-      console.error("更新示例失败:", error);
+      this.logger.debug("更新示例失败:", error);
       return null;
     }
   }
@@ -95,7 +95,7 @@ export class ExampleService {
       });
       return true;
     } catch (error) {
-      console.error("删除示例失败:", error);
+      this.logger.debug("删除示例失败:", error);
       return false;
     }
   }
@@ -111,7 +111,7 @@ export class ExampleService {
       });
       return true;
     } catch (error) {
-      console.error("批量删除示例失败:", error);
+      this.logger.debug("批量删除示例失败:", error);
       return false;
     }
   }
@@ -134,7 +134,7 @@ export class ExampleService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error("获取示例统计失败:", error);
+      this.logger.debug("获取示例统计失败:", error);
       return {
         total: 0,
         today_count: 0,

@@ -64,7 +64,7 @@ export class TipsManageService {
       });
       return result;
     } catch (error) {
-      console.error("创建提示管理失败:", error);
+      this.logger.debug("创建提示管理失败:", error);
       return null;
     }
   }
@@ -80,7 +80,7 @@ export class TipsManageService {
       });
       return result;
     } catch (error) {
-      console.error("更新提示管理失败:", error);
+      this.logger.debug("更新提示管理失败:", error);
       return null;
     }
   }
@@ -92,7 +92,7 @@ export class TipsManageService {
       });
       return true;
     } catch (error) {
-      console.error("删除提示管理失败:", error);
+      this.logger.debug("删除提示管理失败:", error);
       return false;
     }
   }
@@ -108,7 +108,7 @@ export class TipsManageService {
       });
       return true;
     } catch (error) {
-      console.error("批量删除提示管理失败:", error);
+      this.logger.debug("批量删除提示管理失败:", error);
       return false;
     }
   }
@@ -131,7 +131,7 @@ export class TipsManageService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error("获取提示管理统计失败:", error);
+      this.logger.debug("获取提示管理统计失败:", error);
       return {
         total: 0,
         today_count: 0,

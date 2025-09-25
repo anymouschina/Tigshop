@@ -25,7 +25,7 @@ export class VerificationCodeService {
     this.mobileCodes.set(mobile, { code, expires });
 
     // TODO: Send SMS with verification code
-    console.log(`Mobile verification code for ${mobile}: ${code}`);
+    this.logger.debug(`Mobile verification code for ${mobile}: ${code}`);
 
     return code;
   }
@@ -40,7 +40,7 @@ export class VerificationCodeService {
     this.emailCodes.set(email, { code, expires });
 
     // TODO: Send email with verification code
-    console.log(`Email verification code for ${email}: ${code}`);
+    this.logger.debug(`Email verification code for ${email}: ${code}`);
 
     return code;
   }

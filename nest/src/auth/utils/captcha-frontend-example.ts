@@ -246,7 +246,7 @@ export class CaptchaFrontend {
         setTimeout(() => this.resetSlider(), 1500);
       }
     } catch (error) {
-      console.error("验证失败:", error);
+      // console.error("验证失败:", error);
       this.showError("网络错误");
       setTimeout(() => this.resetSlider(), 1500);
     }
@@ -301,7 +301,7 @@ export function initializeCaptcha(containerId: string) {
       }
     })
     .catch((error) => {
-      console.error("获取验证码失败:", error);
+      // console.error("获取验证码失败:", error);
     });
 
   return captcha;

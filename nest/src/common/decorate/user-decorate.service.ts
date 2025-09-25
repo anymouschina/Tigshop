@@ -34,7 +34,7 @@ export class UserDecorateService {
         redirectUrl: "",
       };
     } catch (error) {
-      console.error("获取开屏广告失败:", error);
+      this.logger.debug("获取开屏广告失败:", error);
       throw new Error("获取失败");
     }
   }
@@ -47,7 +47,7 @@ export class UserDecorateService {
       // Since advertisement model doesn't exist in schema, return empty array
       return [];
     } catch (error) {
-      console.error("获取轮播图失败:", error);
+      this.logger.debug("获取轮播图失败:", error);
       throw new Error("获取失败");
     }
   }
@@ -76,7 +76,7 @@ export class UserDecorateService {
         sort: nav.sort,
       }));
     } catch (error) {
-      console.error("获取导航菜单失败:", error);
+      this.logger.debug("获取导航菜单失败:", error);
       // 如果navigation表不存在或出错，返回默认导航数据
       return [
         {
@@ -119,7 +119,7 @@ export class UserDecorateService {
       // Since advertisement model doesn't exist in schema, return empty array
       return [];
     } catch (error) {
-      console.error("获取浮动广告失败:", error);
+      this.logger.debug("获取浮动广告失败:", error);
       throw new Error("获取失败");
     }
   }
@@ -132,7 +132,7 @@ export class UserDecorateService {
       // Since advertisement model doesn't exist in schema, return empty array
       return [];
     } catch (error) {
-      console.error("获取弹窗广告失败:", error);
+      this.logger.debug("获取弹窗广告失败:", error);
       throw new Error("获取失败");
     }
   }
@@ -166,7 +166,7 @@ export class UserDecorateService {
         components: decorate.components,
       };
     } catch (error) {
-      console.error("获取首页装修配置失败:", error);
+      this.logger.debug("获取首页装修配置失败:", error);
       // 如果decorate表不存在或出错，返回默认首页配置
       return {
         components: [
@@ -245,7 +245,7 @@ export class UserDecorateService {
           }
         : { components: [] };
     } catch (error) {
-      console.error("获取分类页装修配置失败:", error);
+      this.logger.debug("获取分类页装修配置失败:", error);
       throw new Error("获取失败");
     }
   }
@@ -274,7 +274,7 @@ export class UserDecorateService {
           }
         : { components: [] };
     } catch (error) {
-      console.error("获取购物车页装修配置失败:", error);
+      this.logger.debug("获取购物车页装修配置失败:", error);
       throw new Error("获取失败");
     }
   }
@@ -303,7 +303,7 @@ export class UserDecorateService {
           }
         : { components: [] };
     } catch (error) {
-      console.error("获取用户中心页装修配置失败:", error);
+      this.logger.debug("获取用户中心页装修配置失败:", error);
       throw new Error("获取失败");
     }
   }
@@ -332,7 +332,7 @@ export class UserDecorateService {
           }
         : { components: [] };
     } catch (error) {
-      console.error("获取商品详情页装修配置失败:", error);
+      this.logger.debug("获取商品详情页装修配置失败:", error);
       throw new Error("获取失败");
     }
   }
@@ -359,7 +359,7 @@ export class UserDecorateService {
 
       return null; // 成功返回null，由拦截器包装
     } catch (error) {
-      console.error("跟踪广告点击失败:", error);
+      this.logger.debug("跟踪广告点击失败:", error);
       throw new Error("记录失败");
     }
   }
@@ -382,7 +382,7 @@ export class UserDecorateService {
 
       return null; // 成功返回null，由拦截器包装
     } catch (error) {
-      console.error("跟踪广告曝光失败:", error);
+      this.logger.debug("跟踪广告曝光失败:", error);
       throw new Error("记录失败");
     }
   }

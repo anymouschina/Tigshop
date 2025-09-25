@@ -29,7 +29,7 @@ export function aesEncrypt(text: string, secretKey: string): string {
     // 返回 IV + 加密数据
     return iv.toString("base64") + encrypted;
   } catch (error) {
-    console.error("AES加密失败:", error);
+    // // console.error("AES加密失败:", error);
     throw new Error("加密失败");
   }
 }
@@ -39,9 +39,9 @@ export function aesEncrypt(text: string, secretKey: string): string {
  */
 export function aesDecrypt(encryptedText: string, secretKey: string): string {
   try {
-    console.log("🔍 AES解密调试:");
-    console.log("  - 加密文本长度:", encryptedText.length);
-    console.log("  - 密钥:", secretKey);
+    // // console.log("🔍 AES解密调试:");
+    // // console.log("  - 加密文本长度:", encryptedText.length);
+    // // console.log("  - 密钥:", secretKey);
 
     // 方法1: 尝试ECB模式（前端crypto-js使用的方式）
     try {
@@ -69,10 +69,10 @@ export function aesDecrypt(encryptedText: string, secretKey: string): string {
       let decrypted = decipher.update(encryptedText, "base64", "utf8");
       decrypted += decipher.final("utf8");
 
-      console.log(`  - ${algorithm}解密成功:`, decrypted);
+      // // console.log(`  - ${algorithm}解密成功:`, decrypted);
       return decrypted;
     } catch (error1) {
-      console.log("  - ECB模式解密失败:", error1.message);
+      // // console.log("  - ECB模式解密失败:", error1.message);
     }
 
     // 方法2: 尝试标准AES-256-CBC解密 (IV + encrypted data)
@@ -93,10 +93,10 @@ export function aesDecrypt(encryptedText: string, secretKey: string): string {
         let decrypted = decipher.update(encrypted, "base64", "utf8");
         decrypted += decipher.final("utf8");
 
-        console.log("  - CBC解密成功:", decrypted);
+        // // console.log("  - CBC解密成功:", decrypted);
         return decrypted;
       } catch (error) {
-        console.log("  - CBC解密失败:", error.message);
+        // // console.log("  - CBC解密失败:", error.message);
       }
     }
 
@@ -109,24 +109,24 @@ export function aesDecrypt(encryptedText: string, secretKey: string): string {
       let decrypted = decipher.update(encryptedText, "base64", "utf8");
       decrypted += decipher.final("utf8");
 
-      console.log("  - 零IV CBC解密成功:", decrypted);
+      // // console.log("  - 零IV CBC解密成功:", decrypted);
       return decrypted;
     } catch (error3) {
-      console.log("  - 零IV CBC解密失败:", error3.message);
+      // // console.log("  - 零IV CBC解密失败:", error3.message);
     }
 
     // 方法4: 尝试直接解析（可能是未加密的JSON）
     try {
       const parsed = JSON.parse(encryptedText);
-      console.log("  - 直接解析成功:", parsed);
+      // // console.log("  - 直接解析成功:", parsed);
       return JSON.stringify(parsed);
     } catch (parseError) {
-      console.log("  - 直接解析失败:", parseError.message);
+      // // console.log("  - 直接解析失败:", parseError.message);
     }
 
     throw new Error("所有解密方法都失败");
   } catch (error) {
-    console.log("  - AES解密总失败:", error.message);
+    // // console.log("  - AES解密总失败:", error.message);
     throw error;
   }
 }

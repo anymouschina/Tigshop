@@ -85,7 +85,7 @@ export class PriceInquiryService {
       });
       return result;
     } catch (error) {
-      console.error("创建价格查询失败:", error);
+      this.logger.debug("创建价格查询失败:", error);
       return null;
     }
   }
@@ -116,7 +116,7 @@ export class PriceInquiryService {
       });
       return result;
     } catch (error) {
-      console.error("更新价格查询失败:", error);
+      this.logger.debug("更新价格查询失败:", error);
       return null;
     }
   }
@@ -128,7 +128,7 @@ export class PriceInquiryService {
       });
       return true;
     } catch (error) {
-      console.error("删除价格查询失败:", error);
+      this.logger.debug("删除价格查询失败:", error);
       return false;
     }
   }
@@ -144,7 +144,7 @@ export class PriceInquiryService {
       });
       return true;
     } catch (error) {
-      console.error("批量删除价格查询失败:", error);
+      this.logger.debug("批量删除价格查询失败:", error);
       return false;
     }
   }
@@ -162,7 +162,7 @@ export class PriceInquiryService {
       });
       return result;
     } catch (error) {
-      console.error("回复价格查询失败:", error);
+      this.logger.debug("回复价格查询失败:", error);
       return null;
     }
   }
@@ -193,7 +193,7 @@ export class PriceInquiryService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error("获取价格查询统计失败:", error);
+      this.logger.debug("获取价格查询统计失败:", error);
       return {
         total: 0,
         pending: 0,

@@ -63,7 +63,7 @@ export class FeedbackService {
       });
       return result;
     } catch (error) {
-      console.error("创建用户反馈失败:", error);
+      this.logger.debug("创建用户反馈失败:", error);
       return null;
     }
   }
@@ -85,7 +85,7 @@ export class FeedbackService {
       });
       return result;
     } catch (error) {
-      console.error("更新用户反馈失败:", error);
+      this.logger.debug("更新用户反馈失败:", error);
       return null;
     }
   }
@@ -97,7 +97,7 @@ export class FeedbackService {
       });
       return true;
     } catch (error) {
-      console.error("删除用户反馈失败:", error);
+      this.logger.debug("删除用户反馈失败:", error);
       return false;
     }
   }
@@ -113,7 +113,7 @@ export class FeedbackService {
       });
       return true;
     } catch (error) {
-      console.error("批量删除用户反馈失败:", error);
+      this.logger.debug("批量删除用户反馈失败:", error);
       return false;
     }
   }
@@ -135,7 +135,7 @@ export class FeedbackService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error("获取用户反馈统计失败:", error);
+      this.logger.debug("获取用户反馈统计失败:", error);
       return {
         total: 0,
         today_count: 0,

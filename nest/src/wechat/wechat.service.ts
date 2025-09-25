@@ -30,7 +30,7 @@ export class WechatService {
     const appSecret = this.configService.get<string>("WECHAT_APP_SECRET");
 
     if (!appId || !appSecret) {
-      this.logger.error("WeChat configuration is missing");
+      this.logger.debug("WeChat configuration is missing");
       throw new InternalServerErrorException("WeChat configuration is missing");
     }
 
@@ -43,7 +43,7 @@ export class WechatService {
         this.httpService.get(url).pipe(
           map((res) => res.data),
           catchError((error) => {
-            this.logger.error(
+            this.logger.debug(
               `Failed to get WeChat access token: ${error.message}`,
             );
             throw new BadRequestException("Failed to get WeChat access token");
@@ -52,14 +52,14 @@ export class WechatService {
       );
 
       if (response.errcode) {
-        this.logger.error(`WeChat API error: ${response.errmsg}`);
+        this.logger.debug(`WeChat API error: ${response.errmsg}`);
         throw new BadRequestException(`WeChat API error: ${response.errmsg}`);
       }
 
       this.logger.debug("Successfully got access token");
       return response.access_token as string;
     } catch (error) {
-      this.logger.error(`Failed to get access token: ${error.message}`);
+      this.logger.debug(`Failed to get access token: ${error.message}`);
       throw error;
     }
   }
@@ -79,7 +79,7 @@ export class WechatService {
     envVersion: "release" | "trial" | "develop" = "release",
   ): Promise<Buffer> {
     try {
-      this.logger.log(
+      this.logger.debug(
         `Generating QR code for page: ${page}, scene: ${scene}, width: ${width}, envVersion: ${envVersion}`,
       );
 
@@ -90,7 +90,7 @@ export class WechatService {
 
       // 检查scene长度，微信限制最大32个可见字符
       if (scene.length > 32) {
-        this.logger.warn(
+        this.logger.debug(
           `Scene parameter exceeds 32 characters limit: ${scene}`,
         );
         throw new BadRequestException(
@@ -118,7 +118,7 @@ export class WechatService {
           })
           .pipe(
             catchError((error) => {
-              this.logger.error(`Failed to generate QR code: ${error.message}`);
+              this.logger.debug(`Failed to generate QR code: ${error.message}`);
               throw new BadRequestException("Failed to generate QR code");
             }),
           ),
@@ -132,7 +132,7 @@ export class WechatService {
         const errorText = buffer.toString();
         const errorJson = JSON.parse(errorText);
         if (errorJson.errcode) {
-          this.logger.error(`WeChat API error: ${errorJson.errmsg}`);
+          this.logger.debug(`WeChat API error: ${errorJson.errmsg}`);
           throw new BadRequestException(
             `WeChat API error: ${errorJson.errmsg}`,
           );
@@ -144,7 +144,7 @@ export class WechatService {
 
       return buffer;
     } catch (error) {
-      this.logger.error(
+      this.logger.debug(
         `Failed to generate mini program QR code: ${error.message}`,
       );
       throw error;
@@ -184,11 +184,11 @@ export class WechatService {
         `http://localhost:${process.env.PORT || 3000}`;
       const qrCodeUrl = `${baseUrl}/uploads/qrcodes/${filename}`;
 
-      this.logger.log(`QR code saved, accessible at: ${qrCodeUrl}`);
+      this.logger.debug(`QR code saved, accessible at: ${qrCodeUrl}`);
 
       return qrCodeUrl;
     } catch (error) {
-      this.logger.error(`Failed to save QR code: ${error.message}`);
+      this.logger.debug(`Failed to save QR code: ${error.message}`);
       throw new InternalServerErrorException("Failed to save QR code");
     }
   }

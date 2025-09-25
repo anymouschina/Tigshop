@@ -11,7 +11,7 @@ import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 async function bootstrap() {
   // 创建全局日志实例
   const logger = new Logger("Application");
-  console.log(1111);
+  logger.debug(1111);
   // 设置日志级别
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {

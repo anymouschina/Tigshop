@@ -80,7 +80,7 @@ export class LogService {
         },
       });
     } catch (error) {
-      console.error("Failed to save log entry:", error);
+      this.logger.debug("Failed to save log entry:", error);
     }
   }
 

@@ -123,7 +123,7 @@ export class CommonConfigService {
 
       return themeSettings;
     } catch (error) {
-      console.error("获取主题设置失败:", error);
+      this.logger.debug("获取主题设置失败:", error);
       // 返回默认配置
       return this.getDefaultThemeSettings();
     }
@@ -246,7 +246,7 @@ export class CommonConfigService {
 
       return initConfig;
     } catch (error) {
-      console.error("获取初始化配置失败:", error);
+      this.logger.debug("获取初始化配置失败:", error);
       // 返回默认配置
       return this.getDefaultInitConfigSettings();
     }
@@ -275,7 +275,7 @@ export class CommonConfigService {
         isDefault: area.is_default,
       }));
     } catch (error) {
-      console.error("获取手机区号配置失败:", error);
+      this.logger.debug("获取手机区号配置失败:", error);
       // 返回默认数据
       return [
         {
@@ -344,7 +344,7 @@ export class CommonConfigService {
     try {
       return JSON.parse(value);
     } catch (error) {
-      console.error(`解析JSON配置失败 ${bizCode}:`, error);
+      this.logger.debug(`解析JSON配置失败 ${bizCode}:`, error);
       return defaultValue;
     }
   }

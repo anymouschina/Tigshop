@@ -61,7 +61,7 @@ export class ToolService {
       });
       return result;
     } catch (error) {
-      console.error("创建通用工具失败:", error);
+      this.logger.debug("创建通用工具失败:", error);
       return null;
     }
   }
@@ -77,7 +77,7 @@ export class ToolService {
       });
       return result;
     } catch (error) {
-      console.error("更新通用工具失败:", error);
+      this.logger.debug("更新通用工具失败:", error);
       return null;
     }
   }
@@ -89,7 +89,7 @@ export class ToolService {
       });
       return true;
     } catch (error) {
-      console.error("删除通用工具失败:", error);
+      this.logger.debug("删除通用工具失败:", error);
       return false;
     }
   }
@@ -105,7 +105,7 @@ export class ToolService {
       });
       return true;
     } catch (error) {
-      console.error("批量删除通用工具失败:", error);
+      this.logger.debug("批量删除通用工具失败:", error);
       return false;
     }
   }
@@ -128,7 +128,7 @@ export class ToolService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error("获取通用工具统计失败:", error);
+      this.logger.debug("获取通用工具统计失败:", error);
       return {
         total: 0,
         today_count: 0,

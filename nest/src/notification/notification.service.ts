@@ -173,7 +173,7 @@ export class NotificationService {
     }
 
     // TODO: 集成邮件服务
-    console.log(`发送邮件通知到 ${user.email}: ${notification.title}`);
+    this.logger.debug(`发送邮件通知到 ${user.email}: ${notification.title}`);
   }
 
   private async sendSmsNotification(
@@ -189,7 +189,7 @@ export class NotificationService {
     }
 
     // TODO: 集成短信服务
-    console.log(`发送短信通知到 ${user.mobile}: ${notification.title}`);
+    this.logger.debug(`发送短信通知到 ${user.mobile}: ${notification.title}`);
   }
 
   private async sendPushNotification(
@@ -197,7 +197,7 @@ export class NotificationService {
     userId: number,
   ): Promise<void> {
     // TODO: 集成推送服务
-    console.log(`发送推送通知到用户 ${userId}: ${notification.title}`);
+    this.logger.debug(`发送推送通知到用户 ${userId}: ${notification.title}`);
   }
 
   private async sendWechatNotification(
@@ -205,7 +205,7 @@ export class NotificationService {
     userId: number,
   ): Promise<void> {
     // TODO: 集成微信服务
-    console.log(`发送微信通知到用户 ${userId}: ${notification.title}`);
+    this.logger.debug(`发送微信通知到用户 ${userId}: ${notification.title}`);
   }
 
   async getFilterResult(query: NotificationQueryDto): Promise<any[]> {

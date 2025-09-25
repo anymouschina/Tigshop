@@ -53,7 +53,7 @@ export class LogController {
 
       // 如果数据库中有对应的日志表，可以在这里保存
       // 目前先返回成功响应，后续可以根据需要添加数据库存储
-      console.log("Log data:", logData);
+      this.logger.debug("Log data:", logData);
 
       return {
         code: 0,
@@ -61,7 +61,7 @@ export class LogController {
         message: "success",
       };
     } catch (error) {
-      console.error("记录日志失败:", error);
+      this.logger.debug("记录日志失败:", error);
       return {
         code: 500,
         data: null,
@@ -95,7 +95,7 @@ export class LogController {
       };
 
       // 如果数据库中有对应的日志表，可以在这里保存
-      console.log("Log data (POST):", logData);
+      this.logger.debug("Log data (POST):", logData);
 
       return {
         code: 0,
@@ -103,7 +103,7 @@ export class LogController {
         message: "success",
       };
     } catch (error) {
-      console.error("记录日志失败:", error);
+      this.logger.debug("记录日志失败:", error);
       return {
         code: 500,
         data: null,

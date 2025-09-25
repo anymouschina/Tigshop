@@ -23,7 +23,7 @@ export class CronService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async dailyStatistics() {
     try {
-      this.logger.log("Running daily statistics job...");
+      this.logger.debug("Running daily statistics job...");
 
       const today = new Date();
       const yesterday = new Date(today);
@@ -70,9 +70,9 @@ export class CronService {
       // 清除相关缓存
       await this.statisticService.clearCache();
 
-      this.logger.log("Daily statistics job completed successfully");
+      this.logger.debug("Daily statistics job completed successfully");
     } catch (error) {
-      this.logger.error("Daily statistics job failed:", error);
+      this.logger.debug("Daily statistics job failed:", error);
       await this.logService.error("Daily statistics job failed", {
         error: error.message,
       });
@@ -83,7 +83,7 @@ export class CronService {
   @Cron(CronExpression.EVERY_HOUR)
   async cacheWarmup() {
     try {
-      this.logger.log("Running cache warmup job...");
+      this.logger.debug("Running cache warmup job...");
 
       // 预热热门产品缓存
       await this.warmupPopularProductsCache();
@@ -94,9 +94,9 @@ export class CronService {
       // 预热品牌缓存
       await this.warmupBrandsCache();
 
-      this.logger.log("Cache warmup job completed successfully");
+      this.logger.debug("Cache warmup job completed successfully");
     } catch (error) {
-      this.logger.error("Cache warmup job failed:", error);
+      this.logger.debug("Cache warmup job failed:", error);
       await this.logService.error("Cache warmup job failed", {
         error: error.message,
       });
@@ -107,7 +107,7 @@ export class CronService {
   @Cron("*/5 * * * *")
   async checkOrderStatus() {
     try {
-      this.logger.log("Running order status check job...");
+      this.logger.debug("Running order status check job...");
 
       // 检查超时未支付的订单
       await this.checkTimeoutOrders();
@@ -118,9 +118,9 @@ export class CronService {
       // 检查需要发送提醒的订单
       await this.checkOrderReminders();
 
-      this.logger.log("Order status check job completed successfully");
+      this.logger.debug("Order status check job completed successfully");
     } catch (error) {
-      this.logger.error("Order status check job failed:", error);
+      this.logger.debug("Order status check job failed:", error);
       await this.logService.error("Order status check job failed", {
         error: error.message,
       });
@@ -131,7 +131,7 @@ export class CronService {
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async cleanupExpiredData() {
     try {
-      this.logger.log("Running cleanup job...");
+      this.logger.debug("Running cleanup job...");
 
       // 清理过期的验证码
       await this.cleanupExpiredVerificationCodes();
@@ -145,11 +145,11 @@ export class CronService {
       // 清理日志（保留90天）
       const deletedLogsCount = await this.logService.cleanupOldLogs(90);
 
-      this.logger.log(
+      this.logger.debug(
         `Cleanup job completed. Deleted ${deletedLogsCount} old logs`,
       );
     } catch (error) {
-      this.logger.error("Cleanup job failed:", error);
+      this.logger.debug("Cleanup job failed:", error);
       await this.logService.error("Cleanup job failed", {
         error: error.message,
       });
@@ -160,7 +160,7 @@ export class CronService {
   @Cron(CronExpression.EVERY_WEEKEND)
   async sendWeeklyReport() {
     try {
-      this.logger.log("Running weekly report job...");
+      this.logger.debug("Running weekly report job...");
 
       const today = new Date();
       const lastWeek = new Date(today);
@@ -192,9 +192,9 @@ export class CronService {
         );
       }
 
-      this.logger.log("Weekly report job completed successfully");
+      this.logger.debug("Weekly report job completed successfully");
     } catch (error) {
-      this.logger.error("Weekly report job failed:", error);
+      this.logger.debug("Weekly report job failed:", error);
       await this.logService.error("Weekly report job failed", {
         error: error.message,
       });
@@ -205,7 +205,7 @@ export class CronService {
   @Cron(CronExpression.EVERY_DAY_AT_10AM)
   async checkInventoryWarnings() {
     try {
-      this.logger.log("Running inventory warning check job...");
+      this.logger.debug("Running inventory warning check job...");
 
       // 获取低库存产品
       const lowStockProducts = await this.prisma.product.findMany({
@@ -246,11 +246,11 @@ export class CronService {
         }
       }
 
-      this.logger.log(
+      this.logger.debug(
         `Inventory warning check completed. Found ${lowStockProducts.length} low stock products`,
       );
     } catch (error) {
-      this.logger.error("Inventory warning check job failed:", error);
+      this.logger.debug("Inventory warning check job failed:", error);
       await this.logService.error("Inventory warning check job failed", {
         error: error.message,
       });
@@ -261,7 +261,7 @@ export class CronService {
   @Cron("*/30 * * * *")
   async healthCheck() {
     try {
-      this.logger.log("Running health check job...");
+      this.logger.debug("Running health check job...");
 
       // 检查数据库连接
       await this.prisma.$queryRaw`SELECT 1`;
@@ -283,9 +283,9 @@ export class CronService {
         uptime,
       });
 
-      this.logger.log("Health check job completed successfully");
+      this.logger.debug("Health check job completed successfully");
     } catch (error) {
-      this.logger.error("Health check job failed:", error);
+      this.logger.debug("Health check job failed:", error);
       await this.logService.error("Health check job failed", {
         error: error.message,
       });

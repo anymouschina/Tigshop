@@ -183,7 +183,7 @@ export class PublicVerificationController {
         finalTrack = this.generateRealisticTrack(finalX);
         finalStartTime = Date.now() - 1500; // 假设1.5秒前开始
       } catch (error) {
-        console.error("pointJson解析失败:", error);
+        this.logger.debug("pointJson解析失败:", error);
         return ResponseUtil.error("pointJson格式错误或解密失败");
       }
     }

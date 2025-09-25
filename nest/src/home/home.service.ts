@@ -77,7 +77,7 @@ export class HomeService {
           return parsedData;
         }
       } catch (parseError) {
-        console.error("解析预览装修数据失败:", parseError);
+        this.logger.debug("解析预览装修数据失败:", parseError);
         moduleList = this.getMockModuleList();
       }
 
@@ -89,7 +89,7 @@ export class HomeService {
         backgroundImage: backgroundImage,
       };
     } catch (error) {
-      console.error("获取预览装修数据失败:", error);
+      this.logger.debug("获取预览装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: previewId,
@@ -134,7 +134,7 @@ export class HomeService {
           backgroundImage = parsedData.backgroundImage || "";
         }
       } catch (parseError) {
-        console.error("解析PC预览装修数据失败:", parseError);
+        this.logger.debug("解析PC预览装修数据失败:", parseError);
         moduleList = this.getMockModuleList();
       }
 
@@ -145,7 +145,7 @@ export class HomeService {
         backgroundImage: backgroundImage,
       };
     } catch (error) {
-      console.error("获取PC预览装修数据失败:", error);
+      this.logger.debug("获取PC预览装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: previewId,
@@ -190,7 +190,7 @@ export class HomeService {
           return parsedData;
         }
       } catch (parseError) {
-        console.error("解析装修数据失败:", parseError);
+        this.logger.debug("解析装修数据失败:", parseError);
         moduleList = this.getMockModuleList();
       }
 
@@ -202,7 +202,7 @@ export class HomeService {
         backgroundImage: backgroundImage,
       };
     } catch (error) {
-      console.error("获取装修数据失败:", error);
+      this.logger.debug("获取装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: decorateId,
@@ -246,13 +246,13 @@ export class HomeService {
 
       try {
         if (decorate.data) {
-          console.log("Raw decorate.data:", decorate.data);
+          this.logger.debug("Raw decorate.data:", decorate.data);
           const parsedData = JSON.parse(decorate.data);
           return parsedData;
         }
       } catch (parseError) {
-        console.error("解析装修数据失败:", parseError);
-        console.error("Raw data that failed to parse:", decorate.data);
+        this.logger.debug("解析装修数据失败:", parseError);
+        this.logger.debug("Raw data that failed to parse:", decorate.data);
         moduleList = this.getMockModuleList();
       }
 
@@ -264,7 +264,7 @@ export class HomeService {
         backgroundImage: backgroundImage || "/images/default-background.jpg",
       };
     } catch (error) {
-      console.error("获取首页装修数据失败:", error);
+      this.logger.debug("获取首页装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: 1,
@@ -311,7 +311,7 @@ export class HomeService {
           backgroundImage = parsedData.backgroundImage || "";
         }
       } catch (parseError) {
-        console.error("解析PC装修数据失败:", parseError);
+        this.logger.debug("解析PC装修数据失败:", parseError);
         moduleList = this.getMockModuleList();
       }
 
@@ -322,7 +322,7 @@ export class HomeService {
         backgroundImage: backgroundImage,
       };
     } catch (error) {
-      console.error("获取PC首页装修数据失败:", error);
+      this.logger.debug("获取PC首页装修数据失败:", error);
       // 出错时返回默认配置
       return {
         decorate_id: 2,
@@ -528,7 +528,7 @@ export class HomeService {
         shop_id: 0,
       };
     } catch (error) {
-      console.error("Error fetching mobile nav:", error);
+      this.logger.debug("Error fetching mobile nav:", error);
       // 返回默认导航数据 - 使用PHP版本期望的字段结构
       const defaultNavList = [
         {
@@ -591,7 +591,7 @@ export class HomeService {
 
       return item || {};
     } catch (error) {
-      console.error("Error fetching member decorate:", error);
+      this.logger.debug("Error fetching member decorate:", error);
       // 返回默认个人中心数据
       return {
         id: 2,

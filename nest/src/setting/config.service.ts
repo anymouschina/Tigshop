@@ -256,7 +256,7 @@ export class ConfigService {
               update_time: new Date(),
             },
           });
-          console.log(`创建配置项: ${config.biz_code} - ${config.comment}`);
+          this.logger.debug(`创建配置项: ${config.biz_code} - ${config.comment}`);
         } else {
           // 更新配置项（如果需要）
           await this.prisma.config.update({
@@ -266,14 +266,14 @@ export class ConfigService {
               update_time: new Date(),
             },
           });
-          console.log(`更新配置项: ${config.biz_code} - ${config.comment}`);
+          this.logger.debug(`更新配置项: ${config.biz_code} - ${config.comment}`);
         }
       } catch (error) {
-        console.error(`处理配置项 ${config.biz_code} 时出错:`, error);
+        this.logger.debug(`处理配置项 ${config.biz_code} 时出错:`, error);
       }
     }
 
-    console.log("配置设置初始化完成");
+    this.logger.debug("配置设置初始化完成");
   }
 
   async getFilterResult(filter: any): Promise<any[]> {

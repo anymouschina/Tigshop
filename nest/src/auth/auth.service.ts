@@ -119,7 +119,7 @@ export class AuthService implements OnModuleInit {
   private async cacheToken(uuid: string, token: string): Promise<void> {
     // In real implementation, use Redis. For now, we'll simulate with in-memory storage
     // This would be: await this.redisService.set(`app:appId:${uuid}`, token, 3600 * 24 * 15);
-    console.log(`Token cached for UUID: ${uuid}`);
+    this.logger.debug(`Token cached for UUID: ${uuid}`);
   }
 
   /**
@@ -251,7 +251,7 @@ export class AuthService implements OnModuleInit {
       registerDto.mobile,
       registerDto.mobile_code,
     );
-    this.logger.log(`====>isValidMobileCode ${isValidMobileCode}`);
+    this.logger.debug(`====>isValidMobileCode ${isValidMobileCode}`);
     if (!isValidMobileCode) {
       throw new BadRequestException("手机验证码错误或已过期");
     }
@@ -397,7 +397,9 @@ export class AuthService implements OnModuleInit {
   private async createSalesmanCustomer(userId: number, salesmanId: number) {
     // TODO: 实现销售员客户关系创建逻辑
     // 这里需要在数据库中创建销售员客户记录
-    console.log(`创建销售员客户关系: 用户ID ${userId}, 销售员ID ${salesmanId}`);
+    this.logger.debug(
+      `创建销售员客户关系: 用户ID ${userId}, 销售员ID ${salesmanId}`
+    );
   }
 
   /**
@@ -574,7 +576,7 @@ export class AuthService implements OnModuleInit {
   ): Promise<boolean> {
     // 开发环境特殊处理：允许000000验证码通过
     if (process.env.NODE_ENV === "development" && code === "000000") {
-      this.logger.log(
+      this.logger.debug(
         `开发环境使用测试验证码000000通过验证，手机号：${mobile}`,
       );
       return true;
@@ -594,7 +596,7 @@ export class AuthService implements OnModuleInit {
   ): Promise<boolean> {
     // 开发环境特殊处理：允许000000验证码通过
     if (process.env.NODE_ENV === "development" && code === "000000") {
-      this.logger.log(`开发环境使用测试验证码000000通过验证，邮箱：${email}`);
+      this.logger.debug(`开发环境使用测试验证码000000通过验证，邮箱：${email}`);
       return true;
     }
 
@@ -613,7 +615,7 @@ export class AuthService implements OnModuleInit {
     try {
       // 开发环境特殊处理：允许000000验证码通过
       if (process.env.NODE_ENV === "development" && code === "000000") {
-        this.logger.log(
+        this.logger.debug(
           `开发环境使用测试验证码000000通过验证，手机号：${mobile}`,
         );
         return true;
@@ -643,7 +645,7 @@ export class AuthService implements OnModuleInit {
 
       return false;
     } catch (error) {
-      console.error("验证手机验证码时发生错误:", error);
+      this.logger.debug("验证手机验证码时发生错误:", error);
       return false;
     }
   }
@@ -833,7 +835,7 @@ export class AuthService implements OnModuleInit {
     });
 
     // TODO: 发送重置密码邮件
-    console.log(
+    this.logger.debug(
       `Password reset token for ${forgotPasswordDto.email}: ${resetToken}`,
     );
 
@@ -999,7 +1001,7 @@ export class AuthService implements OnModuleInit {
     });
 
     // TODO: 发送验证邮件
-    console.log(`Email verification token for ${user.email}: ${token}`);
+    this.logger.debug(`Email verification token for ${user.email}: ${token}`);
 
     return {
       status: "success",

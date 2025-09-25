@@ -118,13 +118,13 @@ export class CaptchaService {
     );
 
     if (!captcha) {
-      this.logger.warn(`验证失败: 找不到验证码数据, token: ${token}`);
+      this.logger.debug(`验证失败: 找不到验证码数据, token: ${token}`);
       return false;
     }
 
     // 严格验证secretKey
     if (captcha.secretKey !== secretKey) {
-      this.logger.warn(
+      this.logger.debug(
         `验证失败: secretKey不匹配, 期望: ${captcha.secretKey}, 实际: ${secretKey}`,
       );
       return false;
@@ -133,7 +133,7 @@ export class CaptchaService {
     // 检查验证码是否过期
     const now = Date.now();
     if (now - captcha.createdAt > this.CAPTCHA_TTL * 1000) {
-      this.logger.warn(
+      this.logger.debug(
         `验证失败: 验证码已过期, 创建时间: ${captcha.createdAt}, 当前时间: ${now}`,
       );
       return false;
@@ -145,7 +145,7 @@ export class CaptchaService {
 
     // 如果位置验证失败，不再进行比例转换验证，直接拒绝
     if (!isValidPosition) {
-      this.logger.warn(
+      this.logger.debug(
         `位置验证失败: 前端X=${x}, 后端offsetX=${captcha.offsetX}, 差异=${positionDiff}, 容差=${this.TOLERANCE}`,
       );
       return false;
@@ -153,7 +153,7 @@ export class CaptchaService {
 
     // 时间验证 - 必须提供startTime
     if (!startTime) {
-      this.logger.warn("时间验证失败: 缺少开始时间");
+      this.logger.debug("时间验证失败: 缺少开始时间");
       return false;
     }
 
@@ -162,7 +162,7 @@ export class CaptchaService {
       duration >= this.MIN_DURATION && duration <= this.MAX_DURATION;
 
     if (!isValidTime) {
-      this.logger.warn(
+      this.logger.debug(
         `时间验证失败: 滑动时间=${duration}ms, 要求范围=${this.MIN_DURATION}-${this.MAX_DURATION}ms`,
       );
       return false;
@@ -170,7 +170,7 @@ export class CaptchaService {
 
     // 轨迹验证 - 必须提供有效轨迹
     if (!track || track.length < 5) {
-      this.logger.warn(
+      this.logger.debug(
         `轨迹验证失败: 轨迹数据不足, 长度=${track?.length || 0}`,
       );
       return false;
@@ -186,7 +186,7 @@ export class CaptchaService {
     }
 
     if (!isTrackValid) {
-      this.logger.warn(
+      this.logger.debug(
         `轨迹验证失败: 轨迹不是连续递增, ${JSON.stringify(track)}`,
       );
       return false;
@@ -195,7 +195,7 @@ export class CaptchaService {
     // 验证轨迹距离是否合理
     const trackDistance = track[track.length - 1] - track[0];
     if (Math.abs(trackDistance - x) > this.TOLERANCE * 2) {
-      this.logger.warn(
+      this.logger.debug(
         `轨迹验证失败: 轨迹距离与点击位置不匹配, 轨迹距离=${trackDistance}, 点击位置=${x}`,
       );
       return false;
@@ -204,7 +204,7 @@ export class CaptchaService {
     // 使用后立即删除
     await this.redisService.del(`captcha:${token}`);
 
-    this.logger.log(
+    this.logger.debug(
       `滑块验证通过: 位置差异=${positionDiff}, 滑动时间=${duration}ms, 轨迹长度=${track.length}`,
     );
     return true;
@@ -218,7 +218,7 @@ export class CaptchaService {
     );
 
     if (!captcha) {
-      this.logger.warn(`验证失败: 找不到验证码数据, token: ${token}`);
+      this.logger.debug(`验证失败: 找不到验证码数据, token: ${token}`);
       return false;
     }
 
@@ -233,10 +233,10 @@ export class CaptchaService {
       parseSuccess = true;
       this.logger.debug(`AES解密成功: ${JSON.stringify(parsedData)}`);
     } catch (e) {
-      this.logger.warn(`AES解密失败: ${e.message}`);
+      this.logger.debug(`AES解密失败: ${e.message}`);
 
       // 如果AES解密失败，直接返回失败，不再使用模拟数据
-      this.logger.warn("pointJson解密失败，验证失败");
+      this.logger.debug("pointJson解密失败，验证失败");
       return false;
     }
 
@@ -373,12 +373,12 @@ export class CaptchaService {
   /** 验证滑动轨迹 */
   private validateTrack(track: number[]): boolean {
     if (!track || track.length === 0) {
-      this.logger.warn("轨迹验证失败: 轨迹为空");
+      this.logger.debug("轨迹验证失败: 轨迹为空");
       return false;
     }
 
     if (track.length < 3) {
-      this.logger.warn(`轨迹验证失败: 轨迹长度不足, 长度=${track.length}`);
+      this.logger.debug(`轨迹验证失败: 轨迹长度不足, 长度=${track.length}`);
       return false;
     }
 

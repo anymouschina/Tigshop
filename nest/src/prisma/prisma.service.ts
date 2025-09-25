@@ -15,7 +15,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     super();
 
     // 🚨 每次实例化都会打印
-    this.logger.warn("🚨 PrismaService 被实例化！");
+    this.logger.debug("🚨 PrismaService 被实例化！");
 
     // 打印调用栈（只保留你项目相关路径，过滤掉 node_modules）
     const stack = (new Error().stack || "")
@@ -47,11 +47,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   async onModuleInit() {
     try {
-      this.logger.warn("⚡ PrismaService.onModuleInit 被调用");
+      this.logger.debug("⚡ PrismaService.onModuleInit 被调用");
       await this.$connect();
-      this.logger.log("✅ Prisma connected");
+      this.logger.debug("✅ Prisma connected");
     } catch (err) {
-      this.logger.error(`❌ Prisma connection failed: ${err?.message || err}`);
+      this.logger.debug(`❌ Prisma connection failed: ${err?.message || err}`);
       throw err;
     }
   }

@@ -64,7 +64,7 @@ export class ProductInventoryLogService {
       });
       return result;
     } catch (error) {
-      console.error("创建产品库存日志失败:", error);
+      this.logger.debug("创建产品库存日志失败:", error);
       return null;
     }
   }
@@ -83,7 +83,7 @@ export class ProductInventoryLogService {
       });
       return result;
     } catch (error) {
-      console.error("更新产品库存日志失败:", error);
+      this.logger.debug("更新产品库存日志失败:", error);
       return null;
     }
   }
@@ -95,7 +95,7 @@ export class ProductInventoryLogService {
       });
       return true;
     } catch (error) {
-      console.error("删除产品库存日志失败:", error);
+      this.logger.debug("删除产品库存日志失败:", error);
       return false;
     }
   }
@@ -111,7 +111,7 @@ export class ProductInventoryLogService {
       });
       return true;
     } catch (error) {
-      console.error("批量删除产品库存日志失败:", error);
+      this.logger.debug("批量删除产品库存日志失败:", error);
       return false;
     }
   }
@@ -134,7 +134,7 @@ export class ProductInventoryLogService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error("获取产品库存日志统计失败:", error);
+      this.logger.debug("获取产品库存日志统计失败:", error);
       return {
         total: 0,
         today_count: 0,

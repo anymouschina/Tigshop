@@ -95,7 +95,7 @@ export class AlipayService {
         message: "支付宝支付创建成功",
       };
     } catch (error) {
-      this.logger.error("创建支付宝支付失败:", error);
+      this.logger.debug("创建支付宝支付失败:", error);
       throw new InternalServerErrorException("创建支付宝支付失败");
     }
   }
@@ -151,7 +151,7 @@ export class AlipayService {
         );
       }
     } catch (error) {
-      this.logger.error("创建支付宝扫码支付失败:", error);
+      this.logger.debug("创建支付宝扫码支付失败:", error);
       throw new InternalServerErrorException("创建支付宝扫码支付失败");
     }
   }
@@ -201,7 +201,7 @@ export class AlipayService {
         );
       }
     } catch (error) {
-      this.logger.error("查询支付状态失败:", error);
+      this.logger.debug("查询支付状态失败:", error);
       throw new InternalServerErrorException("查询支付状态失败");
     }
   }
@@ -257,7 +257,7 @@ export class AlipayService {
         );
       }
     } catch (error) {
-      this.logger.error("申请退款失败:", error);
+      this.logger.debug("申请退款失败:", error);
       throw new InternalServerErrorException("申请退款失败");
     }
   }
@@ -306,7 +306,7 @@ export class AlipayService {
         );
       }
     } catch (error) {
-      this.logger.error("查询退款状态失败:", error);
+      this.logger.debug("查询退款状态失败:", error);
       throw new InternalServerErrorException("查询退款状态失败");
     }
   }
@@ -352,7 +352,7 @@ export class AlipayService {
         );
       }
     } catch (error) {
-      this.logger.error("关闭订单失败:", error);
+      this.logger.debug("关闭订单失败:", error);
       throw new InternalServerErrorException("关闭订单失败");
     }
   }
@@ -368,7 +368,7 @@ export class AlipayService {
       const generatedSign = this.generateSign(params);
       return sign === generatedSign;
     } catch (error) {
-      this.logger.error("验证回调签名失败:", error);
+      this.logger.debug("验证回调签名失败:", error);
       return false;
     }
   }

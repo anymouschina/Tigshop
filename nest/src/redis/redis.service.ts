@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
 import { InjectRedis } from "@nestjs-modules/ioredis";
 import Redis from "ioredis";
 
@@ -28,7 +28,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     missCount: 0,
   };
 
-  constructor(@InjectRedis() private readonly redis: Redis) {}
+  constructor(@InjectRedis() private readonly redis: Redis) {
+    this.logger = new Logger(RedisService.name)
+  }
 
   async onModuleInit() {
     await this.testConnection();
@@ -41,9 +43,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private async testConnection(): Promise<void> {
     try {
       await this.redis.ping();
-      console.log("Redis connection established successfully");
+      this.logger.debug("Redis connection established successfully");
     } catch (error) {
-      console.error("Redis connection failed:", error);
+      this.logger.debug("Redis connection failed:", error);
       throw error;
     }
   }
@@ -75,7 +77,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.stats.hitCount++;
       return JSON.parse(value) as T;
     } catch (error) {
-      console.error(`Redis get error for key ${fullKey}:`, error);
+      this.logger.debug(`Redis get error for key ${fullKey}:`, error);
       return null;
     }
   }
@@ -433,7 +435,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.redis.quit();
     } catch (error) {
-      console.error("Error closing Redis connection:", error);
+      this.logger.debug("Error closing Redis connection:", error);
     }
   }
 

@@ -61,7 +61,7 @@ export class PrinterService {
       });
       return result;
     } catch (error) {
-      console.error("创建打印机失败:", error);
+      this.logger.debug("创建打印机失败:", error);
       return null;
     }
   }
@@ -77,7 +77,7 @@ export class PrinterService {
       });
       return result;
     } catch (error) {
-      console.error("更新打印机失败:", error);
+      this.logger.debug("更新打印机失败:", error);
       return null;
     }
   }
@@ -89,7 +89,7 @@ export class PrinterService {
       });
       return true;
     } catch (error) {
-      console.error("删除打印机失败:", error);
+      this.logger.debug("删除打印机失败:", error);
       return false;
     }
   }
@@ -105,7 +105,7 @@ export class PrinterService {
       });
       return true;
     } catch (error) {
-      console.error("批量删除打印机失败:", error);
+      this.logger.debug("批量删除打印机失败:", error);
       return false;
     }
   }
@@ -128,7 +128,7 @@ export class PrinterService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error("获取打印机统计失败:", error);
+      this.logger.debug("获取打印机统计失败:", error);
       return {
         total: 0,
         today_count: 0,

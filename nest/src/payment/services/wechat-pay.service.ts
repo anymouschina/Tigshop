@@ -87,7 +87,7 @@ export class WechatPayService {
         );
       }
     } catch (error) {
-      this.logger.error("创建微信支付失败:", error);
+      this.logger.debug("创建微信支付失败:", error);
       throw new InternalServerErrorException("创建微信支付失败");
     }
   }
@@ -125,7 +125,7 @@ export class WechatPayService {
         throw new BadRequestException(`查询支付状态失败: ${result.return_msg}`);
       }
     } catch (error) {
-      this.logger.error("查询支付状态失败:", error);
+      this.logger.debug("查询支付状态失败:", error);
       throw new InternalServerErrorException("查询支付状态失败");
     }
   }
@@ -180,7 +180,7 @@ export class WechatPayService {
         );
       }
     } catch (error) {
-      this.logger.error("申请退款失败:", error);
+      this.logger.debug("申请退款失败:", error);
       throw new InternalServerErrorException("申请退款失败");
     }
   }
@@ -218,7 +218,7 @@ export class WechatPayService {
         throw new BadRequestException(`查询退款状态失败: ${result.return_msg}`);
       }
     } catch (error) {
-      this.logger.error("查询退款状态失败:", error);
+      this.logger.debug("查询退款状态失败:", error);
       throw new InternalServerErrorException("查询退款状态失败");
     }
   }
@@ -234,7 +234,7 @@ export class WechatPayService {
       const generatedSign = this.generateSign(params);
       return sign === generatedSign;
     } catch (error) {
-      this.logger.error("验证回调签名失败:", error);
+      this.logger.debug("验证回调签名失败:", error);
       return false;
     }
   }

@@ -25,9 +25,9 @@ export class MailService {
 
     this.transporter.verify((error, success) => {
       if (error) {
-        this.logger.error("邮件服务连接失败:", error);
+        this.logger.debug("邮件服务连接失败:", error);
       } else {
-        this.logger.log("邮件服务连接成功");
+        this.logger.debug("邮件服务连接成功");
       }
     });
   }
@@ -43,13 +43,13 @@ export class MailService {
         html,
       });
 
-      this.logger.log(`邮件发送成功: ${info.messageId}`);
+      this.logger.debug(`邮件发送成功: ${info.messageId}`);
       return {
         success: true,
         messageId: info.messageId,
       };
     } catch (error) {
-      this.logger.error("邮件发送失败:", error);
+      this.logger.debug("邮件发送失败:", error);
       throw error;
     }
   }

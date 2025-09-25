@@ -73,17 +73,17 @@ export class WechatController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      this.logger.log(
+      this.logger.debug(
         `Generating QR code with params: page=${page}, scene=${scene}, width=${width}, envVersion=${envVersion}`,
       );
 
       if (!page) {
-        this.logger.warn("Page parameter is missing");
+        this.logger.debug("Page parameter is missing");
         throw new BadRequestException("Page parameter is required");
       }
 
       if (!scene) {
-        this.logger.warn("Scene parameter is missing");
+        this.logger.debug("Scene parameter is missing");
         throw new BadRequestException("Scene parameter is required");
       }
 
@@ -107,7 +107,7 @@ export class WechatController {
       this.logger.debug("Sending QR code as image response");
       res.end(qrCodeBuffer);
     } catch (error) {
-      this.logger.error(`Failed to generate QR code: ${error.message}`);
+      this.logger.debug(`Failed to generate QR code: ${error.message}`);
       throw error;
     }
   }
@@ -138,7 +138,7 @@ export class WechatController {
     @Body() dto: GenerateQrCodeDto,
   ): Promise<{ qrCodeUrl: string }> {
     try {
-      this.logger.log(
+      this.logger.debug(
         `Generating QR code URL with data: ${JSON.stringify(dto)}`,
       );
 
@@ -160,11 +160,11 @@ export class WechatController {
         dto.scene,
       );
 
-      this.logger.log(`QR code URL generated: ${qrCodeUrl}`);
+      this.logger.debug(`QR code URL generated: ${qrCodeUrl}`);
 
       return { qrCodeUrl };
     } catch (error) {
-      this.logger.error(`Failed to generate QR code URL: ${error.message}`);
+      this.logger.debug(`Failed to generate QR code URL: ${error.message}`);
       throw error;
     }
   }

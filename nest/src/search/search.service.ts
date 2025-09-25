@@ -628,7 +628,7 @@ export class SearchService {
     type: "product" | "user" | "category" | "brand" | "all",
   ): Promise<void> {
     // 这里可以实现Elasticsearch或其他搜索引擎的索引重建逻辑
-    console.log(`Rebuilding search index for: ${type}`);
+    this.logger.debug(`Rebuilding search index for: ${type}`);
   }
 
   // 清除搜索缓存

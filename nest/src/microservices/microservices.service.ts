@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
 import {
   ClientProxy,
   ClientProxyFactory,
@@ -30,8 +30,10 @@ export interface MicroserviceConfig {
 export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   private clients: Map<MicroserviceType, ClientProxy> = new Map();
   private isConnected: Map<MicroserviceType, boolean> = new Map();
-
-  constructor(private configService: ConfigService) {}
+  
+  constructor(private configService: ConfigService) {
+    this.logger = new Logger(MicroservicesService.name)
+  }
 
   async onModuleInit() {
     await this.initializeClients();
@@ -48,7 +50,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
       try {
         await this.createClient(config);
       } catch (error) {
-        console.error(`Failed to initialize ${config.type}:`, error);
+        this.logger.debug(`Failed to initialize ${config.type}:`, error);
       }
     }
   }
@@ -112,11 +114,11 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
       await client.connect();
       this.clients.set(config.type, client);
       this.isConnected.set(config.type, true);
-      console.log(`${config.type} microservice connected successfully`);
+      this.logger.debug(`${config.type} microservice connected successfully`);
     } catch (error) {
       this.clients.set(config.type, client);
       this.isConnected.set(config.type, false);
-      console.error(`${config.type} microservice connection failed:`, error);
+      this.logger.debug(`${config.type} microservice connection failed:`, error);
     }
   }
 
@@ -153,7 +155,7 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   async closeAllConnections(): Promise<void> {
     await Promise.all(
       Array.from(this.clients.values()).map((c) =>
-        c.close().catch(console.error),
+        c.close().catch((error) => this.logger.debug("Failed to close connection:", error)),
       ),
     );
     this.clients.clear();

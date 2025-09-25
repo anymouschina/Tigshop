@@ -64,7 +64,7 @@ export class ECardGroupService {
       });
       return result;
     } catch (error) {
-      console.error("创建电子卡券分组失败:", error);
+      this.logger.debug("创建电子卡券分组失败:", error);
       return null;
     }
   }
@@ -80,7 +80,7 @@ export class ECardGroupService {
       });
       return result;
     } catch (error) {
-      console.error("更新电子卡券分组失败:", error);
+      this.logger.debug("更新电子卡券分组失败:", error);
       return null;
     }
   }
@@ -92,7 +92,7 @@ export class ECardGroupService {
       });
       return true;
     } catch (error) {
-      console.error("删除电子卡券分组失败:", error);
+      this.logger.debug("删除电子卡券分组失败:", error);
       return false;
     }
   }
@@ -108,7 +108,7 @@ export class ECardGroupService {
       });
       return true;
     } catch (error) {
-      console.error("批量删除电子卡券分组失败:", error);
+      this.logger.debug("批量删除电子卡券分组失败:", error);
       return false;
     }
   }
@@ -131,7 +131,7 @@ export class ECardGroupService {
         today_count: todayCount,
       };
     } catch (error) {
-      console.error("获取电子卡券分组统计失败:", error);
+      this.logger.debug("获取电子卡券分组统计失败:", error);
       return {
         total: 0,
         today_count: 0,

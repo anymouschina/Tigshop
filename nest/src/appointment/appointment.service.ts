@@ -559,7 +559,7 @@ export class AppointmentService {
     action: string,
   ): Promise<void> {
     // TODO: 实现通知逻辑
-    console.log(`发送预约${action}通知: ${appointment.title}`);
+    this.logger.debug(`发送预约${action}通知: ${appointment.title}`);
   }
 
   async getStaffAvailability(staffId: number, date: Date): Promise<any> {

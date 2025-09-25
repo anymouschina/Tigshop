@@ -148,7 +148,7 @@ export class VueCaptchaAdapter {
 
       throw new Error("不支持的加密环境");
     } catch (error) {
-      console.error("AES加密失败:", error);
+      // console.error("AES加密失败:", error);
       // 降级为Base64编码
       return Buffer.from(text).toString("base64");
     }

@@ -27,7 +27,7 @@ export class LoginController {
   /**
    * 获取快捷登录设置 - 对齐PHP版本 user/Login/getQuickLoginSetting
    */
-  @Get("user/login/getQuickLoginSetting")
+  @Get("login/getQuickLoginSetting")
   @Public()
   @ApiOperation({ summary: "获取快捷登录设置" })
   async getQuickLoginSetting(@Request() req) {
@@ -38,7 +38,7 @@ export class LoginController {
   /**
    * 用户登录 - 对齐PHP版本 user/Login/signin
    */
-  @Post("user/login/signin")
+  @Post("login/signin")
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "用户登录" })

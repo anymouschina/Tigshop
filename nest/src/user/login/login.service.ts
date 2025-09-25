@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { Injectable, HttpException, HttpStatus, Logger } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { JwtService } from "@nestjs/jwt";
 import { CaptchaService } from "../../auth/services/captcha.service";
@@ -9,6 +9,8 @@ import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class LoginService {
+  private readonly logger = new Logger(LoginService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -79,11 +81,11 @@ export class LoginService {
       try {
         const isValidBehavior = await this.verifyBehaviorToken(verifyToken);
         if (!isValidBehavior) {
-          console.log("行为验证失败");
+          this.logger.debug("行为验证失败");
           // 不阻止登录，只是记录日志
         }
       } catch (error) {
-        console.log("行为验证异常:", error);
+        this.logger.debug("行为验证异常:", error);
         // 不阻止登录，只是记录异常
       }
     }
@@ -150,17 +152,31 @@ export class LoginService {
    * 根据用户名密码获取用户
    */
   private async getUserByPassword(username: string, password: string) {
+    this.logger.debug(`🔍 查询用户: username=${username}, password=${password}`);
+
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [{ username }, { mobile: username }, { email: username }],
       },
     });
 
+    this.logger.debug(`📊 查询结果:`, user ? {
+      user_id: user.user_id,
+      username: user.username,
+      mobile: user.mobile,
+      email: user.email,
+      password: user.password,
+      status: user.status
+    } : '用户不存在');
+
     if (!user) {
       return null;
     }
 
+    this.logger.debug(`🔐 开始密码比对: 输入密码=${password}, 数据库密码=${user.password}`);
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    this.logger.debug(`🔐 密码比对结果: ${isPasswordValid ? '成功' : '失败'}`);
+
     if (!isPasswordValid) {
       return null;
     }
@@ -246,12 +262,8 @@ export class LoginService {
    */
   async sendMobileCode(data: any) {
     const { mobile, email, event, verifyToken } = data;
-    console.log(
-      mobile,
-      email,
-      event,
-      verifyToken,
-      "mobile, email, event, verifyToken",
+    this.logger.debug(
+      `发送验证码参数: mobile=${mobile}, email=${email}, event=${event}, verifyToken=${verifyToken}`
     );
     // 验证参数
     if (!mobile && !email) {
@@ -296,7 +308,7 @@ export class LoginService {
           { ttl: expiration },
         );
 
-        console.log(`短信验证码已发送至 ${mobile}: ${code}`);
+        this.logger.debug(`短信验证码已发送至 ${mobile}: ${code}`);
 
         return {
           mobile: normalizedMobile,
@@ -318,7 +330,7 @@ export class LoginService {
           { ttl: expiration },
         );
 
-        console.log(`邮箱验证码已发送至 ${email}: ${code}`);
+        this.logger.debug(`邮箱验证码已发送至 ${email}: ${code}`);
 
         return {
           email,
@@ -327,7 +339,7 @@ export class LoginService {
         };
       }
     } catch (error) {
-      console.error("发送验证码失败:", error);
+      this.logger.debug("发送验证码失败:", error);
       throw new HttpException("发送失败", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -338,7 +350,7 @@ export class LoginService {
   private async verifyBehaviorToken(verifyToken: string): Promise<boolean> {
     try {
       // 临时测试：直接返回true，跳过行为验证
-      console.log("临时跳过行为验证，token:", verifyToken);
+      this.logger.debug("临时跳过行为验证，token:", verifyToken);
       return true;
 
       // 原始验证逻辑（暂时注释掉）
@@ -350,7 +362,7 @@ export class LoginService {
       // const captchaData = await this.captchaService.getCaptchaData(verifyToken);
       // return !!captchaData;
     } catch (error) {
-      console.error("行为验证失败:", error);
+      this.logger.debug("行为验证失败:", error);
       return false;
     }
   }
@@ -398,7 +410,7 @@ export class LoginService {
       );
 
       // TODO: 集成实际的邮件发送服务
-      console.log(`邮箱验证码已发送至 ${email}: ${code}`);
+      this.logger.debug(`邮箱验证码已发送至 ${email}: ${code}`);
 
       return {
         email,
@@ -406,7 +418,7 @@ export class LoginService {
         key: redisKey,
       };
     } catch (error) {
-      console.error("发送邮箱验证码失败:", error);
+      this.logger.debug("发送邮箱验证码失败:", error);
       throw new HttpException("发送失败", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -445,22 +457,22 @@ export class LoginService {
       const verificationData = await this.redisService.get<any>(redisKey);
 
       if (!verificationData) {
-        console.log(`验证码不存在或已过期: ${redisKey}`);
+        this.logger.debug(`验证码不存在或已过期: ${redisKey}`);
         return false;
       }
 
       if (verificationData.code !== code) {
-        console.log(`验证码不匹配: 期望${verificationData.code}, 实际${code}`);
+        this.logger.debug(`验证码不匹配: 期望${verificationData.code}, 实际${code}`);
         return false;
       }
 
       // 验证成功，删除Redis中的验证码（一次性使用）
       await this.redisService.del(redisKey);
-      console.log(`验证码验证成功并已删除: ${redisKey}`);
+      this.logger.debug(`验证码验证成功并已删除: ${redisKey}`);
 
       return true;
     } catch (error) {
-      console.error("验证手机验证码失败:", error);
+      this.logger.debug("验证手机验证码失败:", error);
       return false;
     }
   }
@@ -479,12 +491,12 @@ export class LoginService {
       const verificationData = await this.redisService.get<any>(redisKey);
 
       if (!verificationData) {
-        console.log(`邮箱验证码不存在或已过期: ${redisKey}`);
+        this.logger.debug(`邮箱验证码不存在或已过期: ${redisKey}`);
         return false;
       }
 
       if (verificationData.code !== code) {
-        console.log(
+        this.logger.debug(
           `邮箱验证码不匹配: 期望${verificationData.code}, 实际${code}`,
         );
         return false;
@@ -492,11 +504,11 @@ export class LoginService {
 
       // 验证成功，删除Redis中的验证码（一次性使用）
       await this.redisService.del(redisKey);
-      console.log(`邮箱验证码验证成功并已删除: ${redisKey}`);
+      this.logger.debug(`邮箱验证码验证成功并已删除: ${redisKey}`);
 
       return true;
     } catch (error) {
-      console.error("验证邮箱验证码失败:", error);
+      this.logger.debug("验证邮箱验证码失败:", error);
       return false;
     }
   }
