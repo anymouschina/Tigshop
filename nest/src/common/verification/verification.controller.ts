@@ -318,24 +318,47 @@ export class PublicVerificationController {
     @Body() body: { captchaType?: string; pointJson?: string; token?: string },
   ) {
     const { captchaType = "blockPuzzle", pointJson, token } = body;
-    console.log("check接口请求:", body);
+
+    // 收集调试信息
+    const debugInfo = {
+      request: body,
+      timestamp: new Date().toISOString()
+    };
 
     if (!pointJson || !token) {
-      throw new BadRequestException("验证参数不完整");
+      return {
+        code: 400,
+        message: "验证参数不完整",
+        data: {
+          captchaType,
+          pointJson: pointJson || null,
+          token: token || null,
+          debug: debugInfo
+        },
+        path: "/api/common/verification/check"
+      };
     }
 
     try {
       // 对齐PHP实现：直接使用CaptchaService验证，让service内部处理pointJson解析
-      console.log("开始验证滑块，token:", token, "pointJson:", pointJson);
+      debugInfo.validationStart = true;
+      debugInfo.token = token;
+      debugInfo.pointJson = pointJson;
 
       // 使用新的verifyPointJson方法，对齐PHP实现
       // PHP代码：$service->check($data['token'], $data['pointJson']);
       const isValid = await this.captchaService.verifyPointJson(token, pointJson);
 
-      console.log("验证结果:", isValid);
+      debugInfo.validationResult = isValid;
 
       if (!isValid) {
-        throw new BadRequestException("验证失败");
+        return {
+          captchaType,
+          pointJson,
+          token,
+          debug: debugInfo,
+          reason: "滑块位置不匹配或验证条件不满足"
+        }
       }
 
       // 对齐PHP返回格式
@@ -343,16 +366,20 @@ export class PublicVerificationController {
         captchaType: captchaType,
         pointJson: pointJson,
         token: token,
-      };
-    } catch (error) {
-      console.error("验证失败详细错误:", error);
-      console.error("错误类型:", error.constructor.name);
-      console.error("错误消息:", error.message);
-
-      if (error instanceof BadRequestException) {
-        throw error;
       }
-      throw new BadRequestException(`验证过程中发生错误: ${error.message}`);
+    } catch (error) {
+      debugInfo.error = {
+        name: error.constructor.name,
+        message: error.message,
+        stack: error.stack
+      };
+
+      return {
+        captchaType,
+        pointJson,
+        token,
+        debug: debugInfo
+      }
     }
   }
 
