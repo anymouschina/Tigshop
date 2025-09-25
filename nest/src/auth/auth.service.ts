@@ -107,6 +107,7 @@ export class AuthService implements OnModuleInit {
     const token = this.jwtService.sign(payload, {
       secret: "lyecs@2023",
       algorithm: "HS256",
+      // Note: Don't set expiresIn when manually setting exp property
     });
 
     // Store token in cache for validation (in real implementation, use Redis)
@@ -350,17 +351,17 @@ export class AuthService implements OnModuleInit {
       password: hashedPassword,
       avatar: registerDto.avatar || "",
       mobile: registerDto.mobile || "",
-      mobileValidated: validationFlags.mobileValidated || 0,
+      mobile_validated: validationFlags.mobileValidated || 0,
       email: registerDto.email || "",
-      emailValidated: validationFlags.emailValidated || 0,
+      email_validated: validationFlags.emailValidated || 0,
       nickname,
       balance: 0,
       points: 0,
-      growthPoints: 0,
-      regTime: now,
-      lastLogin: now,
-      rankId: 0,
-      referrerUserId: registerDto.referrer_user_id || 0,
+      growth_points: 0,
+      reg_time: now,
+      last_login: now,
+      rank_id: 0,
+      referrer_user_id: registerDto.referrer_user_id || 0,
       status: 1, // Active
     };
 

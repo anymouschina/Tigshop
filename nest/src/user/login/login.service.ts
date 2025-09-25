@@ -272,7 +272,7 @@ export class LoginService {
 
     try {
       // 生成6位验证码 - 临时固定为0000用于测试
-      const code = "0000";
+      const code = "000000";
 
       // 根据是手机号还是邮箱分别处理
       if (mobile) {

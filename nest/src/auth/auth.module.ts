@@ -22,10 +22,7 @@ import { RedisModule } from "../redis/redis.module";
       imports: [ConfigModule],
       inject: ["CONFIG"],
       useFactory: async (config: any) => ({
-        secret: config.jwtSecret || "fallback-secret-key",
-        signOptions: {
-          expiresIn: "7d",
-        },
+        secret: config.jwtSecret || "fallback-secret-key"
       }),
     }),
     ConfigModule,
