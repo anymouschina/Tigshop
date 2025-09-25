@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { AuthService } from "../auth/auth.service";
@@ -12,6 +13,7 @@ import { VerificationCodeService } from "../auth/services/verification-code.serv
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name)
   constructor(
     private readonly databaseService: PrismaService,
     private readonly authService: AuthService,

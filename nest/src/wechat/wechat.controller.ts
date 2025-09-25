@@ -9,6 +9,7 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  Logger,
 } from "@nestjs/common";
 import { WechatService } from "./wechat.service";
 import { Response } from "express";
@@ -21,15 +22,14 @@ import {
 } from "@nestjs/swagger";
 import { Public } from "../auth/decorators/public.decorator";
 import { GenerateQrCodeDto } from "./dto/generate-qrcode.dto";
-import { AppLoggerService } from "../common/logger/app-logger.service";
 
 @ApiTags("微信小程序")
 @Controller("wechat")
 export class WechatController {
-  private readonly logger: AppLoggerService;
+  private readonly logger: Logger;
 
   constructor(private readonly wechatService: WechatService) {
-    this.logger = new AppLoggerService(WechatController.name);
+    this.logger = new Logger(WechatController.name);
   }
 
   /**

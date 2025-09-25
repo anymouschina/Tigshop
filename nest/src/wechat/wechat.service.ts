@@ -3,6 +3,7 @@ import {
   Injectable,
   BadRequestException,
   InternalServerErrorException,
+  Logger,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
@@ -10,18 +11,15 @@ import { catchError, firstValueFrom, map } from "rxjs";
 import { PrismaService } from "src/prisma/prisma.service";
 import * as fs from "fs";
 import * as path from "path";
-import { AppLoggerService } from "../common/logger/app-logger.service";
-
 @Injectable()
 export class WechatService {
-  private readonly logger: AppLoggerService;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
     private readonly prisma: PrismaService,
   ) {
-    this.logger = new AppLoggerService(WechatService.name);
+    this.logger = new Logger(WechatService.name);
   }
 
   /**

@@ -39,6 +39,7 @@ import { VerificationModule } from "./common/verification/verification.module";
 import { CsrfModule } from "./common/csrf/csrf.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
+import { AppController } from "./app.contronller";
 
 @Module({
   imports: [
@@ -81,7 +82,7 @@ import { DecorateModule } from "./common/decorate/decorate.module";
     VerificationModule,
     CsrfModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_INTERCEPTOR,

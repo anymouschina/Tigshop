@@ -1,26 +1,24 @@
-import { ValidationPipe } from "@nestjs/common";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import Config from "src/config";
-import { TransformInterceptor } from "./common/interceptors/transform.interceptor";
-import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { Transport, MicroserviceOptions } from "@nestjs/microservices";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import * as path from "path";
-import { Logger } from "@nestjs/common";
+import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 
 async function bootstrap() {
   // 创建全局日志实例
   const logger = new Logger("Application");
-
+  console.log(1111)
   // 设置日志级别
-  process.env.LOG_LEVEL = process.env.LOG_LEVEL || "debug";
 
-  try {
-    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, 
+      {
       logger: ["error", "warn", "log", "debug", "verbose"],
-    });
+    })
+
 
     // 配置静态资源服务
     const uploadsPath = path.join(process.cwd(), "uploads");
@@ -33,7 +31,12 @@ async function bootstrap() {
     app.useStaticAssets(publicPath, {
       prefix: "/",
     });
-
+      // ⚡ 开启跨域
+    app.enableCors({
+      origin: true, // 允许所有来源，也可以传数组 ['http://localhost:3000']
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      credentials: true,
+    });
     // 设置全局API前缀
     app.setGlobalPrefix("api");
 
@@ -73,7 +76,7 @@ async function bootstrap() {
 
     const document = SwaggerModule.createDocument(app, options);
     SwaggerModule.setup("api-docs", app, document);
-
+    app.useGlobalInterceptors(new LoggingInterceptor());
     app.useGlobalPipes(
       new ValidationPipe({
         transform: true,
@@ -82,8 +85,6 @@ async function bootstrap() {
       }),
     );
 
-    // Apply global exception filter for consistent error responses
-    app.useGlobalFilters(new HttpExceptionFilter());
 
     // 启动微服务
     await app.startAllMicroservices();
@@ -95,9 +96,5 @@ async function bootstrap() {
     logger.log(
       `Swagger documentation is available at http://localhost:${Config.PORT}/api-docs`,
     );
-  } catch (error) {
-    logger.error(`Failed to start application: ${error.message}`, error.stack);
-    process.exit(1);
-  }
 }
 bootstrap();

@@ -270,7 +270,7 @@ export class CaptchaService {
 
   /** 生成默认轨迹数据 */
   private generateDefaultTrack(targetX: number): number[] {
-    const track = [];
+    const track: number[] = [];
     const steps = Math.max(5, Math.floor(targetX / 20)); // 根据距离生成步数
 
     for (let i = 0; i <= steps; i++) {

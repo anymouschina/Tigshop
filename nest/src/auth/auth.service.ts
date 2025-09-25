@@ -7,6 +7,7 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
+  Logger,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "src/prisma/prisma.service";
@@ -41,7 +42,9 @@ export interface JwtPayload {
 
 @Injectable()
 export class AuthService implements OnModuleInit {
+  private readonly logger = new Logger(AuthService.name)
   constructor(
+    
     private readonly jwtService: JwtService,
     @Inject("CONFIG") private readonly config: any,
     private readonly databaseService: PrismaService,
@@ -225,7 +228,8 @@ export class AuthService implements OnModuleInit {
       case RegisterType.EMAIL:
         return this.registerWithEmail(registerDto);
       default:
-        throw new BadRequestException("不支持的注册类型");
+        // throw new BadRequestException("不支持的注册类型");
+        return this.registerWithMobile(registerDto);
     }
   }
 
@@ -247,7 +251,7 @@ export class AuthService implements OnModuleInit {
       registerDto.mobile,
       registerDto.mobile_code,
     );
-
+    this.logger.log(`====>isValidMobileCode ${isValidMobileCode}`)
     if (!isValidMobileCode) {
       throw new BadRequestException("手机验证码错误或已过期");
     }

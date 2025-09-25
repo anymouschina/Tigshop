@@ -156,7 +156,7 @@ export class CaptchaCoordinateConverter {
     const startTimeValue = startTime || now;
 
     // 生成模拟的拖拽轨迹（实际使用中应该从鼠标移动事件中获取）
-    const track = [];
+    const track: number[] = [];
     const steps = Math.floor(Math.random() * 10) + 5; // 5-15个步骤
 
     for (let i = 0; i < steps; i++) {
