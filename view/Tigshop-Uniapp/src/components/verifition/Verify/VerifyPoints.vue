@@ -223,7 +223,6 @@ export default {
                 captchaType: captchaType.value
             };
             reqGet(data).then((res) => {
-                console.log(res,'ressss')
                 if (res.repCode == "0000") {
                     pointBackImgBase.value = res.repData.originalImageBase64;
                     backToken.value = res.repData.token;

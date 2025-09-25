@@ -10,6 +10,7 @@ import {
   Param,
   Body,
   UseGuards,
+  BadRequestException,
 } from "@nestjs/common";
 import { VerificationService } from "./verification.service";
 import {
@@ -299,6 +300,7 @@ export class PublicVerificationController {
         success: true,
         offsetX: captchaData.offsetX,
         blockSize: captchaData.blockSize,
+        secretKey: captchaData.secretKey,
         message: "请在测试中使用这个offsetX值",
       };
     } catch (error) {
@@ -309,43 +311,48 @@ export class PublicVerificationController {
     }
   }
 
-  // 兼容前端API格式的验证接口
+  // 兼容前端API格式的验证接口 - 对齐PHP实现
   @ApiOperation({ summary: "兼容前端验证接口" })
   @Post("check")
   async check(
     @Body() body: { captchaType?: string; pointJson?: string; token?: string },
   ) {
     const { captchaType = "blockPuzzle", pointJson, token } = body;
-    console.log("checkccc", body);
+    console.log("check接口请求:", body);
 
     if (!pointJson || !token) {
-      return null;
+      throw new BadRequestException("验证参数不完整");
     }
 
-    // 解析pointJson获取验证数据
     try {
-      const pointData = JSON.parse(pointJson);
-      const isValid = await this.captchaService.verifySlider(
-        token,
-        pointData.secretKey || "",
-        pointData.x,
-        pointData.track || [],
-        pointData.startTime
-      );
+      // 对齐PHP实现：直接使用CaptchaService验证，让service内部处理pointJson解析
+      console.log("开始验证滑块，token:", token, "pointJson:", pointJson);
+
+      // 使用新的verifyPointJson方法，对齐PHP实现
+      // PHP代码：$service->check($data['token'], $data['pointJson']);
+      const isValid = await this.captchaService.verifyPointJson(token, pointJson);
+
+      console.log("验证结果:", isValid);
 
       if (!isValid) {
-        return null;
+        throw new BadRequestException("验证失败");
       }
 
-      // 返回前端期望的格式
+      // 对齐PHP返回格式
       return {
         captchaType: captchaType,
         pointJson: pointJson,
         token: token,
       };
     } catch (error) {
-      console.error("验证失败:", error);
-      return null;
+      console.error("验证失败详细错误:", error);
+      console.error("错误类型:", error.constructor.name);
+      console.error("错误消息:", error.message);
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException(`验证过程中发生错误: ${error.message}`);
     }
   }
 

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { RedisService } from "../../redis/redis.service";
 import { v4 as uuidv4 } from "uuid";
 import { createCanvas } from "canvas";
+import { parsePointJson } from "../utils/aes-helper";
 
 interface CaptchaData {
   offsetX: number;
@@ -177,6 +178,80 @@ export class CaptchaService {
     console.log("  - 最终结果:", finalResult ? "✅ 通过" : "❌ 失败");
 
     return finalResult;
+  }
+
+  /** 直接验证pointJson - 对齐PHP实现 */
+  async verifyPointJson(
+    token: string,
+    pointJson: string,
+  ): Promise<boolean> {
+    console.log("开始验证pointJson:", pointJson);
+
+    // 获取验证码数据
+    const captcha = await this.redisService.get<CaptchaData>(
+      `captcha:${token}`,
+    );
+
+    if (!captcha) {
+      console.log("❌ 验证失败: 找不到验证码数据, token:", token);
+      return false;
+    }
+
+    console.log("🔍 pointJson验证调试信息:");
+    console.log("  - 验证码数据:", captcha);
+    console.log("  - pointJson:", pointJson);
+
+    // 尝试解析pointJson，支持多种格式
+    let parsedData: any;
+    let parseSuccess = false;
+
+    // 方法1: 尝试直接JSON解析
+    try {
+      parsedData = JSON.parse(pointJson);
+      parseSuccess = true;
+      console.log("✅ 直接JSON解析成功");
+    } catch (e) {
+      console.log("❌ 直接JSON解析失败:", e.message);
+    }
+
+    // 方法2: 如果失败，尝试AES解密
+    if (!parseSuccess) {
+      try {
+        parsedData = parsePointJson(pointJson, captcha.secretKey);
+        parseSuccess = true;
+        console.log("✅ AES解密解析成功");
+      } catch (e) {
+        console.log("❌ AES解密解析失败:", e.message);
+      }
+    }
+
+    // 方法3: 尝试Base64解码后JSON解析
+    if (!parseSuccess) {
+      try {
+        const base64Decoded = Buffer.from(pointJson, "base64").toString("utf8");
+        parsedData = JSON.parse(base64Decoded);
+        parseSuccess = true;
+        console.log("✅ Base64解码后JSON解析成功");
+      } catch (e) {
+        console.log("❌ Base64解码后JSON解析失败:", e.message);
+      }
+    }
+
+    if (!parseSuccess) {
+      console.log("❌ 所有解析方法都失败");
+      return false;
+    }
+
+    console.log("✅ 解析成功，数据:", parsedData);
+
+    // 使用现有的verifySlider方法进行验证
+    return this.verifySlider(
+      token,
+      parsedData.secretKey || captcha.secretKey,
+      parsedData.x || 0,
+      parsedData.track || [],
+      parsedData.startTime || Date.now()
+    );
   }
 
   /** 添加背景干扰 */

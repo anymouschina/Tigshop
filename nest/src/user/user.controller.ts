@@ -24,6 +24,7 @@ import { UserService } from "./user.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { Public } from "../auth/decorators/public.decorator";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { RegisterType } from "../auth/dto/auth.dto";
 
 @ApiTags("User Management")
 @Controller("user")
@@ -39,7 +40,7 @@ export class UserController {
   async register(@Body() registerData: any) {
     // 转换前端camelCase字段为后端snake_case字段
     const convertedData = {
-      regist_type: registerData.registType || 'mobile',
+      regist_type: registerData.registType ? RegisterType[registerData.registType.toUpperCase()] : RegisterType.MOBILE,
       username: registerData.username,
       password: registerData.password,
       mobile: registerData.mobile,
