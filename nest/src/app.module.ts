@@ -91,12 +91,7 @@ import { AppController } from "./app.contronller";
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
-    },
-    // Temporarily disable global JWT guard for testing
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: JwtAuthGuard,
-    // },
+    }
   ],
 })
 export class AppModule {}

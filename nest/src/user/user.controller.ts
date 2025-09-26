@@ -71,7 +71,8 @@ export class UserController {
   /**
    * 获取当前用户信息 - 对齐PHP版本 detail
    */
-  @Get("detail")
+  @Get("user/detail")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取当前用户信息" })
   async getUserDetail(@Request() req) {
@@ -82,6 +83,7 @@ export class UserController {
    * 更新用户信息 - 对齐PHP版本 updateInformation
    */
   @Post("updateInformation")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "更新用户信息" })
   async updateInformation(@Request() req, @Body() updateData: any) {
@@ -92,6 +94,7 @@ export class UserController {
    * 修改密码 - 对齐PHP版本 modifyPassword
    */
   @Post("modifyPassword")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改密码" })
   async modifyPassword(
@@ -109,6 +112,7 @@ export class UserController {
    * 修改手机号 - 对齐PHP版本 modifyMobile
    */
   @Post("modifyMobile")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改手机号" })
   async modifyMobile(
@@ -126,6 +130,7 @@ export class UserController {
    * 修改邮箱 - 对齐PHP版本 modifyEmail
    */
   @Post("modifyEmail")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改邮箱" })
   async modifyEmail(
@@ -143,6 +148,7 @@ export class UserController {
    * 获取用户中心数据 - 对齐PHP版本 memberCenter
    */
   @Get("memberCenter")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户中心数据" })
   async getMemberCenter(@Request() req) {
@@ -153,6 +159,7 @@ export class UserController {
    * 获取用户浏览历史 - 对齐PHP版本 historyProduct
    */
   @Get("historyProduct")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户浏览历史" })
   async getHistoryProduct(
@@ -167,6 +174,7 @@ export class UserController {
    * 删除浏览历史 - 对齐PHP版本 delHistoryProduct
    */
   @Post("delHistoryProduct")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "删除浏览历史" })
   async deleteHistoryProduct(
@@ -183,6 +191,7 @@ export class UserController {
    * 上传用户头像 - 对齐PHP版本 uploadImg
    */
   @Post("uploadImg")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "上传用户头像" })
   @UseInterceptors(FileInterceptor("file"))
@@ -198,6 +207,7 @@ export class UserController {
    * 修改头像 - 对齐PHP版本 modifyAvatar
    */
   @Post("modifyAvatar")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改头像" })
   async modifyAvatar(@Request() req, @Body() body: { avatar: string }) {
@@ -208,6 +218,7 @@ export class UserController {
    * 用户退出登录 - 对齐PHP版本 logout
    */
   @Post("logout")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "用户退出登录" })
   async logout(@Request() req) {
@@ -218,6 +229,7 @@ export class UserController {
    * 发送修改密码验证码 - 对齐PHP版本 sendMobileCodeByModifyPassword
    */
   @Post("sendMobileCodeByModifyPassword")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "发送修改密码验证码" })
   async sendPasswordChangeCode(
@@ -234,6 +246,7 @@ export class UserController {
    * 验证修改密码验证码 - 对齐PHP版本 checkModifyPasswordMobileCode
    */
   @Post("checkModifyPasswordMobileCode")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "验证修改密码验证码" })
   async checkPasswordChangeCode(
@@ -251,6 +264,7 @@ export class UserController {
    * 账户金额变动列表 - 对齐PHP版本 Account/list
    */
   @Get("account/list")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "账户金额变动列表" })
   async getBalanceLogList(
@@ -280,6 +294,7 @@ export class UserController {
    * 获取用户等级信息 - 对齐PHP版本 levelInfo
    */
   @Get("levelInfo")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户等级信息" })
   async getLevelInfo(@Query("rank_id") rankId: number) {
@@ -290,6 +305,7 @@ export class UserController {
    * 注销账户 - 对齐PHP版本 close
    */
   @Post("close")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "注销账户" })
   async closeAccount(@Request() req) {
@@ -300,6 +316,7 @@ export class UserController {
    * 获取用户OpenId - 对齐PHP版本 userOpenId
    */
   @Get("userOpenId")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户OpenId" })
   async getUserOpenId(@Request() req) {
