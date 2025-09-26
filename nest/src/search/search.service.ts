@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { RedisService } from "../redis/redis.service";
 
@@ -46,6 +46,7 @@ export interface SearchSuggestions {
 
 @Injectable()
 export class SearchService {
+  private readonly logger = new Logger(SearchService.name);
   constructor(
     private prisma: PrismaService,
     private redisService: RedisService,

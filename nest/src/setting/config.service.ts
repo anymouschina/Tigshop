@@ -1,9 +1,11 @@
 // @ts-nocheck
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class ConfigService {
+  private readonly logger = new Logger(ConfigService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**

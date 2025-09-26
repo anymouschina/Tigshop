@@ -1,8 +1,9 @@
 // @ts-nocheck
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable, BadRequestException, Logger } from "@nestjs/common";
 
 @Injectable()
 export class VerificationCodeService {
+  private readonly logger = new Logger(VerificationCodeService.name);
   // In-memory storage for verification codes (use Redis in production)
   private readonly mobileCodes = new Map<
     string,

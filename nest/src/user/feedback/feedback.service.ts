@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CreateFeedbackDto, UpdateFeedbackDto } from "./dto/feedback.dto";
 import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class FeedbackService {
+  private readonly logger = new Logger(FeedbackService.name);
   constructor(private prisma: PrismaService) {}
 
   async getFilterList(filter: any) {

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import {
   CreateUserRankLogDto,
@@ -9,6 +9,7 @@ import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class UserRankLogService {
+  private readonly logger = new Logger(UserRankLogService.name);
   constructor(private prisma: PrismaService) {}
 
   async getFilterList(filter: any) {

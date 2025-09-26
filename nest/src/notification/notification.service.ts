@@ -1,6 +1,7 @@
 // @ts-nocheck
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
@@ -19,6 +20,7 @@ import {
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
   constructor(private prisma: PrismaService) {}
 
   async createNotification(

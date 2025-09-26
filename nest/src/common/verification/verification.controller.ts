@@ -11,6 +11,7 @@ import {
   Body,
   UseGuards,
   BadRequestException,
+  Logger,
 } from "@nestjs/common";
 import { VerificationService } from "./verification.service";
 import {
@@ -130,6 +131,7 @@ export class VerificationController {
 @ApiTags("公共验证码")
 @Controller("common/verification")
 export class PublicVerificationController {
+  private readonly logger = new Logger(PublicVerificationController.name);
   constructor(private readonly captchaService: CaptchaService) {}
 
   @ApiOperation({ summary: "获取滑块验证码" })
