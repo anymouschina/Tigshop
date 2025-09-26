@@ -193,7 +193,11 @@ export class ProductService {
       this.prisma.product.count({ where }),
     ]);
 
-    return camelCase(products);
+    return camelCase({
+      records: products,
+      total,
+      waitingCheckedCount: 0,
+    });
   }
 
   /**
