@@ -172,10 +172,7 @@ export class UserService {
     // 移除敏感信息
     const { password, ...userDetails } = user;
 
-    return {
-      status: "success",
-      data: userDetails,
-    };
+    return userDetails
   }
 
   /**
