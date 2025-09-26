@@ -1,6 +1,7 @@
 import { Controller, Get, Query, Request, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GetProductIdsDto } from './dto/get-product-ids.dto';
 import { RecommendService } from './recommend.service';
+import { camelCase } from '../utils/camel-case.util';
 
 @Controller('common/recommend')
 export class RecommendController {
@@ -19,7 +20,7 @@ export class RecommendController {
 
     return {
       code: 0,
-      data: productIds,
+      data: camelCase(productIds),
       message: 'success',
     };
   }

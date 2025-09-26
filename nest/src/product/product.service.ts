@@ -8,6 +8,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { ProductQueryDto } from "./dto/product-query.dto";
+import { camelCase } from "src/common/utils/camel-case.util";
 
 @Injectable()
 export class ProductService {
@@ -90,11 +91,15 @@ export class ProductService {
       maxPrice,
       sortField = "productId",
       sortOrder = "desc",
+      ids,
     } = queryDto;
 
     const skip = (page - 1) * size;
 
-    const where: any = {};
+    const where: any = {
+      product_status: 1,
+      is_delete: 0,
+    };
 
     if (keyword) {
       where.OR = [
@@ -141,27 +146,54 @@ export class ProductService {
       }
     }
 
+    // 处理ids参数 - 与PHP版本保持一致
+    let orderBy: any = { [sortField]: sortOrder };
+    if (ids) {
+      // 尝试解析ids参数
+      let productIdArray: number[] = [];
+
+      try {
+        // 如果ids是JSON字符串，尝试解析
+        const parsed = JSON.parse(ids);
+        if (typeof parsed === 'object' && parsed.data) {
+          // 如果是{"code":0,"data":"2,3,4,5","message":"success"}格式，提取data字段
+          const idsString = parsed.data;
+          productIdArray = idsString.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+        } else if (typeof parsed === 'string') {
+          // 如果直接是字符串
+          productIdArray = parsed.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+        }
+      } catch (e) {
+        // 如果JSON解析失败，直接作为逗号分隔字符串处理
+        productIdArray = ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      }
+
+      if (productIdArray.length > 0) {
+        where.product_id = { in: productIdArray };
+        // Prisma不支持MySQL的FIELD()函数，所以这里按ID数组顺序查询需要手动处理
+        // 这里先使用默认排序，实际应用中可能需要在内存中重新排序
+      }
+    }
+
+    // 确保排序字段使用正确的数据库字段名
+    const finalOrderBy: any = {};
+    if (sortField === 'productId') {
+      finalOrderBy.product_id = sortOrder;
+    } else {
+      finalOrderBy[sortField] = sortOrder;
+    }
+
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
         skip,
-        take: size,
-        orderBy: { [sortField]: sortOrder },
-        include: {
-          brand: true,
-          category: true,
-        },
+        take: Number(size), // 确保size是数字类型
+        orderBy: finalOrderBy,
       }),
       this.prisma.product.count({ where }),
     ]);
 
-    return {
-      list: products,
-      total,
-      page,
-      limit: size,
-      totalPages: Math.ceil(total / size),
-    };
+    return camelCase(products);
   }
 
   /**

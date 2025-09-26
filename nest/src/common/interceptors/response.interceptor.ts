@@ -18,12 +18,19 @@ export class ResponseInterceptor<T>
     next: CallHandler,
   ): Observable<ApiResponse<T>> {
     return next.handle().pipe(
-      map((data) => ({
-        code: 0,
-        data,
-        message: "success",
-        timestamp: new Date().toISOString(),
-      })),
+      map((data) => {
+        // 如果返回的数据已经是PHP格式（包含code字段），直接返回
+        if (data && typeof data === 'object' && 'code' in data) {
+          return data;
+        }
+
+        // 否则包装成标准格式（移除timestamp以匹配PHP版本）
+        return {
+          code: 0,
+          data,
+          message: "success",
+        };
+      }),
     );
   }
 }
