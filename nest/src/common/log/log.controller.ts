@@ -7,6 +7,7 @@ import {
   Query,
   Request,
   UseGuards,
+  Logger,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -21,7 +22,9 @@ import { PrismaService } from "src/prisma/prisma.service";
 @ApiTags("通用-日志统计")
 @Controller("common")
 export class LogController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger = new Logger(LogController.name)
+  }
 
   @Get("log")
   @ApiOperation({ summary: "记录用户行为日志" })
