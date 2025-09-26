@@ -76,7 +76,7 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取当前用户信息" })
   async getUserDetail(@Request() req) {
-    return this.userService.getUserDetail(req.user.userId);
+    return this.userService.getUserDetail(req.user.user_id);
   }
 
   /**
@@ -87,7 +87,7 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "更新用户信息" })
   async updateInformation(@Request() req, @Body() updateData: any) {
-    return this.userService.updateInformation(req.user.userId, updateData);
+    return this.userService.updateInformation(req.user.user_id, updateData);
   }
 
   /**
@@ -102,7 +102,7 @@ export class UserController {
     @Body() passwordData: { oldPassword: string; newPassword: string },
   ) {
     return this.userService.modifyPassword(
-      req.user.userId,
+      req.user.user_id,
       passwordData.oldPassword,
       passwordData.newPassword,
     );
@@ -120,7 +120,7 @@ export class UserController {
     @Body() mobileData: { mobile: string; code: string },
   ) {
     return this.userService.modifyMobile(
-      req.user.userId,
+      req.user.user_id,
       mobileData.mobile,
       mobileData.code,
     );
@@ -138,7 +138,7 @@ export class UserController {
     @Body() emailData: { email: string; code: string },
   ) {
     return this.userService.modifyEmail(
-      req.user.userId,
+      req.user.user_id,
       emailData.email,
       emailData.code,
     );
@@ -152,7 +152,7 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户中心数据" })
   async getMemberCenter(@Request() req) {
-    return this.userService.getMemberCenter(req.user.userId);
+    return this.userService.getMemberCenter(req.user.user_id);
   }
 
   /**
@@ -167,7 +167,7 @@ export class UserController {
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
   ) {
-    return this.userService.getHistoryProduct(req.user.userId, page, limit);
+    return this.userService.getHistoryProduct(req.user.user_id, page, limit);
   }
 
   /**
@@ -182,7 +182,7 @@ export class UserController {
     @Body() body: { productIds: number[] },
   ) {
     return this.userService.deleteHistoryProduct(
-      req.user.userId,
+      req.user.user_id,
       body.productIds,
     );
   }
@@ -200,7 +200,7 @@ export class UserController {
     @Request() req,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.userService.uploadAvatar(req.user.userId, file);
+    return this.userService.uploadAvatar(req.user.user_id, file);
   }
 
   /**
@@ -211,7 +211,7 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改头像" })
   async modifyAvatar(@Request() req, @Body() body: { avatar: string }) {
-    return this.userService.modifyAvatar(req.user.userId, body.avatar);
+    return this.userService.modifyAvatar(req.user.user_id, body.avatar);
   }
 
   /**
@@ -222,7 +222,7 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "用户退出登录" })
   async logout(@Request() req) {
-    return this.userService.logout(req.user.userId);
+    return this.userService.logout(req.user.user_id);
   }
 
   /**
@@ -237,7 +237,7 @@ export class UserController {
     @Body() body: { mobile: string },
   ) {
     return this.userService.sendPasswordChangeCode(
-      req.user.userId,
+      req.user.user_id,
       body.mobile,
     );
   }
@@ -254,7 +254,7 @@ export class UserController {
     @Body() body: { mobile: string; code: string },
   ) {
     return this.userService.checkPasswordChangeCode(
-      req.user.userId,
+      req.user.user_id,
       body.mobile,
       body.code,
     );
@@ -277,7 +277,7 @@ export class UserController {
       sort_order?: string;
     },
   ) {
-    return this.userService.getBalanceLogList(req.user.userId, query);
+    return this.userService.getBalanceLogList(req.user.user_id, query);
   }
 
   /**
@@ -309,7 +309,7 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "注销账户" })
   async closeAccount(@Request() req) {
-    return this.userService.closeAccount(req.user.userId);
+    return this.userService.closeAccount(req.user.user_id);
   }
 
   /**
@@ -320,6 +320,6 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "获取用户OpenId" })
   async getUserOpenId(@Request() req) {
-    return this.userService.getUserOpenId(req.user.userId);
+    return this.userService.getUserOpenId(req.user.user_id);
   }
 }

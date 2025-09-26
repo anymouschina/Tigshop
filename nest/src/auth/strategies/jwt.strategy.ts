@@ -1,13 +1,15 @@
 // @ts-nocheck
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { PassportStrategy } from "@nestjs/passport";
-import { Injectable, UnauthorizedException, Inject } from "@nestjs/common";
+import { Injectable, UnauthorizedException, Inject, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { JwtPayload } from "../auth.service";
 import { Request } from "express";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     @Inject("CONFIG") private readonly config: any,
     private readonly databaseService: PrismaService,
@@ -18,6 +20,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       secretOrKey: config.jwtSecret || "fallback-secret-key",
       passReqToCallback: true, // Pass request to validate method
     });
+
+    this.logger.debug(`JWT Strategy initialized with secret: ${config.jwtSecret}`);
   }
 
   /**
@@ -28,6 +32,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * @returns User object if valid, throws UnauthorizedException if invalid
    */
   async validate(req: Request, payload: JwtPayload) {
+    this.logger.debug(`JWT validate called with payload: ${JSON.stringify(payload)}`);
+
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -35,6 +41,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     const token = authHeader.split(" ")[1];
+    this.logger.debug(`Token extracted: ${token.substring(0, 20)}...`);
 
     // Check if token is blacklisted
     const blacklistedToken =
@@ -48,8 +55,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Find user
     const user = await this.databaseService.user.findUnique({
-      where: { userId: payload.sub },
+      where: { user_id: payload.sub },
     });
+
+    this.logger.debug(`Looking for user with user_id: ${payload.sub}, found: ${!!user}`);
 
     if (!user) {
       throw new UnauthorizedException("User not found");
@@ -58,6 +67,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Strip sensitive information
     delete user.password;
 
+    this.logger.debug(`User validation successful for user_id: ${user.user_id}`);
     return user;
   }
 }

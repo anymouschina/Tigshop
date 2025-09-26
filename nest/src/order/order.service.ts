@@ -373,12 +373,12 @@ export class OrderService {
   async getOrderStats(userId: number) {
     const [total, pending, paid, shipped, completed, cancelled] =
       await Promise.all([
-        this.prisma.order.count({ where: { userId } }),
-        this.prisma.order.count({ where: { userId, orderStatus: 0 } }), // PENDING = 0
-        this.prisma.order.count({ where: { userId, payStatus: 1 } }), // PAID = 1
-        this.prisma.order.count({ where: { userId, orderStatus: 1 } }), // SHIPPED = 1
-        this.prisma.order.count({ where: { userId, orderStatus: 3 } }), // COMPLETED = 3
-        this.prisma.order.count({ where: { userId, orderStatus: 2 } }), // CANCELLED = 2
+        this.prisma.order.count({ where: { user_id: userId } }),
+        this.prisma.order.count({ where: { user_id: userId, order_status: 0 } }), // PENDING = 0
+        this.prisma.order.count({ where: { user_id: userId, pay_status: 1 } }), // PAID = 1
+        this.prisma.order.count({ where: { user_id: userId, order_status: 1 } }), // SHIPPED = 1
+        this.prisma.order.count({ where: { user_id: userId, order_status: 3 } }), // COMPLETED = 3
+        this.prisma.order.count({ where: { user_id: userId, order_status: 2 } }), // CANCELLED = 2
       ]);
 
     return {
