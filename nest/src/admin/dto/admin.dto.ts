@@ -27,6 +27,21 @@ export class AdminLoginDto {
   @IsString()
   loginType?: string;
 
+  @ApiProperty({ description: "验证码UID", required: false })
+  @IsOptional()
+  @IsString()
+  captchaUid?: string;
+
+  @ApiProperty({ description: "记住登录", required: false })
+  @IsOptional()
+  @IsBoolean()
+  remember?: boolean;
+
+  @ApiProperty({ description: "用户协议同意", required: false })
+  @IsOptional()
+  @IsBoolean()
+  agreement?: boolean;
+
   @ApiProperty({ description: "行为验证码token", required: false })
   @IsOptional()
   @IsString()

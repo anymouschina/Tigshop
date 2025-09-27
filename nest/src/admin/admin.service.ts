@@ -9,6 +9,7 @@ import {
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "src/prisma/prisma.service";
+import { Request } from "express";
 
 @Injectable()
 export class AdminService {
@@ -18,7 +19,7 @@ export class AdminService {
   ) {}
 
   // 管理员认证
-  async login(loginDto: { username: string; password: string }) {
+  async login(loginDto: { username: string; password: string }, clientIp: string = '127.0.0.1') {
     // 查找管理员 - username不是唯一键，需要使用findFirst
     const admin = await this.databaseService.admin_user.findFirst({
       where: { username: loginDto.username },
@@ -36,12 +37,18 @@ export class AdminService {
       throw new UnauthorizedException("用户名或密码错误");
     }
 
-    // 更新登录信息 - 使用原始SQL，因为lastLoginTime字段不在schema中
-    await this.databaseService.$queryRaw`
-      UPDATE "admin_user"
-      SET "add_time" = ${Math.floor(Date.now() / 1000)}, "last_login_ip" = '127.0.0.1'
-      WHERE "admin_id" = ${admin.admin_id}
-    `;
+    // 更新登录信息 - 更新最后登录IP和时间
+    const currentTime = Math.floor(Date.now() / 1000);
+    try {
+      await this.databaseService.$queryRaw`
+        UPDATE \`admin_user\`
+        SET \`last_login_time\` = ${currentTime}, \`last_login_ip\` = ${clientIp}
+        WHERE \`admin_id\` = ${admin.admin_id}
+      `;
+    } catch (error) {
+      // 如果字段不存在，跳过更新（兼容不同的数据库schema）
+      console.log('Login info update skipped:', error.message);
+    }
 
     const payload = {
       userId: admin.admin_id,
