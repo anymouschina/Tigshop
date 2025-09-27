@@ -19,7 +19,7 @@ import { Public } from "../auth/decorators/public.decorator";
 import { CommentStatus } from "./comment/dto/comment.dto";
 
 @ApiTags("Product Management")
-@Controller("product/product")
+@Controller("api/product/product")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class ProductController {

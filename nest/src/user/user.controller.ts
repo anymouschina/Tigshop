@@ -27,7 +27,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { RegisterType } from "../auth/dto/auth.dto";
 
 @ApiTags("User Management")
-@Controller("user")
+@Controller("api/user")
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

@@ -14,7 +14,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Search Management")
-@Controller("search/search")
+@Controller("api/search/search")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class SearchController {

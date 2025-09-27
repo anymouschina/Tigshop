@@ -3,7 +3,7 @@ import { GetProductIdsDto } from './dto/get-product-ids.dto';
 import { RecommendService } from './recommend.service';
 import { camelCase } from '../utils/camel-case.util';
 
-@Controller('common/recommend')
+@Controller('api/common/recommend')
 export class RecommendController {
   constructor(private readonly recommendService: RecommendService) {}
 

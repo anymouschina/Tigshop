@@ -20,7 +20,7 @@ import {
 } from "./dto/user-login";
 
 @ApiTags("User Authentication")
-@Controller("user")
+@Controller("api/user")
 export class LoginController {
   constructor(private readonly loginService: LoginService) {}
 

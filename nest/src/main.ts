@@ -42,8 +42,8 @@ async function bootstrap() {
     credentials: true,
   });
   // 设置全局API前缀 - 智能路由前缀处理
-  // 应用路由前缀中间件
-  app.use(routePrefixMiddleware);
+  // 应用路由前缀中间件 (暂时禁用用于调试)
+  // app.use(routePrefixMiddleware);
 
   // 创建微服务
   const redisHost = process.env.REDIS_HOST || "localhost";

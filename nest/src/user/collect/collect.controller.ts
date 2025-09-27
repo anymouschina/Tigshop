@@ -28,7 +28,7 @@ import {
 } from "./dto/collect.dto";
 
 @ApiTags("User Collection Management")
-@Controller("user/collect")
+@Controller("api/user/collect")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class CollectController {

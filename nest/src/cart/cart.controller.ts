@@ -13,7 +13,7 @@ import { CartService } from "./cart.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("Shopping Cart")
-@Controller("cart/cart")
+@Controller("api/cart/cart")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class CartController {

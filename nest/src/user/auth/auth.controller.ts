@@ -6,7 +6,7 @@ import { Public } from "../../auth/decorators/public.decorator";
 import { JsSdkConfigDto } from "./dto/auth.dto";
 
 @ApiTags("User Authentication")
-@Controller("user")
+@Controller("api/user")
 export class UserAuthController {
   constructor(private readonly userAuthService: UserAuthService) {}
 

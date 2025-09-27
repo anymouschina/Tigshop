@@ -22,7 +22,7 @@ import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @ApiTags("通用-日志统计")
-@Controller("common")
+@Controller("api/common")
 export class LogController {
   constructor(private readonly prisma: PrismaService) {
     this.logger = new Logger(LogController.name)

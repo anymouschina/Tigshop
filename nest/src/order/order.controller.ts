@@ -13,7 +13,7 @@ import { OrderService } from "./order.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("User Order Management")
-@Controller("user/order")
+@Controller("api/user/order")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class OrderController {
