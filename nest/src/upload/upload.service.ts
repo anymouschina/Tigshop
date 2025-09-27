@@ -5,10 +5,14 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
 import * as path from "path";
 import * as fs from "fs";
 import * as crypto from "crypto";
+import * as sharp from "sharp";
 import { UploadDto, UploadType } from "./dto/upload.dto";
+import { StorageStrategy } from "./interfaces/storage-strategy.interface";
+import { StorageStrategyFactory } from "./storage-strategy.factory";
 
 export const UPLOAD_STATUS = {
   0: "上传中",
@@ -27,9 +31,15 @@ export const UPLOAD_CATEGORY = {
 @Injectable()
 export class UploadService {
   private readonly uploadPath: string;
+  private storageStrategy: StorageStrategy;
 
-  constructor(private prisma: PrismaService) {
-    this.uploadPath = path.join(process.cwd(), "uploads");
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+    private storageStrategyFactory: StorageStrategyFactory,
+  ) {
+    this.uploadPath = this.storageStrategyFactory.getUploadPath();
+    this.storageStrategy = this.storageStrategyFactory.getStorageStrategy();
     this.ensureUploadDirectory();
   }
 
@@ -47,6 +57,30 @@ export class UploadService {
     const ext = path.extname(originalName);
     const randomName = crypto.randomBytes(16).toString("hex");
     return `${randomName}${ext}`;
+  }
+
+  private async generateThumbnail(
+    originalPath: string,
+    thumbnailPath: string,
+    width: number = 200,
+    height: number = 200,
+  ): Promise<void> {
+    try {
+      await sharp(originalPath)
+        .resize(width, height, {
+          fit: 'cover',
+          position: 'center',
+        })
+        .toFile(thumbnailPath);
+    } catch (error) {
+      throw new BadRequestException(`缩略图生成失败: ${error.message}`);
+    }
+  }
+
+  private generateThumbnailFilename(originalFilename: string, width: number, height: number): string {
+    const ext = path.extname(originalFilename);
+    const name = path.basename(originalFilename, ext);
+    return `${name}_${width}x${height}${ext}`;
   }
 
   private getFileCategory(mimetype: string): string {
@@ -109,6 +143,7 @@ export class UploadService {
     file: Express.Multer.File,
     uploadDto: UploadDto,
     userId?: number,
+    options?: { generateThumbnail?: boolean; thumbnailWidth?: number; thumbnailHeight?: number },
   ): Promise<any> {
     try {
       this.validateFile(file, uploadDto.type);
@@ -118,10 +153,57 @@ export class UploadService {
       const relativePath = path.join(category, filename);
       const filePath = path.join(this.uploadPath, relativePath);
 
-      // 保存文件
-      fs.writeFileSync(filePath, file.buffer);
+      // 保存文件到存储策略
+      const fileUrl = await this.storageStrategy.uploadFile(
+        file.buffer,
+        relativePath,
+        file.mimetype
+      );
 
-      // 创建数据库记录
+      let thumbnailUrl = null;
+      let thumbnailRecord = null;
+
+      // 如果是用户头像，生成缩略图
+      if (options?.generateThumbnail && uploadDto.type === UploadType.USER) {
+        const thumbWidth = options.thumbnailWidth || 200;
+        const thumbHeight = options.thumbnailHeight || 200;
+        const thumbFilename = this.generateThumbnailFilename(filename, thumbWidth, thumbHeight);
+        const thumbRelativePath = path.join(category, thumbFilename);
+
+        // 生成缩略图
+        const thumbnailBuffer = await sharp(file.buffer)
+          .resize(thumbWidth, thumbHeight, {
+            fit: 'cover',
+            position: 'center',
+          })
+          .toBuffer();
+
+        // 上传缩略图到存储策略
+        thumbnailUrl = await this.storageStrategy.uploadFile(
+          thumbnailBuffer,
+          thumbRelativePath,
+          file.mimetype
+        );
+
+        // 创建缩略图数据库记录
+        thumbnailRecord = await this.prisma.upload.create({
+          data: {
+            file_name: `thumb_${file.originalname}`,
+            file_path: thumbRelativePath,
+            file_url: thumbnailUrl,
+            file_size: thumbnailBuffer.length,
+            file_type: file.mimetype,
+            category,
+            type: uploadDto.type,
+            related_id: uploadDto.relatedId,
+            description: `${uploadDto.description}_thumbnail`,
+            status: 1,
+            user_id: userId,
+          },
+        });
+      }
+
+      // 创建主文件数据库记录
       const uploadRecord = await this.prisma.upload.create({
         data: {
           file_name: file.originalname,
@@ -142,7 +224,7 @@ export class UploadService {
         id: uploadRecord.id,
         fileName: uploadRecord.file_name,
         filePath: uploadRecord.file_path,
-        fileUrl: uploadRecord.file_url,
+        fileUrl: fileUrl, // 使用存储策略返回的实际URL
         fileSize: uploadRecord.file_size,
         fileType: uploadRecord.file_type,
         category: uploadRecord.category,
@@ -151,6 +233,8 @@ export class UploadService {
         description: uploadRecord.description,
         status: uploadRecord.status,
         createdAt: uploadRecord.created_at,
+        thumbnailUrl: thumbnailUrl,
+        thumbnailId: thumbnailRecord?.id,
       };
     } catch (error) {
       throw new BadRequestException(`文件上传失败: ${error.message}`);

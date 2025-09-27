@@ -105,7 +105,7 @@ export class AuthService implements OnModuleInit {
     };
 
     const token = this.jwtService.sign(payload, {
-      secret: "lyecs@2023",
+      secret: this.config.jwtSecret || "lyecs@2023",
       algorithm: "HS256",
       // Note: Don't set expiresIn when manually setting exp property
     });

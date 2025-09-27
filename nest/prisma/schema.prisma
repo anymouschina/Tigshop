@@ -2150,6 +2150,29 @@ model user_authorize {
   @@index([user_id], map: "user_id")
 }
 
+model upload {
+  id            Int      @id @default(autoincrement()) @db.UnsignedInt
+  file_name     String   @db.VarChar(255)
+  file_path     String   @db.Text
+  file_url      String   @db.Text
+  file_size     Int      @db.UnsignedInt
+  file_type     String   @db.VarChar(100)
+  category      String   @db.VarChar(50)
+  type          String   @db.VarChar(50)
+  related_id    Int?     @db.UnsignedInt
+  description   String?  @db.Text
+  status        Int      @default(1) @db.TinyInt
+  user_id       Int?     @db.UnsignedInt
+  created_at    DateTime @default(now()) @db.Timestamp(0)
+  updated_at    DateTime @updatedAt @db.Timestamp(0)
+
+  @@index([user_id], map: "upload_user_id")
+  @@index([type], map: "upload_type")
+  @@index([category], map: "upload_category")
+  @@index([related_id], map: "upload_related_id")
+  @@index([status], map: "upload_status")
+}
+
 model user_balance_log {
   log_id             Int     @id @default(autoincrement()) @db.UnsignedMediumInt
   user_id            Int     @default(0) @db.UnsignedMediumInt

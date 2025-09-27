@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Module } from "@nestjs/common";
+import { Module, MiddlewareConsumer } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { UserController } from "./user.controller";
 import { AuthModule } from "../auth/auth.module";
@@ -14,6 +14,7 @@ import { CollectModule } from "./collect/collect.module";
 import { UserCouponModule } from "./coupon/coupon.module";
 import { UserHistoryModule } from "./history/history.module";
 import { UploadModule } from "../upload/upload.module";
+import { AuthDebugMiddleware } from "../auth/middlewares/auth-debug.middleware";
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { UploadModule } from "../upload/upload.module";
     UploadModule,
   ],
   controllers: [UserController],
-  providers: [UserService],
+  providers: [UserService, AuthDebugMiddleware],
   exports: [
     UserService,
     UserCompanyModule,
@@ -40,4 +41,10 @@ import { UploadModule } from "../upload/upload.module";
     UserMessageLogModule,
   ],
 })
-export class UserModule {}
+export class UserModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthDebugMiddleware)
+      .forRoutes('user');
+  }
+}

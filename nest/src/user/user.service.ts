@@ -433,10 +433,14 @@ export class UserService {
         description: "用户头像",
       };
 
-      const uploadResult = await this.uploadService.uploadFile(file, uploadDto, user_id);
+      const uploadResult = await this.uploadService.uploadFile(file, uploadDto, user_id, {
+        generateThumbnail: true,
+        thumbnailWidth: 200,
+        thumbnailHeight: 200,
+      });
 
-      // 更新用户头像 - 对齐PHP版本
-      const avatarUrl = uploadResult.fileUrl;
+      // 更新用户头像 - 对齐PHP版本，使用缩略图作为头像
+      const avatarUrl = uploadResult.thumbnailUrl || uploadResult.fileUrl;
       await this.databaseService.user.update({
         where: { user_id },
         data: { avatar: avatarUrl },
@@ -447,8 +451,8 @@ export class UserService {
       return {
         code: 0,
         data: {
-          pic_thumb: avatarUrl, // 暂时使用原图作为缩略图
-          pic_url: uploadResult.fileUrl,
+          pic_thumb: avatarUrl, // 使用缩略图
+          pic_url: uploadResult.fileUrl, // 原图
           pic_name: uploadResult.fileName,
         },
         message: "操作成功",

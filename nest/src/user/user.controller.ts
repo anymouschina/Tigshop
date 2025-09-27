@@ -206,7 +206,7 @@ export class UserController {
   /**
    * 修改头像 - 对齐PHP版本 modifyAvatar
    */
-  @Post("modifyAvatar")
+  @Post("user/modifyAvatar")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改头像" })
