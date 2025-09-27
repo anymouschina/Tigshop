@@ -9,6 +9,7 @@ import { UserCompanyModule } from "./user-company/user-company.module";
 import { UserRankModule } from "./user-rank/user-rank.module";
 import { UserPointsLogModule } from "./user-points-log/user-points-log.module";
 import { UserMessageLogModule } from "./user-message-log/user-message-log.module";
+import { UserMessageModule } from "./user-message/user-message.module";
 import { UserAuthModule } from "./auth/auth.module";
 import { CollectModule } from "./collect/collect.module";
 import { UserCouponModule } from "./coupon/coupon.module";
@@ -25,6 +26,7 @@ import { AuthDebugMiddleware } from "../auth/middlewares/auth-debug.middleware";
     UserRankModule,
     UserPointsLogModule,
     UserMessageLogModule,
+    UserMessageModule,
     UserAuthModule,
     CollectModule,
     UserCouponModule,
@@ -39,6 +41,7 @@ import { AuthDebugMiddleware } from "../auth/middlewares/auth-debug.middleware";
     UserRankModule,
     UserPointsLogModule,
     UserMessageLogModule,
+    UserMessageModule,
   ],
 })
 export class UserModule {

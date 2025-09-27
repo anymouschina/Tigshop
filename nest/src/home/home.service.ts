@@ -591,7 +591,25 @@ export class HomeService {
         where: { decorate_sn: decorateSn },
       });
 
-      return item || {};
+      if (!item) {
+        return {};
+      }
+
+      // 如果data字段是字符串，解析为JSON对象
+      let parsedData = item.data;
+      if (typeof item.data === 'string') {
+        try {
+          parsedData = JSON.parse(item.data);
+        } catch (parseError) {
+          this.logger.warn(`Failed to parse member decorate data for ${decorateSn}:`, parseError);
+          parsedData = item.data;
+        }
+      }
+
+      return {
+        ...item,
+        data: parsedData
+      };
     } catch (error) {
       this.logger.debug("Error fetching member decorate:", error);
       // 返回默认个人中心数据
@@ -599,7 +617,7 @@ export class HomeService {
         id: 2,
         decorate_sn: decorateSn,
         decorate_name: "个人中心装修",
-        data: JSON.stringify({
+        data: {
           user_info: { nickname: "用户", avatar: "/images/default-avatar.png" },
           menu_items: [
             { name: "我的订单", icon: "order", url: "/user/orders" },
@@ -607,7 +625,7 @@ export class HomeService {
             { name: "优惠券", icon: "coupon", url: "/user/coupons" },
             { name: "设置", icon: "settings", url: "/user/settings" },
           ],
-        }),
+        },
         shop_id: 0,
       };
     }
