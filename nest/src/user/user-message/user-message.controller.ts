@@ -2,7 +2,7 @@ import { Controller, Get, Post, Delete, Query, Body, UseGuards, Request } from '
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { UserMessageService } from './user-message.service';
 import { GetUserMessageListDto, UpdateMessageReadDto } from './dto/user-message.dto';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../common/utils/response.util';
 
 @ApiTags('用户站内信')

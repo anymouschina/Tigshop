@@ -11,7 +11,7 @@ import { UpdateProductDto } from "../dto/update-product.dto";
 import { ProductQueryDto } from "../dto/product-query.dto";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { RolesGuard } from "../../auth/guards/roles.guard";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { Roles } from "../../auth/decorators/roles.decorator";
 
 // Mock the ProductService

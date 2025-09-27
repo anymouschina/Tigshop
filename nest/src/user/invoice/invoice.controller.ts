@@ -14,7 +14,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { InvoiceService } from "./invoice.service";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("User Invoice")
 @Controller("api")

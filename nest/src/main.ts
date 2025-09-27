@@ -40,8 +40,7 @@ async function bootstrap() {
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
     credentials: true,
   });
-  // 设置全局API前缀
-  app.setGlobalPrefix("api");
+  // 设置全局API前缀 - 不设置全局前缀，由控制器自行处理
 
   // 创建微服务
   const redisHost = process.env.REDIS_HOST || "localhost";

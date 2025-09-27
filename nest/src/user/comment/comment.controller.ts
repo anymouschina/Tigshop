@@ -12,7 +12,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { CommentService } from "./comment.service";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("User Comment")
 @Controller("api")

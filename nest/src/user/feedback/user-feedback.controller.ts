@@ -13,7 +13,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { UserFeedbackService } from "./user-feedback.service";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { Public } from "../../auth/decorators/public.decorator";
 
 @ApiTags("User Feedback")

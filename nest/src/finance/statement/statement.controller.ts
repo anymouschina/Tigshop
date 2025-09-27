@@ -24,7 +24,7 @@ import {
 } from "./statement.dto";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { RolesGuard } from "../../common/guards/roles.guard";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("财务管理-账单记录")
 @Controller("admin/finance/statement")

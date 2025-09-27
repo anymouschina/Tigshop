@@ -24,8 +24,8 @@ import {
 } from "./csrf.dto";
 import { Roles } from "../../auth/decorators/roles.decorator";
 import { RolesGuard } from "../../auth/guards/roles.guard";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
-import { CsrfService as AuthCsrfService } from "../../auth/services/csrf.service";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
+import { CsrfService as AuthCsrfService } from "src/auth/services/csrf.service";
 import { ResponseUtil } from "../../../common/utils/response.util";
 
 @ApiTags("通用-CSRF保护")

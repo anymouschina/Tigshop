@@ -23,7 +23,7 @@ import {
 } from "./refund-apply.dto";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { RolesGuard } from "../../common/guards/roles.guard";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("财务管理-退款申请")
 @Controller("admin/finance/refund-apply")

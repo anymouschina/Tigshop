@@ -15,11 +15,11 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { UserDecorateService } from "./user-decorate.service";
 
 @ApiTags("用户端页面装修")
-@Controller("decorate")
+@Controller("api/decorate")
 export class UserDecorateController {
   constructor(private readonly userDecorateService: UserDecorateService) {}
 

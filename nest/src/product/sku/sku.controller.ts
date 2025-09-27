@@ -22,7 +22,7 @@ import {
   SkuAvailabilityDto,
   SkuPriceUpdateDto,
 } from "./dto/sku.dto";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("SKU Management")
 @Controller("product/sku")

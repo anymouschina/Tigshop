@@ -20,7 +20,7 @@ import {
   FavoriteBatchDto,
   CheckFavoriteDto,
 } from "./dto/favorite.dto";
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("Favorite Management")
 @Controller("user/favorite")
