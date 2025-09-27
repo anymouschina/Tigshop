@@ -8,13 +8,13 @@ import {
   Request,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
-import { CsrfService as AuthCsrfService } from "src/auth/services/csrf.service";
+import { CommonCsrfService } from "./services/common-csrf.service";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("API - 公共CSRF")
-@Controller("api/common/csrf")
+@Controller("common/csrf")
 export class ApiCsrfController {
-  constructor(private readonly authCsrfService: AuthCsrfService) {}
+  constructor(private readonly commonCsrfService: CommonCsrfService) {}
 
   /**
    * 创建CSRF令牌 - 对齐PHP版本 /api/common/csrf/create
@@ -22,7 +22,7 @@ export class ApiCsrfController {
   @Get("create")
   @ApiOperation({ summary: "创建CSRF令牌" })
   async create() {
-    const token = this.authCsrfService.generateToken();
+    const token = this.commonCsrfService.generateToken();
 
     return {
       code: 0,
@@ -41,7 +41,7 @@ export class ApiCsrfController {
   @Post("validate")
   @ApiOperation({ summary: "验证CSRF令牌" })
   async validate(@Body() body: { csrf_token: string }) {
-    const isValid = this.authCsrfService.validateToken(body.csrf_token);
+    const isValid = this.commonCsrfService.validateToken(body.csrf_token);
 
     if (isValid) {
       return {
@@ -66,7 +66,7 @@ export class ApiCsrfController {
   @Post("delete")
   @ApiOperation({ summary: "删除CSRF令牌" })
   async delete(@Body() body: { csrf_token: string }) {
-    const success = this.authCsrfService.deleteToken(body.csrf_token);
+    const success = this.commonCsrfService.deleteToken(body.csrf_token);
 
     if (success) {
       return {
@@ -93,7 +93,7 @@ export class ApiCsrfController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async createUserToken(@Request() req) {
-    const token = this.authCsrfService.generateToken(req.user.userId);
+    const token = this.commonCsrfService.generateToken(req.user.userId);
 
     return {
       code: 0,
@@ -115,7 +115,7 @@ export class ApiCsrfController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async refreshToken(@Request() req, @Body() body: { old_token: string }) {
-    const newToken = this.authCsrfService.refreshToken(body.old_token, req.user.userId);
+    const newToken = this.commonCsrfService.refreshToken(body.old_token, req.user.userId);
 
     if (newToken) {
       return {

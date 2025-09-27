@@ -5,10 +5,11 @@ import { CommonConfigService } from "./config/config.service";
 import { ConfigModule } from "../config/config.module";
 import { RecommendModule } from "./recommend/recommend.module";
 import { ApiCsrfController } from "./api-csrf.controller";
+import { CommonCsrfService } from "./services/common-csrf.service";
 
 @Module({
   imports: [ConfigModule, RecommendModule],
   controllers: [LogController, CommonConfigController, ApiCsrfController],
-  providers: [CommonConfigService],
+  providers: [CommonConfigService, CommonCsrfService],
 })
 export class CommonModule {}

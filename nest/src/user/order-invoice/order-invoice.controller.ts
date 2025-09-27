@@ -16,7 +16,7 @@ import { OrderInvoiceService } from "./order-invoice.service";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("User Order Invoice")
-@Controller("api")
+@Controller("order-invoice")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class OrderInvoiceController {

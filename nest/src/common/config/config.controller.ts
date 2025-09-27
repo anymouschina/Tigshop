@@ -12,7 +12,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 import { CommonConfigService } from "./config.service";
 
 @ApiTags("通用-配置接口")
-@Controller("common/config")
+@Controller("/api/common/config")
 export class CommonConfigController {
   constructor(private readonly commonConfigService: CommonConfigService) {}
 

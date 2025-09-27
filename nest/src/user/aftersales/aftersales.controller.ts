@@ -14,7 +14,7 @@ import { AftersalesService } from "./aftersales.service";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("User Aftersales")
-@Controller("api")
+@Controller("aftersales")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AftersalesController {

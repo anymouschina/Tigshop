@@ -15,7 +15,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Order Payment")
-@Controller("api")
+@Controller("pay")
 export class PayController {
   constructor(private readonly payService: PayService) {}
 

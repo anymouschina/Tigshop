@@ -28,7 +28,7 @@ import {
 // import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("通用-页面装修")
-@Controller("admin/decorate")
+@Controller("admin-api/decorate")
 // @UseGuards(JwtAuthGuard, RolesGuard)
 // @Roles("admin")
 export class DecorateController {

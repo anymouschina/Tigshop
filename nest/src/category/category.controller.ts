@@ -5,7 +5,7 @@ import { CategoryService, CategoryTreeNode } from "./category.service";
 import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Product Category")
-@Controller("api")
+@Controller("api/category")
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
