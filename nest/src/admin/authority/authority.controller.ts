@@ -189,17 +189,17 @@ export class AuthorityController {
       for (const node of nodes) {
         // 添加当前节点
         const flatNode = {
-          authority_id: node.authority_id,
-          authority_sn: node.authority_sn,
-          authority_name: node.authority_name,
-          parent_id: node.parent_id,
-          sort_order: node.sort_order,
-          is_show: node.is_show,
-          child_auth: node.child_auth,
-          route_link: node.route_link,
-          authority_ico: node.authority_ico,
-          is_system: node.is_system,
-          admin_type: node.admin_type,
+          authorityId: node.authority_id,
+          authoritySn: node.authority_sn,
+          authorityName: node.authority_name,
+          parentId: node.parent_id,
+          sortOrder: node.sort_order,
+          isShow: node.is_show,
+          childAuth: node.child_auth,
+          routeLink: node.route_link,
+          authorityIco: node.authority_ico,
+          isSystem: node.is_system,
+          adminType: node.admin_type,
         };
 
         result.push(flatNode);
