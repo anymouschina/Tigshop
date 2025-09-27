@@ -1,141 +1,81 @@
 // @ts-nocheck
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import {
-  CreateTipsManageDto,
-  UpdateTipsManageDto,
-} from "./dto/tips-manage.dto";
-import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class TipsManageService {
   private readonly logger = new Logger(TipsManageService.name);
   constructor(private prisma: PrismaService) {}
 
-  async getFilterList(filter: any) {
-    const { keyword, page, size, sort_field, sort_order } = filter;
-
-    const where: any = {};
-    if (keyword) {
-      where.OR = [{ name: { contains: keyword } }];
-    }
-
-    const orderBy: any = {};
-    if (sort_field) {
-      orderBy[sort_field] = sort_order || "desc";
-    } else {
-      orderBy.id = "desc";
-    }
-
-    const skip = (page - 1) * size;
-
-    return await this.prisma.tips_manage.findMany({
-      where,
-      orderBy,
-      skip,
-      take: size,
-    });
-  }
-
-  async getFilterCount(filter: any) {
-    const { keyword } = filter;
-
-    const where: any = {};
-    if (keyword) {
-      where.OR = [{ name: { contains: keyword } }];
-    }
-
-    return await this.prisma.tips_manage.count({ where });
-  }
-
-  async getDetail(id: number) {
-    return await this.prisma.tips_manage.findUnique({
-      where: { id },
-    });
-  }
-
-  async createTipsManage(createData: CreateTipsManageDto) {
+  /**
+   * 获取系统状态提示 - 还原PHP原始功能
+   * 返回系统各种状态检查结果，格式为 [{code: "xxx", status: true/false}]
+   */
+  async getSystemStatusTips() {
     try {
-      const result = await this.prisma.tips_manage.create({
-        data: {
-          ...createData,
-          created_at: new Date(),
-          updated_at: new Date(),
-        },
-      });
-      return result;
+      const tips = [];
+
+      // 1. 检查域名绑定状态
+      const domainBindStatus = await this.checkDomainBinding();
+      tips.push(domainBindStatus);
+
+      // 2. 检查密码安全强度
+      const passwordStatus = await this.checkPasswordSecurity();
+      tips.push(passwordStatus);
+
+      return tips;
     } catch (error) {
-      this.logger.debug("创建提示管理失败:", error);
-      return null;
+      this.logger.error('获取系统状态提示失败:', error);
+      return [];
     }
   }
 
-  async updateTipsManage(id: number, updateData: UpdateTipsManageDto) {
+  /**
+   * 检查密码安全强度
+   */
+  private async checkPasswordSecurity() {
     try {
-      const result = await this.prisma.tips_manage.update({
-        where: { id },
-        data: {
-          ...updateData,
-          updated_at: new Date(),
-        },
-      });
-      return result;
-    } catch (error) {
-      this.logger.debug("更新提示管理失败:", error);
-      return null;
-    }
-  }
-
-  async deleteTipsManage(id: number) {
-    try {
-      await this.prisma.tips_manage.delete({
-        where: { id },
-      });
-      return true;
-    } catch (error) {
-      this.logger.debug("删除提示管理失败:", error);
-      return false;
-    }
-  }
-
-  async batchDeleteTipsManage(ids: number[]) {
-    try {
-      await this.prisma.tips_manage.deleteMany({
+      // 检查是否有管理员使用默认密码
+      const adminsWithDefaultPassword = await this.prisma.admin_user.count({
         where: {
-          id: {
-            in: ids,
-          },
-        },
-      });
-      return true;
-    } catch (error) {
-      this.logger.debug("批量删除提示管理失败:", error);
-      return false;
-    }
-  }
-
-  async getTipsManageStatistics() {
-    try {
-      const total = await this.prisma.tips_manage.count();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayCount = await this.prisma.tips_manage.count({
-        where: {
-          created_at: {
-            gte: today,
-          },
-        },
+          password: '21232f297a57a5a743894a0e4a801fc3' // admin的md5
+        }
       });
 
       return {
-        total,
-        today_count: todayCount,
+        code: 'passwordTooSimple',
+        status: adminsWithDefaultPassword > 0 // 有默认密码则为true，表示需要提醒
       };
     } catch (error) {
-      this.logger.debug("获取提示管理统计失败:", error);
+      this.logger.error('检查密码安全失败:', error);
       return {
-        total: 0,
-        today_count: 0,
+        code: 'passwordTooSimple',
+        status: false
+      };
+    }
+  }
+
+  /**
+   * 检查域名绑定状态
+   */
+  private async checkDomainBinding() {
+    try {
+      // 检查是否有配置域名绑定
+      const domainConfig = await this.prisma.config.findFirst({
+        where: {
+          biz_code: 'domain_binding'
+        }
+      });
+
+      return {
+        code: 'domainBind',
+        status: !!(domainConfig && domainConfig.value) // 已配置域名绑定则为true
+      };
+    } catch (error) {
+      this.logger.error('检查域名绑定失败:', error);
+      return {
+        code: 'domainBind',
+        status: false
       };
     }
   }
