@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
+import { MulterModule } from "@nestjs/platform-express";
 import { UserModule } from "./user/user.module";
 import { ConfigModule } from "./config/config.module";
 import { LoggerModule } from "./common/logger/logger.module";
@@ -46,6 +47,7 @@ import { AppController } from "./app.contronller";
     PrismaModule,
     ConfigModule,
     LoggerModule,
+    MulterModule.register(),
     ScheduleModule.forRoot(),
     // Re-enabled module after fixing Prisma field names
     UserModule,

@@ -10,6 +10,8 @@ import {
 import { PrismaService } from "src/prisma/prisma.service";
 import { AuthService } from "../auth/auth.service";
 import { VerificationCodeService } from "../auth/services/verification-code.service";
+import { UploadService } from "../upload/upload.service";
+import { UploadType } from "../upload/dto/upload.dto";
 
 @Injectable()
 export class UserService {
@@ -18,6 +20,7 @@ export class UserService {
     private readonly databaseService: PrismaService,
     private readonly authService: AuthService,
     private readonly verificationCodeService: VerificationCodeService,
+    private readonly uploadService: UploadService,
   ) {}
 
   /**
@@ -419,18 +422,41 @@ export class UserService {
   }
 
   /**
-   * 修改头像
+   * 修改头像 - 对齐PHP版本 modifyAvatar
    */
-  async modifyAvatar(user_id: number, avatar: string) {
-    await this.databaseService.user.update({
-      where: { user_id },
-      data: { avatar },
-    });
+  async modifyAvatar(user_id: number, file: Express.Multer.File) {
+    try {
+      // 上传图片
+      const uploadDto = {
+        type: UploadType.USER,
+        relatedId: user_id,
+        description: "用户头像",
+      };
 
-    return {
-      status: "success",
-      message: "头像修改成功",
-    };
+      const uploadResult = await this.uploadService.uploadFile(file, uploadDto, user_id);
+
+      // 更新用户头像 - 对齐PHP版本
+      const avatarUrl = uploadResult.fileUrl;
+      await this.databaseService.user.update({
+        where: { user_id },
+        data: { avatar: avatarUrl },
+      });
+
+      this.logger.debug(`用户 ${user_id} 头像修改成功: ${avatarUrl}`);
+
+      return {
+        code: 0,
+        data: {
+          pic_thumb: avatarUrl, // 暂时使用原图作为缩略图
+          pic_url: uploadResult.fileUrl,
+          pic_name: uploadResult.fileName,
+        },
+        message: "操作成功",
+      };
+    } catch (error) {
+      this.logger.error(`用户 ${user_id} 头像修改失败: ${error.message}`);
+      throw new BadRequestException(`头像修改失败: ${error.message}`);
+    }
   }
 
   /**

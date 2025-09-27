@@ -13,6 +13,7 @@ import { UserAuthModule } from "./auth/auth.module";
 import { CollectModule } from "./collect/collect.module";
 import { UserCouponModule } from "./coupon/coupon.module";
 import { UserHistoryModule } from "./history/history.module";
+import { UploadModule } from "../upload/upload.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { UserHistoryModule } from "./history/history.module";
     CollectModule,
     UserCouponModule,
     UserHistoryModule,
+    UploadModule,
   ],
   controllers: [UserController],
   providers: [UserService],

@@ -210,8 +210,13 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "修改头像" })
-  async modifyAvatar(@Request() req, @Body() body: { avatar: string }) {
-    return this.userService.modifyAvatar(req.user.user_id, body.avatar);
+  @UseInterceptors(FileInterceptor("file"))
+  @ApiConsumes("multipart/form-data")
+  async modifyAvatar(
+    @Request() req,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.userService.modifyAvatar(req.user.user_id, file);
   }
 
   /**
