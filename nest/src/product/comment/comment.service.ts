@@ -156,7 +156,7 @@ export class CommentService {
     ]);
 
     return {
-      list: comments.map((comment) => this.formatCommentResponse(comment)),
+      records: comments.map((comment) => this.formatCommentResponse(comment)),
       total,
       page,
       size,
@@ -295,8 +295,8 @@ export class CommentService {
     // 获取所有已通过的评论
     const comments = await this.prisma.comment.findMany({
       where: {
-        productId,
-        status: Number(CommentStatus.APPROVED),
+        product_id: productId,
+        status: 1, // CommentStatus.APPROVED = 1
       },
     });
 
@@ -362,7 +362,7 @@ export class CommentService {
     ]);
 
     return {
-      list: comments.map((comment) => ({
+      records: comments.map((comment) => ({
         ...this.formatCommentResponse(comment),
         productName: comment.product?.product_name,
         productImage: comment.product?.pic_thumb,

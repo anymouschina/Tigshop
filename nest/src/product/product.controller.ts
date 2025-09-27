@@ -15,6 +15,7 @@ import { ProductService } from "./product.service";
 import { ProductDetailService } from "./product-detail.service";
 import { CommentService } from "./comment/comment.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { Public } from "../auth/decorators/public.decorator";
 import { CommentStatus } from "./comment/dto/comment.dto";
 
 @ApiTags("Product Management")
@@ -49,37 +50,53 @@ export class ProductController {
   }
 
   /**
+   * 获取商品详情 - Public版本（不需要登录）
+   */
+  @Get("public-detail")
+  @Public()
+  @ApiOperation({ summary: "获取商品详情（公开）" })
+  async getProductDetailPublic(@Query() query: { id: number }) {
+    const productId = Number(query.id);
+    return this.productDetailService.getProductDetail(productId);
+  }
+
+  /**
    * 获取商品评论 - 对齐PHP版本 product/product/getComment
    */
   @Get("getComment")
+  @Public()
   @ApiOperation({ summary: "获取商品评论" })
   async getProductComment(
     @Query() query: { id: number; page?: number; size?: number },
   ) {
-    const { id, page = 1, size = 10 } = query;
+    const { id } = query;
 
-    // 获取评论列表
-    const comments = await this.commentService.getComments({
-      productId: Number(id),
-      page: Number(page),
-      size: Number(size),
-      status: CommentStatus.APPROVED,
-    });
-
-    // 获取评论统计
+    // 获取评论统计 - 对齐PHP版本响应格式
     const stats = await this.commentService.getCommentStats(Number(id));
 
+    // 计算好评、中评、差评数量 - 对齐PHP版本的计算方式
+    const goodCount = stats.ratingDistribution.find(r => r.rating === 5)?.count || 0;
+    const moderateCount = stats.ratingDistribution.find(r => r.rating === 3 || r.rating === 4)?.count || 0;
+    const badCount = stats.ratingDistribution.find(r => r.rating === 1 || r.rating === 2)?.count || 0;
+
+    const total = stats.totalComments;
+    const goodPercent = total > 0 ? Math.round((goodCount / total) * 100) : 0;
+    const moderatePercent = total > 0 ? Math.round((moderateCount / total) * 100) : 0;
+    const badPercent = total > 0 ? Math.round((badCount / total) * 100) : 0;
+
+    // 对齐PHP版本的响应数据结构
     return {
-      comments: comments.list,
-      averageRating: stats.averageRating,
-      totalComments: stats.totalComments,
-      ratingDistribution: stats.ratingDistribution,
-      pagination: {
-        page: comments.page,
-        size: comments.size,
-        total: comments.total,
-        totalPages: comments.totalPages,
-      },
+      total, // 总评论数
+      badCount, // 差评数量
+      goodCount, // 好评数量
+      moderateCount, // 中评数量
+      showCount: total, // 显示数量（等于总数量）
+      goodPercent, // 好评百分比
+      moderatePercent, // 中评百分比
+      badPercent, // 差评百分比
+      // 补充PHP版本可能的其他字段
+      averageRating: stats.averageRating, // 平均评分
+      ratingDistribution: stats.ratingDistribution, // 评分分布
     };
   }
 
@@ -215,10 +232,7 @@ export class ProductController {
   @ApiOperation({ summary: "收藏状态查询" })
   async isCollect(@Request() req, @Query() query: { productId: number }) {
     // 简化实现，返回未收藏状态
-    return {
-      isCollected: false,
-      collectCount: 256,
-    };
+    return false;
   }
 
   /**
@@ -235,6 +249,84 @@ export class ProductController {
       success: true,
       message: "已添加到购物车",
       cartItemCount: 1,
+    };
+  }
+
+  /**
+   * 商品点击日志 - 对齐PHP版本 product/product/log
+   */
+  @Get("log")
+  @Public()
+  @ApiOperation({ summary: "记录商品点击日志" })
+  async logProductClick(
+    @Query() query: { click: number; productId: number },
+  ) {
+    const { click, productId } = query;
+
+    // 记录点击日志 - 简化实现，实际应该写入日志表
+    console.log(`商品点击日志: productId=${productId}, click=${click}, timestamp=${new Date().toISOString()}`);
+
+    // 返回成功响应
+    return {
+      success: true,
+      message: "点击日志记录成功",
+    };
+  }
+
+  /**
+   * 售后服务 - 对齐PHP版本 product/product/afterSalesService
+   */
+  @Get("afterSalesService")
+  @Public()
+  @ApiOperation({ summary: "获取售后服务信息" })
+  async getAfterSalesService() {
+    // 返回售后服务信息 - 对齐PHP版本
+    return {
+      // 售后服务政策
+      policy: {
+        title: "售后服务政策",
+        content: "7天无理由退换货，15天质量问题换货，30天质量问题维修",
+      },
+      // 退换货流程
+      process: [
+        {
+          step: 1,
+          title: "申请售后",
+          description: "在订单详情页申请售后服务",
+        },
+        {
+          step: 2,
+          title: "审核处理",
+          description: "客服审核售后申请",
+        },
+        {
+          step: 3,
+          title: "寄回商品",
+          description: "按照要求寄回商品",
+        },
+        {
+          step: 4,
+          title: "处理完成",
+          description: "完成售后处理",
+        },
+      ],
+      // 联系方式
+      contact: {
+        phone: "400-123-4567",
+        email: "service@example.com",
+        time: "周一至周日 9:00-21:00",
+      },
+      // 常见问题
+      faq: [
+        {
+          question: "如何申请退换货？",
+          answer: "在订单详情页点击申请售后，填写相关信息即可",
+        },
+        {
+          question: "退换货需要什么条件？",
+          answer: "商品完好，包装齐全，不影响二次销售",
+        },
+      ],
     };
   }
 }

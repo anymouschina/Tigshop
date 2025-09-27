@@ -10,27 +10,22 @@ export class UserFeedbackService {
    * 获取用户反馈列表
    */
   async getUserFeedbackList(userId: number, query: any) {
-    const page = query.page || 1;
-    const size = query.size || 10;
+    const page = Number(query.page || 1);
+    const size = Number(query.size || 10);
     const skip = (page - 1) * size;
 
     const where: any = { user_id: userId };
-    if (query.type !== undefined) where.type = query.type;
-    if (query.status !== undefined) where.status = query.status;
+    if (query.type !== undefined) where.type = Number(query.type);
+    if (query.status !== undefined) where.status = Number(query.status);
 
     const [feedbacks, total] = await Promise.all([
-      this.prisma.userFeedback.findMany({
+      this.prisma.feedback.findMany({
         where,
         orderBy: { add_time: "desc" },
         skip,
         take: size,
-        include: {
-          replies: {
-            orderBy: { add_time: "desc" },
-          },
-        },
       }),
-      this.prisma.userFeedback.count({ where }),
+      this.prisma.feedback.count({ where }),
     ]);
 
     return {
@@ -43,18 +38,42 @@ export class UserFeedbackService {
   }
 
   /**
+   * 获取产品反馈列表 - 支持productId参数过滤
+   */
+  async getProductFeedbackList(query: any) {
+    const { productId, page = 1, size = 10 } = query;
+    const skip = (Number(page) - 1) * Number(size);
+
+    const where: any = {};
+    if (productId) where.product_id = Number(productId);
+
+    const [feedbacks, total] = await Promise.all([
+      this.prisma.feedback.findMany({
+        where,
+        orderBy: { add_time: "desc" },
+        skip,
+        take: Number(size),
+      }),
+      this.prisma.feedback.count({ where }),
+    ]);
+
+    return {
+      records: feedbacks,
+      total,
+      page: Number(page),
+      size: Number(size),
+      totalPages: Math.ceil(total / Number(size)),
+    };
+  }
+
+  /**
    * 获取反馈详情
    */
   async getFeedbackDetail(userId: number, feedbackId: number) {
-    const feedback = await this.prisma.userFeedback.findFirst({
+    const feedback = await this.prisma.feedback.findFirst({
       where: {
-        feedback_id: feedbackId,
+        id: feedbackId,
         user_id: userId,
-      },
-      include: {
-        replies: {
-          orderBy: { add_time: "desc" },
-        },
       },
     });
 
@@ -69,16 +88,17 @@ export class UserFeedbackService {
    * 创建反馈
    */
   async createFeedback(userId: number, data: any) {
-    const feedback = await this.prisma.userFeedback.create({
+    const feedback = await this.prisma.feedback.create({
       data: {
         user_id: userId,
         type: data.type,
         title: data.title,
         content: data.content,
-        images: data.images || [],
-        contact: data.contact,
+        feedback_pics: data.images ? JSON.stringify(data.images) : null,
+        email: data.contact,
         status: 0, // 待处理
-        add_time: new Date(),
+        add_time: Math.floor(Date.now() / 1000), // 转换为Unix时间戳
+        product_id: data.productId || null,
       },
     });
 
@@ -89,9 +109,9 @@ export class UserFeedbackService {
    * 更新反馈
    */
   async updateFeedback(userId: number, data: any) {
-    const existingFeedback = await this.prisma.userFeedback.findFirst({
+    const existingFeedback = await this.prisma.feedback.findFirst({
       where: {
-        feedback_id: data.id,
+        id: data.id,
         user_id: userId,
         status: 0, // 只有待处理的反馈可以修改
       },
@@ -104,10 +124,10 @@ export class UserFeedbackService {
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.content !== undefined) updateData.content = data.content;
-    if (data.contact !== undefined) updateData.contact = data.contact;
+    if (data.contact !== undefined) updateData.email = data.contact;
 
-    return this.prisma.userFeedback.update({
-      where: { feedback_id: data.id },
+    return this.prisma.feedback.update({
+      where: { id: data.id },
       data: updateData,
     });
   }
@@ -116,9 +136,9 @@ export class UserFeedbackService {
    * 删除反馈
    */
   async deleteFeedback(userId: number, feedbackId: number) {
-    const feedback = await this.prisma.userFeedback.findFirst({
+    const feedback = await this.prisma.feedback.findFirst({
       where: {
-        feedback_id: feedbackId,
+        id: feedbackId,
         user_id: userId,
         status: 0, // 只有待处理的反馈可以删除
       },
@@ -128,14 +148,9 @@ export class UserFeedbackService {
       throw new HttpException("反馈不存在或已处理", HttpStatus.BAD_REQUEST);
     }
 
-    // 删除相关回复
-    await this.prisma.feedbackReply.deleteMany({
-      where: { feedback_id: feedbackId },
-    });
-
     // 删除反馈
-    await this.prisma.userFeedback.delete({
-      where: { feedback_id: feedbackId },
+    await this.prisma.feedback.delete({
+      where: { id: feedbackId },
     });
 
     return { success: true };
@@ -169,9 +184,9 @@ export class UserFeedbackService {
    * 回复反馈
    */
   async replyFeedback(userId: number, feedbackId: number, content: string) {
-    const feedback = await this.prisma.userFeedback.findFirst({
+    const feedback = await this.prisma.feedback.findFirst({
       where: {
-        feedback_id: feedbackId,
+        id: feedbackId,
         user_id: userId,
       },
     });
@@ -180,12 +195,14 @@ export class UserFeedbackService {
       throw new HttpException("反馈不存在", HttpStatus.NOT_FOUND);
     }
 
-    const reply = await this.prisma.feedbackReply.create({
+    // 创建回复作为新的反馈记录
+    const reply = await this.prisma.feedback.create({
       data: {
-        feedback_id: feedbackId,
+        parent_id: feedbackId,
         user_id: userId,
         content,
-        add_time: new Date(),
+        add_time: Math.floor(Date.now() / 1000),
+        status: 1, // 已处理
       },
     });
 

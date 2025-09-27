@@ -3,11 +3,15 @@ import { Controller, Get, Post, Body, Query, Request } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { HomeService } from "./home.service";
 import { Public } from "../auth/decorators/public.decorator";
+import { ProductDetailService } from "../product/product-detail.service";
 
 @ApiTags("Home Page")
 @Controller()
 export class HomeController {
-  constructor(private readonly homeService: HomeService) {}
+  constructor(
+    private readonly homeService: HomeService,
+    private readonly productDetailService: ProductDetailService,
+  ) {}
 
   /**
    * 首页数据 - 对齐PHP版本 home/Home/index
@@ -127,5 +131,16 @@ export class HomeController {
   @ApiOperation({ summary: "获取友情链接" })
   async friendLinks() {
     return this.homeService.getFriendLinks();
+  }
+
+  /**
+   * 商品详情 - 对齐PHP版本 product/product/detail (public版本)
+   */
+  @Get("product/product/detail")
+  @Public()
+  @ApiOperation({ summary: "获取商品详情" })
+  async getProductDetail(@Query() query: { id: number }) {
+    const productId = Number(query.id);
+    return this.productDetailService.getProductDetail(productId);
   }
 }

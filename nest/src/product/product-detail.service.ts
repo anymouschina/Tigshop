@@ -46,17 +46,50 @@ export class ProductDetailService {
       this.getConsultationCount(productId),
     ]);
 
+    // 对齐PHP版本的响应数据结构
     return {
-      item: product,
+      // 商品基本信息 - 对齐PHP的item字段
+      item: {
+        product_id: product.product_id,
+        product_name: product.product_name,
+        product_sn: product.product_sn,
+        product_desc: product.product_desc,
+        product_price: Number(product.product_price),
+        market_price: Number(product.market_price),
+        product_stock: product.product_stock,
+        product_status: product.product_status,
+        pic_url: product.pic_url,
+        pic_thumb: product.pic_thumb,
+        pic_original: product.pic_original,
+        product_video: product.product_video,
+        virtual_sales: product.virtual_sales,
+        actual_sales: product.actual_sales,
+        product_keywords: product.product_keywords,
+        shop_id: product.shop_id,
+        category_id: product.category_id,
+        brand_id: product.brand_id,
+        add_time: product.add_time,
+        update_time: product.update_time,
+      },
+      // 商品描述数组 - 对齐PHP的descArr字段
       descArr,
+      // SKU列表 - 对齐PHP的skuList字段
       skuList,
+      // 商品图片列表 - 对齐PHP的picList字段
       picList,
+      // 视频列表 - 对齐PHP的videoList字段
       videoList,
+      // 属性列表 - 对齐PHP的attrList字段
       attrList,
+      // 评论评分详情 - 对齐PHP的rankDetail字段
       rankDetail,
+      // 秒杀信息 - 对齐PHP的seckillDetail字段
       seckillDetail,
+      // 服务列表 - 对齐PHP的serviceList字段
       serviceList,
+      // 选中的属性值 - 对齐PHP的checkedValue字段
       checkedValue,
+      // 咨询总数 - 对齐PHP的consultationTotal字段
       consultationTotal,
     };
   }
@@ -292,8 +325,71 @@ export class ProductDetailService {
    * @returns 秒杀信息
    */
   async getSeckillInfo(productId: number): Promise<any[]> {
-    // 暂时返回空数组，后续可以实现秒杀功能
-    return [];
+    try {
+      // 查找当前商品参与的秒杀活动
+      const now = Math.floor(Date.now() / 1000);
+
+      // 查找进行中或即将开始的秒杀活动
+      // 先查找seckill_item表（这个表包含具体的商品秒杀信息）
+      const seckillItems = await this.prisma.seckill_item.findMany({
+        where: {
+          product_id: productId,
+          OR: [
+            {
+              seckill_start_time: { lte: now },
+              seckill_end_time: { gte: now }
+            },
+            {
+              seckill_start_time: { gt: now }
+            }
+          ]
+        }
+      });
+
+      if (seckillItems.length === 0) {
+        return [];
+      }
+
+      // 获取当前最合适的秒杀活动（优先进行中的）
+      const activeSeckill = seckillItems.find(item =>
+        item.seckill_start_time && item.seckill_end_time &&
+        item.seckill_start_time <= now && item.seckill_end_time >= now
+      ) || seckillItems[0];
+
+      const seckillDetail = {
+        seckillId: activeSeckill.seckill_id,
+        seckillName: `秒杀活动-${activeSeckill.seckill_id}`,
+        seckillPrice: activeSeckill.seckill_price,
+        seckillStock: activeSeckill.seckill_stock,
+        seckillSales: activeSeckill.seckill_sales || 0,
+        seckillLimitNum: activeSeckill.seckill_limit_num || 0,
+        seckillStartTime: activeSeckill.seckill_start_time,
+        seckillEndTime: activeSeckill.seckill_end_time,
+        status: this.getSeckillStatus(activeSeckill.seckill_start_time, activeSeckill.seckill_end_time, now)
+      };
+
+      return [seckillDetail];
+    } catch (error) {
+      console.error('获取秒杀信息失败:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 获取秒杀状态
+   * @param startTime 开始时间
+   * @param endTime 结束时间
+   * @param currentTime 当前时间
+   * @returns 秒杀状态
+   */
+  private getSeckillStatus(startTime: number, endTime: number, currentTime: number): number {
+    if (currentTime < startTime) {
+      return 0; // 未开始
+    } else if (currentTime >= startTime && currentTime < endTime) {
+      return 1; // 进行中
+    } else {
+      return 2; // 已结束
+    }
   }
 
   /**

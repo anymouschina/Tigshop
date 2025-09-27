@@ -46,18 +46,18 @@ export default defineConfig(({ command, mode }) => {
         // base: getBasePath(),
         server: {
             host: "0.0.0.0",
-            port: 3000,
+            port: 3003,
             open: true,
             hmr: {
                 overlay: true
+            },
+            proxy: {
+                [VITE_REQUEST_URL_PREFIX]: {
+                    target: VITE_BASE_URL, //接口地址
+                    changeOrigin: true,
+                    rewrite: (path) => path.replace(RegExp(`^${VITE_REQUEST_URL_PREFIX}`), "")
+                }
             }
-            // proxy: {
-            //     [VITE_REQUEST_URL_PREFIX]: {
-            //         target: VITE_BASE_URL, //接口地址
-            //         changeOrigin: true,
-            //         rewrite: (path) => path.replace(RegExp(`^${VITE_REQUEST_URL_PREFIX}`), "")
-            //     }
-            // }
         },
         resolve: {
             alias: {

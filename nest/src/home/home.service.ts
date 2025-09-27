@@ -727,7 +727,7 @@ export class HomeService {
    */
   private getMockPageModule() {
     return {
-      title: "首页",
+      title: "",
       keywords: "商城,购物,商品",
       description: "欢迎访问我们的商城",
     };

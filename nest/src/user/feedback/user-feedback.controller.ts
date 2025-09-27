@@ -14,9 +14,10 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { UserFeedbackService } from "./user-feedback.service";
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
+import { Public } from "../../auth/decorators/public.decorator";
 
 @ApiTags("User Feedback")
-@Controller("api")
+@Controller()
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserFeedbackController {
@@ -34,6 +35,18 @@ export class UserFeedbackController {
   ) {
     const userId = req.user.userId;
     return this.userFeedbackService.getUserFeedbackList(userId, query);
+  }
+
+  /**
+   * 获取产品反馈列表 - 支持productId参数过滤
+   */
+  @Get("user/feedback/list")
+  @ApiOperation({ summary: "获取产品反馈列表" })
+  async list(
+    @Query()
+    query: { productId?: number; page?: number; size?: number },
+  ) {
+    return this.userFeedbackService.getProductFeedbackList(query);
   }
 
   /**

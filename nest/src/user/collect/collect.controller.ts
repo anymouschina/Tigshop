@@ -205,4 +205,21 @@ export class CollectController {
       articleCollectList,
     );
   }
+
+  /**
+   * 获取商品收藏列表 - 对齐PHP版本 user/collectProduct/list
+   */
+  @Get("collectProduct/list")
+  @ApiOperation({ summary: "获取商品收藏列表（PHP对齐版本）" })
+  async getCollectProductList(
+    @Request() req,
+    @Query() query: { page?: number; size?: number },
+  ): Promise<CollectListResponse> {
+    const collectListDto: CollectListDto = {
+      page: Number(query.page) || 1,
+      size: Number(query.size) || 10,
+      collect_type: CollectType.PRODUCT,
+    };
+    return this.collectService.getCollectList(req.user.userId, collectListDto);
+  }
 }
