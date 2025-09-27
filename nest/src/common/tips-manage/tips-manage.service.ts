@@ -23,6 +23,22 @@ export class TipsManageService {
       const passwordStatus = await this.checkPasswordSecurity();
       tips.push(passwordStatus);
 
+      // 3. 检查SSL证书状态
+      const sslStatus = await this.checkSSLStatus();
+      tips.push(sslStatus);
+
+      // 4. 检查备份状态
+      const backupStatus = await this.checkBackupStatus();
+      tips.push(backupStatus);
+
+      // 5. 检查系统更新状态
+      const updateStatus = await this.checkSystemUpdate();
+      tips.push(updateStatus);
+
+      // 6. 检查文件权限
+      const permissionStatus = await this.checkFilePermissions();
+      tips.push(permissionStatus);
+
       return tips;
     } catch (error) {
       this.logger.error('获取系统状态提示失败:', error);
@@ -75,6 +91,117 @@ export class TipsManageService {
       this.logger.error('检查域名绑定失败:', error);
       return {
         code: 'domainBind',
+        status: false
+      };
+    }
+  }
+
+  /**
+   * 检查SSL证书状态
+   */
+  private async checkSSLStatus() {
+    try {
+      // 检查SSL配置
+      const sslConfig = await this.prisma.config.findFirst({
+        where: {
+          biz_code: 'ssl_enabled'
+        }
+      });
+
+      return {
+        code: 'sslCertificate',
+        status: !!(sslConfig && sslConfig.value === '1') // SSL已启用则为true
+      };
+    } catch (error) {
+      this.logger.error('检查SSL状态失败:', error);
+      return {
+        code: 'sslCertificate',
+        status: false
+      };
+    }
+  }
+
+  /**
+   * 检查备份状态
+   */
+  private async checkBackupStatus() {
+    try {
+      // 检查最近备份时间
+      const backupConfig = await this.prisma.config.findFirst({
+        where: {
+          biz_code: 'last_backup_time'
+        }
+      });
+
+      if (!backupConfig || !backupConfig.value) {
+        return {
+          code: 'backupStatus',
+          status: false
+        };
+      }
+
+      const lastBackup = new Date(parseInt(backupConfig.value) * 1000);
+      const now = new Date();
+      const daysSinceBackup = Math.floor((now.getTime() - lastBackup.getTime()) / (1000 * 60 * 60 * 24));
+
+      return {
+        code: 'backupStatus',
+        status: daysSinceBackup <= 7 // 7天内有备份则为true
+      };
+    } catch (error) {
+      this.logger.error('检查备份状态失败:', error);
+      return {
+        code: 'backupStatus',
+        status: false
+      };
+    }
+  }
+
+  /**
+   * 检查系统更新状态
+   */
+  private async checkSystemUpdate() {
+    try {
+      // 检查系统版本
+      const versionConfig = await this.prisma.config.findFirst({
+        where: {
+          biz_code: 'system_version'
+        }
+      });
+
+      return {
+        code: 'systemUpdate',
+        status: !!(versionConfig && versionConfig.value) // 有版本信息则为true
+      };
+    } catch (error) {
+      this.logger.error('检查系统更新状态失败:', error);
+      return {
+        code: 'systemUpdate',
+        status: false
+      };
+    }
+  }
+
+  /**
+   * 检查文件权限
+   */
+  private async checkFilePermissions() {
+    try {
+      // 检查uploads目录权限
+      const uploadConfig = await this.prisma.config.findFirst({
+        where: {
+          biz_code: 'upload_permission'
+        }
+      });
+
+      return {
+        code: 'filePermission',
+        status: !!(uploadConfig && uploadConfig.value === '1') // 权限正常则为true
+      };
+    } catch (error) {
+      this.logger.error('检查文件权限失败:', error);
+      return {
+        code: 'filePermission',
         status: false
       };
     }
