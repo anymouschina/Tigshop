@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Controller, Get, Post, Body, Query, Param } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
-import { CategoryService } from "./category.service";
+import { CategoryService, CategoryTreeNode } from "./category.service";
 import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Product Category")
@@ -11,25 +11,24 @@ export class CategoryController {
 
   /**
    * 获取当前分类的父级分类 - 对齐PHP版本 category/Category/parentTree
-   */
+  */
   @Get("category/category/parentTree")
   @Public()
   @ApiOperation({ summary: "获取当前分类的父级分类" })
   async parentTree(@Query("id") id: string) {
-    const categoryId = parseInt(id) || 0;
+    const categoryId = Number(id) || 0;
     return this.categoryService.getParentCategoryTree(categoryId);
   }
 
   /**
    * 根据上级获得指定分类 - 对齐PHP版本 category/Category/list
-   */
+  */
   @Get("category/category/list")
   @Public()
   @ApiOperation({ summary: "根据上级获得指定分类" })
-  async list(@Query("id") id: string) {
-    const categoryId = parseInt(id) || 0;
-    const list = await this.categoryService.getCategoryList(categoryId);
-    return list.length === 1 && list[0].category_id ? [] : list;
+  async list(@Query("id") id: string): Promise<CategoryTreeNode[]> {
+    const categoryId = Number(id) || 0;
+    return this.categoryService.getCategoryList(categoryId);
   }
 
   /**
@@ -38,7 +37,7 @@ export class CategoryController {
   @Get("category/category/all")
   @Public()
   @ApiOperation({ summary: "获取所有分类" })
-  async all() {
+  async all(): Promise<CategoryTreeNode[]> {
     return this.categoryService.getAllCategories();
   }
 
@@ -57,7 +56,7 @@ export class CategoryController {
       intro?: string;
     },
   ) {
-    return this.categoryService.getRelateInfo(query);
+    return this.categoryService.getRelateInfo(this.normalizeRelateQuery(query));
   }
 
   /**
@@ -75,7 +74,9 @@ export class CategoryController {
       intro?: string;
     },
   ) {
-    return this.categoryService.getRelateCategory(query);
+    return this.categoryService.getRelateCategory(
+      this.normalizeRelateQuery(query),
+    );
   }
 
   /**
@@ -93,7 +94,9 @@ export class CategoryController {
       intro?: string;
     },
   ) {
-    return this.categoryService.getRelateBrand(query);
+    return this.categoryService.getRelateBrand(
+      this.normalizeRelateQuery(query),
+    );
   }
 
   /**
@@ -111,7 +114,9 @@ export class CategoryController {
       intro?: string;
     },
   ) {
-    return this.categoryService.getRelateArticle(query);
+    return this.categoryService.getRelateArticle(
+      this.normalizeRelateQuery(query),
+    );
   }
 
   /**
@@ -129,7 +134,9 @@ export class CategoryController {
       intro?: string;
     },
   ) {
-    return this.categoryService.getRelateRank(query);
+    return this.categoryService.getRelateRank(
+      this.normalizeRelateQuery(query),
+    );
   }
 
   /**
@@ -147,7 +154,9 @@ export class CategoryController {
       intro?: string;
     },
   ) {
-    return this.categoryService.getRelateLookAlso(query);
+    return this.categoryService.getRelateLookAlso(
+      this.normalizeRelateQuery(query),
+    );
   }
 
   /**
@@ -158,5 +167,19 @@ export class CategoryController {
   @ApiOperation({ summary: "获取热门分类" })
   async hot() {
     return this.categoryService.getHotCategories();
+  }
+
+  private normalizeRelateQuery(query: {
+    product_id?: number | string;
+    size?: number | string;
+    rank_num?: number | string;
+    intro?: string;
+  }) {
+    return {
+      product_id: Number(query?.product_id) || 0,
+      size: Number(query?.size) > 0 ? Number(query.size) : 10,
+      rank_num: Number(query?.rank_num) > 0 ? Number(query.rank_num) : 5,
+      intro: query?.intro || "hot",
+    };
   }
 }
