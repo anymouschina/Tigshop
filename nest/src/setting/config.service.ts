@@ -1,10 +1,28 @@
 // @ts-nocheck
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class ConfigService {
   private readonly logger = new Logger(ConfigService.name);
+
+  private readonly loginProtocolConfigMap: Record<
+    string,
+    { showKey: string; contentKey: string }
+  > = {
+    termsOfService: {
+      showKey: "termsOfServiceShow",
+      contentKey: "termsOfService",
+    },
+    privacyPolicy: {
+      showKey: "privacyPolicyShow",
+      contentKey: "privacyPolicy",
+    },
+    afterSalesService: {
+      showKey: "afterSalesServiceShow",
+      contentKey: "afterSalesService",
+    },
+  };
 
   constructor(private prisma: PrismaService) {}
 
@@ -677,5 +695,106 @@ export class ConfigService {
     return (
       configValue === "true" || configValue === "1" || configValue === "yes"
     );
+  }
+
+  private normalizeInt(value: any, defaultValue = 0): number {
+    if (value === undefined || value === null) {
+      return defaultValue;
+    }
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) {
+      return defaultValue;
+    }
+    return parsed;
+  }
+
+  private sanitizeHtml(value: string): string {
+    if (!value) {
+      return "";
+    }
+
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  private async upsertConfigValue(bizCode: string, value: string): Promise<void> {
+    const existingConfig = await this.prisma.config.findFirst({
+      where: { biz_code: bizCode },
+    });
+
+    if (existingConfig) {
+      await this.prisma.config.update({
+        where: { id: existingConfig.id },
+        data: {
+          biz_val: value,
+          update_time: new Date(),
+        },
+      });
+    } else {
+      await this.prisma.config.create({
+        data: {
+          biz_code: bizCode,
+          biz_val: value,
+          create_time: new Date(),
+          update_time: new Date(),
+        },
+      });
+    }
+  }
+
+  async getLoginProtocolSettings(): Promise<Record<string, number>> {
+    const showKeys = Object.values(this.loginProtocolConfigMap).map(
+      (item) => item.showKey,
+    );
+    const results = await this.getConfigsByCodes(showKeys);
+
+    const response: Record<string, number> = {};
+    showKeys.forEach((key) => {
+      response[key] = this.normalizeInt(results[key], 0);
+    });
+
+    return response;
+  }
+
+  async getLoginProtocolContent(
+    code: string,
+  ): Promise<{ content: string; show: number }> {
+    const config = this.loginProtocolConfigMap[code];
+    if (!config) {
+      throw new BadRequestException("参数错误");
+    }
+
+    const [contentValue, showValue] = await Promise.all([
+      this.getConfigByCode(config.contentKey),
+      this.getConfigByCode(config.showKey),
+    ]);
+
+    return {
+      content: contentValue ?? "",
+      show: this.normalizeInt(showValue, 0),
+    };
+  }
+
+  async saveLoginProtocol(
+    code: string,
+    show: number,
+    content: string,
+  ): Promise<void> {
+    const config = this.loginProtocolConfigMap[code];
+    if (!config) {
+      throw new BadRequestException("参数错误");
+    }
+
+    const showString = this.normalizeInt(show, 0) ? "1" : "0";
+    const sanitizedContent = this.sanitizeHtml(content);
+
+    await Promise.all([
+      this.upsertConfigValue(config.showKey, showString),
+      this.upsertConfigValue(config.contentKey, sanitizedContent),
+    ]);
   }
 }

@@ -1,13 +1,14 @@
 // @ts-nocheck
 import {
+  BadRequestException,
+  Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   Put,
-  Delete,
   Query,
-  Body,
-  Param,
   UseGuards,
 } from "@nestjs/common";
 import { ConfigService } from "./config.service";
@@ -33,7 +34,7 @@ import {
 } from "@nestjs/swagger";
 
 @ApiTags("系统配置管理")
-@Controller("admin/config")
+@Controller(["admin/config", "adminapi/setting/config"])
 @UseGuards(RolesGuard)
 @Roles("admin")
 export class ConfigController {
@@ -237,6 +238,80 @@ export class ConfigController {
       message: "获取成功",
       data: result,
     };
+  }
+
+  @Get("getLoginProtocol")
+  @ApiOperation({ summary: "获取登录协议设置" })
+  async getLoginProtocol() {
+    const data = await this.configService.getLoginProtocolSettings();
+
+    return {
+      code: 0,
+      message: "success",
+      data,
+    };
+  }
+
+  @Get("getLoginProtocolContent")
+  @ApiOperation({ summary: "获取登录协议内容" })
+  @ApiQuery({
+    name: "code",
+    required: true,
+    description: "协议类型",
+  })
+  async getLoginProtocolContent(@Query("code") code: string) {
+    if (!code) {
+      throw new BadRequestException("参数错误");
+    }
+
+    const data = await this.configService.getLoginProtocolContent(code);
+
+    return {
+      code: 0,
+      message: "success",
+      data,
+    };
+  }
+
+  @Post("saveLoginProtocol")
+  @ApiOperation({ summary: "保存登录协议" })
+  async saveLoginProtocol(
+    @Body()
+    body: {
+      code: string;
+      show?: number | string;
+      content?: string;
+    },
+  ) {
+    if (!body?.code) {
+      throw new BadRequestException("参数错误");
+    }
+
+    const showValue = this.normalizeShowValue(body.show);
+    const content = body.content ?? "";
+
+    await this.configService.saveLoginProtocol(body.code, showValue, content);
+
+    return {
+      code: 0,
+      message: "success",
+      data: null,
+    };
+  }
+
+  private normalizeShowValue(value: number | string | undefined): number {
+    if (typeof value === "number") {
+      return Number.isNaN(value) ? 0 : value;
+    }
+
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+
+    return 0;
   }
 
   @Get("get-all-configs")
