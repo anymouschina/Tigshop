@@ -12,6 +12,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { ProductService } from "./product.service";
+import { ProductDetailService } from "./product-detail.service";
 import { CommentService } from "./comment/comment.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CommentStatus } from "./comment/dto/comment.dto";
@@ -23,6 +24,7 @@ import { CommentStatus } from "./comment/dto/comment.dto";
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
+    private readonly productDetailService: ProductDetailService,
     @Inject(forwardRef(() => CommentService))
     private readonly commentService: CommentService,
   ) {}
@@ -42,7 +44,8 @@ export class ProductController {
   @Get("detail")
   @ApiOperation({ summary: "获取商品详情" })
   async getProductDetail(@Query() query: { id: number }) {
-    return this.productService.findById(Number(query.id));
+    const productId = Number(query.id);
+    return this.productDetailService.getProductDetail(productId);
   }
 
   /**

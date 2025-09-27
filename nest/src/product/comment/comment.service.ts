@@ -68,7 +68,7 @@ export class CommentService {
 
     // 检查产品是否存在
     const product = await this.prisma.product.findFirst({
-      where: { productId: productId },
+      where: { product_id: productId },
     });
 
     if (!product) {
@@ -104,7 +104,7 @@ export class CommentService {
     // 如果是回复评论，检查原评论是否存在
     if (replyId) {
       const originalComment = await this.prisma.comment.findFirst({
-        where: { commentId: replyId },
+        where: { comment_id: replyId },
       });
 
       if (!originalComment) {
@@ -112,10 +112,10 @@ export class CommentService {
       }
     }
 
-    // 创建评论
+    // 创建评论 - 使用实际的数据库字段名
     const comment = (await this.prisma.$queryRaw`
-      INSERT INTO "Comment" ("productId", "userId", "rating", content, images, "orderSn", "replyId", "replyContent", "replyTime", status, likes, "isLiked", "createdAt", "updatedAt")
-      VALUES (${productId}, ${userId}, ${rating}, ${content}, ${images || null}, ${orderSn || null}, ${replyId || null}, ${replyContent || null}, ${replyContent ? "NOW()" : null}, ${CommentStatus.PENDING}, 0, false, NOW(), NOW())
+      INSERT INTO comment (product_id, user_id, comment_rank, content, show_pics, parent_id, add_time, status)
+      VALUES (${productId}, ${userId}, ${rating}, ${content}, ${images || null}, ${replyId || 0}, UNIX_TIMESTAMP(), 0)
       RETURNING *
     `) as any[];
 
@@ -130,26 +130,25 @@ export class CommentService {
     const skip = (page - 1) * size;
 
     const whereClause: any = {};
-    if (productId) whereClause.productId = productId;
-    if (userId) whereClause.userId = userId;
-    if (status) whereClause.status = status;
-    if (rating) whereClause.rating = rating;
+    if (productId) whereClause.product_id = productId;
+    if (userId) whereClause.user_id = userId;
+    if (status) {
+      // 映射状态字符串到数据库中的整数值
+      const statusMap = {
+        'pending': 0,
+        'approved': 1,
+        'rejected': 2
+      };
+      whereClause.status = statusMap[status] || 0;
+    }
+    if (rating) whereClause.comment_rank = rating;
 
     const [comments, total] = await Promise.all([
       this.prisma.comment.findMany({
         where: whereClause,
         skip,
         take: size,
-        orderBy: [{ createdAt: "desc" }, { commentId: "desc" }],
-        include: {
-          user: {
-            select: {
-              userId: true,
-              nickname: true,
-              avatar: true,
-            },
-          },
-        },
+        orderBy: [{ add_time: "desc" }, { comment_id: "desc" }],
       }),
       this.prisma.comment.count({
         where: whereClause,
@@ -170,16 +169,7 @@ export class CommentService {
    */
   async getCommentDetail(commentId: number): Promise<CommentResponse> {
     const comment = await this.prisma.comment.findFirst({
-      where: { commentId: commentId },
-      include: {
-        user: {
-          select: {
-            userId: true,
-            nickname: true,
-            avatar: true,
-          },
-        },
-      },
+      where: { comment_id: commentId },
     });
 
     if (!comment) {
@@ -200,7 +190,7 @@ export class CommentService {
     // 检查评论是否存在且属于该用户
     const existingComment = await this.prisma.comment.findFirst({
       where: {
-        commentId: commentId,
+        comment_id: commentId,
         userId,
       },
     });
@@ -216,17 +206,8 @@ export class CommentService {
     }
 
     const updatedComment = await this.prisma.comment.update({
-      where: { commentId: commentId },
+      where: { comment_id: commentId },
       data: updateData,
-      include: {
-        user: {
-          select: {
-            userId: true,
-            nickname: true,
-            avatar: true,
-          },
-        },
-      },
     });
 
     return this.formatCommentResponse(updatedComment);
@@ -239,7 +220,7 @@ export class CommentService {
     // 检查评论是否存在且属于该用户
     const comment = await this.prisma.comment.findFirst({
       where: {
-        commentId: commentId,
+        comment_id: commentId,
         userId,
       },
     });
@@ -250,7 +231,7 @@ export class CommentService {
 
     // 删除评论
     await this.prisma.comment.delete({
-      where: { commentId: commentId },
+      where: { comment_id: commentId },
     });
 
     return { message: "评论删除成功" };
@@ -262,7 +243,7 @@ export class CommentService {
   async likeComment(userId: number, commentId: number) {
     // 检查评论是否存在
     const comment = await this.prisma.comment.findFirst({
-      where: { commentId: commentId },
+      where: { comment_id: commentId },
     });
 
     if (!comment) {
@@ -287,17 +268,17 @@ export class CommentService {
 
     // 检查原评论是否存在
     const originalComment = await this.prisma.comment.findFirst({
-      where: { commentId: commentId },
+      where: { comment_id: commentId },
     });
 
     if (!originalComment) {
       throw new NotFoundException("原评论不存在");
     }
 
-    // 创建回复评论
+    // 创建回复评论 - 使用实际的数据库字段名
     const reply = (await this.prisma.$queryRaw`
-      INSERT INTO "Comment" ("productId", "userId", "rating", content, images, "replyId", "replyContent", "replyTime", status, likes, "isLiked", "createdAt", "updatedAt")
-      VALUES (${originalComment.productId}, ${userId}, 5, ${content}, ${images || null}, ${commentId}, ${content}, NOW(), ${CommentStatus.APPROVED}, 0, false, NOW(), NOW())
+      INSERT INTO comment (product_id, user_id, comment_rank, content, show_pics, parent_id, add_time, status)
+      VALUES (${originalComment.product_id}, ${userId}, 5, ${content}, ${images || null}, ${commentId}, UNIX_TIMESTAMP(), 1)
       RETURNING *
     `) as any[];
 
@@ -364,20 +345,13 @@ export class CommentService {
         where: whereClause,
         skip,
         take: size,
-        orderBy: [{ createdAt: "desc" }, { commentId: "desc" }],
+        orderBy: [{ add_time: "desc" }, { comment_id: "desc" }],
         include: {
           product: {
             select: {
-              productId: true,
-              productName: true,
-              picThumb: true,
-            },
-          },
-          user: {
-            select: {
-              userId: true,
-              nickname: true,
-              avatar: true,
+              product_id: true,
+              product_name: true,
+              pic_thumb: true,
             },
           },
         },
@@ -390,8 +364,8 @@ export class CommentService {
     return {
       list: comments.map((comment) => ({
         ...this.formatCommentResponse(comment),
-        productName: comment.product.productName,
-        productImage: comment.product.picThumb,
+        productName: comment.product?.product_name,
+        productImage: comment.product?.pic_thumb,
       })),
       total,
       page,
@@ -405,23 +379,23 @@ export class CommentService {
    */
   private formatCommentResponse(comment: any): CommentResponse {
     return {
-      id: comment.commentId,
-      productId: comment.productId,
-      userId: comment.userId,
-      userName: comment.user?.nickname || "匿名用户",
-      userAvatar: comment.user?.avatar,
-      rating: comment.rating,
+      id: comment.comment_id,
+      productId: comment.product_id,
+      userId: comment.user_id,
+      userName: comment.username || "匿名用户",
+      userAvatar: comment.avatar,
+      rating: comment.comment_rank,
       content: comment.content,
-      images: comment.images,
-      orderSn: comment.orderSn,
-      replyId: comment.replyId,
-      replyContent: comment.replyContent,
-      replyTime: comment.replyTime,
+      images: comment.show_pics,
+      orderSn: null, // comment表没有orderSn字段
+      replyId: comment.parent_id,
+      replyContent: null, // comment表没有replyContent字段
+      replyTime: null, // comment表没有replyTime字段
       status: comment.status,
-      likes: comment.likes,
-      isLiked: comment.isLiked,
-      createdAt: comment.createdAt,
-      updatedAt: comment.updatedAt,
+      likes: comment.usefull, // 使用usefull字段作为点赞数
+      isLiked: false, // comment表没有isLiked字段
+      createdAt: new Date(comment.add_time * 1000).toISOString(),
+      updatedAt: new Date(comment.add_time * 1000).toISOString(), // 使用add_time作为更新时间
     };
   }
 }

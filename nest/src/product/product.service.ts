@@ -22,7 +22,7 @@ export class ProductService {
   async create(createProductDto: CreateProductDto) {
     // 检查商品名称是否已存在
     const existingProduct = await this.prisma.product.findFirst({
-      where: { productName: createProductDto.name },
+      where: { product_name: createProductDto.name },
     });
 
     if (existingProduct) {
@@ -206,12 +206,9 @@ export class ProductService {
    * @returns 商品详情
    */
   async findById(id: number) {
-    const product = await this.prisma.product.findUnique({
-      where: { productId: id },
-      include: {
-        brand: true,
-        category: true,
-      },
+    // 由于product表有复合主键，需要使用findFirst而不是findUnique
+    const product = await this.prisma.product.findFirst({
+      where: { product_id: id },
     });
 
     if (!product) {
@@ -234,8 +231,8 @@ export class ProductService {
     if (updateProductDto.name) {
       const existingProduct = await this.prisma.product.findFirst({
         where: {
-          productName: updateProductDto.name,
-          productId: { not: id },
+          product_name: updateProductDto.name,
+          product_id: { not: id },
         },
       });
 
@@ -246,41 +243,33 @@ export class ProductService {
 
     // 使用原始SQL更新商品以绕过XOR类型问题
     const result = (await this.prisma.$queryRaw`
-      UPDATE "Product"
+      UPDATE product
       SET
-        productName = ${updateProductDto.name || null},
+        product_name = ${updateProductDto.name || null},
         subtitle = ${updateProductDto.subtitle || null},
-        description = ${updateProductDto.description || null},
-        productPrice = ${updateProductDto.price || null},
-        marketPrice = ${updateProductDto.marketPrice || null},
-        costPrice = ${updateProductDto.costPrice || null},
-        productStock = ${updateProductDto.stock || null},
-        sales = ${updateProductDto.sales || null},
-        categoryId = ${updateProductDto.categoryId || null},
-        brandId = ${updateProductDto.brandId || null},
-        supplierId = ${updateProductDto.supplierId || null},
-        image = ${updateProductDto.image || null},
-        images = ${updateProductDto.images || null},
-        video = ${updateProductDto.video || null},
-        videoCover = ${updateProductDto.videoCover || null},
-        specType = ${updateProductDto.specType || null},
+        product_desc = ${updateProductDto.description || null},
+        product_price = ${updateProductDto.price || null},
+        market_price = ${updateProductDto.marketPrice || null},
+        cost_price = ${updateProductDto.costPrice || null},
+        product_stock = ${updateProductDto.stock || null},
+        virtual_sales = ${updateProductDto.sales || null},
+        category_id = ${updateProductDto.categoryId || null},
+        brand_id = ${updateProductDto.brandId || null},
+        suppliers_id = ${updateProductDto.supplierId || null},
+        pic_url = ${updateProductDto.image || null},
+        pic_thumb = ${updateProductDto.images || null},
+        product_video = ${updateProductDto.video || null},
         weight = ${updateProductDto.weight || null},
-        volume = ${updateProductDto.volume || null},
-        shippingFee = ${updateProductDto.shippingFee || null},
-        minBuy = ${updateProductDto.minBuy || null},
-        maxBuy = ${updateProductDto.maxBuy || null},
+        free_shipping = ${updateProductDto.shippingFee || null},
+        limit_number = ${updateProductDto.minBuy || null},
         keywords = ${updateProductDto.keywords || null},
-        seoTitle = ${updateProductDto.seoTitle || null},
-        seoKeywords = ${updateProductDto.seoKeywords || null},
-        seoDescription = ${updateProductDto.seoDescription || null},
-        sort = ${updateProductDto.sort || null},
-        isBest = ${updateProductDto.isBest !== undefined ? updateProductDto.isBest : false},
-        isNew = ${updateProductDto.isNew !== undefined ? updateProductDto.isNew : false},
-        isHot = ${updateProductDto.isHot !== undefined ? updateProductDto.isHot : false},
-        isRecommend = ${updateProductDto.isRecommend !== undefined ? updateProductDto.isRecommend : false},
-        "updatedAt" = NOW()
-      WHERE productId = ${id}
-      RETURNING productId, productName, subtitle, description, productPrice, marketPrice, costPrice, productStock, sales, categoryId, brandId, supplierId, image, images, video, videoCover, specType, weight, volume, shippingFee, minBuy, maxBuy, keywords, seoTitle, seoKeywords, seoDescription, sort, isBest, isNew, isHot, isRecommend, productStatus, "createdAt", "updatedAt"
+        sort_order = ${updateProductDto.sort || null},
+        is_best = ${updateProductDto.isBest !== undefined ? updateProductDto.isBest : false},
+        is_new = ${updateProductDto.isNew !== undefined ? updateProductDto.isNew : false},
+        is_hot = ${updateProductDto.isHot !== undefined ? updateProductDto.isHot : false},
+        last_update = UNIX_TIMESTAMP()
+      WHERE product_id = ${id}
+      RETURNING product_id, product_name, subtitle, product_desc, product_price, market_price, cost_price, product_stock, virtual_sales, category_id, brand_id, suppliers_id, pic_url, pic_thumb, product_video, weight, free_shipping, limit_number, keywords, sort_order, is_best, is_new, is_hot, product_status, add_time, last_update
     `) as any[];
 
     return result[0];
@@ -294,8 +283,23 @@ export class ProductService {
   async remove(id: number) {
     await this.findById(id);
 
+    // 由于product表有复合主键，需要使用findFirst找到记录然后删除
+    const product = await this.prisma.product.findFirst({
+      where: { product_id: id },
+    });
+
+    if (!product) {
+      throw new NotFoundException("商品不存在");
+    }
+
     return this.prisma.product.delete({
-      where: { productId: id },
+      where: {
+        product_id_brand_id_product_weight: {
+          product_id: id,
+          brand_id: product.brand_id,
+          product_weight: product.product_weight
+        }
+      },
     });
   }
 
@@ -308,9 +312,24 @@ export class ProductService {
   async updateStatus(id: number, status: string) {
     await this.findById(id);
 
+    // 由于product表有复合主键，需要使用findFirst找到记录然后更新
+    const product = await this.prisma.product.findFirst({
+      where: { product_id: id },
+    });
+
+    if (!product) {
+      throw new NotFoundException("商品不存在");
+    }
+
     return this.prisma.product.update({
-      where: { productId: id },
-      data: { productStatus: status === "ENABLE" ? 1 : 0 },
+      where: {
+        product_id_brand_id_product_weight: {
+          product_id: id,
+          brand_id: product.brand_id,
+          product_weight: product.product_weight
+        }
+      },
+      data: { product_status: status === "ENABLE" ? 1 : 0 },
     });
   }
 
@@ -321,8 +340,8 @@ export class ProductService {
   async getStats() {
     const [total, active, inactive] = await Promise.all([
       this.prisma.product.count(),
-      this.prisma.product.count({ where: { productStatus: 1 } }),
-      this.prisma.product.count({ where: { productStatus: 0 } }),
+      this.prisma.product.count({ where: { product_status: 1 } }),
+      this.prisma.product.count({ where: { product_status: 0 } }),
     ]);
 
     return {
