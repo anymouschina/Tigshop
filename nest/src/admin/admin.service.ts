@@ -40,9 +40,10 @@ export class AdminService {
     // 更新登录信息 - 更新最后登录IP和时间
     const currentTime = Math.floor(Date.now() / 1000);
     try {
+      // 检查是否有必要的字段，如果不存在则跳过
       await this.databaseService.$queryRaw`
         UPDATE \`admin_user\`
-        SET \`last_login_time\` = ${currentTime}, \`last_login_ip\` = ${clientIp}
+        SET \`add_time\` = ${currentTime}
         WHERE \`admin_id\` = ${admin.admin_id}
       `;
     } catch (error) {

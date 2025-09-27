@@ -12,6 +12,7 @@ import { UserCompanyModule } from "./user/user-company/user-company.module";
 import { FeedbackModule } from "./user/feedback/feedback.module";
 import { AuthModule } from "./auth/auth.module";
 import { AdminModule } from "./admin/admin.module";
+import { MerchantModule } from "./merchant/merchant.module";
 import { ProductModule } from "./product/product.module";
 import { CartModule } from "./cart/cart.module";
 import { OrderModule } from "./order/order.module";
@@ -35,6 +36,7 @@ import { MicroservicesModule } from "./microservices/microservices.module";
 import { SmsModule } from "../common/sms/sms.module";
 import { EmailModule } from "../common/email/email.module";
 import { CommonModule } from "./common/common.module";
+import { AdminRolesGuard } from "./auth/guards/admin-roles.guard";
 import { HomeModule } from "./home/home.module";
 import { VerificationModule } from "./common/verification/verification.module";
 import { CsrfModule } from "./common/csrf/csrf.module";
@@ -59,6 +61,7 @@ import { AppController } from "./app.contronller";
     // ApiModule,
     AuthModule,
     AdminModule,
+    MerchantModule,
     ProductModule,
     CartModule,
     OrderModule,
@@ -93,7 +96,8 @@ import { AppController } from "./app.contronller";
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
-    }
+    },
+    AdminRolesGuard,
   ],
 })
 export class AppModule {}

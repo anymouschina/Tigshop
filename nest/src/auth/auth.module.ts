@@ -4,6 +4,9 @@ import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
+import { AdminJwtStrategy } from "./strategies/admin-jwt.strategy";
+import { AdminJwtAuthGuard } from "./guards/admin-jwt-auth.guard";
+import { AdminRolesGuard } from "./guards/admin-roles.guard";
 import { ConfigModule } from "../config/config.module";
 
 import { ScheduleModule } from "@nestjs/schedule";
@@ -31,6 +34,9 @@ import { RedisModule } from "../redis/redis.module";
   providers: [
     AuthService,
     JwtStrategy,
+    AdminJwtStrategy,
+    AdminJwtAuthGuard,
+    AdminRolesGuard,
     CsrfService,
     CaptchaService,
     UsernameGeneratorService,
