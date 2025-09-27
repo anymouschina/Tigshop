@@ -2,6 +2,7 @@
 import { Module } from "@nestjs/common";
 import { AdminController } from "./admin.controller";
 import { AdminApiCsrfController } from "./adminapi-csrf.controller";
+import { AdminLoginController } from "./admin-login.controller";
 import { AdminService } from "./admin.service";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthModule } from "../auth/auth.module";
@@ -14,7 +15,7 @@ import { AuthModule } from "../auth/auth.module";
       signOptions: { expiresIn: "24h" },
     }),
   ],
-  controllers: [AdminController, AdminApiCsrfController],
+  controllers: [AdminController, AdminApiCsrfController, AdminLoginController],
   providers: [AdminService],
   exports: [AdminService],
 })

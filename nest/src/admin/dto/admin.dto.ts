@@ -21,6 +21,16 @@ export class AdminLoginDto {
   @ApiProperty({ description: "密码" })
   @IsString()
   password: string;
+
+  @ApiProperty({ description: "登录方式", required: false })
+  @IsOptional()
+  @IsString()
+  loginType?: string;
+
+  @ApiProperty({ description: "行为验证码token", required: false })
+  @IsOptional()
+  @IsString()
+  verifyToken?: string;
 }
 
 // 创建管理员用户DTO
