@@ -1,10 +1,12 @@
 // @ts-nocheck
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
+import { CommonConfigService } from "src/common/config/config.service";
 
 @Injectable()
 export class ConfigService {
   private readonly logger = new Logger(ConfigService.name);
+  private readonly commonConfigService: CommonConfigService;
 
   private readonly loginProtocolConfigMap: Record<
     string,
@@ -24,7 +26,9 @@ export class ConfigService {
     },
   };
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    this.commonConfigService = new CommonConfigService(prisma);
+  }
 
   /**
    * 初始化配置设置 - 基于PHP实现
@@ -796,5 +800,10 @@ export class ConfigService {
       this.upsertConfigValue(config.showKey, showString),
       this.upsertConfigValue(config.contentKey, sanitizedContent),
     ]);
+  }
+
+  async getAdminConfig(): Promise<Record<string, any>> {
+    const themeSettings = await this.commonConfigService.getThemeSettings();
+    return themeSettings;
   }
 }

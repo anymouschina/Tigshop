@@ -240,6 +240,7 @@ export class ConfigController {
     };
   }
 
+  @Public()
   @Get("getLoginProtocol")
   @ApiOperation({ summary: "获取登录协议设置" })
   async getLoginProtocol() {
@@ -252,6 +253,20 @@ export class ConfigController {
     };
   }
 
+  @Public()
+  @Get("getAdmin")
+  @ApiOperation({ summary: "获取后台基础配置信息" })
+  async getAdminConfig() {
+    const data = await this.configService.getAdminConfig();
+
+    return {
+      code: 0,
+      message: "success",
+      data,
+    };
+  }
+
+  @Public()
   @Get("getLoginProtocolContent")
   @ApiOperation({ summary: "获取登录协议内容" })
   @ApiQuery({

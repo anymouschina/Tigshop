@@ -13,10 +13,7 @@ import { ResponseUtil } from "../../../common/utils/response.util";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("Admin API - 公共CSRF")
-@Controller({
-  path: "common/csrf",
-  scope: ["adminapi"]
-})
+@Controller("adminapi/common/csrf")
 export class AdminApiCsrfController {
   constructor(private readonly authCsrfService: AuthCsrfService) {}
 

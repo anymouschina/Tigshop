@@ -7,7 +7,6 @@ import { Transport, MicroserviceOptions } from "@nestjs/microservices";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import * as path from "path";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
-import { routePrefixMiddleware } from "./common/middleware/route-prefix-adapter";
 
 async function bootstrap() {
   // 创建全局日志实例
