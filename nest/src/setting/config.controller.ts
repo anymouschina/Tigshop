@@ -256,8 +256,8 @@ export class ConfigController {
     const data = await this.configService.getAdminConfig();
 
     return {
-      code: 0,
-      message: "success",
+      code: 200,
+      message: "获取成功",
       data,
     };
   }
