@@ -23,12 +23,30 @@ import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../../auth/guards/roles.guard";
 import { Roles } from "../../auth/decorators/roles.decorator";
 
-@ApiTags("Licensed Management")
-@Controller("setting/licensed")
+@ApiTags("Admin API - 授权管理")
+@Controller("adminapi/setting/licensed")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class LicensedController {
   constructor(private readonly licensedService: LicensedService) {}
+
+  @Get("index")
+  @Roles("licensedManage")
+  @ApiOperation({ summary: "获取授权列表" })
+  async index(@Query() queryDto: LicensedQueryDto) {
+    const result = await this.licensedService.findAll(queryDto);
+    return {
+      code: 200,
+      msg: "获取成功",
+      data: {
+        records: result.records,
+        total: result.total,
+        page: result.page,
+        size: result.size,
+        totalPages: result.totalPages,
+      },
+    };
+  }
 
   @Get("list")
   @Roles("licensedManage")

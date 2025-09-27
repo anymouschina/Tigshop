@@ -6,9 +6,10 @@ import { ConfigModule } from "../config/config.module";
 import { RecommendModule } from "./recommend/recommend.module";
 import { ApiCsrfController } from "./api-csrf.controller";
 import { CommonCsrfService } from "./services/common-csrf.service";
+import { TipsManageModule } from "./tips-manage/tips-manage.module";
 
 @Module({
-  imports: [ConfigModule, RecommendModule],
+  imports: [ConfigModule, RecommendModule, TipsManageModule],
   controllers: [LogController, CommonConfigController, ApiCsrfController],
   providers: [CommonConfigService, CommonCsrfService],
 })

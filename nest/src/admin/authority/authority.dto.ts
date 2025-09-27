@@ -21,7 +21,7 @@ export class AuthorityQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(0)
+  @Min(-1)
   parent_id?: number = -1;
 
   @IsOptional()

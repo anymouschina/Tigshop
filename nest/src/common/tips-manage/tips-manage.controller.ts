@@ -17,12 +17,12 @@ import {
   UpdateTipsManageDto,
   QueryTipsManageDto,
 } from "./dto/tips-manage.dto";
-import { AdminAuthGuard } from "../../../common/guards/admin-auth.guard";
+import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { ResponseUtil } from "../../../common/utils/response.util";
 
-@ApiTags("提示管理管理")
-@Controller("admin/common/tips-manage")
-@UseGuards(AdminAuthGuard)
+@ApiTags("Common API - 提示管理")
+@Controller("adminapi/common/tipsManage")
+@UseGuards(AdminJwtAuthGuard)
 export class TipsManageController {
   constructor(private readonly tipsmanageService: TipsManageService) {}
 

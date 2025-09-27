@@ -14,8 +14,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { AdminMsgService, MsgType } from "./admin-msg.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
-@ApiTags("Admin Message")
-@Controller("admin")
+@ApiTags("Admin API - 消息管理")
+@Controller("adminapi/msg")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AdminMsgController {
@@ -89,6 +89,15 @@ export class AdminMsgController {
   @ApiOperation({ summary: "获取消息类型" })
   async getMsgType(@Query() query: { shop_id?: number; vendor_id?: number }) {
     return this.adminMsgService.getMsgType(
+      query.shop_id || 0,
+      query.vendor_id || 0,
+    );
+  }
+
+  @Get("adminMsg/msgCount")
+  @ApiOperation({ summary: "获取消息数量统计" })
+  async msgCount(@Query() query: { shop_id?: number; vendor_id?: number }) {
+    return this.adminMsgService.getMsgCount(
       query.shop_id || 0,
       query.vendor_id || 0,
     );

@@ -29,77 +29,80 @@ export class MerchantShopService {
         orderBy.last_login_time = 'desc';
     }
 
-    // 获取店铺列表
-    const [shops, total] = await Promise.all([
-      this.prisma.shop.findMany({
+    // 获取管理员有权限的店铺列表
+    const [adminUserShops, total] = await Promise.all([
+      this.prisma.admin_user_shop.findMany({
         where: {
-          merchant_id: adminId,
-          status: 1, // 只返回启用状态的店铺
+          admin_id: adminId,
+          is_using: 1, // 只返回启用的权限
         },
         skip,
         take: size,
-        orderBy,
-        include: {
-          merchant: {
-            select: {
-              merchant_name: true,
-              contact_person: true,
-              mobile: true,
-            },
-          },
+        orderBy: {
+          add_time: 'desc',
         },
       }),
-      this.prisma.shop.count({
+      this.prisma.admin_user_shop.count({
         where: {
-          merchant_id: adminId,
-          status: 1,
+          admin_id: adminId,
+          is_using: 1,
         },
       }),
     ]);
 
-    // 获取商户信息
-    const merchant = await this.prisma.merchant.findFirst({
+    // 获取对应的店铺信息
+    const shopIds = adminUserShops.map(aus => aus.shop_id).filter(Boolean);
+    const shops = await this.prisma.shop.findMany({
       where: {
-        merchant_id: adminId,
+        shop_id: {
+          in: shopIds,
+        },
+        status: 1, // 只返回启用状态的店铺
+      },
+    });
+
+    // 将店铺信息关联到admin_user_shop记录
+    const validShops = adminUserShops.map(aus => {
+      const shop = shops.find(s => s.shop_id === aus.shop_id);
+      return shop ? { ...aus, shop } : null;
+    }).filter(Boolean);
+
+    // 获取管理员信息
+    const adminUser = await this.prisma.admin_user.findUnique({
+      where: {
+        admin_id: adminId,
       },
       select: {
-        merchant_id: true,
-        merchant_name: true,
-        contact_person: true,
-        mobile: true,
+        admin_id: true,
+        username: true,
         email: true,
-        status: true,
-        add_time: true,
+        mobile: true,
+        admin_type: true,
       },
     });
 
     return {
-      shops: shops.map(shop => ({
-        shop_id: shop.shop_id,
-        shop_title: shop.shop_title,
-        shop_logo: shop.shop_logo,
-        add_time: shop.add_time,
-        last_login_time: shop.last_login_time,
-        status: shop.status,
-        shop_money: shop.shop_money,
-        frozen_money: shop.frozen_money,
-        contact_mobile: shop.contact_mobile,
-        merchant_name: shop.merchant?.merchant_name || '',
+      shops: validShops.map(aus => ({
+        shop_id: aus.shop.shop_id,
+        shop_title: aus.shop.shop_title,
+        shop_logo: aus.shop.shop_logo,
+        add_time: aus.shop.add_time,
+        last_login_time: aus.shop.last_login_time,
+        status: aus.shop.status,
+        shop_money: aus.shop.shop_money,
+        frozen_money: aus.shop.frozen_money,
+        contact_mobile: aus.shop.contact_mobile,
+        is_admin: aus.is_admin, // 是否为店铺管理员
+        role_id: aus.role_id, // 角色ID
       })),
-      vendors: merchant ? [{
-        vendor_id: merchant.merchant_id,
-        vendor_name: merchant.merchant_name,
-        contact_person: merchant.contact_person,
-        mobile: merchant.mobile,
-        status: merchant.status,
-        add_time: merchant.add_time,
-      }] : [],
-      userinfo: merchant ? {
-        id: merchant.merchant_id,
-        username: merchant.merchant_name,
-        email: merchant.email,
-        mobile: merchant.mobile,
-        status: merchant.status,
+      vendors: [], // 暂时为空，PHP版本中没有此数据
+      userinfo: adminUser ? {
+        id: adminUser.admin_id,
+        username: adminUser.username,
+        email: adminUser.email,
+        mobile: adminUser.mobile,
+        admin_type: adminUser.admin_type,
+        status: 1, // 管理员默认状态
       } : null,
       pagination: {
         page,

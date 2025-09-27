@@ -246,11 +246,7 @@ export class ConfigController {
   async getLoginProtocol() {
     const data = await this.configService.getLoginProtocolSettings();
 
-    return {
-      code: 0,
-      message: "success",
-      data,
-    };
+    return data
   }
 
   @Public()

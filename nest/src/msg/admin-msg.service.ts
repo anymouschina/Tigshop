@@ -358,4 +358,36 @@ export class AdminMsgService {
       throw new Error("创建消息失败: " + error.message);
     }
   }
+
+  async getMsgCount(shopId: number, vendorId: number = 0): Promise<any> {
+    const where: any = {
+      is_readed: 0,
+      admin_id: 0,
+    };
+
+    if (shopId > 0) {
+      where.shop_id = shopId;
+    }
+
+    if (vendorId > 0) {
+      where.vendor_id = vendorId;
+    }
+
+    const unreadCount = await this.prisma.admin_msg.count({
+      where,
+    });
+
+    const totalCount = await this.prisma.admin_msg.count({
+      where: {
+        ...(shopId > 0 && { shop_id: shopId }),
+        ...(vendorId > 0 && { vendor_id: vendorId }),
+        admin_id: 0,
+      },
+    });
+
+    return {
+      unread_count: unreadCount,
+      total_count: totalCount,
+    };
+  }
 }
