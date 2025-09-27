@@ -78,8 +78,9 @@ export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
       userId: adminUser.admin_id,
       username: adminUser.username,
       email: adminUser.email,
-      role: 'admin',
+      role: adminUser.admin_type,
       adminId: adminUser.admin_id, // For backward compatibility
+      roles: [adminUser.admin_type], // For RolesGuard compatibility
     };
 
     this.logger.debug(`Returning user object: ${JSON.stringify(result)}`);

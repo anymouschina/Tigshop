@@ -85,4 +85,9 @@ export class QueryTipsManageDto {
   @IsString()
   @IsOptional()
   sort_order?: "asc" | "desc" = "desc";
+
+  @ApiProperty({ description: "跳转URL", required: false })
+  @IsString()
+  @IsOptional()
+  url?: string;
 }

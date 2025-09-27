@@ -31,7 +31,7 @@ export class LicensedController {
   constructor(private readonly licensedService: LicensedService) {}
 
   @Get("index")
-  @Roles("licensedManage")
+  @Roles("admin")
   @ApiOperation({ summary: "获取授权列表" })
   async index(@Query() queryDto: LicensedQueryDto) {
     const result = await this.licensedService.findAll(queryDto);
