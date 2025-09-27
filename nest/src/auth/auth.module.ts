@@ -7,6 +7,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
 import { AdminJwtStrategy } from "./strategies/admin-jwt.strategy";
 import { AdminJwtAuthGuard } from "./guards/admin-jwt-auth.guard";
 import { AdminRolesGuard } from "./guards/admin-roles.guard";
+import { AuthorityGuard } from "./guards/authority.guard";
 import { ConfigModule } from "../config/config.module";
 
 import { ScheduleModule } from "@nestjs/schedule";
@@ -37,6 +38,7 @@ import { RedisModule } from "../redis/redis.module";
     AdminJwtStrategy,
     AdminJwtAuthGuard,
     AdminRolesGuard,
+    AuthorityGuard,
     CsrfService,
     CaptchaService,
     UsernameGeneratorService,

@@ -37,6 +37,7 @@ import { SmsModule } from "../common/sms/sms.module";
 import { EmailModule } from "../common/email/email.module";
 import { CommonModule } from "./common/common.module";
 import { AdminRolesGuard } from "./auth/guards/admin-roles.guard";
+import { AuthorityGuard } from "./auth/guards/authority.guard";
 import { HomeModule } from "./home/home.module";
 import { VerificationModule } from "./common/verification/verification.module";
 import { CsrfModule } from "./common/csrf/csrf.module";
@@ -98,6 +99,7 @@ import { AppController } from "./app.contronller";
       useClass: HttpExceptionFilter,
     },
     AdminRolesGuard,
+    AuthorityGuard,
   ],
 })
 export class AppModule {}

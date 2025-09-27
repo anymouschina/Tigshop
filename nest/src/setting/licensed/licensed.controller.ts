@@ -19,19 +19,19 @@ import {
   LicensedQueryDto,
   LicensedConfigDto,
 } from "./dto/licensed.dto";
-import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { RolesGuard } from "../../auth/guards/roles.guard";
-import { Roles } from "../../auth/decorators/roles.decorator";
+import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
+import { AuthorityGuard } from "../../auth/guards/authority.guard";
+import { Authorities } from "../../auth/decorators/authority.decorator";
 
 @ApiTags("Admin API - 授权管理")
 @Controller("adminapi/setting/licensed")
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class LicensedController {
   constructor(private readonly licensedService: LicensedService) {}
 
   @Get("index")
-  @Roles("admin")
+  @Authorities("adminapi/setting/licensed/index")
   @ApiOperation({ summary: "获取授权列表" })
   async index(@Query() queryDto: LicensedQueryDto) {
     const result = await this.licensedService.findAll(queryDto);
@@ -49,7 +49,7 @@ export class LicensedController {
   }
 
   @Get("list")
-  @Roles("licensedManage")
+  @Authorities("adminapi/setting/licensed/list")
   @ApiOperation({ summary: "获取授权列表" })
   async list(@Query() queryDto: LicensedQueryDto) {
     const result = await this.licensedService.findAll(queryDto);
@@ -67,7 +67,7 @@ export class LicensedController {
   }
 
   @Get("config")
-  @Roles("licensedManage")
+  @Authorities("adminapi/setting/licensed/config")
   @ApiOperation({ summary: "获取配置信息" })
   async config() {
     const config = await this.licensedService.getConfig();
@@ -81,7 +81,7 @@ export class LicensedController {
   }
 
   @Get("detail")
-  @Roles("licensedManage")
+  @Authorities("adminapi/setting/licensed/detail")
   @ApiOperation({ summary: "获取授权详情" })
   async detail(@Query("id") id: string) {
     const itemId = parseInt(id, 10);
@@ -101,7 +101,7 @@ export class LicensedController {
   }
 
   @Post("create")
-  @Roles("licensedManage")
+  @Authorities("adminapi/setting/licensed/create")
   @ApiOperation({ summary: "创建授权" })
   @ApiBody({ type: CreateLicensedDto })
   async create(@Body() createDto: CreateLicensedDto) {
@@ -114,7 +114,7 @@ export class LicensedController {
   }
 
   @Put("update")
-  @Roles("licensedManage")
+  @Authorities("adminapi/setting/licensed/update")
   @ApiOperation({ summary: "更新授权" })
   @ApiBody({ type: UpdateLicensedDto })
   async update(@Body() updateDto: UpdateLicensedDto & { id: number }) {
@@ -129,7 +129,7 @@ export class LicensedController {
   }
 
   @Delete("del")
-  @Roles("licensedManage")
+  @Authorities("adminapi/setting/licensed/del")
   @ApiOperation({ summary: "删除授权" })
   async delete(@Query("id") id: string) {
     const itemId = parseInt(id, 10);
@@ -148,7 +148,7 @@ export class LicensedController {
   }
 
   @Post("batch")
-  @Roles("licensedManage")
+  @Authorities("adminapi/setting/licensed/batch")
   @ApiOperation({ summary: "批量操作" })
   async batch(@Body() body: { type: string; ids: number[] }) {
     if (!body.ids || !Array.isArray(body.ids) || body.ids.length === 0) {
