@@ -50,6 +50,9 @@ importers:
       '@nestjs/swagger':
         specifier: ^7.3.1
         version: 7.4.2(@nestjs/common@10.4.18(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.18)(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)
+      '@openai/codex':
+        specifier: ^0.42.0
+        version: 0.42.0
       '@prisma/client':
         specifier: ^5.15.1
         version: 5.22.0(prisma@5.22.0)
@@ -86,6 +89,9 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.5.0
+      g:
+        specifier: ^2.0.1
+        version: 2.0.1
       handlebars:
         specifier: ^4.7.8
         version: 4.7.8
@@ -1142,6 +1148,11 @@ packages:
   '@nuxtjs/opencollective@0.3.2':
     resolution: {integrity: sha512-um0xL3fO7Mf4fDxcqx9KryrB7zgRM5JSlvGN5AGkP6JLM5XEKyjeAiPbNxdXVXQ16isuAhYpvP88NgL2BGd6aA==}
     engines: {node: '>=8.0.0', npm: '>=5.0.0'}
+    hasBin: true
+
+  '@openai/codex@0.42.0':
+    resolution: {integrity: sha512-jLpMrQuq1gIBzBKbKMwAzXOh+5uwE+ht3RHUb2Ov7P50fjAxPKDZa0+zpqkhHTspm8Rw6Vdrm4I4L+Z03usCkg==}
+    engines: {node: '>=20'}
     hasBin: true
 
   '@paralleldrive/cuid2@2.2.2':
@@ -2568,6 +2579,9 @@ packages:
 
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
+
+  g@2.0.1:
+    resolution: {integrity: sha512-Fi6Ng5fZ/ANLQ15H11hCe+09sgUoNvDEBevVgx3KoYOhsH5iLNPn54hx0jPZ+3oSWr+xajnp2Qau9VmPsc7hTA==}
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -5907,6 +5921,8 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  '@openai/codex@0.42.0': {}
+
   '@paralleldrive/cuid2@2.2.2':
     dependencies:
       '@noble/hashes': 1.8.0
@@ -7586,6 +7602,8 @@ snapshots:
     optional: true
 
   function-bind@1.1.2: {}
+
+  g@2.0.1: {}
 
   gensync@1.0.0-beta.2: {}
 

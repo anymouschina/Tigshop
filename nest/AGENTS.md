@@ -1,35 +1,33 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Source lives in `src/` (NestJS modules by domain: e.g., `src/order`, `src/product`, `src/user`). Common utilities in `src/common` and configuration in `src/config.ts`.
-- Database: Prisma schema and seeds in `prisma/` (`schema.prisma`, `seed.ts`). Build output in `dist/`.
-- Docs and assets: `docs/`, SSL/payment certs in `cert/`, uploads served from `uploads/` (mounted at `/uploads/`).
+- Source lives in `src/`, organized by NestJS domain modules (`order`, `product`, `user`, etc.); shared utilities sit in `src/common`, and configuration defaults in `src/config.ts`.
+- Database schema and seeds stay under `prisma/` (`schema.prisma`, `seed.ts`), while compiled output is generated in `dist/`.
+- Documentation and supporting assets live in `docs/`; SSL or payment certificates reside in `cert/`; user uploads are served from `uploads/` and exposed at `/uploads/`.
 
 ## Build, Test, and Development Commands
-- `npm run start:dev` — start Nest in watch mode (HTTP on port 3001; Swagger at `/api-docs`).
-- `npm run build` — compile TypeScript to `dist/`.
-- `npm run start:prod` — run compiled app (`node dist/main`).
-- `npm run db:init` — apply Prisma schema to the DB; `npm run db:seed` — seed data (idempotency not guaranteed).
-- `npm run start:all` — init DB, build, seed, then start dev. Avoid running repeatedly to prevent duplicate seeds.
-- `npm run lint` / `npm run format` — ESLint (with fix) and Prettier.
-- `npm test` / `npm run test:watch` / `npm run test:cov` — Jest unit tests and coverage (reports in `coverage/`).
+- `npm run start:dev`: launch the Nest server in watch mode on port `3001` with Swagger at `/api-docs`.
+- `npm run build`: compile TypeScript into the `dist/` folder for production deploys.
+- `npm run start:prod`: execute the compiled app via `node dist/main`.
+- `npm run db:init` / `npm run db:seed`: apply the Prisma schema and seed demo data; avoid repeated `start:all` runs to prevent duplicate records.
+- `npm run lint` / `npm run format`: run ESLint (with auto-fix) and Prettier to enforce style.
+- `npm test`, `npm run test:watch`, `npm run test:cov`: execute unit tests, watch mode, and coverage (reports in `coverage/`).
 
 ## Coding Style & Naming Conventions
-- TypeScript, 2-space indent; prefer single quotes; always use semicolons.
-- Files/dirs: kebab-case (e.g., `user-profile.service.ts`). Nest files: `*.module.ts`, `*.controller.ts`, `*.service.ts`; DTOs: `*.dto.ts`.
-- Classes `PascalCase`, variables/functions `camelCase`, constants/env keys `UPPER_SNAKE_CASE`.
-- Use Prettier and ESLint before committing: `npm run format && npm run lint`.
+- Language: TypeScript with 2-space indentation, single quotes, and required semicolons.
+- Filenames use kebab-case (e.g., `user-profile.service.ts`); modules, controllers, and services follow Nest naming (`*.module.ts`, `*.controller.ts`, `*.service.ts`), and DTOs end with `*.dto.ts`.
+- Run `npm run format && npm run lint` before submitting changes.
 
 ## Testing Guidelines
-- Framework: Jest. Test files `*.spec.ts` or under `__tests__/` (e.g., `src/user/__tests__/user.service.spec.ts`).
-- Write unit tests per module; mock I/O and external services (Redis/DB) where possible.
-- Target ≥80% coverage locally: `npm run test:cov`.
+- Jest is the default test runner; locate specs alongside code using `*.spec.ts` or under `__tests__/`.
+- Target ≥80% coverage locally via `npm run test:cov`; mock external dependencies (database, Redis, external APIs) to keep tests deterministic.
+- Structure tests to mirror module boundaries (service, controller, repository) and prefer factories/fixtures for complex data.
 
 ## Commit & Pull Request Guidelines
-- History is terse/informal; prefer Conventional Commits going forward: `feat: add referral stats API`, `fix(order): correct status mapping`.
-- PRs should include: purpose and scope, linked issues, screenshots or sample requests when API behavior changes, and testing notes.
-- Before opening a PR, run: `npm run format && npm run lint && npm test` and ensure Swagger builds locally.
+- Follow Conventional Commit prefixes (`feat:`, `fix(order):`, `chore:`) consistent with recent history.
+- PRs should describe purpose and scope, reference related issues, include screenshots or sample API requests when behavior changes, and list validation steps run locally (`npm run format`, `npm run lint`, `npm test`).
 
 ## Security & Configuration Tips
-- Copy `.env.example` to `.env`. Prisma provider in `prisma/schema.prisma` is `mysql`; set `DATABASE_URL` accordingly. Configure Redis via `REDIS_HOST/PORT/PASSWORD`.
-- Do not commit secrets or certs; keep `cert/` paths referenced by env vars (see `.env.example`).
+- Copy `.env.example` to `.env`, setting `DATABASE_URL` for MySQL and Redis credentials (`REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`).
+- Keep secrets and certificates out of version control; reference entries in `cert/` through environment variables.
+- Validate Prisma migrations in a staging database before promoting to production, and monitor seeded data to avoid duplication.
