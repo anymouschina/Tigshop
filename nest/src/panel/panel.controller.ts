@@ -30,18 +30,28 @@ export class PanelController {
       };
     }
 
-    // 获取基础面板数据
-    const [consoleData, realTimeData] = await Promise.all([
-      this.panelService.getConsoleData(1), // TODO: 从用户信息中获取shopId
-      this.panelService.getRealTimeData(1),
+    // 获取管理员信息以确定shopId
+    const adminUser = await this.authorityService['prisma'].admin_user.findUnique({
+      where: { admin_id: userId },
+      select: { shop_id: true },
+    });
+
+    const shopId = adminUser?.shop_id || 1;
+
+    // 获取面板数据
+    const [consoleData, realTimeData, panelStatisticalData] = await Promise.all([
+      this.panelService.getConsoleData(shopId),
+      this.panelService.getRealTimeData(shopId),
+      this.panelService.getPanelStatisticalData(shopId),
     ]);
 
     return {
       code: 0,
       message: "success",
       data: {
-        console_data: consoleData,
-        real_time_data: realTimeData,
+        consoleData,
+        realTimeData,
+        panelStatisticalData,
       },
       timestamp: new Date().toISOString(),
     };
