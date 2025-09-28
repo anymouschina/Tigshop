@@ -29,45 +29,47 @@ export class PanelController {
   @Authorities("consoleManage")
   @ApiOperation({ summary: "获取面板首页" })
   async getPanelIndex(@Request() req) {
-    const userId = req.user?.userId;
-    if (!userId) {
+    try {
+      // 验证用户并获取shopId
+      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      if (!userShopInfo) {
+        return {
+          code: 1,
+          message: "用户未登录",
+          data: null,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      const { shopId } = userShopInfo;
+
+      // 获取面板数据
+      const [consoleData, realTimeData, panelStatisticalData] = await Promise.all(
+        [
+          this.panelService.getConsoleData(shopId),
+          this.panelService.getRealTimeData(shopId),
+          this.panelService.getPanelStatisticalData(shopId),
+        ],
+      );
+
+      return {
+        code: 0,
+        message: "success",
+        data: {
+          consoleData,
+          realTimeData,
+          panelStatisticalData,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
       return {
         code: 1,
-        message: "用户未登录",
+        message: error.message || "获取面板数据失败",
         data: null,
         timestamp: new Date().toISOString(),
       };
     }
-
-    // 获取管理员信息以确定shopId
-    const adminUser = await this.authorityService[
-      "prisma"
-    ].admin_user.findUnique({
-      where: { admin_id: userId },
-      select: { shop_id: true },
-    });
-
-    const shopId = adminUser?.shop_id || 1;
-
-    // 获取面板数据
-    const [consoleData, realTimeData, panelStatisticalData] = await Promise.all(
-      [
-        this.panelService.getConsoleData(shopId),
-        this.panelService.getRealTimeData(shopId),
-        this.panelService.getPanelStatisticalData(shopId),
-      ],
-    );
-
-    return {
-      code: 0,
-      message: "success",
-      data: {
-        consoleData,
-        realTimeData,
-        panelStatisticalData,
-      },
-      timestamp: new Date().toISOString(),
-    };
   }
 
   @Get()
@@ -153,30 +155,21 @@ export class PanelController {
     },
     @Request() req,
   ) {
-    const userId = req.user?.userId;
-    if (!userId) {
-      return {
-        code: 1,
-        message: "用户未登录",
-        data: null,
-        timestamp: new Date().toISOString(),
-      };
-    }
-
-    // 获取管理员信息以确定shopId
-    const adminUser = await this.authorityService[
-      "prisma"
-    ].admin_user.findUnique({
-      where: { admin_id: userId },
-      select: { shop_id: true },
-    });
-
-    const shopId = adminUser?.shop_id || 1;
-
-    // 根据查询参数获取统计数据
-    const { statisticType = 1, startEndTime, dateType = 1 } = query;
-
     try {
+      // 验证用户并获取shopId
+      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      if (!userShopInfo) {
+        return {
+          code: 1,
+          message: "用户未登录",
+          data: null,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      const { shopId } = userShopInfo;
+      const { statisticType = 1, startEndTime, dateType = 1 } = query;
+
       // 确保总是返回相同的数据结构，包含 salesData 和 salesStatisticsData
       let salesData;
       let salesStatisticsData;
@@ -275,9 +268,9 @@ export class PanelController {
           ],
           longitudinalAxis: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         },
-        statistic_type: statisticType,
-        date_type: dateType,
-        time_range: startEndTime,
+        statistic_type: query.statisticType,
+        date_type: query.dateType,
+        time_range: query.startEndTime,
         error: error.message,
       };
 
@@ -285,6 +278,44 @@ export class PanelController {
         code: 0,
         message: "获取统计数据成功（部分数据可能为默认值）",
         data,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  @Get("salesStatistics/salesIndicators")
+  @Authorities("consoleManage")
+  @ApiOperation({ summary: "获取销售指标数据" })
+  @ApiResponse({ status: 200, description: "获取成功" })
+  async getSalesIndicators(@Request() req) {
+    try {
+      // 获取销售指标数据 - 逻辑在Service层
+      const salesIndicators = await this.panelService.getSalesIndicatorsData(req);
+
+      return {
+        code: 0,
+        message: "success",
+        data: salesIndicators,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        code: 0,
+        message: "获取销售指标成功（部分数据可能为默认值）",
+        data: {
+          order_num: 0,
+          order_product_num: 0,
+          order_total_amount: 0,
+          user_num: 0,
+          consumer_membership_num: 0,
+          capita_consumption: 0,
+          click_count: 0,
+          click_rate: 0,
+          order_rate: 0,
+          consumer_membership_rate: 0,
+          purchase_rate: 0,
+          error: error.message,
+        },
         timestamp: new Date().toISOString(),
       };
     }
@@ -304,29 +335,20 @@ export class PanelController {
     },
     @Request() req,
   ) {
-    const userId = req.user?.userId;
-    if (!userId) {
-      return {
-        code: 1,
-        message: "用户未登录",
-        data: null,
-        timestamp: new Date().toISOString(),
-      };
-    }
+      // 验证用户并获取shopId
+      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      if (!userShopInfo) {
+        return {
+          code: 1,
+          message: "用户未登录",
+          data: null,
+          timestamp: new Date().toISOString(),
+        };
+      }
 
-    // 获取管理员信息以确定shopId
-    const adminUser = await this.authorityService[
-      "prisma"
-    ].admin_user.findUnique({
-      where: { admin_id: userId },
-      select: { shop_id: true },
-    });
+      const { shopId } = userShopInfo;
+      const { startTime, endTime } = query;
 
-    const shopId = adminUser?.shop_id || 1;
-
-    const { startTime, endTime } = query;
-
-    try {
       // 获取销售详情数据 - 按照PHP实现的结构
       const salesData = await this.salesStatisticsService.getSalesDetail(
         shopId,
@@ -373,52 +395,5 @@ export class PanelController {
         data,
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
-      // 即使出错也返回默认的数据结构，确保包含 salesData 和 salesStatisticsData
-      const data = {
-        salesData: {
-          productView: 0,
-          productViewGrowthRate: 0,
-          productVisitor: 0,
-          productVisitorGrowthRate: 0,
-          orderNum: 0,
-          orderNumGrowthRate: 0,
-          paymentAmount: 0,
-          paymentAmountGrowthRate: 0,
-          refundAmount: 0,
-          refundAmountGrowthRate: 0,
-          refundQuantity: 0,
-          refundQuantityGrowthRate: 0,
-        },
-        salesStatisticsData: {
-          horizontalAxis: [
-            "01",
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08",
-            "09",
-            "10",
-            "11",
-            "12",
-          ],
-          longitudinalAxisPaymentAmount: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-          longitudinalAxisRefundAmount: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-          longitudinalAxisProductView: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-          longitudinalAxisProductVisitor: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        },
-        error: error.message,
-      };
-
-      return {
-        code: 0,
-        message: "获取销售详情成功（部分数据可能为默认值）",
-        data,
-        timestamp: new Date().toISOString(),
-      };
-    }
   }
 }
