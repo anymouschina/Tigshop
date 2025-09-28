@@ -101,9 +101,13 @@ export class AuthorityController {
     };
 
     // 根据管理员类型过滤 - 基于PHP逻辑
-    if (adminUser.admin_type === 'admin') {
-      // 平台管理员只能看到admin类型的权限
-      where.admin_type = 'admin';
+    if (adminUser.admin_type === 1 || adminUser.admin_type === 'admin') {
+      // 超级管理员可以看到admin和shop类型的权限
+      where.admin_type = {
+        in: ['admin', 'shop']
+      };
+
+      // 超级管理员有所有权限，不需要按authority_sn过滤
     } else {
       // 其他类型的管理员看到对应类型的权限
       where.admin_type = adminUser.admin_type;
@@ -122,9 +126,9 @@ export class AuthorityController {
       const authorities = await this.authorityService['prisma'].authority.findMany({
         where,
         orderBy: [
-          { parent_id: 'asc' },
-          { sort_order: 'asc' },
-          { authority_id: 'asc' }
+          { sort_order: 'desc' },  // 主要按sort_order降序
+          { parent_id: 'asc' },    // 然后按parent_id升序
+          { authority_id: 'asc' }  // 最后按authority_id升序
         ]
       });
 

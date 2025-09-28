@@ -25,7 +25,7 @@ import { CaptchaService } from "src/auth/services/captcha.service";
 import { parsePointJson } from "src/auth/utils/aes-helper";
 
 @ApiTags("验证码管理")
-@Controller("admin/common/verification")
+@Controller("api/common/verification")
 @UseGuards(AdminAuthGuard)
 export class VerificationController {
   constructor(private readonly verificationService: VerificationService) {}
@@ -129,7 +129,7 @@ export class VerificationController {
 }
 
 @ApiTags("公共验证码")
-@Controller("common/verification")
+@Controller("api/common/verification")
 export class PublicVerificationController {
   private readonly logger = new Logger(PublicVerificationController.name);
   constructor(private readonly captchaService: CaptchaService) {}

@@ -1,9 +1,11 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class MerchantShopService {
+  private readonly logger = new Logger(MerchantShopService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -12,6 +14,16 @@ export class MerchantShopService {
   async getMyShops(adminId: number, query: any = {}) {
     const { page = 1, size = 20, sortField = 'last_login_time', sortOrder = 'desc' } = query;
     const skip = (page - 1) * size;
+
+    this.logger.debug('getMyShops called with:', {
+      adminId,
+      query,
+      page,
+      size,
+      sortField,
+      sortOrder,
+      skip
+    });
 
     // 构建排序条件
     const orderBy: any = {};
@@ -50,6 +62,12 @@ export class MerchantShopService {
       }),
     ]);
 
+    this.logger.debug('adminUserShops query result:', {
+      adminUserShops: adminUserShops,
+      total,
+      shopIds: adminUserShops.map(aus => aus.shop_id).filter(Boolean)
+    });
+
     // 获取对应的店铺信息
     const shopIds = adminUserShops.map(aus => aus.shop_id).filter(Boolean);
     const shops = await this.prisma.shop.findMany({
@@ -59,6 +77,12 @@ export class MerchantShopService {
         },
         status: 1, // 只返回启用状态的店铺
       },
+    });
+
+    this.logger.debug('shops query result:', {
+      shopIds,
+      shops: shops,
+      foundShopsCount: shops.length
     });
 
     // 将店铺信息关联到admin_user_shop记录
@@ -81,7 +105,12 @@ export class MerchantShopService {
       },
     });
 
-    return {
+    this.logger.debug('adminUser query result:', {
+      adminUser,
+      adminType: adminUser?.admin_type
+    });
+
+    const result = {
       shops: validShops.map(aus => ({
         shop_id: aus.shop.shop_id,
         shop_title: aus.shop.shop_title,
@@ -111,6 +140,16 @@ export class MerchantShopService {
         totalPages: Math.ceil(total / size),
       },
     };
+
+    this.logger.debug('getMyShops final result:', {
+      shopsCount: result.shops.length,
+      vendorsCount: result.vendors.length,
+      hasUserInfo: !!result.userinfo,
+      pagination: result.pagination,
+      shops: result.shops.map(s => ({ shop_id: s.shop_id, shop_title: s.shop_title }))
+    });
+
+    return result;
   }
 
   /**

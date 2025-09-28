@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Body, Controller, HttpCode, HttpStatus, Post, ValidationPipe, Request } from "@nestjs/common";
+import { Body, Controller, HttpCode, HttpStatus, Post, ValidationPipe, Request, Get } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";
 import { AdminLoginDto } from "./dto/admin.dto";
@@ -29,6 +29,15 @@ export class AdminLoginController {
     const data = await this.adminService.login(loginDto, clientIp);
 
     return data
+  }
+
+  @Public()
+  @Post("signout")
+  @ApiOperation({ summary: "管理员登出" })
+  async signout(@Request() req) {
+    const userId = req.user?.userId;
+    const data = await this.adminService.logout(userId);
+    return data;
   }
 
   /**

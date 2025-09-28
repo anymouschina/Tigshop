@@ -26,7 +26,12 @@ export class AdminService {
     });
 
     if (!admin) {
-      throw new UnauthorizedException("用户名或密码错误");
+      return {
+        code: 1,
+        message: "用户名或密码错误",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -34,7 +39,12 @@ export class AdminService {
       admin.password,
     );
     if (!isPasswordValid) {
-      throw new UnauthorizedException("用户名或密码错误");
+      return {
+        code: 1,
+        message: "用户名或密码错误",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
     }
 
     // 更新登录信息 - 更新最后登录IP和时间
@@ -59,19 +69,37 @@ export class AdminService {
     const token = this.jwtService.sign(payload);
 
     return {
-      token,
-      user: {
-        adminId: admin.admin_id,
-        username: admin.username,
-        email: admin.email,
-        avatar: admin.avatar,
+      code: 0,
+      message: "success",
+      data: {
+        token,
+        ...{
+          adminId: admin.admin_id,
+          username: admin.username,
+          email: admin.email,
+          avatar: admin.avatar,
+          mobile: admin.mobile,
+          adminType: admin.admin_type,
+          roleId: admin.role_id,
+          shopId: admin.shop_id,
+          merchantsId: admin.merchant_id,
+          suppliersId: admin.suppliers_id,
+          isUsing: admin.is_using,
+          addTime: admin.add_time,
+        },
       },
+      timestamp: new Date().toISOString(),
     };
   }
 
   async logout(userId: number) {
     // 在实际应用中，这里可以将token加入黑名单
-    return { message: "登出成功" };
+    return {
+      code: 0,
+      message: "登出成功",
+      data: null,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   async getAdminProfile(userId: number) {

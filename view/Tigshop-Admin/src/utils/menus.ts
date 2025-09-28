@@ -13,10 +13,12 @@ export const updateMenu = async () => {
 export const getMenu = async () => {
     try {
         const result = await getAllAuthorityData();
+        console.log(result,'result1111')
         if (!result || !result.length) {
             return [];
         }
         const menus = useMenusStore();
+        console.log(menus,'result1111 menu')
         let arr:any = result;
         let routers:any = [];
         menus.setLicensed(arr.find((item:any) => item.authoritySn === "licensed" && item.isShow === 1) ? true : false);
@@ -34,7 +36,7 @@ export const getMenu = async () => {
             routers = adminRouters;
             arr = [...arr, { authoritySn: "accountEditingManage", authorityName: "个人中心" }];
         }
-
+        console.log(routers,'result1111 routers',arr)
         return filterRoutesByAuthority(routers, arr) || [];
     } catch (error) { }
 };

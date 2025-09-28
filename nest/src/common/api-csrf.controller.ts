@@ -12,7 +12,7 @@ import { CommonCsrfService } from "./services/common-csrf.service";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("API - 公共CSRF")
-@Controller("common/csrf")
+@Controller("api/common/csrf")
 export class ApiCsrfController {
   constructor(private readonly commonCsrfService: CommonCsrfService) {}
 
