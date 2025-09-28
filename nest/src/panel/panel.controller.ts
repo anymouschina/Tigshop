@@ -17,7 +17,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 
 @ApiTags("Admin API - 面板")
 @Controller("adminapi/panel")
-// @UseGuards(AdminJwtAuthGuard, AuthorityGuard) // 临时移除用于测试
+@UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class PanelController {
   constructor(
     private readonly panelService: PanelService,
@@ -284,13 +284,10 @@ export class PanelController {
   }
 
   @Get("salesStatistics/salesIndicators")
-  // @Authorities("consoleManage") // 临时移除用于测试
+  @Authorities("consoleManage")
   @ApiOperation({ summary: "获取销售指标数据" })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getSalesIndicators(@Request() req) {
-      // 为了测试，直接使用shopId = 1
-      req.user = { userId: 1 };
-
       // 获取销售指标数据 - 逻辑在Service层
       const salesIndicators = await this.panelService.getSalesIndicatorsData(req);
 
@@ -303,7 +300,7 @@ export class PanelController {
   }
 
   @Get("salesStatistics/salesDetail")
-  // @Authorities("consoleManage") // 临时移除用于测试
+  @Authorities("consoleManage")
   @ApiOperation({ summary: "获取销售详情数据" })
   @ApiQuery({ name: "startTime", description: "开始时间" })
   @ApiQuery({ name: "endTime", description: "结束时间" })
@@ -316,8 +313,8 @@ export class PanelController {
     },
     @Request() req,
   ) {
-      // 为了测试，直接使用shopId = 1
-      const shopId = 1;
+      // 直接获取shopId，因为有全局鉴权保证用户已登录
+      const shopId = await this.panelService.getUserShopId(req.user.userId);
       const { startTime, endTime } = query;
 
       // 获取销售详情数据 - 按照PHP实现的结构
