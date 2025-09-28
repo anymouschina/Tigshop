@@ -100,12 +100,16 @@ export class AuthorityController {
       is_show: 1,
     };
 
-    // 根据管理员类型过滤
+    // 根据管理员类型过滤 - 基于PHP逻辑
     if (adminUser.admin_type === 'admin') {
-      // 超级管理员可以看到所有权限
+      // 平台管理员只能看到admin类型的权限
+      where.admin_type = 'admin';
     } else {
-      // 普通管理员只能看到有权限的
-      if (authList.length > 0) {
+      // 其他类型的管理员看到对应类型的权限
+      where.admin_type = adminUser.admin_type;
+
+      // 如果有权限列表且不是'all'，则按权限过滤
+      if (authList.length > 0 && !authList.includes('all')) {
         where.authority_sn = {
           in: authList
         };
@@ -511,39 +515,4 @@ export class AuthorityController {
     };
   }
 
-  @Get('adminUser/mineDetail')
-  @ApiOperation({ summary: '获取当前管理员详情' })
-  async mineDetail(@Request() req) {
-    const userId = req.user?.userId;
-    if (!userId) {
-      throw new Error('用户未登录');
-    }
-
-    const adminUser = await this.authorityService['prisma'].admin_user.findUnique({
-      where: { admin_id: userId },
-      select: {
-        admin_id: true,
-        username: true,
-        real_name: true,
-        email: true,
-        mobile: true,
-        avatar: true,
-        admin_type: true,
-        status: true,
-        create_time: true,
-        update_time: true,
-      },
-    });
-
-    if (!adminUser) {
-      throw new Error('管理员不存在');
-    }
-
-    return {
-      code: 0,
-      data: adminUser,
-      message: 'success',
-      timestamp: new Date().toISOString(),
-    };
   }
-}
