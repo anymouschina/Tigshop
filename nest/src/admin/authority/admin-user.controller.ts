@@ -6,7 +6,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { AdminJwtAuthGuard } from '../../auth/guards/admin-jwt-auth.guard';
+import { AdminJwtAuthGuard } from 'src/auth/guards/admin-jwt-auth.guard';
 import { AuthorityGuard } from '../../auth/guards/authority.guard';
 import { Authorities } from '../../auth/decorators/authority.decorator';
 

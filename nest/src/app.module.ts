@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
 import { MulterModule } from "@nestjs/platform-express";
-import { UserModule } from "./user/user.module";
+import { UserModule } from "src/user/user.module";
 import { ConfigModule } from "./config/config.module";
 import { LoggerModule } from "./common/logger/logger.module";
 // import { ApiModule } from "./api/api.module";

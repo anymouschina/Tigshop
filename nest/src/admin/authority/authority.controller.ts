@@ -16,7 +16,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UseGuards } from '@nestjs/common';
 import { AuthorityService } from './authority.service';
-import { AdminJwtAuthGuard } from '../../auth/guards/admin-jwt-auth.guard';
+import { AdminJwtAuthGuard } from 'src/auth/guards/admin-jwt-auth.guard';
 import {
   AuthorityQueryDto,
   AuthorityDetailDto,

@@ -1,20 +1,51 @@
 // @ts-nocheck
-import { Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Query, UseGuards, Request } from "@nestjs/common";
 import { PanelService } from "./panel.service";
 import { AuthorityService } from "../authority/authority.service";
-import { RolesGuard } from "../auth/guards/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
+import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
+import { AuthorityGuard } from "src/auth/guards/authority.guard";
+import { Authorities } from "src/auth/decorators/authority.decorator";
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 
-@ApiTags("统计面板")
-@Controller("admin/panel")
-@UseGuards(RolesGuard)
-@Roles("admin")
+@ApiTags("Admin API - 面板")
+@Controller("adminapi/panel")
+@UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class PanelController {
   constructor(
     private readonly panelService: PanelService,
     private readonly authorityService: AuthorityService,
   ) {}
+
+  @Get("panel/index")
+  @Authorities("consoleManage")
+  @ApiOperation({ summary: "获取面板首页" })
+  async getPanelIndex(@Request() req) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return {
+        code: 1,
+        message: "用户未登录",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // 获取基础面板数据
+    const [consoleData, realTimeData] = await Promise.all([
+      this.panelService.getConsoleData(1), // TODO: 从用户信息中获取shopId
+      this.panelService.getRealTimeData(1),
+    ]);
+
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        console_data: consoleData,
+        real_time_data: realTimeData,
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
 
   @Get()
   @ApiOperation({ summary: "获取控制台面板数据" })

@@ -13,7 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UseGuards } from '@nestjs/common';
 import { MerchantShopService } from './merchant-shop.service';
-import { AdminJwtAuthGuard } from '../../auth/guards/admin-jwt-auth.guard';
+import { AdminJwtAuthGuard } from 'src/auth/guards/admin-jwt-auth.guard';
 
 @ApiTags('Merchant API - 店铺管理')
 @Controller('adminapi/merchant/shop')
