@@ -181,8 +181,16 @@ export class PanelController {
 
       if (statisticType === 1) {
         // 获取销售数据和统计数据
-        const salesData = await this.salesStatisticsService.getSalesData(shopId, startEndTime);
-        const salesStatisticsData = await this.salesStatisticsService.getSalesStatisticsData(shopId, dateType, startEndTime);
+        const salesData = await this.salesStatisticsService.getSalesData(
+          shopId,
+          startEndTime,
+        );
+        const salesStatisticsData =
+          await this.salesStatisticsService.getSalesStatisticsData(
+            shopId,
+            dateType,
+            startEndTime,
+          );
 
         data = {
           salesData,

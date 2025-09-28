@@ -181,4 +181,267 @@ export class SalesStatisticsService {
       download_url: "",
     };
   }
+
+  async getSalesData(shopId: number, timeRange?: string) {
+    // 获取销售数据
+    // 解析时间范围
+    let startDate: Date;
+    let endDate: Date = new Date();
+
+    if (timeRange && timeRange.length === 4) {
+      // 年份格式：2025
+      const year = parseInt(timeRange);
+      startDate = new Date(year, 0, 1);
+      endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+    } else {
+      // 默认今年
+      const currentYear = new Date().getFullYear();
+      startDate = new Date(currentYear, 0, 1);
+      endDate = new Date(currentYear, 11, 31, 23, 59, 59, 999);
+    }
+
+    // 获取当前期间数据
+    const [currentOrders, currentRefunds] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: {
+          shop_id: shopId,
+          status: "completed",
+          created_at: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        _sum: {
+          total_amount: true,
+        },
+      }),
+      this.prisma.refund.aggregate({
+        where: {
+          shop_id: shopId,
+          status: "completed",
+          created_at: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
+    ]);
+
+    // 获取上一期间数据（前一年）
+    const prevStartDate = new Date(startDate.getFullYear() - 1, 0, 1);
+    const prevEndDate = new Date(
+      startDate.getFullYear() - 1,
+      11,
+      31,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    const [prevOrders, prevRefunds] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: {
+          shop_id: shopId,
+          status: "completed",
+          created_at: {
+            gte: prevStartDate,
+            lte: prevEndDate,
+          },
+        },
+        _sum: {
+          total_amount: true,
+        },
+      }),
+      this.prisma.refund.aggregate({
+        where: {
+          shop_id: shopId,
+          status: "completed",
+          created_at: {
+            gte: prevStartDate,
+            lte: prevEndDate,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
+    ]);
+
+    // 获取余额支付数据
+    const currentBalanceOrders = await this.prisma.order.aggregate({
+      where: {
+        shop_id: shopId,
+        status: "completed",
+        payment_method: "balance",
+        created_at: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        total_amount: true,
+      },
+    });
+
+    const prevBalanceOrders = await this.prisma.order.aggregate({
+      where: {
+        shop_id: shopId,
+        status: "completed",
+        payment_method: "balance",
+        created_at: {
+          gte: prevStartDate,
+          lte: prevEndDate,
+        },
+      },
+      _sum: {
+        total_amount: true,
+      },
+    });
+
+    // 获取充值数据
+    const currentRecharge = await this.prisma.user_recharge_order.aggregate({
+      where: {
+        shop_id: shopId,
+        status: "completed",
+        created_at: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const prevRecharge = await this.prisma.user_recharge_order.aggregate({
+      where: {
+        shop_id: shopId,
+        status: "completed",
+        created_at: {
+          gte: prevStartDate,
+          lte: prevEndDate,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    // 计算增长率
+    const calculateGrowthRate = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : -100;
+      return ((current - previous) / previous) * 100;
+    };
+
+    const productPayment = currentOrders._sum.total_amount || 0;
+    const prevProductPayment = prevOrders._sum.total_amount || 0;
+    const productRefund = currentRefunds._sum.amount || 0;
+    const prevProductRefund = prevRefunds._sum.amount || 0;
+    const rechargeAmount = currentRecharge._sum.amount || 0;
+    const prevRechargeAmount = prevRecharge._sum.amount || 0;
+    const balancePayment = currentBalanceOrders._sum.total_amount || 0;
+    const prevBalancePayment = prevBalanceOrders._sum.total_amount || 0;
+
+    return {
+      productPayment: Number(productPayment.toFixed(2)),
+      productPaymentGrowthRate: Number(
+        calculateGrowthRate(productPayment, prevProductPayment).toFixed(4),
+      ),
+      productRefund: Number(productRefund.toFixed(2)),
+      prevProductRefund: Number(prevProductRefund.toFixed(2)),
+      productRefundGrowthRate: Number(
+        calculateGrowthRate(productRefund, prevProductRefund).toFixed(4),
+      ),
+      rechargeAmount: Number(rechargeAmount.toFixed(2)),
+      rechargeAmountGrowthRate: Number(
+        calculateGrowthRate(rechargeAmount, prevRechargeAmount).toFixed(4),
+      ),
+      turnover: Number(productPayment.toFixed(2)),
+      turnoverGrowthRate: Number(
+        calculateGrowthRate(productPayment, prevProductPayment).toFixed(4),
+      ),
+      balancePayment: Number(balancePayment.toFixed(2)),
+      balancePaymentGrowthRate: Number(
+        calculateGrowthRate(balancePayment, prevBalancePayment).toFixed(4),
+      ),
+    };
+  }
+
+  async getSalesStatisticsData(
+    shopId: number,
+    dateType: number,
+    timeRange?: string,
+  ) {
+    // 获取销售统计数据图表数据
+    let startDate: Date;
+    let endDate: Date = new Date();
+
+    if (timeRange && timeRange.length === 4) {
+      const year = parseInt(timeRange);
+      startDate = new Date(year, 0, 1);
+      endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+    } else {
+      const currentYear = new Date().getFullYear();
+      startDate = new Date(currentYear, 0, 1);
+      endDate = new Date(currentYear, 11, 31, 23, 59, 59, 999);
+    }
+
+    // 根据日期类型分组统计
+    let groupBy: any;
+    if (dateType === 1) {
+      // 按月统计
+      groupBy = {
+        month: {
+          $dateTrunc: {
+            date: "created_at",
+            unit: "month",
+          },
+        },
+      };
+    } else {
+      // 默认按月统计
+      groupBy = {
+        month: {
+          $dateTrunc: {
+            date: "created_at",
+            unit: "month",
+          },
+        },
+      };
+    }
+
+    // 获取每月销售数据
+    const monthlySales = (await this.prisma.$queryRaw`
+      SELECT
+        EXTRACT(MONTH FROM created_at) as month,
+        COALESCE(SUM(total_amount), 0) as total_amount
+      FROM "order"
+      WHERE
+        shop_id = ${shopId}
+        AND status = 'completed'
+        AND created_at >= ${startDate}
+        AND created_at <= ${endDate}
+      GROUP BY EXTRACT(MONTH FROM created_at)
+      ORDER BY month
+    `) as Array<{ month: number; total_amount: number }>;
+
+    // 生成12个月的数据
+    const horizontalAxis = Array.from({ length: 12 }, (_, i) =>
+      String(i + 1).padStart(2, "0"),
+    );
+
+    const longitudinalAxis = Array.from({ length: 12 }, (_, i) => {
+      const monthData = monthlySales.find((m) => m.month === i + 1);
+      return monthData ? Number(monthData.total_amount.toFixed(2)) : 0;
+    });
+
+    return {
+      horizontalAxis,
+      longitudinalAxis,
+    };
+  }
 }
