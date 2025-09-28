@@ -446,64 +446,72 @@ export class SalesStatisticsService {
   }
 
   async getSalesIndicators(shopId: number) {
-    // 获取销售指标数据 - 按照PHP实现
+    // 获取销售指标数据 - 完全按照PHP实现
     const [
       totalOrders,
       totalOrderProductsResult,
       totalOrderAmount,
       totalUsers,
-      consumerUsers,
+      consumerMembershipNum,
       clickCount,
     ] = await Promise.all([
-      // 订单总数
+      // 订单总数 - PHP: app(OrderService::class)->getFilterCount()
+      // OrderService::filterQuery() 会自动添加 is_del = 0 条件
       this.prisma.order.count({
         where: {
           shop_id: shopId,
+          is_del: 0, // OrderService自动添加的条件
           order_status: {
-            in: [2, 3, 5], // ORDER_CONFIRMED, ORDER_PROCESSING, ORDER_COMPLETED
+            in: [2, 3, 5], // ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED
           },
         },
       }),
-      // 订单商品总数 - 使用直接查询而不是关系
-      this.prisma.$queryRaw`
-        SELECT COUNT(*) as count
+      // 订单商品总数 - PHP: OrderItem::hasWhere("orders", ...)->count()
+      // orders关系已经包含 is_del = 0, order_status, pay_status 条件
+      this.prisma.$queryRaw({
+        sql: `SELECT COUNT(*) as count
         FROM order_item oi
-        JOIN "order" o ON oi.order_id = o.order_id
+        JOIN \`order\` o ON oi.order_id = o.order_id
         WHERE
-          o.shop_id = ${shopId}
-          AND o.is_del = 0
+          o.is_del = 0
           AND o.order_status IN (2, 3, 5)
-          AND o.pay_status = 2
-      ` as Array<{ count: number }>,
-      // 订单总金额
+          AND o.pay_status = 2  -- Order::PAYMENT_PAID
+          ${shopId > -1 ? `AND oi.shop_id = ${shopId}` : ''}`,
+        args: []
+      }) as Array<{ count: number }>,
+      // 订单总金额 - PHP: app(OrderService::class)->filterQuery()->sum('total_amount')
+      // OrderService::filterQuery() 会自动添加 is_del = 0 条件
       this.prisma.order.aggregate({
         where: {
           shop_id: shopId,
+          is_del: 0, // OrderService自动添加的条件
           order_status: {
-            in: [2, 3, 5], // ORDER_CONFIRMED, ORDER_PROCESSING, ORDER_COMPLETED
+            in: [2, 3, 5], // ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED
           },
         },
         _sum: {
           total_amount: true,
         },
       }),
-      // 会员总数
+      // 会员总数 - PHP: User::count()
       this.prisma.user.count(),
-      // 消费会员总数
-      this.prisma.order.groupBy({
-        by: ['user_id'],
-        where: {
-          shop_id: shopId,
-          order_status: {
-            in: [2, 3, 5], // ORDER_CONFIRMED, ORDER_PROCESSING, ORDER_COMPLETED
-          },
-        },
-      }),
-      // 访问数 -- 商品点击数
+      // 消费会员总数 - PHP: app(OrderService::class)->filterQuery()->group('user_id')->count()
+      // OrderService::filterQuery() 会自动添加 is_del = 0 条件
+      this.prisma.$queryRaw({
+        sql: `SELECT COUNT(DISTINCT user_id) as count
+        FROM \`order\`
+        WHERE
+          shop_id = ${shopId}
+          AND is_del = 0  -- OrderService自动添加的条件
+          AND order_status IN (2, 3, 5)`,
+        args: []
+      }).then((result: any[]) => result[0]?.count || 0),
+      // 访问数 -- 商品点击数 - PHP: app(ProductService::class)->filterQuery()->sum('click_count')
+      // ProductService::filterQuery() 需要显式传入 is_delete = 0
       this.prisma.product.aggregate({
         where: {
           shop_id: shopId,
-          is_delete: 0,
+          is_delete: 0, // 显式传入的条件
         },
         _sum: {
           click_count: true,
@@ -511,29 +519,29 @@ export class SalesStatisticsService {
       }),
     ]);
 
-    // 计算各种比率
+    // 计算各种比率 - 完全按照PHP逻辑
     const userNum = totalUsers || 1; // 避免除零
     const orderNum = totalOrders || 0;
     const orderTotalAmount = totalOrderAmount._sum.total_amount || 0;
-    const consumerMembershipNum = consumerUsers.length || 0;
     const clickCountValue = clickCount._sum.click_count || 0;
     const totalOrderProducts = totalOrderProductsResult?.[0]?.count || 0;
 
-    // 人均消费数
+    // 人均消费数 - PHP: number_format($order_total_amount / $user_num, 2, '.', '')
     const capitaConsumption = userNum > 0 ? Number((orderTotalAmount / userNum).toFixed(2)) : 0;
 
-    // 访问转化率
+    // 访问转化率 - PHP: number_format(($order_num / $click_count) * 100, 2, '.', '')
     const clickRate = clickCountValue > 0 ? Number(((orderNum / clickCountValue) * 100).toFixed(2)) : 0;
 
-    // 订单转化率
+    // 订单转化率 - PHP: number_format(($order_total_amount / $click_count) * 100, 2, '.', '')
     const orderRate = clickCountValue > 0 ? Number(((orderTotalAmount / clickCountValue) * 100).toFixed(2)) : 0;
 
-    // 消费会员比率
+    // 消费会员比率 - PHP: number_format(($consumer_membership_num / $user_num) * 100, 2, '.', '')
     const consumerMembershipRate = userNum > 0 ? Number(((consumerMembershipNum / userNum) * 100).toFixed(2)) : 0;
 
-    // 购买率
+    // 购买率 - PHP: number_format(($order_num / $user_num) * 100, 2, '.', '')
     const purchaseRate = userNum > 0 ? Number(((orderNum / userNum) * 100).toFixed(2)) : 0;
 
+    // 完全按照PHP返回结构
     return {
       order_num: orderNum,
       order_product_num: totalOrderProducts,

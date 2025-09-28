@@ -394,117 +394,24 @@ export class PanelService {
    * @returns 销售指标数据
    */
   async getSalesIndicatorsData(req: any) {
-    // 验证用户并获取shopId
-    const userShopInfo = await this.validateUserAndGetShopId(req);
-    if (!userShopInfo) {
-      throw new Error('用户未登录');
+    try {
+      // 验证用户并获取shopId
+      const userShopInfo = await this.validateUserAndGetShopId(req);
+      if (!userShopInfo) {
+        throw new Error('用户未登录');
+      }
+
+      const { shopId } = userShopInfo;
+
+      // 动态导入SalesStatisticsService以避免循环依赖
+      const { SalesStatisticsService } = await import('../statistics/sales-statistics.service');
+      const salesStatisticsService = new SalesStatisticsService(this.prisma);
+
+      // 直接调用SalesStatisticsService的方法
+      return await salesStatisticsService.getSalesIndicators(shopId);
+    } catch (error) {
+      console.error('getSalesIndicatorsData error:', error);
+      throw error;
     }
-
-    const { shopId } = userShopInfo;
-
-    // 这里应该调用SalesStatisticsService，但为了避免循环依赖，
-    // 我们暂时直接实现逻辑，或者可以考虑通过其他方式注入SalesStatisticsService
-
-    // 获取销售指标数据 - 按照PHP实现
-    const [
-      totalOrders,
-      totalOrderProductsResult,
-      totalOrderAmount,
-      totalUsers,
-      consumerUsers,
-      clickCount,
-    ] = await Promise.all([
-      // 订单总数
-      this.prisma.order.count({
-        where: {
-          shop_id: shopId,
-          order_status: {
-            in: [2, 3, 5], // ORDER_CONFIRMED, ORDER_PROCESSING, ORDER_COMPLETED
-          },
-        },
-      }),
-      // 订单商品总数 - 使用直接查询而不是关系
-      this.prisma.$queryRaw`
-        SELECT COUNT(*) as count
-        FROM order_item oi
-        JOIN "order" o ON oi.order_id = o.order_id
-        WHERE
-          o.shop_id = ${shopId}
-          AND o.is_del = 0
-          AND o.order_status IN (2, 3, 5)
-          AND o.pay_status = 2
-      ` as Array<{ count: number }>,
-      // 订单总金额
-      this.prisma.order.aggregate({
-        where: {
-          shop_id: shopId,
-          order_status: {
-            in: [2, 3, 5], // ORDER_CONFIRMED, ORDER_PROCESSING, ORDER_COMPLETED
-          },
-        },
-        _sum: {
-          total_amount: true,
-        },
-      }),
-      // 会员总数
-      this.prisma.user.count(),
-      // 消费会员总数
-      this.prisma.order.groupBy({
-        by: ['user_id'],
-        where: {
-          shop_id: shopId,
-          order_status: {
-            in: [2, 3, 5], // ORDER_CONFIRMED, ORDER_PROCESSING, ORDER_COMPLETED
-          },
-        },
-      }),
-      // 访问数 -- 商品点击数
-      this.prisma.product.aggregate({
-        where: {
-          shop_id: shopId,
-          is_delete: 0,
-        },
-        _sum: {
-          click_count: true,
-        },
-      }),
-    ]);
-
-    // 计算各种比率
-    const userNum = totalUsers || 1; // 避免除零
-    const orderNum = totalOrders || 0;
-    const orderTotalAmount = totalOrderAmount._sum.total_amount || 0;
-    const consumerMembershipNum = consumerUsers.length || 0;
-    const clickCountValue = clickCount._sum.click_count || 0;
-    const totalOrderProducts = totalOrderProductsResult?.[0]?.count || 0;
-
-    // 人均消费数
-    const capitaConsumption = userNum > 0 ? Number((orderTotalAmount / userNum).toFixed(2)) : 0;
-
-    // 访问转化率
-    const clickRate = clickCountValue > 0 ? Number(((orderNum / clickCountValue) * 100).toFixed(2)) : 0;
-
-    // 订单转化率
-    const orderRate = clickCountValue > 0 ? Number(((orderTotalAmount / clickCountValue) * 100).toFixed(2)) : 0;
-
-    // 消费会员比率
-    const consumerMembershipRate = userNum > 0 ? Number(((consumerMembershipNum / userNum) * 100).toFixed(2)) : 0;
-
-    // 购买率
-    const purchaseRate = userNum > 0 ? Number(((orderNum / userNum) * 100).toFixed(2)) : 0;
-
-    return {
-      order_num: orderNum,
-      order_product_num: totalOrderProducts,
-      order_total_amount: Number(orderTotalAmount.toFixed(2)),
-      user_num: totalUsers,
-      consumer_membership_num: consumerMembershipNum,
-      capita_consumption: capitaConsumption,
-      click_count: clickCountValue,
-      click_rate: clickRate,
-      order_rate: orderRate,
-      consumer_membership_rate: consumerMembershipRate,
-      purchase_rate: purchaseRate,
-    };
   }
 }
