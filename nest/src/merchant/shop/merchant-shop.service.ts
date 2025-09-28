@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class MerchantShopService {
@@ -12,33 +12,38 @@ export class MerchantShopService {
    * 获取商户店铺列表 - 对应PHP的myShop接口
    */
   async getMyShops(adminId: number, query: any = {}) {
-    const { page = 1, size = 20, sortField = 'last_login_time', sortOrder = 'desc' } = query;
+    const {
+      page = 1,
+      size = 20,
+      sortField = "last_login_time",
+      sortOrder = "desc",
+    } = query;
     const skip = (page - 1) * size;
 
-    this.logger.debug('getMyShops called with:', {
+    this.logger.debug("getMyShops called with:", {
       adminId,
       query,
       page,
       size,
       sortField,
       sortOrder,
-      skip
+      skip,
     });
 
     // 构建排序条件
     const orderBy: any = {};
     switch (sortField) {
-      case 'lastLoginTime':
+      case "lastLoginTime":
         orderBy.last_login_time = sortOrder;
         break;
-      case 'shopTitle':
+      case "shopTitle":
         orderBy.shop_title = sortOrder;
         break;
-      case 'addTime':
+      case "addTime":
         orderBy.add_time = sortOrder;
         break;
       default:
-        orderBy.last_login_time = 'desc';
+        orderBy.last_login_time = "desc";
     }
 
     // 获取管理员有权限的店铺列表
@@ -51,7 +56,7 @@ export class MerchantShopService {
         skip,
         take: size,
         orderBy: {
-          add_time: 'desc',
+          add_time: "desc",
         },
       }),
       this.prisma.admin_user_shop.count({
@@ -62,14 +67,14 @@ export class MerchantShopService {
       }),
     ]);
 
-    this.logger.debug('adminUserShops query result:', {
+    this.logger.debug("adminUserShops query result:", {
       adminUserShops: adminUserShops,
       total,
-      shopIds: adminUserShops.map(aus => aus.shop_id).filter(Boolean)
+      shopIds: adminUserShops.map((aus) => aus.shop_id).filter(Boolean),
     });
 
     // 获取对应的店铺信息
-    const shopIds = adminUserShops.map(aus => aus.shop_id).filter(Boolean);
+    const shopIds = adminUserShops.map((aus) => aus.shop_id).filter(Boolean);
     const shops = await this.prisma.shop.findMany({
       where: {
         shop_id: {
@@ -79,17 +84,19 @@ export class MerchantShopService {
       },
     });
 
-    this.logger.debug('shops query result:', {
+    this.logger.debug("shops query result:", {
       shopIds,
       shops: shops,
-      foundShopsCount: shops.length
+      foundShopsCount: shops.length,
     });
 
     // 将店铺信息关联到admin_user_shop记录
-    const validShops = adminUserShops.map(aus => {
-      const shop = shops.find(s => s.shop_id === aus.shop_id);
-      return shop ? { ...aus, shop } : null;
-    }).filter(Boolean);
+    const validShops = adminUserShops
+      .map((aus) => {
+        const shop = shops.find((s) => s.shop_id === aus.shop_id);
+        return shop ? { ...aus, shop } : null;
+      })
+      .filter(Boolean);
 
     // 获取管理员信息
     const adminUser = await this.prisma.admin_user.findUnique({
@@ -105,13 +112,13 @@ export class MerchantShopService {
       },
     });
 
-    this.logger.debug('adminUser query result:', {
+    this.logger.debug("adminUser query result:", {
       adminUser,
-      adminType: adminUser?.admin_type
+      adminType: adminUser?.admin_type,
     });
 
     const result = {
-      shops: validShops.map(aus => ({
+      shops: validShops.map((aus) => ({
         shop_id: aus.shop.shop_id,
         shop_title: aus.shop.shop_title,
         shop_logo: aus.shop.shop_logo,
@@ -125,14 +132,16 @@ export class MerchantShopService {
         role_id: aus.role_id, // 角色ID
       })),
       vendors: [], // 暂时为空，PHP版本中没有此数据
-      userinfo: adminUser ? {
-        id: adminUser.admin_id,
-        username: adminUser.username,
-        email: adminUser.email,
-        mobile: adminUser.mobile,
-        admin_type: adminUser.admin_type,
-        status: 1, // 管理员默认状态
-      } : null,
+      userinfo: adminUser
+        ? {
+            id: adminUser.admin_id,
+            username: adminUser.username,
+            email: adminUser.email,
+            mobile: adminUser.mobile,
+            admin_type: adminUser.admin_type,
+            status: 1, // 管理员默认状态
+          }
+        : null,
       pagination: {
         page,
         size,
@@ -141,12 +150,15 @@ export class MerchantShopService {
       },
     };
 
-    this.logger.debug('getMyShops final result:', {
+    this.logger.debug("getMyShops final result:", {
       shopsCount: result.shops.length,
       vendorsCount: result.vendors.length,
       hasUserInfo: !!result.userinfo,
       pagination: result.pagination,
-      shops: result.shops.map(s => ({ shop_id: s.shop_id, shop_title: s.shop_title }))
+      shops: result.shops.map((s) => ({
+        shop_id: s.shop_id,
+        shop_title: s.shop_title,
+      })),
     });
 
     return result;
@@ -173,7 +185,7 @@ export class MerchantShopService {
     });
 
     if (!shop) {
-      throw new Error('店铺不存在或无权限访问');
+      throw new Error("店铺不存在或无权限访问");
     }
 
     return shop;
@@ -188,9 +200,9 @@ export class MerchantShopService {
     const shop = await this.prisma.shop.create({
       data: {
         shop_title: shopTitle,
-        shop_logo: shopLogo || '',
-        contact_mobile: contactMobile || '',
-        description: description || '',
+        shop_logo: shopLogo || "",
+        contact_mobile: contactMobile || "",
+        description: description || "",
         merchant_id: adminId,
         add_time: Math.floor(Date.now() / 1000),
         status: 1,
@@ -205,7 +217,14 @@ export class MerchantShopService {
    * 更新店铺信息
    */
   async updateShop(shopId: number, adminId: number, shopData: any) {
-    const { shopTitle, shopLogo, contactMobile, description, kefuPhone, kefuWeixin } = shopData;
+    const {
+      shopTitle,
+      shopLogo,
+      contactMobile,
+      description,
+      kefuPhone,
+      kefuWeixin,
+    } = shopData;
 
     const existingShop = await this.prisma.shop.findFirst({
       where: {
@@ -215,7 +234,7 @@ export class MerchantShopService {
     });
 
     if (!existingShop) {
-      throw new Error('店铺不存在或无权限访问');
+      throw new Error("店铺不存在或无权限访问");
     }
 
     const shop = await this.prisma.shop.update({
@@ -246,12 +265,12 @@ export class MerchantShopService {
         status: 1,
       },
       orderBy: {
-        add_time: 'asc',
+        add_time: "asc",
       },
     });
 
     if (!shop) {
-      throw new Error('暂无可用店铺');
+      throw new Error("暂无可用店铺");
     }
 
     return shop;
@@ -274,7 +293,7 @@ export class MerchantShopService {
     });
 
     if (!shop) {
-      throw new Error('暂无可用店铺');
+      throw new Error("暂无可用店铺");
     }
 
     return {
@@ -288,7 +307,11 @@ export class MerchantShopService {
    * 更新商家设置
    */
   async updateVendorSetting(adminId: number, settingData: any) {
-    const { vendor_set_price_type, vendor_set_price_auto_value, service_fee_rate } = settingData;
+    const {
+      vendor_set_price_type,
+      vendor_set_price_auto_value,
+      service_fee_rate,
+    } = settingData;
 
     const shop = await this.prisma.shop.findFirst({
       where: {
@@ -298,7 +321,7 @@ export class MerchantShopService {
     });
 
     if (!shop) {
-      throw new Error('暂无可用店铺');
+      throw new Error("暂无可用店铺");
     }
 
     const updatedShop = await this.prisma.shop.update({
@@ -307,7 +330,9 @@ export class MerchantShopService {
       },
       data: {
         ...(vendor_set_price_type !== undefined && { vendor_set_price_type }),
-        ...(vendor_set_price_auto_value !== undefined && { vendor_set_price_auto_value }),
+        ...(vendor_set_price_auto_value !== undefined && {
+          vendor_set_price_auto_value,
+        }),
         ...(service_fee_rate !== undefined && { service_fee_rate }),
       },
     });
@@ -328,7 +353,7 @@ export class MerchantShopService {
     });
 
     if (!shop) {
-      throw new Error('店铺不存在或无权限访问');
+      throw new Error("店铺不存在或无权限访问");
     }
 
     // 更新最后登录时间

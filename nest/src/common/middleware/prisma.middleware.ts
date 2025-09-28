@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable, NestMiddleware } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, NestMiddleware } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class PrismaMiddleware implements NestMiddleware {

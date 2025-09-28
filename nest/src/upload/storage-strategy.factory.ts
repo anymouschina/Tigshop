@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { LocalStorageStrategy } from './strategies/local-storage.strategy';
-import { OssStorageStrategy } from './strategies/oss-storage.strategy';
-import { StorageStrategy, StorageType } from './interfaces/storage-strategy.interface';
-import * as path from 'path';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { LocalStorageStrategy } from "./strategies/local-storage.strategy";
+import { OssStorageStrategy } from "./strategies/oss-storage.strategy";
+import {
+  StorageStrategy,
+  StorageType,
+} from "./interfaces/storage-strategy.interface";
+import * as path from "path";
 
 @Injectable()
 export class StorageStrategyFactory {
@@ -14,7 +17,10 @@ export class StorageStrategyFactory {
   ) {}
 
   getStorageStrategy(): StorageStrategy {
-    const storageType = this.configService.get<string>('STORAGE_TYPE', StorageType.LOCAL);
+    const storageType = this.configService.get<string>(
+      "STORAGE_TYPE",
+      StorageType.LOCAL,
+    );
 
     switch (storageType) {
       case StorageType.OSS:
@@ -26,10 +32,10 @@ export class StorageStrategyFactory {
   }
 
   getUploadPath(): string {
-    const customUploadPath = this.configService.get<string>('UPLOAD_PATH');
+    const customUploadPath = this.configService.get<string>("UPLOAD_PATH");
     if (customUploadPath) {
       return customUploadPath;
     }
-    return path.join(process.cwd(), 'uploads');
+    return path.join(process.cwd(), "uploads");
   }
 }

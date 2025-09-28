@@ -1,16 +1,14 @@
 // @ts-nocheck
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 
 @Injectable()
 export class AuthorityGuard implements CanActivate {
-  constructor(
-    private readonly reflector: Reflector,
-  ) {}
+  constructor(private readonly reflector: Reflector) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredAuthorities = this.reflector.get<string[]>(
-      'authorities',
+      "authorities",
       context.getHandler(),
     );
 
@@ -47,7 +45,7 @@ export class AuthorityGuard implements CanActivate {
     }
 
     // 超级管理员拥有所有权限
-    if (adminUser.admin_type === 'admin') {
+    if (adminUser.admin_type === "admin") {
       return true;
     }
 
@@ -57,7 +55,7 @@ export class AuthorityGuard implements CanActivate {
       try {
         authList = JSON.parse(adminUser.auth_list);
       } catch (e) {
-        authList = adminUser.auth_list.split(',').filter(Boolean);
+        authList = adminUser.auth_list.split(",").filter(Boolean);
       }
     }
 
@@ -77,13 +75,17 @@ export class AuthorityGuard implements CanActivate {
           const shopAuthList = JSON.parse(adminUserShop.auth_list);
           authList = [...authList, ...shopAuthList];
         } catch (e) {
-          const shopAuthList = adminUserShop.auth_list.split(',').filter(Boolean);
+          const shopAuthList = adminUserShop.auth_list
+            .split(",")
+            .filter(Boolean);
           authList = [...authList, ...shopAuthList];
         }
       }
     }
 
     // 检查是否有所需权限
-    return requiredAuthorities.some(authority => authList.includes(authority));
+    return requiredAuthorities.some((authority) =>
+      authList.includes(authority),
+    );
   }
 }

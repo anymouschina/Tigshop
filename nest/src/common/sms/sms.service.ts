@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from "@nestjs/common";
 
 @Injectable()
 export class SmsService {
@@ -21,7 +21,7 @@ export class SmsService {
       // 模拟发送成功
       return true;
     } catch (error) {
-      this.logger.error('Failed to send SMS code:', error);
+      this.logger.error("Failed to send SMS code:", error);
       return false;
     }
   }
@@ -33,17 +33,23 @@ export class SmsService {
    * @param event 事件类型
    * @returns 验证结果
    */
-  async verifyCode(mobile: string, code: string, event: string): Promise<boolean> {
+  async verifyCode(
+    mobile: string,
+    code: string,
+    event: string,
+  ): Promise<boolean> {
     try {
       // TODO: 实现验证码验证逻辑
       // 这里应该检查缓存中的验证码是否匹配
 
-      this.logger.log(`SMS code verified for ${mobile}, code: ${code}, event: ${event}`);
+      this.logger.log(
+        `SMS code verified for ${mobile}, code: ${code}, event: ${event}`,
+      );
 
       // 模拟验证成功
       return true;
     } catch (error) {
-      this.logger.error('Failed to verify SMS code:', error);
+      this.logger.error("Failed to verify SMS code:", error);
       return false;
     }
   }

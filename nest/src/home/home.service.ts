@@ -5,7 +5,7 @@ import { PrismaService } from "../prisma/prisma.service";
 @Injectable()
 export class HomeService {
   constructor(private prisma: PrismaService) {
-    this.logger = new Logger(HomeService.name)
+    this.logger = new Logger(HomeService.name);
   }
 
   /**
@@ -597,18 +597,21 @@ export class HomeService {
 
       // 如果data字段是字符串，解析为JSON对象
       let parsedData = item.data;
-      if (typeof item.data === 'string') {
+      if (typeof item.data === "string") {
         try {
           parsedData = JSON.parse(item.data);
         } catch (parseError) {
-          this.logger.warn(`Failed to parse member decorate data for ${decorateSn}:`, parseError);
+          this.logger.warn(
+            `Failed to parse member decorate data for ${decorateSn}:`,
+            parseError,
+          );
           parsedData = item.data;
         }
       }
 
       return {
         ...item,
-        data: parsedData
+        data: parsedData,
       };
     } catch (error) {
       this.logger.debug("Error fetching member decorate:", error);

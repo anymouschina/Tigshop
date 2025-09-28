@@ -27,7 +27,8 @@ export class SearchController {
   @Public()
   @ApiOperation({ summary: "获取搜索过滤器" })
   async getSearchFilter(
-    @Query() query: {
+    @Query()
+    query: {
       page?: number;
       size?: number;
       order?: string;
@@ -80,25 +81,34 @@ export class SearchController {
 
       // 排序选项
       sortOptions: [
-        { value: "relevance", label: "相关性", selected: order === "relevance" },
+        {
+          value: "relevance",
+          label: "相关性",
+          selected: order === "relevance",
+        },
         { value: "date", label: "发布时间", selected: order === "date" },
         { value: "price", label: "价格", selected: order === "price" },
-        { value: "popularity", label: "人气", selected: order === "popularity" },
+        {
+          value: "popularity",
+          label: "人气",
+          selected: order === "popularity",
+        },
       ],
 
       // 优惠券过滤器
-      coupons: couponId > 0
-        ? [
-            {
-              id: couponId,
-              name: `优惠券 ${couponId}`,
-              selected: true,
-            },
-          ]
-        : [
-            { id: 1, name: "新用户优惠券", selected: false },
-            { id: 2, name: "满减券", selected: false },
-          ],
+      coupons:
+        couponId > 0
+          ? [
+              {
+                id: couponId,
+                name: `优惠券 ${couponId}`,
+                selected: true,
+              },
+            ]
+          : [
+              { id: 1, name: "新用户优惠券", selected: false },
+              { id: 2, name: "满减券", selected: false },
+            ],
 
       // 库存状态
       stockOptions: [
@@ -135,7 +145,8 @@ export class SearchController {
   @Public()
   @ApiOperation({ summary: "获取搜索产品" })
   async getSearchProduct(
-    @Query() query: {
+    @Query()
+    query: {
       page?: number;
       size?: number;
       order?: string;
@@ -279,10 +290,7 @@ export class SearchController {
    */
   @Get("history")
   @ApiOperation({ summary: "获取搜索历史" })
-  async getSearchHistory(
-    @Request() req,
-    @Query("limit") limit?: number,
-  ) {
+  async getSearchHistory(@Request() req, @Query("limit") limit?: number) {
     const history = await this.searchService.getSearchHistory(
       req.user.userId,
       limit ? Number(limit) : 10,
@@ -303,10 +311,7 @@ export class SearchController {
    */
   @Delete("history")
   @ApiOperation({ summary: "删除搜索历史" })
-  async deleteSearchHistory(
-    @Request() req,
-    @Query("query") query?: string,
-  ) {
+  async deleteSearchHistory(@Request() req, @Query("query") query?: string) {
     await this.searchService.deleteSearchHistory(req.user.userId, query);
 
     return {

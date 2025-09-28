@@ -1,5 +1,14 @@
 // @ts-nocheck
-import { Body, Controller, HttpCode, HttpStatus, Post, ValidationPipe, Request, Get } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  ValidationPipe,
+  Request,
+  Get,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";
 import { AdminLoginDto } from "./dto/admin.dto";
@@ -28,7 +37,7 @@ export class AdminLoginController {
     const clientIp = this.getClientIp(req);
     const data = await this.adminService.login(loginDto, clientIp);
 
-    return data
+    return data;
   }
 
   @Public()
@@ -45,9 +54,9 @@ export class AdminLoginController {
    */
   private getClientIp(req: any): string {
     // 按优先级检查不同的IP头
-    const forwarded = req.headers['x-forwarded-for'];
-    const realIp = req.headers['x-real-ip'];
-    const cfConnectingIp = req.headers['cf-connecting-ip']; // Cloudflare
+    const forwarded = req.headers["x-forwarded-for"];
+    const realIp = req.headers["x-real-ip"];
+    const cfConnectingIp = req.headers["cf-connecting-ip"]; // Cloudflare
 
     if (cfConnectingIp) {
       return cfConnectingIp;
@@ -55,13 +64,13 @@ export class AdminLoginController {
 
     if (forwarded) {
       // x-forwarded-for可能是多个IP，用逗号分隔，取第一个
-      return forwarded.split(',')[0].trim();
+      return forwarded.split(",")[0].trim();
     }
 
     if (realIp) {
       return realIp;
     }
 
-    return req.ip || '127.0.0.1';
+    return req.ip || "127.0.0.1";
   }
 }

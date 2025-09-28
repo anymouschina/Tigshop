@@ -159,7 +159,7 @@ export class LoginService {
           { mobile: mobile }, // 完全匹配（带区号）
           { mobile: { endsWith: mobile } }, // 以手机号结尾（带区号）
           { mobile: { contains: mobile } }, // 包含手机号（更宽松的匹配）
-        ]
+        ],
       };
     }
     return { mobile: mobile }; // 其他情况直接匹配
@@ -169,34 +169,43 @@ export class LoginService {
    * 根据用户名密码获取用户
    */
   private async getUserByPassword(username: string, password: string) {
-    this.logger.debug(`🔍 查询用户: username=${username}, password=${password}`);
+    this.logger.debug(
+      `🔍 查询用户: username=${username}, password=${password}`,
+    );
 
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
           { username },
           { email: username },
-          this.buildMobileQuery(username)
+          this.buildMobileQuery(username),
         ],
       },
     });
 
-    this.logger.debug(`📊 查询结果:`, user ? {
-      user_id: user.user_id,
-      username: user.username,
-      mobile: user.mobile,
-      email: user.email,
-      password: user.password,
-      status: user.status
-    } : '用户不存在');
+    this.logger.debug(
+      `📊 查询结果:`,
+      user
+        ? {
+            user_id: user.user_id,
+            username: user.username,
+            mobile: user.mobile,
+            email: user.email,
+            password: user.password,
+            status: user.status,
+          }
+        : "用户不存在",
+    );
 
     if (!user) {
       return null;
     }
 
-    this.logger.debug(`🔐 开始密码比对: 输入密码=${password}, 数据库密码=${user.password}`);
+    this.logger.debug(
+      `🔐 开始密码比对: 输入密码=${password}, 数据库密码=${user.password}`,
+    );
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    this.logger.debug(`🔐 密码比对结果: ${isPasswordValid ? '成功' : '失败'}`);
+    this.logger.debug(`🔐 密码比对结果: ${isPasswordValid ? "成功" : "失败"}`);
 
     if (!isPasswordValid) {
       return null;
@@ -284,7 +293,7 @@ export class LoginService {
   async sendMobileCode(data: any) {
     const { mobile, email, event, verifyToken } = data;
     this.logger.debug(
-      `发送验证码参数: mobile=${mobile}, email=${email}, event=${event}, verifyToken=${verifyToken}`
+      `发送验证码参数: mobile=${mobile}, email=${email}, event=${event}, verifyToken=${verifyToken}`,
     );
     // 验证参数
     if (!mobile && !email) {
@@ -483,7 +492,9 @@ export class LoginService {
       }
 
       if (verificationData.code !== code) {
-        this.logger.debug(`验证码不匹配: 期望${verificationData.code}, 实际${code}`);
+        this.logger.debug(
+          `验证码不匹配: 期望${verificationData.code}, 实际${code}`,
+        );
         return false;
       }
 

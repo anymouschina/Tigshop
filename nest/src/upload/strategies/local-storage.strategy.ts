@@ -1,19 +1,19 @@
-import { Injectable } from '@nestjs/common';
-import { StorageStrategy } from '../interfaces/storage-strategy.interface';
-import * as path from 'path';
-import * as fs from 'fs';
+import { Injectable } from "@nestjs/common";
+import { StorageStrategy } from "../interfaces/storage-strategy.interface";
+import * as path from "path";
+import * as fs from "fs";
 
 @Injectable()
 export class LocalStorageStrategy implements StorageStrategy {
   private uploadPath: string;
 
   constructor() {
-    this.uploadPath = path.join(process.cwd(), 'uploads');
+    this.uploadPath = path.join(process.cwd(), "uploads");
     this.ensureUploadDirectory();
   }
 
   private ensureUploadDirectory(): void {
-    const categories = ['image', 'video', 'audio', 'document', 'other'];
+    const categories = ["image", "video", "audio", "document", "other"];
     categories.forEach((category) => {
       const categoryPath = path.join(this.uploadPath, category);
       if (!fs.existsSync(categoryPath)) {
@@ -22,7 +22,11 @@ export class LocalStorageStrategy implements StorageStrategy {
     });
   }
 
-  async uploadFile(buffer: Buffer, key: string, contentType?: string): Promise<string> {
+  async uploadFile(
+    buffer: Buffer,
+    key: string,
+    contentType?: string,
+  ): Promise<string> {
     const filePath = path.join(this.uploadPath, key);
 
     // 确保目录存在

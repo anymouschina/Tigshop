@@ -68,8 +68,8 @@ export class UploadService {
     try {
       await sharp(originalPath)
         .resize(width, height, {
-          fit: 'cover',
-          position: 'center',
+          fit: "cover",
+          position: "center",
         })
         .toFile(thumbnailPath);
     } catch (error) {
@@ -77,7 +77,11 @@ export class UploadService {
     }
   }
 
-  private generateThumbnailFilename(originalFilename: string, width: number, height: number): string {
+  private generateThumbnailFilename(
+    originalFilename: string,
+    width: number,
+    height: number,
+  ): string {
     const ext = path.extname(originalFilename);
     const name = path.basename(originalFilename, ext);
     return `${name}_${width}x${height}${ext}`;
@@ -143,7 +147,11 @@ export class UploadService {
     file: Express.Multer.File,
     uploadDto: UploadDto,
     userId?: number,
-    options?: { generateThumbnail?: boolean; thumbnailWidth?: number; thumbnailHeight?: number },
+    options?: {
+      generateThumbnail?: boolean;
+      thumbnailWidth?: number;
+      thumbnailHeight?: number;
+    },
   ): Promise<any> {
     try {
       this.validateFile(file, uploadDto.type);
@@ -157,7 +165,7 @@ export class UploadService {
       const fileUrl = await this.storageStrategy.uploadFile(
         file.buffer,
         relativePath,
-        file.mimetype
+        file.mimetype,
       );
 
       let thumbnailUrl = null;
@@ -167,14 +175,18 @@ export class UploadService {
       if (options?.generateThumbnail && uploadDto.type === UploadType.USER) {
         const thumbWidth = options.thumbnailWidth || 200;
         const thumbHeight = options.thumbnailHeight || 200;
-        const thumbFilename = this.generateThumbnailFilename(filename, thumbWidth, thumbHeight);
+        const thumbFilename = this.generateThumbnailFilename(
+          filename,
+          thumbWidth,
+          thumbHeight,
+        );
         const thumbRelativePath = path.join(category, thumbFilename);
 
         // 生成缩略图
         const thumbnailBuffer = await sharp(file.buffer)
           .resize(thumbWidth, thumbHeight, {
-            fit: 'cover',
-            position: 'center',
+            fit: "cover",
+            position: "center",
           })
           .toBuffer();
 
@@ -182,7 +194,7 @@ export class UploadService {
         thumbnailUrl = await this.storageStrategy.uploadFile(
           thumbnailBuffer,
           thumbRelativePath,
-          file.mimetype
+          file.mimetype,
         );
 
         // 创建缩略图数据库记录

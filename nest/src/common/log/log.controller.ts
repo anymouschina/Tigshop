@@ -25,7 +25,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 @Controller("api/common")
 export class LogController {
   constructor(private readonly prisma: PrismaService) {
-    this.logger = new Logger(LogController.name)
+    this.logger = new Logger(LogController.name);
   }
 
   private async upsertStatisticsBase(dateStr: string) {
@@ -41,7 +41,7 @@ export class LogController {
         },
       });
     } catch (error) {
-      this.logger.error('Failed to upsert statistics base:', error);
+      this.logger.error("Failed to upsert statistics base:", error);
       throw error;
     }
   }
@@ -64,7 +64,7 @@ export class LogController {
         },
       });
     } catch (error) {
-      this.logger.error('Failed to log statistics detail:', error);
+      this.logger.error("Failed to log statistics detail:", error);
       throw error;
     }
   }
@@ -83,11 +83,16 @@ export class LogController {
   ) {
     try {
       // 获取用户信息或IP地址
-      const user = req.user?.userId || req.user?.user_id || req.user?.sub || req.ip || "unknown";
+      const user =
+        req.user?.userId ||
+        req.user?.user_id ||
+        req.user?.sub ||
+        req.ip ||
+        "unknown";
 
       // 获取当前日期
       const today = new Date();
-      const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
       // 更新或创建统计基础数据
       await this.upsertStatisticsBase(todayStr);
@@ -105,7 +110,7 @@ export class LogController {
       return;
     } catch (error) {
       this.logger.error("记录日志失败:", error);
-      throw new HttpException('记录日志失败', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException("记录日志失败", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -119,11 +124,16 @@ export class LogController {
   ) {
     try {
       // 获取用户信息或IP地址
-      const user = req.user?.userId || req.user?.user_id || req.user?.sub || req.ip || "unknown";
+      const user =
+        req.user?.userId ||
+        req.user?.user_id ||
+        req.user?.sub ||
+        req.ip ||
+        "unknown";
 
       // 获取当前日期
       const today = new Date();
-      const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
       // 更新或创建统计基础数据
       await this.upsertStatisticsBase(todayStr);
@@ -141,7 +151,10 @@ export class LogController {
       return;
     } catch (error) {
       this.logger.error("POST记录日志失败:", error);
-      throw new HttpException('POST记录日志失败', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        "POST记录日志失败",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

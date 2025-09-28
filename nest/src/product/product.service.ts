@@ -147,7 +147,7 @@ export class ProductService {
     }
 
     // 处理ids参数 - 与PHP版本保持一致
-    let orderBy: any = { [sortField]: sortOrder };
+    const orderBy: any = { [sortField]: sortOrder };
     if (ids) {
       // 尝试解析ids参数
       let productIdArray: number[] = [];
@@ -155,17 +155,26 @@ export class ProductService {
       try {
         // 如果ids是JSON字符串，尝试解析
         const parsed = JSON.parse(ids);
-        if (typeof parsed === 'object' && parsed.data) {
+        if (typeof parsed === "object" && parsed.data) {
           // 如果是{"code":0,"data":"2,3,4,5","message":"success"}格式，提取data字段
           const idsString = parsed.data;
-          productIdArray = idsString.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-        } else if (typeof parsed === 'string') {
+          productIdArray = idsString
+            .split(",")
+            .map((id) => parseInt(id.trim()))
+            .filter((id) => !isNaN(id));
+        } else if (typeof parsed === "string") {
           // 如果直接是字符串
-          productIdArray = parsed.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+          productIdArray = parsed
+            .split(",")
+            .map((id) => parseInt(id.trim()))
+            .filter((id) => !isNaN(id));
         }
       } catch (e) {
         // 如果JSON解析失败，直接作为逗号分隔字符串处理
-        productIdArray = ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+        productIdArray = ids
+          .split(",")
+          .map((id) => parseInt(id.trim()))
+          .filter((id) => !isNaN(id));
       }
 
       if (productIdArray.length > 0) {
@@ -177,7 +186,7 @@ export class ProductService {
 
     // 确保排序字段使用正确的数据库字段名
     const finalOrderBy: any = {};
-    if (sortField === 'productId') {
+    if (sortField === "productId") {
       finalOrderBy.product_id = sortOrder;
     } else {
       finalOrderBy[sortField] = sortOrder;
@@ -297,8 +306,8 @@ export class ProductService {
         product_id_brand_id_product_weight: {
           product_id: id,
           brand_id: product.brand_id,
-          product_weight: product.product_weight
-        }
+          product_weight: product.product_weight,
+        },
       },
     });
   }
@@ -326,8 +335,8 @@ export class ProductService {
         product_id_brand_id_product_weight: {
           product_id: id,
           brand_id: product.brand_id,
-          product_weight: product.product_weight
-        }
+          product_weight: product.product_weight,
+        },
       },
       data: { product_status: status === "ENABLE" ? 1 : 0 },
     });

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class ProductDetailService {
@@ -18,7 +18,7 @@ export class ProductDetailService {
     });
 
     if (!product) {
-      throw new Error('商品不存在');
+      throw new Error("商品不存在");
     }
 
     // 并行获取所有相关数据
@@ -105,7 +105,7 @@ export class ProductDetailService {
     }
 
     // 使用 <div data-division=1></div> 分割HTML
-    const divider = '<div data-division=1></div>';
+    const divider = "<div data-division=1></div>";
     const parts = html.split(divider);
 
     const descArr: any[] = [];
@@ -117,13 +117,13 @@ export class ProductDetailService {
       const imgMatch = part.match(/<img[^>]+src="([^"]+)"/);
       if (imgMatch) {
         descArr.push({
-          type: 'pic',
+          type: "pic",
           html: part,
           pic: imgMatch[1],
         });
       } else {
         descArr.push({
-          type: 'text',
+          type: "text",
           html: part,
         });
       }
@@ -142,10 +142,10 @@ export class ProductDetailService {
     try {
       const skuList = await this.prisma.product_sku.findMany({
         where: { product_id: productId },
-        orderBy: { sku_id: 'asc' },
+        orderBy: { sku_id: "asc" },
       });
 
-      return skuList.map(sku => ({
+      return skuList.map((sku) => ({
         skuId: sku.sku_id,
         productId: sku.product_id,
         skuSn: sku.sku_sn,
@@ -171,10 +171,10 @@ export class ProductDetailService {
     try {
       const galleryList = await this.prisma.product_gallery.findMany({
         where: { product_id: productId },
-        orderBy: { sort_order: 'asc' },
+        orderBy: { sort_order: "asc" },
       });
 
-      return galleryList.map(gallery => ({
+      return galleryList.map((gallery) => ({
         picId: gallery.pic_id,
         productId: gallery.product_id,
         picUrl: gallery.pic_url,
@@ -206,14 +206,16 @@ export class ProductDetailService {
     }
 
     // 这里可以进一步解析视频信息，暂时返回基础信息
-    return [{
-      videoId: productId,
-      productId: productId,
-      videoUrl: product.product_video,
-      videoCover: null,
-      videoDesc: '',
-      sortOrder: 1,
-    }];
+    return [
+      {
+        videoId: productId,
+        productId: productId,
+        videoUrl: product.product_video,
+        videoCover: null,
+        videoDesc: "",
+        sortOrder: 1,
+      },
+    ];
   }
 
   /**
@@ -225,7 +227,7 @@ export class ProductDetailService {
     try {
       const attributes = await this.prisma.product_attributes.findMany({
         where: { product_id: productId },
-        orderBy: { attributes_id: 'asc' },
+        orderBy: { attributes_id: "asc" },
       });
 
       // 按属性名称分组
@@ -337,13 +339,13 @@ export class ProductDetailService {
           OR: [
             {
               seckill_start_time: { lte: now },
-              seckill_end_time: { gte: now }
+              seckill_end_time: { gte: now },
             },
             {
-              seckill_start_time: { gt: now }
-            }
-          ]
-        }
+              seckill_start_time: { gt: now },
+            },
+          ],
+        },
       });
 
       if (seckillItems.length === 0) {
@@ -351,10 +353,14 @@ export class ProductDetailService {
       }
 
       // 获取当前最合适的秒杀活动（优先进行中的）
-      const activeSeckill = seckillItems.find(item =>
-        item.seckill_start_time && item.seckill_end_time &&
-        item.seckill_start_time <= now && item.seckill_end_time >= now
-      ) || seckillItems[0];
+      const activeSeckill =
+        seckillItems.find(
+          (item) =>
+            item.seckill_start_time &&
+            item.seckill_end_time &&
+            item.seckill_start_time <= now &&
+            item.seckill_end_time >= now,
+        ) || seckillItems[0];
 
       const seckillDetail = {
         seckillId: activeSeckill.seckill_id,
@@ -365,12 +371,16 @@ export class ProductDetailService {
         seckillLimitNum: activeSeckill.seckill_limit_num || 0,
         seckillStartTime: activeSeckill.seckill_start_time,
         seckillEndTime: activeSeckill.seckill_end_time,
-        status: this.getSeckillStatus(activeSeckill.seckill_start_time, activeSeckill.seckill_end_time, now)
+        status: this.getSeckillStatus(
+          activeSeckill.seckill_start_time,
+          activeSeckill.seckill_end_time,
+          now,
+        ),
       };
 
       return [seckillDetail];
     } catch (error) {
-      console.error('获取秒杀信息失败:', error);
+      console.error("获取秒杀信息失败:", error);
       return [];
     }
   }
@@ -382,7 +392,11 @@ export class ProductDetailService {
    * @param currentTime 当前时间
    * @returns 秒杀状态
    */
-  private getSeckillStatus(startTime: number, endTime: number, currentTime: number): number {
+  private getSeckillStatus(
+    startTime: number,
+    endTime: number,
+    currentTime: number,
+  ): number {
     if (currentTime < startTime) {
       return 0; // 未开始
     } else if (currentTime >= startTime && currentTime < endTime) {

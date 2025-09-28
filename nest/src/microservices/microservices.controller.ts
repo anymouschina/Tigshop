@@ -103,7 +103,10 @@ export class MicroservicesController {
   @ApiResponse({ status: 200, description: "订阅成功" })
   async subscribeToKafka(@Body() data: { topic: string }) {
     await this.microservicesService.subscribeToKafka(data.topic, (message) => {
-      this.logger.debug(`Received message from Kafka topic ${data.topic}:`, message);
+      this.logger.debug(
+        `Received message from Kafka topic ${data.topic}:`,
+        message,
+      );
     });
     return { message: "Subscribed to Kafka topic successfully" };
   }

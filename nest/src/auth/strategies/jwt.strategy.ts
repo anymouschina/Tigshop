@@ -1,7 +1,12 @@
 // @ts-nocheck
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { PassportStrategy } from "@nestjs/passport";
-import { Injectable, UnauthorizedException, Inject, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  UnauthorizedException,
+  Inject,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { JwtPayload } from "../auth.service";
 import { Request } from "express";
@@ -34,7 +39,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       passReqToCallback: true, // Pass request to validate method
     });
 
-    this.logger.debug(`JWT Strategy initialized with secret: ${config.jwtSecret}`);
+    this.logger.debug(
+      `JWT Strategy initialized with secret: ${config.jwtSecret}`,
+    );
   }
 
   /**
@@ -45,12 +52,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * @returns User object if valid, throws UnauthorizedException if invalid
    */
   async validate(req: Request, payload: JwtPayload) {
-    this.logger.debug(`JWT validate called with payload: ${JSON.stringify(payload)}`);
+    this.logger.debug(
+      `JWT validate called with payload: ${JSON.stringify(payload)}`,
+    );
 
     // Log authorization header for debugging
     const authHeader = req.headers.authorization;
-    this.logger.debug(`Authorization header: ${authHeader ? 'Present' : 'Missing'}`);
-    this.logger.debug(`JWT Secret configured: ${process.env.JWT_SECRET ? 'Yes' : 'No'}`);
+    this.logger.debug(
+      `Authorization header: ${authHeader ? "Present" : "Missing"}`,
+    );
+    this.logger.debug(
+      `JWT Secret configured: ${process.env.JWT_SECRET ? "Yes" : "No"}`,
+    );
 
     // Handle multiple token formats
     let userId: number;
@@ -71,7 +84,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       userId = payload.user_id;
       this.logger.debug(`Using snake_case format, userId: ${userId}`);
     } else {
-      this.logger.error(`Invalid token payload: cannot find user ID in payload: ${JSON.stringify(payload)}`);
+      this.logger.error(
+        `Invalid token payload: cannot find user ID in payload: ${JSON.stringify(payload)}`,
+      );
       throw new UnauthorizedException("Invalid token payload");
     }
 
@@ -84,7 +99,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { user_id: userId },
     });
 
-    this.logger.debug(`Looking for user with user_id: ${userId}, found: ${!!user}`);
+    this.logger.debug(
+      `Looking for user with user_id: ${userId}, found: ${!!user}`,
+    );
     this.logger.debug(`Payload contents: ${JSON.stringify(payload)}`);
 
     if (!user) {
@@ -95,7 +112,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Strip sensitive information
     delete user.password;
 
-    this.logger.debug(`User validation successful for user_id: ${user.user_id}, username: ${user.username}`);
+    this.logger.debug(
+      `User validation successful for user_id: ${user.user_id}, username: ${user.username}`,
+    );
     return user;
   }
 }

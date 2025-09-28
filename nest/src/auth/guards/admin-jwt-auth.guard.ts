@@ -1,10 +1,10 @@
 // @ts-nocheck
-import { Injectable } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
-export class AdminJwtAuthGuard extends AuthGuard('admin-jwt') {
+export class AdminJwtAuthGuard extends AuthGuard("admin-jwt") {
   constructor(private readonly prismaService: PrismaService) {
     super();
   }

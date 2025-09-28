@@ -135,9 +135,9 @@ export class CommentService {
     if (status) {
       // 映射状态字符串到数据库中的整数值
       const statusMap = {
-        'pending': 0,
-        'approved': 1,
-        'rejected': 2
+        pending: 0,
+        approved: 1,
+        rejected: 2,
       };
       whereClause.status = statusMap[status] || 0;
     }

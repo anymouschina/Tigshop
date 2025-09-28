@@ -5,8 +5,8 @@
  * @returns 转换后的字符串
  */
 export function convertUnderline(str: string, ucfirst = true): string {
-  const words = str.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  const result = words.replace(/\s+/g, '');
+  const words = str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  const result = words.replace(/\s+/g, "");
   return ucfirst ? result : result.charAt(0).toLowerCase() + result.slice(1);
 }
 
@@ -22,13 +22,13 @@ export function camelCase(data: any, ucfirst = false): any {
   }
 
   // 如果不是对象，直接返回（处理字符串、数字等基本类型）
-  if (typeof data !== 'object' || data === null) {
+  if (typeof data !== "object" || data === null) {
     return data;
   }
 
   // 如果是数组，递归处理每个元素
   if (Array.isArray(data)) {
-    return data.map(item => camelCase(item, ucfirst));
+    return data.map((item) => camelCase(item, ucfirst));
   }
 
   // 如果是对象，处理每个属性

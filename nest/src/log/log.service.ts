@@ -58,7 +58,7 @@ export interface LogQuery {
 @Injectable()
 export class LogService {
   constructor(private prisma: PrismaService) {
-    this.logger = new Logger(LogService.name)
+    this.logger = new Logger(LogService.name);
   }
 
   // 记录日志

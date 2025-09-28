@@ -116,7 +116,10 @@ export class AdminApiCsrfController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async refreshToken(@Request() req, @Body() body: { old_token: string }) {
-    const newToken = this.authCsrfService.refreshToken(body.old_token, req.user.userId);
+    const newToken = this.authCsrfService.refreshToken(
+      body.old_token,
+      req.user.userId,
+    );
 
     if (newToken) {
       return {

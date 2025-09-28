@@ -46,8 +46,6 @@ import { AuthDebugMiddleware } from "../auth/middlewares/auth-debug.middleware";
 })
 export class UserModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthDebugMiddleware)
-      .forRoutes('user');
+    consumer.apply(AuthDebugMiddleware).forRoutes("user");
   }
 }

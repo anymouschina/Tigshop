@@ -61,7 +61,7 @@ export class PanelService {
     // 计算增长率的辅助函数
     const calculateGrowthRate = (today: number, yesterday: number): number => {
       if (yesterday === 0) return today > 0 ? 100 : 0;
-      return Number(((today - yesterday) / yesterday * 100).toFixed(4));
+      return Number((((today - yesterday) / yesterday) * 100).toFixed(4));
     };
 
     // 今日支付金额
@@ -94,8 +94,12 @@ export class PanelService {
     });
 
     const todayOrderAmount = todayOrderAmountResult._sum.total_amount || 0;
-    const yesterdayOrderAmount = yesterdayOrderAmountResult._sum.total_amount || 0;
-    const orderAmountGrowthRate = calculateGrowthRate(Number(todayOrderAmount), Number(yesterdayOrderAmount));
+    const yesterdayOrderAmount =
+      yesterdayOrderAmountResult._sum.total_amount || 0;
+    const orderAmountGrowthRate = calculateGrowthRate(
+      Number(todayOrderAmount),
+      Number(yesterdayOrderAmount),
+    );
 
     // 今日访客数
     const todayVisitNum = await this.prisma.access_log.count({
@@ -118,34 +122,44 @@ export class PanelService {
       },
     });
 
-    const visitGrowthRate = calculateGrowthRate(todayVisitNum, yesterdayVisitNum);
+    const visitGrowthRate = calculateGrowthRate(
+      todayVisitNum,
+      yesterdayVisitNum,
+    );
 
     // 今日支付买家数
-    const todayBuyerNum = await this.prisma.order.groupBy({
-      by: ['user_id'],
-      where: {
-        shop_id: shopId,
-        pay_time: {
-          gte: todayStart,
+    const todayBuyerNum = await this.prisma.order
+      .groupBy({
+        by: ["user_id"],
+        where: {
+          shop_id: shopId,
+          pay_time: {
+            gte: todayStart,
+          },
+          pay_status: 1, // PAYMENT_PAID
         },
-        pay_status: 1, // PAYMENT_PAID
-      },
-    }).then(result => result.length);
+      })
+      .then((result) => result.length);
 
     // 昨日支付买家数
-    const yesterdayBuyerNum = await this.prisma.order.groupBy({
-      by: ['user_id'],
-      where: {
-        shop_id: shopId,
-        pay_time: {
-          gte: yesterdayStart,
-          lt: todayStart,
+    const yesterdayBuyerNum = await this.prisma.order
+      .groupBy({
+        by: ["user_id"],
+        where: {
+          shop_id: shopId,
+          pay_time: {
+            gte: yesterdayStart,
+            lt: todayStart,
+          },
+          pay_status: 1, // PAYMENT_PAID
         },
-        pay_status: 1, // PAYMENT_PAID
-      },
-    }).then(result => result.length);
+      })
+      .then((result) => result.length);
 
-    const buyerGrowthRate = calculateGrowthRate(todayBuyerNum, yesterdayBuyerNum);
+    const buyerGrowthRate = calculateGrowthRate(
+      todayBuyerNum,
+      yesterdayBuyerNum,
+    );
 
     // 今日浏览量
     const todayViewNum = await this.prisma.access_log.count({
@@ -193,7 +207,10 @@ export class PanelService {
       },
     });
 
-    const orderGrowthRate = calculateGrowthRate(todayOrderNum, yesterdayOrderNum);
+    const orderGrowthRate = calculateGrowthRate(
+      todayOrderNum,
+      yesterdayOrderNum,
+    );
 
     return {
       todayOrderAmount: Number(todayOrderAmount),
@@ -216,7 +233,9 @@ export class PanelService {
 
   async getPanelStatisticalData(shopId: number) {
     // 获取30天前的时间
-    const thirtyDaysAgo = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
+    const thirtyDaysAgo = Math.floor(
+      (Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000,
+    );
 
     // 生成横轴日期列表（最近30天）
     const horizontalAxis = [];
@@ -224,12 +243,12 @@ export class PanelService {
     for (let i = 29; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      horizontalAxis.push(date.toISOString().split('T')[0]); // YYYY-MM-DD格式
+      horizontalAxis.push(date.toISOString().split("T")[0]); // YYYY-MM-DD格式
     }
 
     // 获取访问统计
     const accessData = await this.prisma.access_log.groupBy({
-      by: ['access_time'],
+      by: ["access_time"],
       where: {
         shop_id: shopId,
         access_time: {
@@ -242,7 +261,7 @@ export class PanelService {
     });
 
     // 获取订单统计
-    const orderData = await this.prisma.$queryRaw`
+    const orderData = (await this.prisma.$queryRaw`
       SELECT
         DATE(FROM_UNIXTIME(pay_time)) as period,
         COUNT(*) as order_count,
@@ -254,26 +273,28 @@ export class PanelService {
         AND pay_status = 1
       GROUP BY DATE(FROM_UNIXTIME(pay_time))
       ORDER BY period
-    ` as Array<{ period: string; order_count: bigint; order_amount: number }>;
+    `) as Array<{ period: string; order_count: bigint; order_amount: number }>;
 
     // 构建访问统计纵轴数据
-    const longitudinalAxisAccess = horizontalAxis.map(date => {
-      const dayData = accessData.find(item => {
-        const itemDate = new Date(item.access_time * 1000).toISOString().split('T')[0];
+    const longitudinalAxisAccess = horizontalAxis.map((date) => {
+      const dayData = accessData.find((item) => {
+        const itemDate = new Date(item.access_time * 1000)
+          .toISOString()
+          .split("T")[0];
         return itemDate === date;
       });
       return dayData ? Number(dayData._count.id) : 0;
     });
 
     // 构建订单数量纵轴数据
-    const longitudinalAxisOrderNum = horizontalAxis.map(date => {
-      const dayData = orderData.find(item => item.period === date);
+    const longitudinalAxisOrderNum = horizontalAxis.map((date) => {
+      const dayData = orderData.find((item) => item.period === date);
       return dayData ? Number(dayData.order_count) : 0;
     });
 
     // 构建订单金额纵轴数据
-    const longitudinalAxisOrderAmount = horizontalAxis.map(date => {
-      const dayData = orderData.find(item => item.period === date);
+    const longitudinalAxisOrderAmount = horizontalAxis.map((date) => {
+      const dayData = orderData.find((item) => item.period === date);
       return dayData ? Number(dayData.order_amount) : 0;
     });
 

@@ -1,11 +1,6 @@
 // @ts-nocheck
 import { ApiTags, ApiOperation, ApiQuery } from "@nestjs/swagger";
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from "@nestjs/common";
+import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { TipsManageService } from "./tips-manage.service";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 
@@ -23,7 +18,7 @@ export class TipsManageController {
     return {
       code: 0,
       message: "success",
-      data: tips
-    }
+      data: tips,
+    };
   }
 }

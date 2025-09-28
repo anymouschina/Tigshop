@@ -24,35 +24,35 @@ export class LicensedService {
       where: {
         biz_code: {
           in: [
-            'licensedTypeName',
-            'deCopyright',
-            'isEnterprise',
-            'authorizedDomain',
-            'license',
-          ]
+            "licensedTypeName",
+            "deCopyright",
+            "isEnterprise",
+            "authorizedDomain",
+            "license",
+          ],
         },
-        is_del: 0
-      }
+        is_del: 0,
+      },
     });
 
     // 将配置项转换为对象
     const configObj: any = {};
-    configItems.forEach(item => {
+    configItems.forEach((item) => {
       try {
-        configObj[item.biz_code] = JSON.parse(item.biz_val || '{}');
+        configObj[item.biz_code] = JSON.parse(item.biz_val || "{}");
       } catch {
-        configObj[item.biz_code] = item.biz_val || '0';
+        configObj[item.biz_code] = item.biz_val || "0";
       }
     });
 
     // 返回PHP格式的配置对象
     return {
-      license: configObj.license || '0',
-      licensedType: configObj.licensedType || '0',
-      licensedTypeName: configObj.licensedTypeName || '0',
+      license: configObj.license || "0",
+      licensedType: configObj.licensedType || "0",
+      licensedTypeName: configObj.licensedTypeName || "0",
       isEnterprise: configObj.isEnterprise || 0,
       deCopyright: configObj.deCopyright || 0,
-      authorizedDomain: configObj.authorizedDomain || '0',
+      authorizedDomain: configObj.authorizedDomain || "0",
     };
   }
 
@@ -85,8 +85,8 @@ export class LicensedService {
     // 模拟返回数据
     return {
       licensed_id: id,
-      domain: 'localhost',
-      license_key: 'demo-license-key',
+      domain: "localhost",
+      license_key: "demo-license-key",
       status: 1,
       expire_time: Math.floor(Date.now() / 1000) + 86400 * 365,
       add_time: Math.floor(Date.now() / 1000),
@@ -115,7 +115,9 @@ export class LicensedService {
       updateData.license_key = updateDto.licenseKey;
     }
     if (updateDto.expireTime !== undefined) {
-      updateData.expire_time = Math.floor(new Date(updateDto.expireTime).getTime() / 1000);
+      updateData.expire_time = Math.floor(
+        new Date(updateDto.expireTime).getTime() / 1000,
+      );
     }
     if (updateDto.status !== undefined) {
       updateData.status = updateDto.status;

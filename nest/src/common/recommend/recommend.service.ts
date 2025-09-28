@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
 
 interface ProductItem {
   product_id: number;
@@ -12,37 +12,45 @@ export class RecommendService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getProductIds(page: number = 1, size: number = 10, userId?: number) {
-    this.logger.debug(`Getting recommended product IDs, page: ${page}, size: ${size}, userId: ${userId}`);
+    this.logger.debug(
+      `Getting recommended product IDs, page: ${page}, size: ${size}, userId: ${userId}`,
+    );
 
     try {
       let resultProductList: ProductItem[] = [];
 
       // 获取热门商品 (intro_type = hot)
-      const hotProductList = await this.getProductIdsByType({ introType: 'hot', size: 10 });
+      const hotProductList = await this.getProductIdsByType({
+        introType: "hot",
+        size: 10,
+      });
       resultProductList = [...resultProductList, ...hotProductList];
 
       // 获取精品商品 (intro_type = best)
-      const bestProductList = await this.getProductIdsByType({ introType: 'best', size: 10 });
+      const bestProductList = await this.getProductIdsByType({
+        introType: "best",
+        size: 10,
+      });
       resultProductList = [...resultProductList, ...bestProductList];
 
       // 如果用户已登录，获取用户历史浏览商品
       if (userId) {
         const user = await this.prisma.user.findUnique({
           where: { user_id: userId },
-          select: { history_product_ids: true }
+          select: { history_product_ids: true },
         });
 
         if (user?.history_product_ids) {
           // 将逗号分隔的字符串转换为数字数组
           const historyIds = user.history_product_ids
-            .split(',')
-            .map(id => parseInt(id.trim()))
-            .filter(id => !isNaN(id));
+            .split(",")
+            .map((id) => parseInt(id.trim()))
+            .filter((id) => !isNaN(id));
 
           if (historyIds.length > 0) {
             const historyProductList = await this.getProductIdsByType({
               productIds: historyIds,
-              size: 20
+              size: 20,
             });
             if (historyProductList.length > 0) {
               resultProductList = [...historyProductList, ...resultProductList];
@@ -53,34 +61,36 @@ export class RecommendService {
 
       // 根据product_id去重
       const uniqueProducts = new Map<number, ProductItem>();
-      resultProductList.forEach(product => {
+      resultProductList.forEach((product) => {
         uniqueProducts.set(product.product_id, product);
       });
       resultProductList = Array.from(uniqueProducts.values());
 
       // 如果总数不足40个，随机获取更多商品补充
-      const existingIds = resultProductList.map(p => p.product_id);
+      const existingIds = resultProductList.map((p) => p.product_id);
       if (resultProductList.length < 40) {
         const additionalProducts = await this.getProductIdsByType({
           size: 40 - resultProductList.length,
           excludeIds: existingIds,
-          sortOrder: 'rand'
+          sortOrder: "rand",
         });
         resultProductList = [...resultProductList, ...additionalProducts];
       }
 
       // 取出所有product_id并打乱顺序
-      const productIds = resultProductList.map(p => p.product_id);
+      const productIds = resultProductList.map((p) => p.product_id);
       this.shuffleArray(productIds);
 
       // 返回逗号分隔的字符串（与PHP版本一致）
-      const result = productIds.join(',');
+      const result = productIds.join(",");
 
-      this.logger.debug(`Generated ${productIds.length} recommended product IDs: ${result}`);
+      this.logger.debug(
+        `Generated ${productIds.length} recommended product IDs: ${result}`,
+      );
 
       return result;
     } catch (error) {
-      this.logger.error('Failed to get recommended product IDs', error.stack);
+      this.logger.error("Failed to get recommended product IDs", error.stack);
       throw error;
     }
   }
@@ -96,15 +106,15 @@ export class RecommendService {
 
     const where: any = {
       product_status: 1,
-      is_delete: 0
+      is_delete: 0,
     };
 
     // 根据intro_type筛选
-    if (introType === 'hot') {
+    if (introType === "hot") {
       where.is_hot = 1;
-    } else if (introType === 'best') {
+    } else if (introType === "best") {
       where.is_best = 1;
-    } else if (introType === 'new') {
+    } else if (introType === "new") {
       where.is_new = 1;
     }
 
@@ -120,7 +130,7 @@ export class RecommendService {
 
     // 构建排序
     let orderBy: any[] = [];
-    if (sortOrder === 'rand') {
+    if (sortOrder === "rand") {
       // MySQL随机排序，Prisma不支持原生RAND()，使用随机偏移
       const count = await this.prisma.product.count({ where });
       const skip = count > 0 ? Math.floor(Math.random() * count) : 0;
@@ -128,21 +138,18 @@ export class RecommendService {
         where,
         select: { product_id: true },
         skip,
-        take: size
+        take: size,
       });
       return products;
     } else {
-      orderBy = [
-        { sort_order: 'asc' },
-        { product_id: 'desc' }
-      ];
+      orderBy = [{ sort_order: "asc" }, { product_id: "desc" }];
     }
 
     return this.prisma.product.findMany({
       where,
       select: { product_id: true },
       orderBy,
-      take: size
+      take: size,
     });
   }
 

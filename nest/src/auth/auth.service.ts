@@ -398,7 +398,7 @@ export class AuthService implements OnModuleInit {
     // TODO: 实现销售员客户关系创建逻辑
     // 这里需要在数据库中创建销售员客户记录
     this.logger.debug(
-      `创建销售员客户关系: 用户ID ${userId}, 销售员ID ${salesmanId}`
+      `创建销售员客户关系: 用户ID ${userId}, 销售员ID ${salesmanId}`,
     );
   }
 
@@ -491,7 +491,7 @@ export class AuthService implements OnModuleInit {
         OR: [
           { username },
           { email: username },
-          this.buildMobileQuery(username)
+          this.buildMobileQuery(username),
         ],
       },
     });
@@ -579,7 +579,7 @@ export class AuthService implements OnModuleInit {
           { mobile: mobile }, // 完全匹配（带区号）
           { mobile: { endsWith: mobile } }, // 以手机号结尾（带区号）
           { mobile: { contains: mobile } }, // 包含手机号（更宽松的匹配）
-        ]
+        ],
       };
     }
     return { mobile: mobile }; // 其他情况直接匹配

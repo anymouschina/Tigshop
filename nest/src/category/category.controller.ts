@@ -11,7 +11,7 @@ export class CategoryController {
 
   /**
    * 获取当前分类的父级分类 - 对齐PHP版本 category/Category/parentTree
-  */
+   */
   @Get("category/category/parentTree")
   @Public()
   @ApiOperation({ summary: "获取当前分类的父级分类" })
@@ -22,7 +22,7 @@ export class CategoryController {
 
   /**
    * 根据上级获得指定分类 - 对齐PHP版本 category/Category/list
-  */
+   */
   @Get("category/category/list")
   @Public()
   @ApiOperation({ summary: "根据上级获得指定分类" })
@@ -134,9 +134,7 @@ export class CategoryController {
       intro?: string;
     },
   ) {
-    return this.categoryService.getRelateRank(
-      this.normalizeRelateQuery(query),
-    );
+    return this.categoryService.getRelateRank(this.normalizeRelateQuery(query));
   }
 
   /**

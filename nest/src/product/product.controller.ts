@@ -75,13 +75,19 @@ export class ProductController {
     const stats = await this.commentService.getCommentStats(Number(id));
 
     // 计算好评、中评、差评数量 - 对齐PHP版本的计算方式
-    const goodCount = stats.ratingDistribution.find(r => r.rating === 5)?.count || 0;
-    const moderateCount = stats.ratingDistribution.find(r => r.rating === 3 || r.rating === 4)?.count || 0;
-    const badCount = stats.ratingDistribution.find(r => r.rating === 1 || r.rating === 2)?.count || 0;
+    const goodCount =
+      stats.ratingDistribution.find((r) => r.rating === 5)?.count || 0;
+    const moderateCount =
+      stats.ratingDistribution.find((r) => r.rating === 3 || r.rating === 4)
+        ?.count || 0;
+    const badCount =
+      stats.ratingDistribution.find((r) => r.rating === 1 || r.rating === 2)
+        ?.count || 0;
 
     const total = stats.totalComments;
     const goodPercent = total > 0 ? Math.round((goodCount / total) * 100) : 0;
-    const moderatePercent = total > 0 ? Math.round((moderateCount / total) * 100) : 0;
+    const moderatePercent =
+      total > 0 ? Math.round((moderateCount / total) * 100) : 0;
     const badPercent = total > 0 ? Math.round((badCount / total) * 100) : 0;
 
     // 对齐PHP版本的响应数据结构
@@ -258,13 +264,13 @@ export class ProductController {
   @Get("log")
   @Public()
   @ApiOperation({ summary: "记录商品点击日志" })
-  async logProductClick(
-    @Query() query: { click: number; productId: number },
-  ) {
+  async logProductClick(@Query() query: { click: number; productId: number }) {
     const { click, productId } = query;
 
     // 记录点击日志 - 简化实现，实际应该写入日志表
-    console.log(`商品点击日志: productId=${productId}, click=${click}, timestamp=${new Date().toISOString()}`);
+    console.log(
+      `商品点击日志: productId=${productId}, click=${click}, timestamp=${new Date().toISOString()}`,
+    );
 
     // 返回成功响应
     return {

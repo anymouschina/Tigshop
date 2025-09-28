@@ -43,6 +43,7 @@ import { VerificationModule } from "./common/verification/verification.module";
 import { CsrfModule } from "./common/csrf/csrf.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
+import { StatisticsModule } from "./statistics/statistics.module";
 import { AppController } from "./app.contronller";
 
 @Module({
@@ -87,6 +88,7 @@ import { AppController } from "./app.contronller";
     HomeModule,
     VerificationModule,
     CsrfModule,
+    StatisticsModule,
   ],
   controllers: [AppController],
   providers: [

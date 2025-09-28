@@ -246,7 +246,7 @@ export class ConfigController {
   async getLoginProtocol() {
     const data = await this.configService.getLoginProtocolSettings();
 
-    return data
+    return data;
   }
 
   @Public()

@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
-import { AuthorityService } from './authority.service';
-import { AuthorityController } from './authority.controller';
-import { AdminUserController } from './admin-user.controller';
-import { PrismaModule } from '../../prisma/prisma.module';
-import { AuthModule } from '../../auth/auth.module';
+import { Module } from "@nestjs/common";
+import { AuthorityService } from "./authority.service";
+import { AuthorityController } from "./authority.controller";
+import { AdminUserController } from "./admin-user.controller";
+import { PrismaModule } from "../../prisma/prisma.module";
+import { AuthModule } from "../../auth/auth.module";
 
 @Module({
   imports: [PrismaModule, AuthModule],

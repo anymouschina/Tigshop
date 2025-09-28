@@ -1,5 +1,10 @@
 // @ts-nocheck
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from "@nestjs/common";
 import { InjectRedis } from "@nestjs-modules/ioredis";
 import Redis from "ioredis";
 
@@ -29,7 +34,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   };
 
   constructor(@InjectRedis() private readonly redis: Redis) {
-    this.logger = new Logger(RedisService.name)
+    this.logger = new Logger(RedisService.name);
   }
 
   async onModuleInit() {

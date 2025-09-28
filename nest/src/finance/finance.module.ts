@@ -8,8 +8,10 @@ import { UserRechargeOrderModule } from "./user-recharge-order/user-recharge-ord
 import { UserWithdrawApplyModule } from "./user-withdraw-apply/user-withdraw-apply.module";
 import { RefundApplyModule } from "./refund-apply/refund-apply.module";
 import { RefundLogModule } from "./refund-log/refund-log.module";
+import { RefundModule } from "./refund/refund.module";
 import { UserBalanceLogModule } from "./user-balance-log/user-balance-log.module";
 import { StatementModule } from "./statement/statement.module";
+import { BalanceModule } from "./balance/balance.module";
 
 @Module({
   imports: [
@@ -21,8 +23,10 @@ import { StatementModule } from "./statement/statement.module";
     UserWithdrawApplyModule,
     RefundApplyModule,
     RefundLogModule,
+    RefundModule,
     UserBalanceLogModule,
     StatementModule,
+    BalanceModule,
   ],
   exports: [
     AccountPanelModule,
@@ -33,8 +37,10 @@ import { StatementModule } from "./statement/statement.module";
     UserWithdrawApplyModule,
     RefundApplyModule,
     RefundLogModule,
+    RefundModule,
     UserBalanceLogModule,
     StatementModule,
+    BalanceModule,
   ],
 })
 export class FinanceModule {}

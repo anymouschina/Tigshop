@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { AdminJwtAuthGuard } from './admin-jwt-auth.guard';
-import { ADMIN_AUTH_KEY } from '../decorators/admin-auth.decorator';
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { AdminJwtAuthGuard } from "./admin-jwt-auth.guard";
+import { ADMIN_AUTH_KEY } from "../decorators/admin-auth.decorator";
 
 @Injectable()
 export class AdminRolesGuard extends AdminJwtAuthGuard implements CanActivate {
@@ -33,7 +33,7 @@ export class AdminRolesGuard extends AdminJwtAuthGuard implements CanActivate {
 
     // Check if user has admin role
     const user = request.user;
-    if (!user || user.role !== 'admin') {
+    if (!user || user.role !== "admin") {
       return false;
     }
 

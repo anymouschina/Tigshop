@@ -1,5 +1,10 @@
 // @ts-nocheck
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from "@nestjs/common";
 import {
   ClientProxy,
   ClientProxyFactory,
@@ -30,9 +35,9 @@ export interface MicroserviceConfig {
 export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   private clients: Map<MicroserviceType, ClientProxy> = new Map();
   private isConnected: Map<MicroserviceType, boolean> = new Map();
-  
+
   constructor(private configService: ConfigService) {
-    this.logger = new Logger(MicroservicesService.name)
+    this.logger = new Logger(MicroservicesService.name);
   }
 
   async onModuleInit() {
@@ -118,7 +123,10 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.clients.set(config.type, client);
       this.isConnected.set(config.type, false);
-      this.logger.debug(`${config.type} microservice connection failed:`, error);
+      this.logger.debug(
+        `${config.type} microservice connection failed:`,
+        error,
+      );
     }
   }
 
@@ -155,7 +163,11 @@ export class MicroservicesService implements OnModuleInit, OnModuleDestroy {
   async closeAllConnections(): Promise<void> {
     await Promise.all(
       Array.from(this.clients.values()).map((c) =>
-        c.close().catch((error) => this.logger.debug("Failed to close connection:", error)),
+        c
+          .close()
+          .catch((error) =>
+            this.logger.debug("Failed to close connection:", error),
+          ),
       ),
     );
     this.clients.clear();

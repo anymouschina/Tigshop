@@ -138,7 +138,7 @@ export class UserAuthService {
           { mobile: mobile }, // 完全匹配（带区号）
           { mobile: { endsWith: mobile } }, // 以手机号结尾（带区号）
           { mobile: { contains: mobile } }, // 包含手机号（更宽松的匹配）
-        ]
+        ],
       };
     }
     return { mobile: mobile }; // 其他情况直接匹配
@@ -150,7 +150,11 @@ export class UserAuthService {
   private async loginByPassword(username: string, password: string) {
     const user = await this.databaseService.user.findFirst({
       where: {
-        OR: [{ username }, { email: username }, this.buildMobileQuery(username)],
+        OR: [
+          { username },
+          { email: username },
+          this.buildMobileQuery(username),
+        ],
       },
     });
 

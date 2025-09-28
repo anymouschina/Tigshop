@@ -26,7 +26,7 @@ import { RedisModule } from "../redis/redis.module";
       imports: [ConfigModule],
       inject: ["CONFIG"],
       useFactory: async (config: any) => ({
-        secret: config.jwtSecret || "fallback-secret-key"
+        secret: config.jwtSecret || "fallback-secret-key",
       }),
     }),
     ConfigModule,

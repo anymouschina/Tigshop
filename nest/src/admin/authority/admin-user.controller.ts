@@ -1,30 +1,24 @@
 // @ts-nocheck
-import {
-  Controller,
-  Get,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { AdminJwtAuthGuard } from 'src/auth/guards/admin-jwt-auth.guard';
-import { AuthorityGuard } from '../../auth/guards/authority.guard';
-import { Authorities } from '../../auth/decorators/authority.decorator';
+import { Controller, Get, Request, UseGuards } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
+import { AuthorityGuard } from "../../auth/guards/authority.guard";
+import { Authorities } from "../../auth/decorators/authority.decorator";
 
-@ApiTags('Admin API - 管理员用户')
-@Controller('adminapi/authority/adminUser')
+@ApiTags("Admin API - 管理员用户")
+@Controller("adminapi/authority/adminUser")
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class AdminUserController {
-
   /**
    * 获取当前管理员详情
    */
-  @Get('mineDetail')
-  @ApiOperation({ summary: '获取当前管理员详情' })
+  @Get("mineDetail")
+  @ApiOperation({ summary: "获取当前管理员详情" })
   async mineDetail(@Request() req) {
     const userId = req.user?.userId;
     if (!userId) {
-      throw new Error('用户未登录');
+      throw new Error("用户未登录");
     }
 
     const adminUser = await req.prisma.admin_user.findUnique({
@@ -32,7 +26,7 @@ export class AdminUserController {
     });
 
     if (!adminUser) {
-      throw new Error('管理员不存在');
+      throw new Error("管理员不存在");
     }
 
     // 解析权限列表 - 基于PHP逻辑
@@ -43,7 +37,7 @@ export class AdminUserController {
       try {
         authList = JSON.parse(adminUser.auth_list);
       } catch (e) {
-        authList = adminUser.auth_list.split(',').filter(Boolean);
+        authList = adminUser.auth_list.split(",").filter(Boolean);
       }
     }
 
@@ -51,7 +45,7 @@ export class AdminUserController {
     if (adminUser.role_id && adminUser.role_id > 0) {
       const role = await req.prisma.admin_role.findUnique({
         where: { role_id: adminUser.role_id },
-        select: { authority_list: true }
+        select: { authority_list: true },
       });
 
       if (role?.authority_list) {
@@ -60,7 +54,7 @@ export class AdminUserController {
           // 合并权限，去重
           authList = [...new Set([...authList, ...roleAuthList])];
         } catch (e) {
-          const roleAuthList = role.authority_list.split(',').filter(Boolean);
+          const roleAuthList = role.authority_list.split(",").filter(Boolean);
           authList = [...new Set([...authList, ...roleAuthList])];
         }
       }
@@ -72,9 +66,9 @@ export class AdminUserController {
         where: {
           admin_id: userId,
           shop_id: adminUser.shop_id,
-          is_using: 1
+          is_using: 1,
         },
-        select: { auth_list: true }
+        select: { auth_list: true },
       });
 
       if (adminUserShop?.auth_list) {
@@ -82,7 +76,9 @@ export class AdminUserController {
           const shopAuthList = JSON.parse(adminUserShop.auth_list);
           authList = [...new Set([...authList, ...shopAuthList])];
         } catch (e) {
-          const shopAuthList = adminUserShop.auth_list.split(',').filter(Boolean);
+          const shopAuthList = adminUserShop.auth_list
+            .split(",")
+            .filter(Boolean);
           authList = [...new Set([...authList, ...shopAuthList])];
         }
       }
@@ -94,9 +90,9 @@ export class AdminUserController {
         where: {
           admin_id: userId,
           vendor_id: adminUser.suppliers_id,
-          is_using: 1
+          is_using: 1,
         },
-        select: { auth_list: true }
+        select: { auth_list: true },
       });
 
       if (adminUserVendor?.auth_list) {
@@ -104,7 +100,9 @@ export class AdminUserController {
           const vendorAuthList = JSON.parse(adminUserVendor.auth_list);
           authList = [...new Set([...authList, ...vendorAuthList])];
         } catch (e) {
-          const vendorAuthList = adminUserVendor.auth_list.split(',').filter(Boolean);
+          const vendorAuthList = adminUserVendor.auth_list
+            .split(",")
+            .filter(Boolean);
           authList = [...new Set([...authList, ...vendorAuthList])];
         }
       }
@@ -114,26 +112,31 @@ export class AdminUserController {
     const userShopRelations = await req.prisma.admin_user_shop.findMany({
       where: {
         admin_id: userId,
-        is_using: 1
-      }
+        is_using: 1,
+      },
     });
 
     // 查询对应的店铺信息
-    const shopIds = userShopRelations.map(item => item.shop_id).filter(Boolean);
-    const shops = shopIds.length > 0 ? await req.prisma.shop.findMany({
-      where: {
-        shop_id: {
-          in: shopIds
-        }
-      }
-    }) : [];
+    const shopIds = userShopRelations
+      .map((item) => item.shop_id)
+      .filter(Boolean);
+    const shops =
+      shopIds.length > 0
+        ? await req.prisma.shop.findMany({
+            where: {
+              shop_id: {
+                in: shopIds,
+              },
+            },
+          })
+        : [];
 
     // 组合数据
-    const userShop = userShopRelations.map(item => {
-      const shop = shops.find(s => s.shop_id === item.shop_id);
+    const userShop = userShopRelations.map((item) => {
+      const shop = shops.find((s) => s.shop_id === item.shop_id);
       return {
         ...item,
-        shop
+        shop,
       };
     });
 
@@ -141,26 +144,31 @@ export class AdminUserController {
     const userVendorRelations = await req.prisma.admin_user_vendor.findMany({
       where: {
         admin_id: userId,
-        is_using: 1
-      }
+        is_using: 1,
+      },
     });
 
     // 查询对应的供应商信息
-    const vendorIds = userVendorRelations.map(item => item.vendor_id).filter(Boolean);
-    const vendors = vendorIds.length > 0 ? await req.prisma.vendor.findMany({
-      where: {
-        vendor_id: {
-          in: vendorIds
-        }
-      }
-    }) : [];
+    const vendorIds = userVendorRelations
+      .map((item) => item.vendor_id)
+      .filter(Boolean);
+    const vendors =
+      vendorIds.length > 0
+        ? await req.prisma.vendor.findMany({
+            where: {
+              vendor_id: {
+                in: vendorIds,
+              },
+            },
+          })
+        : [];
 
     // 组合数据
-    const userVendor = userVendorRelations.map(item => {
-      const vendor = vendors.find(v => v.vendor_id === item.vendor_id);
+    const userVendor = userVendorRelations.map((item) => {
+      const vendor = vendors.find((v) => v.vendor_id === item.vendor_id);
       return {
         ...item,
-        vendor
+        vendor,
       };
     });
 
@@ -186,7 +194,7 @@ export class AdminUserController {
       shopId: adminUser.shop_id,
       isUsing: adminUser.is_using,
       initialPassword: adminUser.initial_password,
-      userShop: userShop.map(item => ({
+      userShop: userShop.map((item) => ({
         shop: {
           shopType: item.shop.shop_type,
           storeParentId: item.shop.store_parent_id,
@@ -216,17 +224,17 @@ export class AdminUserController {
           shopLogo: item.shop.shop_logo,
           shopMoney: item.shop.shop_money,
           shopTitle: item.shop.shop_title,
-          statusText: item.shop.status === 1 ? '开业' : '关闭',
+          statusText: item.shop.status === 1 ? "开业" : "关闭",
           merchant: null,
           adminUserShop: null,
           check: false,
           storeParentName: null,
           tips: null,
           useShopCategory: null,
-          shopShowCategory: null
-        }
+          shopShowCategory: null,
+        },
       })),
-      userVendor: userVendor.map(item => ({
+      userVendor: userVendor.map((item) => ({
         vendor: {
           vendorId: item.vendor.vendor_id,
           vendorName: item.vendor.vendor_name,
@@ -236,11 +244,11 @@ export class AdminUserController {
           loginAccount: item.vendor.login_account,
           type: item.vendor.type,
           status: item.vendor.status,
-          addTime: item.vendor.add_time
-        }
-      }))
+          addTime: item.vendor.add_time,
+        },
+      })),
     };
 
-    return result
+    return result;
   }
 }

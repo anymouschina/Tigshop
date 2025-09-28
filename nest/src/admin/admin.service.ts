@@ -19,7 +19,10 @@ export class AdminService {
   ) {}
 
   // 管理员认证
-  async login(loginDto: { username: string; password: string }, clientIp: string = '127.0.0.1') {
+  async login(
+    loginDto: { username: string; password: string },
+    clientIp: string = "127.0.0.1",
+  ) {
     // 查找管理员 - username不是唯一键，需要使用findFirst
     const admin = await this.databaseService.admin_user.findFirst({
       where: { username: loginDto.username },
@@ -58,7 +61,7 @@ export class AdminService {
       `;
     } catch (error) {
       // 如果字段不存在，跳过更新（兼容不同的数据库schema）
-      console.log('Login info update skipped:', error.message);
+      console.log("Login info update skipped:", error.message);
     }
 
     const payload = {

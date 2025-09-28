@@ -76,10 +76,7 @@ export class CategoryService {
             parent_id: item.parent_id,
             is_show: 1,
           },
-          orderBy: [
-            { sort_order: "asc" },
-            { category_id: "asc" },
-          ],
+          orderBy: [{ sort_order: "asc" }, { category_id: "asc" }],
           select: {
             category_id: true,
             parent_id: true,
@@ -142,9 +139,18 @@ export class CategoryService {
       await Promise.all([
         this.getRelatedCategoryList(product.category_id, filter.size),
         this.getOtherBrand(product.category_id, filter.size),
-        this.getCategoryRank(product.category_id, filter.rank_num, filter.product_id),
+        this.getCategoryRank(
+          product.category_id,
+          filter.rank_num,
+          filter.product_id,
+        ),
         this.getArticleList(filter.product_id, filter.size),
-        this.getLookAlso(product.category_id, filter.size, filter.intro, filter.product_id),
+        this.getLookAlso(
+          product.category_id,
+          filter.size,
+          filter.intro,
+          filter.product_id,
+        ),
       ]);
 
     return {
@@ -451,7 +457,9 @@ export class CategoryService {
       .map((item) => ({
         ...item,
         market_price: Number(item.market_price || 0),
-        diff: Math.abs(Number(item.market_price || 0) - Number(product.market_price || 0)),
+        diff: Math.abs(
+          Number(item.market_price || 0) - Number(product.market_price || 0),
+        ),
       }))
       .sort((a, b) => a.diff - b.diff)
       .slice(0, size);
@@ -484,9 +492,7 @@ export class CategoryService {
       ...cateRank.map((p) => p.product_id),
     ];
 
-    const productsWithPrice = await this.attachProductSkuAndPrice(
-      mergedIds,
-    );
+    const productsWithPrice = await this.attachProductSkuAndPrice(mergedIds);
 
     const buildList = (list: any[]) =>
       list.map(({ diff, ...item }) => ({
@@ -626,11 +632,13 @@ export class CategoryService {
     uniqueIds.forEach((id) => {
       const skuList = grouped.get(id) || [];
       const price = skuList.length
-        ? skuList.reduce((min, current) =>
-            current.sku_price > 0 && (min === 0 || current.sku_price < min)
-              ? current.sku_price
-              : min,
-          0)
+        ? skuList.reduce(
+            (min, current) =>
+              current.sku_price > 0 && (min === 0 || current.sku_price < min)
+                ? current.sku_price
+                : min,
+            0,
+          )
         : priceFallback.get(id) || 0;
 
       result.set(id, {

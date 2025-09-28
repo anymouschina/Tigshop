@@ -13,7 +13,17 @@ import { SkuModule } from "./sku/sku.module";
 @Module({
   imports: [CommentModule, SkuModule],
   controllers: [ProductController, CategoryController, BrandController],
-  providers: [ProductService, ProductDetailService, CategoryService, BrandService],
-  exports: [ProductService, ProductDetailService, CategoryService, BrandService],
+  providers: [
+    ProductService,
+    ProductDetailService,
+    CategoryService,
+    BrandService,
+  ],
+  exports: [
+    ProductService,
+    ProductDetailService,
+    CategoryService,
+    BrandService,
+  ],
 })
 export class ProductModule {}

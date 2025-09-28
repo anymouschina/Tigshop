@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { GetUserMessageListDto } from './dto/user-message.dto';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { GetUserMessageListDto } from "./dto/user-message.dto";
 
 @Injectable()
 export class UserMessageService {
@@ -28,7 +28,7 @@ export class UserMessageService {
       const [messages, total] = await Promise.all([
         this.prisma.user_message.findMany({
           where,
-          orderBy: [{ add_time: 'desc' }, { message_id: 'desc' }],
+          orderBy: [{ add_time: "desc" }, { message_id: "desc" }],
           skip,
           take: size,
         }),
@@ -76,7 +76,10 @@ export class UserMessageService {
 
       return result.count > 0;
     } catch (error) {
-      this.logger.error(`标记消息已读失败，消息ID: ${messageId}, 用户ID: ${userId}`, error);
+      this.logger.error(
+        `标记消息已读失败，消息ID: ${messageId}, 用户ID: ${userId}`,
+        error,
+      );
       return false;
     }
   }
@@ -117,7 +120,10 @@ export class UserMessageService {
 
       return result.count > 0;
     } catch (error) {
-      this.logger.error(`删除消息失败，消息ID: ${messageId}, 用户ID: ${userId}`, error);
+      this.logger.error(
+        `删除消息失败，消息ID: ${messageId}, 用户ID: ${userId}`,
+        error,
+      );
       return false;
     }
   }
@@ -143,7 +149,7 @@ export class UserMessageService {
    * 格式化时间戳
    */
   private formatTimestamp(timestamp: number): string {
-    if (!timestamp) return '';
+    if (!timestamp) return "";
 
     const date = new Date(timestamp * 1000);
     const now = new Date();
@@ -151,16 +157,16 @@ export class UserMessageService {
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
     if (days === 0) {
-      return date.toLocaleTimeString('zh-CN', {
-        hour: '2-digit',
-        minute: '2-digit'
+      return date.toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } else if (days === 1) {
-      return '昨天';
+      return "昨天";
     } else if (days < 7) {
       return `${days}天前`;
     } else {
-      return date.toLocaleDateString('zh-CN');
+      return date.toLocaleDateString("zh-CN");
     }
   }
 }

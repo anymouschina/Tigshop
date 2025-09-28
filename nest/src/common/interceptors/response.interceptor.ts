@@ -20,7 +20,7 @@ export class ResponseInterceptor<T>
     return next.handle().pipe(
       map((data) => {
         // 如果返回的数据已经是PHP格式（包含code字段），直接返回
-        if (data && typeof data === 'object' && 'code' in data) {
+        if (data && typeof data === "object" && "code" in data) {
           return data;
         }
 

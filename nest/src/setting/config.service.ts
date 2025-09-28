@@ -280,7 +280,9 @@ export class ConfigService {
               update_time: new Date(),
             },
           });
-          this.logger.debug(`创建配置项: ${config.biz_code} - ${config.comment}`);
+          this.logger.debug(
+            `创建配置项: ${config.biz_code} - ${config.comment}`,
+          );
         } else {
           // 更新配置项（如果需要）
           await this.prisma.config.update({
@@ -290,7 +292,9 @@ export class ConfigService {
               update_time: new Date(),
             },
           });
-          this.logger.debug(`更新配置项: ${config.biz_code} - ${config.comment}`);
+          this.logger.debug(
+            `更新配置项: ${config.biz_code} - ${config.comment}`,
+          );
         }
       } catch (error) {
         this.logger.debug(`处理配置项 ${config.biz_code} 时出错:`, error);
@@ -725,7 +729,10 @@ export class ConfigService {
       .replace(/'/g, "&#039;");
   }
 
-  private async upsertConfigValue(bizCode: string, value: string): Promise<void> {
+  private async upsertConfigValue(
+    bizCode: string,
+    value: string,
+  ): Promise<void> {
     const existingConfig = await this.prisma.config.findFirst({
       where: { biz_code: bizCode },
     });

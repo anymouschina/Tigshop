@@ -175,7 +175,7 @@ export class UserService {
     // 移除敏感信息
     const { password, ...userDetails } = user;
 
-    return userDetails
+    return userDetails;
   }
 
   /**
@@ -433,11 +433,16 @@ export class UserService {
         description: "用户头像",
       };
 
-      const uploadResult = await this.uploadService.uploadFile(file, uploadDto, user_id, {
-        generateThumbnail: true,
-        thumbnailWidth: 200,
-        thumbnailHeight: 200,
-      });
+      const uploadResult = await this.uploadService.uploadFile(
+        file,
+        uploadDto,
+        user_id,
+        {
+          generateThumbnail: true,
+          thumbnailWidth: 200,
+          thumbnailHeight: 200,
+        },
+      );
 
       // 更新用户头像 - 对齐PHP版本，使用缩略图作为头像
       const avatarUrl = uploadResult.thumbnailUrl || uploadResult.fileUrl;

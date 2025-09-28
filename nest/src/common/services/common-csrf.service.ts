@@ -4,7 +4,10 @@ import { randomBytes } from "crypto";
 
 @Injectable()
 export class CommonCsrfService {
-  private readonly tokens = new Map<string, { expires: number; userId?: number }>();
+  private readonly tokens = new Map<
+    string,
+    { expires: number; userId?: number }
+  >();
   private readonly TOKEN_TTL = 3600; // 1 hour
 
   generateToken(userId?: number): string {
@@ -32,7 +35,11 @@ export class CommonCsrfService {
     }
 
     // If userId is provided, verify it matches
-    if (userId !== undefined && tokenData.userId !== undefined && tokenData.userId !== userId) {
+    if (
+      userId !== undefined &&
+      tokenData.userId !== undefined &&
+      tokenData.userId !== userId
+    ) {
       return false;
     }
 

@@ -44,7 +44,11 @@ export class UserFeedbackController {
   @ApiOperation({ summary: "获取产品反馈列表" })
   async list(
     @Query()
-    query: { productId?: number; page?: number; size?: number },
+    query: {
+      productId?: number;
+      page?: number;
+      size?: number;
+    },
   ) {
     return this.userFeedbackService.getProductFeedbackList(query);
   }
