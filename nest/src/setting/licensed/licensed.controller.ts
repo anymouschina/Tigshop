@@ -34,17 +34,11 @@ export class LicensedController {
   @Authorities("adminapi/setting/licensed/index")
   @ApiOperation({ summary: "获取授权列表" })
   async index(@Query() queryDto: LicensedQueryDto) {
-    const result = await this.licensedService.findAll(queryDto);
+    const config = await this.licensedService.getConfig();
     return {
-      code: 200,
-      msg: "获取成功",
-      data: {
-        records: result.records,
-        total: result.total,
-        page: result.page,
-        size: result.size,
-        totalPages: result.totalPages,
-      },
+      code: 0,
+      message: "success",
+      data: config,
     };
   }
 
@@ -70,7 +64,7 @@ export class LicensedController {
   @Authorities("adminapi/setting/licensed/config")
   @ApiOperation({ summary: "获取配置信息" })
   async config() {
-    const config = await this.licensedService.getConfig();
+    const config = await this.licensedService.getStatusConfig();
     return {
       code: 200,
       msg: "获取成功",
