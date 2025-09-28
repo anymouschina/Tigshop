@@ -481,12 +481,12 @@ export class SalesStatisticsService {
         where: {
           shop_id: shopId,
           is_del: 0,
-          order_status: { in: [2, 3, 5] },
+          order_status: { in: [1, 2, 5] }, // ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED
         },
       }).catch(() => 0),
       
       this.prisma.$queryRaw({
-        sql: `SELECT COUNT(*) as count FROM order_item oi JOIN \`order\` o ON oi.order_id = o.order_id WHERE o.is_del = 0 AND o.order_status IN (2, 3, 5) AND o.pay_status = 2 ${shopId > -1 ? `AND oi.shop_id = ${shopId}` : ''}`,
+        sql: `SELECT COUNT(*) as count FROM order_item oi JOIN \`order\` o ON oi.order_id = o.order_id WHERE o.is_del = 0 AND o.order_status IN (1, 2, 5) -- ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED AND o.pay_status = 2 ${shopId > -1 ? `AND oi.shop_id = ${shopId}` : ''}`,
         args: [],
       }).then((result: any) => (Array.isArray(result) && result.length > 0) ? Number(result[0].count) : 0).catch(() => 0),
       
@@ -494,7 +494,7 @@ export class SalesStatisticsService {
         where: {
           shop_id: shopId,
           is_del: 0,
-          order_status: { in: [2, 3, 5] },
+          order_status: { in: [1, 2, 5] }, // ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED
         },
         _sum: { total_amount: true },
       }).catch(() => ({ _sum: { total_amount: 0 } })),
@@ -505,7 +505,7 @@ export class SalesStatisticsService {
         where: {
           shop_id: shopId,
           is_del: 0,
-          order_status: { in: [2, 3, 5] },
+          order_status: { in: [1, 2, 5] }, // ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED
         },
         select: { user_id: true },
         distinct: ['user_id'],
@@ -531,17 +531,17 @@ export class SalesStatisticsService {
     const purchaseRate = userNum > 0 ? Number(((orderNum / userNum) * 100).toFixed(2)) : 0;
   
     return {
-      order_num: orderNum,
-      order_product_num: totalOrderProducts,
-      order_total_amount: Number(orderTotalAmount.toFixed(2)),
-      user_num: totalUsers,
-      consumer_membership_num: consumerMembershipNum,
-      capita_consumption: capitaConsumption,
-      click_count: clickCountValue,
-      click_rate: clickRate,
-      order_rate: orderRate,
-      consumer_membership_rate: consumerMembershipRate,
-      purchase_rate: purchaseRate,
+      orderNum: orderNum,
+      orderProductNum: totalOrderProducts,
+      orderTotalAmount: Number(orderTotalAmount.toFixed(2)),
+      userNum: totalUsers,
+      consumerMembershipNum: consumerMembershipNum,
+      capitaConsumption: capitaConsumption,
+      clickCount: clickCountValue,
+      clickRate: clickRate,
+      orderRate: orderRate,
+      consumerMembershipRate: consumerMembershipRate,
+      purchaseRate: purchaseRate,
     };
   }
   
