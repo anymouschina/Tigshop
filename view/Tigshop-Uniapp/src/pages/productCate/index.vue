@@ -1,12 +1,12 @@
 <template>
     <tig-layout>
-        <template v-if="configStore.categoryDecorateType === 1">
+        <template v-if="configStore.categoryDecorateType === '1'">
             <styleOneCate v-model:cat-id="catId" />
         </template>
-        <template v-if="configStore.categoryDecorateType === 2">
+        <template v-if="configStore.categoryDecorateType === '2'">
             <styleTwoCate :height="height" />
         </template>
-        <template v-if="configStore.categoryDecorateType === 3">
+        <template v-if="configStore.categoryDecorateType === '3'">
             <styleThreeCate :height="height" />
         </template>
     </tig-layout>
