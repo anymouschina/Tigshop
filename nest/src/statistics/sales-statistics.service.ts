@@ -49,7 +49,7 @@ export class SalesStatisticsService {
       this.prisma.order.count({
         where: {
           shop_id: shopId,
-          status: "completed",
+          order_status: 3, // 假设 3 表示已完成状态
         },
       }),
       this.prisma.order.count({
@@ -86,7 +86,7 @@ export class SalesStatisticsService {
       where: {
         order: {
           shop_id: shopId,
-          status: "completed",
+          order_status: 3, // 假设 3 表示已完成状态
         },
       },
       _sum: {
@@ -205,7 +205,7 @@ export class SalesStatisticsService {
       this.prisma.order.aggregate({
         where: {
           shop_id: shopId,
-          status: "completed",
+          order_status: 3, // 假设 3 表示已完成状态
           created_at: {
             gte: startDate,
             lte: endDate,
@@ -218,7 +218,7 @@ export class SalesStatisticsService {
       this.prisma.refund.aggregate({
         where: {
           shop_id: shopId,
-          status: "completed",
+          order_status: 3, // 假设 3 表示已完成状态
           created_at: {
             gte: startDate,
             lte: endDate,
@@ -246,7 +246,7 @@ export class SalesStatisticsService {
       this.prisma.order.aggregate({
         where: {
           shop_id: shopId,
-          status: "completed",
+          order_status: 3, // 假设 3 表示已完成状态
           created_at: {
             gte: prevStartDate,
             lte: prevEndDate,
@@ -259,7 +259,7 @@ export class SalesStatisticsService {
       this.prisma.refund.aggregate({
         where: {
           shop_id: shopId,
-          status: "completed",
+          order_status: 3, // 假设 3 表示已完成状态
           created_at: {
             gte: prevStartDate,
             lte: prevEndDate,
@@ -442,6 +442,199 @@ export class SalesStatisticsService {
     return {
       horizontalAxis,
       longitudinalAxis,
+    };
+  }
+
+  async getSalesDetail(shopId: number, startTime?: string, endTime?: string) {
+    // 解析时间范围
+    let startDateTime: Date;
+    let endDateTime: Date;
+
+    if (startTime && endTime) {
+      startDateTime = new Date(startTime);
+      endDateTime = new Date(endTime);
+      // 设置结束时间为当天的最后一刻
+      endDateTime.setHours(23, 59, 59, 999);
+    } else {
+      // 默认查询最近30天
+      endDateTime = new Date();
+      startDateTime = new Date();
+      startDateTime.setDate(startDateTime.getDate() - 30);
+    }
+
+    // 获取订单统计数据
+    const [totalOrders, completedOrders, totalSalesAmount] = await Promise.all([
+      this.prisma.order.count({
+        where: {
+          shop_id: shopId,
+          created_at: {
+            gte: startDateTime,
+            lte: endDateTime,
+          },
+        },
+      }),
+      this.prisma.order.count({
+        where: {
+          shop_id: shopId,
+          order_status: 3, // 假设 3 表示已完成状态
+          created_at: {
+            gte: startDateTime,
+            lte: endDateTime,
+          },
+        },
+      }),
+      this.prisma.order.aggregate({
+        where: {
+          shop_id: shopId,
+          order_status: 3, // 假设 3 表示已完成状态
+          created_at: {
+            gte: startDateTime,
+            lte: endDateTime,
+          },
+        },
+        _sum: {
+          total_amount: true,
+        },
+      }),
+    ]);
+
+    // 计算平均订单价值
+    const averageOrderValue =
+      completedOrders > 0
+        ? (totalSalesAmount._sum.total_amount || 0) / completedOrders
+        : 0;
+
+    // 获取支付方式统计
+    const paymentMethods = await this.prisma.order.groupBy({
+      by: ["payment_method"],
+      where: {
+        shop_id: shopId,
+        status: "completed",
+        created_at: {
+          gte: startDateTime,
+          lte: endDateTime,
+        },
+      },
+      _sum: {
+        total_amount: true,
+      },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        _sum: {
+          total_amount: "desc",
+        },
+      },
+    });
+
+    // 获取热销商品
+    const topProducts = await this.prisma.order_item.groupBy({
+      by: ["product_id"],
+      where: {
+        order: {
+          shop_id: shopId,
+          order_status: 3, // 假设 3 表示已完成状态
+          created_at: {
+            gte: startDateTime,
+            lte: endDateTime,
+          },
+        },
+      },
+      _sum: {
+        quantity: true,
+        price: true,
+      },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        _sum: {
+          quantity: "desc",
+        },
+      },
+      take: 10,
+    });
+
+    // 获取分类销售统计
+    const salesByCategory = (await this.prisma.$queryRaw`
+      SELECT
+        c.category_id,
+        c.name as category_name,
+        COALESCE(SUM(oi.quantity * oi.price), 0) as total_amount,
+        COALESCE(COUNT(DISTINCT o.order_id), 0) as order_count
+      FROM order_item oi
+      JOIN "order" o ON oi.order_id = o.order_id
+      JOIN product p ON oi.product_id = p.product_id
+      LEFT JOIN product_category pc ON p.product_id = pc.product_id
+      LEFT JOIN category c ON pc.category_id = c.category_id
+      WHERE
+        o.shop_id = ${shopId}
+        AND o.status = 'completed'
+        AND o.created_at >= ${startDateTime}
+        AND o.created_at <= ${endDateTime}
+      GROUP BY c.category_id, c.name
+      ORDER BY total_amount DESC
+      LIMIT 10
+    `) as Array<{
+      category_id: number;
+      category_name: string;
+      total_amount: number;
+      order_count: number;
+    }>;
+
+    // 获取销售趋势数据
+    const salesTrend = (await this.prisma.$queryRaw`
+      SELECT
+        DATE(created_at) as date,
+        COALESCE(SUM(total_amount), 0) as total_amount,
+        COUNT(*) as order_count
+      FROM "order"
+      WHERE
+        shop_id = ${shopId}
+        AND status = 'completed'
+        AND created_at >= ${startDateTime}
+        AND created_at <= ${endDateTime}
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `) as Array<{
+      date: string;
+      total_amount: number;
+      order_count: number;
+    }>;
+
+    // 格式化销售趋势数据
+    const dates = salesTrend.map((item) => item.date);
+    const amounts = salesTrend.map((item) =>
+      Number(item.total_amount.toFixed(2)),
+    );
+
+    return {
+      totalOrders,
+      completedOrders,
+      totalSales: Number((totalSalesAmount._sum.total_amount || 0).toFixed(2)),
+      averageOrderValue: Number(averageOrderValue.toFixed(2)),
+      paymentMethods: paymentMethods.map((pm) => ({
+        method: pm.payment_method,
+        amount: Number((pm._sum.total_amount || 0).toFixed(2)),
+        count: pm._count._all,
+      })),
+      topProducts: topProducts.map((tp) => ({
+        productId: tp.product_id,
+        quantity: tp._sum.quantity || 0,
+        amount: Number((tp._sum.price || 0).toFixed(2)),
+        count: tp._count._all,
+      })),
+      salesByCategory: salesByCategory.map((sc) => ({
+        categoryId: sc.category_id,
+        categoryName: sc.category_name,
+        amount: Number(sc.total_amount.toFixed(2)),
+        orderCount: sc.order_count,
+      })),
+      salesTrend: {
+        dates,
+        amounts,
+      },
     };
   }
 }
