@@ -109,9 +109,9 @@ export class BrandService {
       where.brand_is_hot = filter.brand_is_hot;
     }
 
-    // 审核状态筛选
+    // 审核状态筛选（使用 check_status 0/1/2）
     if (filter.status !== undefined && filter.status !== -1) {
-      where.status = filter.status;
+      where.check_status = filter.status;
     }
 
     // 店铺筛选
@@ -154,7 +154,7 @@ export class BrandService {
       ...result,
       show_name: BRAND_SHOW_STATUS[result.is_show],
       hot_name: BRAND_HOT_STATUS[result.brand_is_hot],
-      status_name: BRAND_AUDIT_STATUS[result.status],
+      status_name: BRAND_AUDIT_STATUS[result.check_status],
     };
   }
 
@@ -186,8 +186,7 @@ export class BrandService {
       data.first_word = this.generateFirstWord(data.brand_name);
     }
 
-    // 设置审核状态（管理员直接通过，店铺创建的需要审核）
-    const status = data.shop_id === 0 ? 1 : 0;
+    const check_status = data.shop_id === 0 ? 1 : 0;
 
     const result = await this.prisma.brand.create({
       data: {
@@ -202,7 +201,7 @@ export class BrandService {
         sort_order: data.sort_order || 50,
         shop_id: data.shop_id || 0,
         brand_en_name: data.brand_en_name || "",
-        status,
+        check_status,
       },
     });
 
@@ -365,7 +364,7 @@ export class BrandService {
   async searchBrands(word: string = ""): Promise<any> {
     const where: any = {
       is_show: 1,
-      status: 1, // 只搜索审核通过的品牌
+      check_status: 1, // 只搜索审核通过的品牌
     };
 
     if (word) {
@@ -403,7 +402,7 @@ export class BrandService {
     const firstWords = await this.prisma.brand.findMany({
       where: {
         is_show: 1,
-        status: 1,
+        check_status: 1,
         first_word: {
           not: "",
         },
@@ -428,7 +427,7 @@ export class BrandService {
     const result = await this.prisma.brand.findMany({
       where: {
         is_show: 1,
-        status: 1,
+        check_status: 1,
         first_word: {
           not: "",
         },
@@ -479,7 +478,7 @@ export class BrandService {
       throw new Error("品牌不存在");
     }
 
-    if (brand.status !== 0) {
+    if (brand.check_status !== 0) {
       throw new Error("该品牌已经审核过了");
     }
 
@@ -490,7 +489,7 @@ export class BrandService {
     const result = await this.prisma.brand.update({
       where: { brand_id: brandId },
       data: {
-        status,
+        check_status: status,
         reject_remark: rejectRemark || "",
       },
     });
@@ -501,7 +500,7 @@ export class BrandService {
   // 获取待审核品牌列表
   async getAuditList(filter: any): Promise<any> {
     const where: any = {
-      status: 0, // 待审核状态
+      check_status: 0, // 待审核状态
     };
 
     if (filter.keyword) {
@@ -551,7 +550,7 @@ export class BrandService {
   async getAuditWaitCount(): Promise<number> {
     return this.prisma.brand.count({
       where: {
-        status: 0,
+        check_status: 0,
       },
     });
   }
@@ -562,7 +561,7 @@ export class BrandService {
       where: {
         brand_is_hot: 1,
         is_show: 1,
-        status: 1,
+        check_status: 1,
       },
       orderBy: [{ sort_order: "asc" }, { brand_id: "desc" }],
       take: 10,
@@ -576,7 +575,7 @@ export class BrandService {
     const brands = await this.prisma.brand.findMany({
       where: {
         is_show: 1,
-        status: 1,
+        check_status: 1,
       },
       orderBy: [{ sort_order: "asc" }, { brand_id: "desc" }],
     });
