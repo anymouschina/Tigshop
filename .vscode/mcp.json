@@ -1,0 +1,12 @@
+{
+    "servers": {
+        "promptX": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@promptx/mcp-server"
+            ]
+        }
+    }
+}

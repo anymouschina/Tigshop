@@ -467,7 +467,7 @@ export class CommonConfigService {
         backgroundRepeat: "",
         backgroundSize: 2,
         style: 0,
-        title: "Tigshop",
+        title: "",
         titleColor: "",
         headerStyle: 1,
         titleBackgroundColor: "",
