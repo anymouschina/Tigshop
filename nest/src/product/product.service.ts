@@ -150,39 +150,48 @@ export class ProductService {
 
     // 处理ids参数 - 与PHP版本保持一致
     const orderBy: any = { [sortField]: sortOrder };
-    if (ids) {
-      // 尝试解析ids参数
-      let productIdArray: number[] = [];
-
-      try {
-        // 如果ids是JSON字符串，尝试解析
-        const parsed = JSON.parse(ids);
-        if (typeof parsed === "object" && parsed.data) {
-          // 如果是{"code":0,"data":"2,3,4,5","message":"success"}格式，提取data字段
-          const idsString = parsed.data;
-          productIdArray = idsString
-            .split(",")
-            .map((id) => parseInt(id.trim()))
-            .filter((id) => !isNaN(id));
-        } else if (typeof parsed === "string") {
-          // 如果直接是字符串
-          productIdArray = parsed
-            .split(",")
-            .map((id) => parseInt(id.trim()))
-            .filter((id) => !isNaN(id));
+    if (ids !== undefined && ids !== null && ids !== "") {
+      // 统一归一成数字ID数组
+      const toNumberArray = (val: any): number[] => {
+        if (val == null) return [];
+        if (Array.isArray(val)) {
+          return val
+            .map((x) => Number(String(x).trim()))
+            .filter((n) => !Number.isNaN(n));
         }
-      } catch (e) {
-        // 如果JSON解析失败，直接作为逗号分隔字符串处理
-        productIdArray = ids
-          .split(",")
-          .map((id) => parseInt(id.trim()))
-          .filter((id) => !isNaN(id));
+        if (typeof val === "number") return Number.isNaN(val) ? [] : [val];
+        if (typeof val === "string") {
+          // 直接以逗号分隔
+          return val
+            .split(",")
+            .map((x) => Number(x.trim()))
+            .filter((n) => !Number.isNaN(n));
+        }
+        if (typeof val === "object") {
+          // 兼容 { data: "1,2,3" }
+          if (val.data) return toNumberArray(val.data);
+          // 兼容纯数组对象
+          if (Array.isArray(val)) return toNumberArray(val);
+        }
+        return [];
+      };
+
+      let productIdArray: number[] = [];
+      // 先尝试JSON解析字符串
+      if (typeof ids === "string") {
+        try {
+          const parsed = JSON.parse(ids);
+          productIdArray = toNumberArray(parsed);
+        } catch (_) {
+          productIdArray = toNumberArray(ids);
+        }
+      } else {
+        productIdArray = toNumberArray(ids);
       }
 
       if (productIdArray.length > 0) {
         where.product_id = { in: productIdArray };
-        // Prisma不支持MySQL的FIELD()函数，所以这里按ID数组顺序查询需要手动处理
-        // 这里先使用默认排序，实际应用中可能需要在内存中重新排序
+        // 提示：如果需要按传入顺序排序，需在取回后手动排序。
       }
     }
 
