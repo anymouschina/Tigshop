@@ -17,7 +17,7 @@ export class LogisticsCompanyService {
 
     // 如果不需要分页，返回所有结果
     if (!filter.paging) {
-      const results = await this.prisma.logisticsCompany.findMany({
+      const results = await this.prisma.logistics_company.findMany({
         where,
         orderBy,
       });
@@ -28,7 +28,7 @@ export class LogisticsCompanyService {
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
 
-    const results = await this.prisma.logisticsCompany.findMany({
+    const results = await this.prisma.logistics_company.findMany({
       where,
       orderBy,
       skip,
@@ -40,7 +40,7 @@ export class LogisticsCompanyService {
 
   async getFilterCount(filter: any): Promise<number> {
     const where = this.buildWhereClause(filter);
-    return this.prisma.logisticsCompany.count({ where });
+    return this.prisma.logistics_company.count({ where });
   }
 
   private buildWhereClause(filter: any): any {
@@ -77,8 +77,23 @@ export class LogisticsCompanyService {
 
   private buildOrderBy(filter: any): any {
     if (filter.sort_field && filter.sort_order) {
+      // 仅允许白名单字段排序，避免潜在注入/错误字段
+      const allowed = new Set([
+        "logistics_id",
+        "sort_order",
+        "is_show",
+        "logistics_code",
+        "logistics_name",
+        "shop_id",
+      ]);
+      const sortField = allowed.has(filter.sort_field)
+        ? filter.sort_field
+        : "logistics_id";
+      const sortOrder = ["asc", "desc"].includes(String(filter.sort_order))
+        ? filter.sort_order
+        : "desc";
       return {
-        [filter.sort_field]: filter.sort_order,
+        [sortField]: sortOrder,
       };
     }
     return {
@@ -87,7 +102,7 @@ export class LogisticsCompanyService {
   }
 
   async getDetail(id: number): Promise<any> {
-    const result = await this.prisma.logisticsCompany.findUnique({
+    const result = await this.prisma.logistics_company.findUnique({
       where: { logistics_id: id },
     });
 
@@ -112,7 +127,7 @@ export class LogisticsCompanyService {
       throw new Error("物流公司代码不能为空");
     }
 
-    const result = await this.prisma.logisticsCompany.create({
+    const result = await this.prisma.logistics_company.create({
       data: {
         logistics_name: data.logistics_name,
         logistics_code: data.logistics_code,
@@ -124,7 +139,10 @@ export class LogisticsCompanyService {
         month_code: data.month_code || "",
         send_site: data.send_site || "",
         send_staff: data.send_staff || "",
-        exp_type: data.exp_type || 0,
+        // schema 中为 String?，转为字符串存储
+        exp_type: data.exp_type !== undefined && data.exp_type !== null
+          ? String(data.exp_type)
+          : "",
         shop_id: data.shop_id || 1,
       },
     });
@@ -133,7 +151,7 @@ export class LogisticsCompanyService {
   }
 
   async update(id: number, data: any): Promise<any> {
-    const logisticsCompany = await this.prisma.logisticsCompany.findUnique({
+    const logisticsCompany = await this.prisma.logistics_company.findUnique({
       where: { logistics_id: id },
     });
 
@@ -176,7 +194,7 @@ export class LogisticsCompanyService {
     if (data.exp_type !== undefined) updateData.exp_type = data.exp_type;
     if (data.shop_id !== undefined) updateData.shop_id = data.shop_id;
 
-    const result = await this.prisma.logisticsCompany.update({
+    const result = await this.prisma.logistics_company.update({
       where: { logistics_id: id },
       data: updateData,
     });
@@ -185,7 +203,7 @@ export class LogisticsCompanyService {
   }
 
   async updateField(id: number, field: string, value: any): Promise<boolean> {
-    const logisticsCompany = await this.prisma.logisticsCompany.findUnique({
+    const logisticsCompany = await this.prisma.logistics_company.findUnique({
       where: { logistics_id: id },
     });
 
@@ -205,7 +223,7 @@ export class LogisticsCompanyService {
       throw new Error("不支持的字段");
     }
 
-    const result = await this.prisma.logisticsCompany.update({
+    const result = await this.prisma.logistics_company.update({
       where: { logistics_id: id },
       data: {
         [field]: value,
@@ -216,7 +234,7 @@ export class LogisticsCompanyService {
   }
 
   async delete(id: number): Promise<boolean> {
-    const logisticsCompany = await this.prisma.logisticsCompany.findUnique({
+    const logisticsCompany = await this.prisma.logistics_company.findUnique({
       where: { logistics_id: id },
     });
 
@@ -224,7 +242,7 @@ export class LogisticsCompanyService {
       throw new Error("物流公司不存在");
     }
 
-    const result = await this.prisma.logisticsCompany.delete({
+    const result = await this.prisma.logistics_company.delete({
       where: { logistics_id: id },
     });
 
@@ -232,7 +250,7 @@ export class LogisticsCompanyService {
   }
 
   async batchDelete(ids: number[]): Promise<boolean> {
-    await this.prisma.logisticsCompany.deleteMany({
+    await this.prisma.logistics_company.deleteMany({
       where: { logistics_id: { in: ids } },
     });
 
@@ -241,7 +259,7 @@ export class LogisticsCompanyService {
 
   // 获取所有可用的物流公司
   async getAllAvailableCompanies(): Promise<any[]> {
-    const results = await this.prisma.logisticsCompany.findMany({
+    const results = await this.prisma.logistics_company.findMany({
       where: {
         is_show: 1,
       },
@@ -260,7 +278,7 @@ export class LogisticsCompanyService {
 
   // 根据物流代码获取物流公司信息
   async getCompanyByCode(code: string): Promise<any> {
-    const result = await this.prisma.logisticsCompany.findFirst({
+    const result = await this.prisma.logistics_company.findFirst({
       where: {
         logistics_code: code,
         is_show: 1,

@@ -23,6 +23,8 @@
 
 ### 2) 设置 Setting / Config
 - [x] /adminapi/setting/config 基本查询与保存能力（已存在）
+- [x] 物流公司列表兼容路由：GET /adminapi/setting/logisticsCompany/list（复用 LogisticsCompanyService，支持 paging=false 返回扁平数组）
+  - 说明：服务层已使用 prisma.logistics_company（snake_case）访问模型，运行时报错问题已核对为模型名引用一致；如仍报错，请检查 PrismaService 注入与请求上下文。
 - [ ] 配置项分组与初始化覆盖度核验（补文档/示例）
 
 ### 3) 素材库（Gallery）
@@ -87,33 +89,36 @@
     - 订单管理 Order（新增了兼容服务与控制器 skeleton）
       - [x] GET  /adminapi/order/list（已添加 AdminOrderCompatController.list）
       - [x] GET  /adminapi/order/detail（已添加 AdminOrderCompatController.detail）
+      - [x] 兼容别名 /adminapi/order/order/*（list/detail/updateField/log/*/deliver/... 导出等均已提供别名，消除 404）
       - [ ] GET  /adminapi/order/orderWayBill（获取电子面单）
       - [ ] GET  /adminapi/order/parentDetail（父订单详情）
-      - [ ] POST /adminapi/order/deliver（订单发货）
-      - [ ] POST /adminapi/order/confirmReceipt（订单收货）
-      - [ ] POST /adminapi/order/modifyConsignee（修改收货人）
-      - [ ] POST /adminapi/order/modifyShipping（修改配送信息）
-      - [ ] POST /adminapi/order/modifyMoney（修改订单金额）
-      - [ ] POST /adminapi/order/cancelOrder（取消订单）
-      - [ ] POST /adminapi/order/setConfirm（设置为已确认）
-      - [ ] POST /adminapi/order/delOrder（订单软删除）
+      - [x] POST /adminapi/order/deliver（订单发货）
+      - [x] POST /adminapi/order/confirmReceipt（订单收货）
+      - [x] POST /adminapi/order/modifyConsignee（修改收货人）
+      - [x] POST /adminapi/order/modifyShipping（修改配送信息）
+      - [x] POST /adminapi/order/modifyMoney（修改订单金额）
+      - [x] POST /adminapi/order/cancelOrder（取消订单）
+      - [x] POST /adminapi/order/setConfirm（设置为已确认）
+      - [x] POST /adminapi/order/delOrder（订单软删除）
       - [ ] POST /adminapi/order/splitStoreOrder（订单拆分）
-      - [ ] POST /adminapi/order/setPaid（设置为已支付）
+      - [x] POST /adminapi/order/setPaid（设置为已支付）
       - [ ] POST /adminapi/order/modifyProduct（修改商品信息）
       - [ ] POST /adminapi/order/getAddProductInfo（添加商品前置信息）
-      - [ ] POST /adminapi/order/setAdminNote（设置商家备注）
+      - [x] POST /adminapi/order/setAdminNote（设置商家备注）
       - [ ] GET  /adminapi/order/orderPrint（打印订单）
       - [ ] GET  /adminapi/order/orderPrintBill（打印电子面单）
-      - [x] GET  /adminapi/order/getExportItemList（导出标签列表，占位）
-      - [x] POST /adminapi/order/saveExportItem（保存导出字段，已添加 AdminOrderCompatController.saveExportItem）
-      - [x] GET  /adminapi/order/exportItemInfo（标签详情，占位）
-      - [ ] GET  /adminapi/order/orderExport（导出 CSV）
+      - [x] GET  /adminapi/order/getExportItemList（导出标签列表，已实现）
+      - [x] POST /adminapi/order/saveExportItem（保存导出字段，已实现）
+      - [x] GET  /adminapi/order/exportItemInfo（标签详情，已实现）
+      - [x] GET  /adminapi/order/orderExport（导出 CSV，已实现）
       - [ ] POST /adminapi/order/batch（批量操作）
       - [ ] GET  /adminapi/order/severalDetail（批量详情）
       - [ ] GET  /adminapi/order/printSeveral（批量打印）
-      - [ ] GET  /adminapi/order/shippingInfo（物流信息）
+      - [x] GET  /adminapi/order/shippingInfo（物流信息）
       - [ ] GET  /adminapi/order/getOrderPageConfig（订单列表配置）
       - [x] POST /adminapi/order/changeOrderStatus 或 updateField（字段更新：已添加 updateField 简化版）
+    - 打印 Print（与 PHP /adminapi/print/* 对齐）
+      - [x] POST /adminapi/print/print/hasEnabled（已新增兼容控制器 AdminPrintCompatController，按店铺判断是否存在启用打印机）
     - 日志管理 OrderLog
       - [x] GET  /adminapi/order/log/list（已添加 AdminOrderCompatController.logList）
       - [x] POST /adminapi/order/log/create（已添加 AdminOrderCompatController.logCreate）
@@ -138,6 +143,11 @@
 - 2025-09-29：创建本清单，勾选已完成模块（品牌、分类、翻译、素材库、商品分组、商品评价、商品列表 ids 过滤、ShippingTplList、ProductBatch 兼容路由、面板统计）。
 - 2025-09-29：商品域补齐并对齐完成（除“Product Batch 实际处理逻辑”外）：新增并接通 /adminapi 兼容控制器 productInventoryLog/priceInquiry/productAttributesTpl/productServices；修复若干 Prisma 字段映射问题；统一返回驼峰；productServices 增加 updateField；属性模板 update 入参支持 tplId/tplName/tplData 并序列化存储，create 返回新建记录。
 - 2025-09-29：新增“订单 Orders（Admin 兼容）”任务清单；创建 AdminOrderCompatService/Controller，接通 /adminapi/order 的 list/detail/updateField、日志 list/create、saveExportItem（占位），其余路由按 PHP 清单列入待办。
+- 2025-09-29：订单模块推进：接通发货/收货/金额/收货人/配送/取消/确认/删除/设置已支付/设置商家备注/物流信息等核心操作；实现导出能力（getExportItemList/exportItemInfo/orderExport），保存导出字段偏好至 admin_user.order_export；其余打印、电子面单、批量等仍为占位。
+- 2025-09-29：消除 404：
+  - 新增 /adminapi/order/order/* 路由别名，映射至现有处理（列表、详情、日志、更新字段、发货/收货/金额/收货人/配送/取消/确认/删除/已支付、导出相关、批量/打印占位等）。
+  - 新增 /adminapi/setting/logisticsCompany/list 兼容控制器，复用 LogisticsCompanyService，支持 paging=false 返回扁平数组；paging=true 返回 {records,total,size,current,pages}。
+  - 新增 /adminapi/print/print/hasEnabled 兼容接口，判断是否存在启用打印机（status=1 且按当前管理员 shop_id 过滤）。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：

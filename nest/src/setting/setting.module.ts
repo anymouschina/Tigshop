@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Module } from "@nestjs/common";
 import { LogisticsCompanyController } from "./logistics-company.controller";
+import { AdminLogisticsCompanyCompatController } from "./admin-logistics-company-compat.controller";
 import { LogisticsCompanyService } from "./logistics-company.service";
 import { MessageTemplateController } from "./message-template.controller";
 import { MessageTemplateService } from "./message-template.service";
@@ -18,6 +19,7 @@ import { ShippingTypeModule } from "./shipping-type/shippingType.module";
 import { GalleryModule } from "./gallery/gallery.module";
 import { FriendLinksModule } from "./friend-links/friendLinks.module";
 import { LicensedModule } from "./licensed/licensed.module";
+import { AdminPrintCompatController } from "src/print/admin-print-compat.controller";
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { LicensedModule } from "./licensed/licensed.module";
   ],
   controllers: [
     LogisticsCompanyController,
+    AdminLogisticsCompanyCompatController,
+    AdminPrintCompatController,
     MessageTemplateController,
     MailTemplateController,
     MessageTypeController,
