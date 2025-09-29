@@ -152,6 +152,17 @@ export class AdminApiCategoryController {
   }
 
   /**
+   * 兼容前端 product/category/del
+   */
+  @Post("del")
+  @ApiOperation({ summary: "删除商品分类（admin 兼容）" })
+  async del(@Body() body: any) {
+    const id = Number(body.id);
+    await this.categoryService.delete(id);
+    return { code: 0, message: "success" };
+  }
+
+  /**
    * 兼容前端 product/category/create
    * 入参同上但不带 id
    */
@@ -161,6 +172,19 @@ export class AdminApiCategoryController {
     const data = this.mapCamelToSnake(body);
     const created = await this.categoryService.create(data);
     return { code: 0, message: "success", data: { categoryId: created.category_id } };
+  }
+
+  /**
+   * 兼容前端 product/category/moveCat
+   * body: { id, targetCatId }
+   */
+  @Post("moveCat")
+  @ApiOperation({ summary: "商品转移分类（admin 兼容）" })
+  async moveCat(@Body() body: any) {
+    const id = Number(body.id);
+    const targetCatId = Number(body.targetCatId);
+    await this.categoryService.moveCategoryProducts(id, targetCatId);
+    return { code: 0, message: "success" };
   }
 
   /**

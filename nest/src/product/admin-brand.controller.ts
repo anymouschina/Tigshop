@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { BrandService } from "./brand.service";
@@ -46,5 +46,111 @@ export class AdminApiBrandController {
   async auditWaitNum() {
     const count = await this.brandService.getAuditWaitCount();
     return { code: 0, message: "success", data: count };
+  }
+
+  /**
+   * 兼容前端 product/brand/list
+   */
+  @Get("list")
+  @ApiOperation({ summary: "品牌列表（admin）" })
+  async list(@Query() query: any) {
+    const page = Number(query.page) || 1;
+    const size = Number(query.size) || 15;
+    const mappedFilter = {
+      keyword: query.keyword ?? "",
+      is_show: query.isShow !== undefined && query.isShow !== "" ? Number(query.isShow) : undefined,
+      status: query.status !== undefined && query.status !== "" ? Number(query.status) : undefined,
+      brand_is_hot: query.brandIsHot !== undefined && query.brandIsHot !== "" ? Number(query.brandIsHot) : undefined,
+      first_word: query.firstWord || undefined,
+      shop_id: query.shopId ? Number(query.shopId) : undefined,
+      sort_field: query.sortField || undefined,
+      sort_order: query.sortOrder || undefined,
+      page,
+      size,
+      paging: true,
+    };
+
+    const [records, total] = await Promise.all([
+      this.brandService.getFilterResult(mappedFilter),
+      this.brandService.getFilterCount(mappedFilter),
+    ]);
+
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: records.map((r: any) => ({
+          brandId: r.brand_id,
+          brandName: r.brand_name,
+          brandLogo: r.brand_logo,
+          firstWord: r.first_word,
+          brandIsHot: r.brand_is_hot,
+          isShow: r.is_show,
+          sortOrder: r.sort_order,
+        })),
+        filter: { page },
+        total,
+      },
+    };
+  }
+
+  /**
+   * 兼容前端 product/brand/create
+   */
+  @Post("create")
+  @ApiOperation({ summary: "创建品牌（admin）" })
+  async create(@Body() body: any) {
+    // 前端传驼峰 -> 下划线
+    const data: any = {
+      brand_name: body.brandName,
+      brand_logo: body.brandLogo,
+      brand_desc: body.brandDesc,
+      sort_order: body.sortOrder,
+      first_word: body.firstWord,
+      is_show: body.isShow,
+      brand_is_hot: body.brandIsHot,
+      brand_type: body.brandType,
+      brand_en_name: body.brandEnName,
+      site_url: body.siteUrl,
+      shop_id: body.shopId ? Number(body.shopId) : 0,
+    };
+    const created = await this.brandService.create(data);
+    return { code: 0, message: "success", data: { brandId: created.brand_id } };
+  }
+
+  /**
+   * 兼容前端 product/brand/auditList
+   */
+  @Get("auditList")
+  @ApiOperation({ summary: "待审核品牌列表（admin）" })
+  async auditList(@Query() query: any) {
+    const page = Number(query.page) || 1;
+    const size = Number(query.size) || 15;
+    const filter = {
+      keyword: query.keyword ?? "",
+      shop_id: query.shopId ? Number(query.shopId) : undefined,
+      sort_field: query.sortField || undefined,
+      sort_order: query.sortOrder || undefined,
+      page,
+      size,
+    };
+    const result = await this.brandService.getAuditList(filter);
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: result.records.map((r: any) => ({
+          brandId: r.brand_id,
+          brandName: r.brand_name,
+          brandLogo: r.brand_logo,
+          firstWord: r.first_word,
+          brandIsHot: r.brand_is_hot,
+          isShow: r.is_show,
+          sortOrder: r.sort_order,
+        })),
+        filter: { page },
+        total: result.total,
+      },
+    };
   }
 }
