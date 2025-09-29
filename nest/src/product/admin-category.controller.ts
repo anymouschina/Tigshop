@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { CategoryService } from "./category.service";
@@ -117,7 +117,7 @@ export class AdminApiCategoryController {
     const data = {
       categoryId: item.category_id,
       parentId: item.parent_id,
-  parentName,
+      parentName,
       categoryName: item.category_name,
       shortName: item.short_name,
       categoryPic: item.category_pic,
@@ -136,5 +136,100 @@ export class AdminApiCategoryController {
     };
 
     return { code: 0, message: "success", data };
+  }
+
+  /**
+   * 兼容前端 product/category/update
+   * 入参(body)：{ id, categoryName, shortName, parentId, categoryPic, categoryIco, measureUnit, seoTitle, searchKeywords, keywords, categoryDesc, isHot, isShow, sortOrder }
+   */
+  @Post("update")
+  @ApiOperation({ summary: "更新商品分类（admin 兼容）" })
+  async update(@Body() body: any) {
+    const id = Number(body.id);
+    const data = this.mapCamelToSnake(body);
+    await this.categoryService.update(id, data);
+    return { code: 0, message: "success" };
+  }
+
+  /**
+   * 兼容前端 product/category/create
+   * 入参同上但不带 id
+   */
+  @Post("create")
+  @ApiOperation({ summary: "创建商品分类（admin 兼容）" })
+  async create(@Body() body: any) {
+    const data = this.mapCamelToSnake(body);
+    const created = await this.categoryService.create(data);
+    return { code: 0, message: "success", data: { categoryId: created.category_id } };
+  }
+
+  /**
+   * 兼容前端 product/category/updateField
+   * 入参(body)：{ id, field, value }；field 可能为驼峰，需转换
+   */
+  @Post("updateField")
+  @ApiOperation({ summary: "更新商品分类字段（admin 兼容）" })
+  async updateField(@Body() body: any) {
+    const id = Number(body.id);
+    const field = this.mapFieldCamelToSnake(String(body.field));
+    const value = body.value;
+    await this.categoryService.updateField(id, field, value);
+    return { code: 0, message: "success" };
+  }
+
+  // 将驼峰表单数据转换为服务层所需下划线字段
+  private mapCamelToSnake(input: any) {
+    const out: any = {};
+    const map: Record<string, string> = {
+      categoryId: "category_id",
+      categoryName: "category_name",
+      shortName: "short_name",
+      parentId: "parent_id",
+      categoryPic: "category_pic",
+      categoryIco: "category_ico",
+      measureUnit: "measure_unit",
+      seoTitle: "seo_title",
+      searchKeywords: "search_keywords",
+      keywords: "keywords",
+      categoryDesc: "category_desc",
+      isHot: "is_hot",
+      isShow: "is_show",
+      sortOrder: "sort_order",
+    };
+
+    for (const k of Object.keys(input || {})) {
+      if (k === "id") continue; // id 单独处理
+      const target = map[k];
+      if (target !== undefined) {
+        out[target] = input[k];
+      }
+    }
+    // 兜底：若已有下划线字段也允许直接透传
+    const allowed = new Set(Object.values(map));
+    for (const k of Object.keys(input || {})) {
+      if (allowed.has(k)) out[k] = input[k];
+    }
+    return out;
+  }
+
+  // 将单字段名从驼峰映射为下划线
+  private mapFieldCamelToSnake(field: string) {
+    const map: Record<string, string> = {
+      categoryId: "category_id",
+      categoryName: "category_name",
+      shortName: "short_name",
+      parentId: "parent_id",
+      categoryPic: "category_pic",
+      categoryIco: "category_ico",
+      measureUnit: "measure_unit",
+      seoTitle: "seo_title",
+      searchKeywords: "search_keywords",
+      keywords: "keywords",
+      categoryDesc: "category_desc",
+      isHot: "is_hot",
+      isShow: "is_show",
+      sortOrder: "sort_order",
+    };
+    return map[field] ?? field;
   }
 }
