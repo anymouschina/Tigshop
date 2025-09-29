@@ -210,6 +210,23 @@ export class ProductService {
   }
 
   /**
+   * 获取待审核商品数量（用于admin列表角标）
+   * 对齐PHP：check_status=0 且 is_delete=0
+   */
+  async getWaitingCheckedCount(query?: any): Promise<number> {
+    const where: any = {
+      check_status: 0,
+      is_delete: 0,
+    };
+    // 按店铺筛选（若有）
+    if (query?.shopId) {
+      where.shop_id = Number(query.shopId);
+    }
+    const count = await this.prisma.product.count({ where });
+    return count;
+  }
+
+  /**
    * 根据ID查找商品
    * @param id 商品ID
    * @returns 商品详情

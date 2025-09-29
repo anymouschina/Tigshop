@@ -36,6 +36,92 @@ export class MerchantShopController {
   }
 
   /**
+   * 管理后台-店铺列表（表格） 对应前端 merchant/shop/list
+   */
+  @Get("list")
+  @ApiOperation({ summary: "获取店铺列表（admin）" })
+  async getShopList(@Query() query: any) {
+    // 简化：支持分页、关键词
+    const page = Number(query.page) || 1;
+    const size = Number(query.size) || 15;
+    const skip = (page - 1) * size;
+    const keyword = (query.keyword || "").trim();
+
+    const where: any = {};
+    if (keyword) {
+      where.OR = [
+        { shop_title: { contains: keyword } },
+        { contact_mobile: { contains: keyword } },
+      ];
+    }
+
+    const [records, total] = await Promise.all([
+      this.merchantShopService.prisma.shop.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { shop_id: "desc" },
+        select: {
+          shop_id: true,
+          shop_title: true,
+          shop_logo: true,
+          status: true,
+          add_time: true,
+        },
+      }),
+      this.merchantShopService.prisma.shop.count({ where }),
+    ]);
+
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: records.map((r) => ({
+          shopId: r.shop_id,
+          shopTitle: r.shop_title,
+          storeLogo: r.shop_logo,
+          shopStatus: r.status,
+          addTime: r.add_time,
+        })),
+        filter: { page },
+        total,
+      },
+    };
+  }
+
+  /**
+   * 管理后台-店铺下拉（选择器） 对应前端 merchant/shop/shopList
+   */
+  @Get("shopList")
+  @ApiOperation({ summary: "获取店铺下拉列表（admin）" })
+  async getShopSelectList(@Query() query: any) {
+    const keyword = (query.keyword || "").trim();
+    const size = Number(query.size) || 50;
+    const where: any = {};
+    if (keyword) {
+      where.shop_title = { contains: keyword };
+    }
+    const records = await this.merchantShopService.prisma.shop.findMany({
+      where,
+      take: size,
+      orderBy: { shop_id: "desc" },
+      select: { shop_id: true, shop_title: true },
+    });
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: records.map((r) => ({
+          shopId: r.shop_id,
+          shopTitle: r.shop_title,
+        })),
+        filter: { page: 1 },
+        total: records.length,
+      },
+    };
+  }
+
+  /**
    * 获取店铺详情
    */
   @Get("detail")

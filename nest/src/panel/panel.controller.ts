@@ -6,7 +6,9 @@ import {
   Query,
   UseGuards,
   Request,
+  Res,
 } from "@nestjs/common";
+import { Response } from "express";
 import { PanelService } from "./panel.service";
 import { AuthorityService } from "../authority/authority.service";
 import { SalesStatisticsService } from "../statistics/sales-statistics.service";
@@ -385,6 +387,203 @@ export class PanelController {
       return {
         code: 1,
         message: error?.message || "获取用户统计失败",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  @Get("statisticsUser/userConsumptionRanking")
+  @Authorities("statisticsUserManage")
+  @ApiOperation({ summary: "会员消费排行" })
+  @ApiQuery({ name: "startTime", required: true, description: "开始日期 YYYY-MM-DD" })
+  @ApiQuery({ name: "endTime", required: true, description: "结束日期 YYYY-MM-DD" })
+  @ApiQuery({ name: "keyword", required: false, description: "会员名称或手机号" })
+  @ApiQuery({ name: "page", required: false, description: "页码" })
+  @ApiQuery({ name: "size", required: false, description: "每页数量" })
+  @ApiQuery({ name: "sortField", required: false, description: "排序字段：orderAmount|orderNum" })
+  @ApiQuery({ name: "sortOrder", required: false, description: "排序规则：asc|desc" })
+  async getUserConsumptionRanking(
+    @Query()
+    query: {
+      startTime?: string;
+      endTime?: string;
+      keyword?: string;
+      page?: number | string;
+      size?: number | string;
+      sortField?: string;
+      sortOrder?: string;
+      isExport?: string;
+    },
+    @Request() req,
+    @Res() res: Response,
+  ) {
+    try {
+      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      if (!userShopInfo) {
+        return res.json({
+          code: 1,
+          message: "用户未登录",
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const { shopId } = userShopInfo;
+      const page = Number(query.page || 1);
+      const size = Number(query.size || 15);
+      const result = await this.panelService.getUserConsumptionRanking(shopId, {
+        startTime: query.startTime,
+        endTime: query.endTime,
+        keyword: query.keyword || "",
+        page,
+        size,
+        sortField: query.sortField,
+        sortOrder: query.sortOrder,
+        isExport: query.isExport,
+      });
+
+      if (query.isExport === "1") {
+        // 导出 CSV
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="user-consumption-ranking-${new Date().toISOString().slice(0,10)}.csv"`,
+        );
+        return res.send(result);
+      }
+
+      return res.json({
+        code: 0,
+        message: "success",
+        data: result,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      return res.json({
+        code: 1,
+        message: error?.message || "获取消费排行失败",
+        data: null,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  @Get("statisticsUser/addUserTrends")
+  @Authorities("statisticsUserManage")
+  @ApiOperation({ summary: "新增会员趋势" })
+  @ApiQuery({ name: "dateType", required: true, description: "统计维度：1=年(按月)、2=月(按日)、3=日(按时)" })
+  @ApiQuery({ name: "startEndTime", required: true, description: "维度起点：年(YYYY)/月(YYYY-MM)/日(YYYY-MM-DD)" })
+  @ApiQuery({ name: "isExport", required: false, description: "是否导出，1=导出CSV" })
+  async getAddUserTrends(
+    @Query()
+    query: {
+      dateType?: string;
+      startEndTime?: string;
+      isExport?: string;
+    },
+    @Request() req,
+    @Res() res: Response,
+  ) {
+    try {
+      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      if (!userShopInfo) {
+        return res.json({
+          code: 1,
+          message: "用户未登录",
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const dateType = String(query?.dateType ?? "1");
+      const startEndTime = String(query?.startEndTime ?? "");
+      if (!startEndTime) {
+        return res.json({
+          code: 1,
+          message: "请选择日期",
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const result = await this.panelService.getAddUserTrends(dateType, startEndTime);
+
+      if (query.isExport === "1") {
+        // 导出CSV：时间,新增人数
+        const header = "时间,新增人数\n";
+        const csvBody = result.horizontalAxis
+          .map((label: string | number, idx: number) => `${label},${result.longitudinalAxis[idx] ?? 0}`)
+          .join("\n");
+        const csv = header + csvBody;
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="add-user-trends-${new Date().toISOString().slice(0,10)}.csv"`,
+        );
+        return res.send(Buffer.from(csv, "utf8"));
+      }
+
+      return res.json({
+        code: 0,
+        message: "success",
+        data: result,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      return res.json({
+        code: 1,
+        message: error?.message || "获取新增会员趋势失败",
+        data: null,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  @Get("statisticsAccess/accessStatistics")
+  @Authorities("statisticsAccessManage")
+  @ApiOperation({ summary: "访问统计（点击量/访客数）" })
+  @ApiQuery({ name: "startTime", required: true, description: "开始日期 YYYY-MM-DD" })
+  @ApiQuery({ name: "endTime", required: true, description: "结束日期 YYYY-MM-DD" })
+  @ApiQuery({ name: "isHits", required: true, description: "是否点击量：1=点击量，0=访客数" })
+  async getAccessStatistics(
+    @Query()
+    query: {
+      startTime: string;
+      endTime: string;
+      isHits: string | number;
+    },
+    @Request() req,
+  ) {
+    try {
+      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      if (!userShopInfo) {
+        return {
+          code: 1,
+          message: "用户未登录",
+          data: null,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      const { shopId } = userShopInfo;
+      const result = await this.panelService.getAccessStatistics(
+        shopId,
+        query.startTime,
+        query.endTime,
+        Number(query.isHits || 0),
+      );
+
+      return {
+        code: 0,
+        message: "success",
+        data: result,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        code: 1,
+        message: error?.message || "获取访问统计失败",
         data: null,
         timestamp: new Date().toISOString(),
       };
