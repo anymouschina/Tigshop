@@ -140,7 +140,7 @@ export class PanelController {
   }
 
   @Get("salesStatistics/list")
-  @Authorities("consoleManage")
+  @Authorities("statisticsSalesManage")
   @ApiOperation({ summary: "获取销售统计数据列表" })
   @ApiQuery({ name: "statisticType", description: "统计类型" })
   @ApiQuery({ name: "startEndTime", description: "开始结束时间" })
@@ -150,13 +150,13 @@ export class PanelController {
     @Query()
     query: {
       statisticType?: number;
-      startEndTime?: string;
+      startEndTime?: string | string[];
       dateType?: number;
+      isExport?: number;
     },
     @Request() req,
   ) {
     try {
-      // 验证用户并获取shopId
       const userShopInfo =
         await this.panelService.validateUserAndGetShopId(req);
       if (!userShopInfo) {
@@ -169,123 +169,32 @@ export class PanelController {
       }
 
       const { shopId } = userShopInfo;
-      const { statisticType = 1, startEndTime, dateType = 1 } = query;
-
-      // 确保总是返回相同的数据结构，包含 salesData 和 salesStatisticsData
-      let salesData;
-      let salesStatisticsData;
-
-      if (statisticType === 1) {
-        // 获取销售数据和统计数据
-        salesData = await this.salesStatisticsService.getSalesData(
-          shopId,
-          startEndTime,
-        );
-        salesStatisticsData =
-          await this.salesStatisticsService.getSalesStatisticsData(
-            shopId,
-            dateType,
-            startEndTime,
-          );
-      } else {
-        // 其他统计类型 - 返回默认数据结构
-        salesData = {
-          productPayment: 0,
-          productPaymentGrowthRate: 0,
-          productRefund: 0,
-          prevProductRefund: 0,
-          productRefundGrowthRate: 0,
-          rechargeAmount: 0,
-          rechargeAmountGrowthRate: 0,
-          turnover: 0,
-          turnoverGrowthRate: 0,
-          balancePayment: 0,
-          balancePaymentGrowthRate: 0,
-        };
-
-        salesStatisticsData = {
-          horizontalAxis: [
-            "01",
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08",
-            "09",
-            "10",
-            "11",
-            "12",
-          ],
-          longitudinalAxis: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        };
-      }
-
-      const data = {
-        salesData,
-        salesStatisticsData,
-        statistic_type: statisticType,
-        date_type: dateType,
-        time_range: startEndTime,
-      };
+      const result = await this.salesStatisticsService.getSalesData({
+        shop_id: shopId,
+        statistic_type: Number(query?.statisticType ?? 1),
+        date_type: Number(query?.dateType ?? 1),
+        start_end_time: query?.startEndTime,
+        is_export: Number(query?.isExport ?? 0),
+      });
 
       return {
         code: 0,
         message: "success",
-        data,
+        data: result,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      // 即使出错也返回默认的数据结构
-      const data = {
-        salesData: {
-          productPayment: 0,
-          productPaymentGrowthRate: 0,
-          productRefund: 0,
-          prevProductRefund: 0,
-          productRefundGrowthRate: 0,
-          rechargeAmount: 0,
-          rechargeAmountGrowthRate: 0,
-          turnover: 0,
-          turnoverGrowthRate: 0,
-          balancePayment: 0,
-          balancePaymentGrowthRate: 0,
-        },
-        salesStatisticsData: {
-          horizontalAxis: [
-            "01",
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08",
-            "09",
-            "10",
-            "11",
-            "12",
-          ],
-          longitudinalAxis: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        },
-        statistic_type: query.statisticType,
-        date_type: query.dateType,
-        time_range: query.startEndTime,
-        error: error.message,
-      };
-
       return {
-        code: 0,
-        message: "获取统计数据成功（部分数据可能为默认值）",
-        data,
+        code: 1,
+        message: error?.message || "获取销售统计失败",
+        data: null,
         timestamp: new Date().toISOString(),
       };
     }
   }
 
   @Get("salesStatistics/salesIndicators")
-  @Authorities("consoleManage")
+  @Authorities("statisticsSalesManage")
   @ApiOperation({ summary: "获取销售指标数据" })
   @ApiResponse({ status: 200, description: "获取成功" })
   async getSalesIndicators(@Request() req) {
@@ -301,7 +210,7 @@ export class PanelController {
   }
 
   @Get("salesStatistics/salesDetail")
-  @Authorities("consoleManage")
+  @Authorities("statisticsSalesManage")
   @ApiOperation({ summary: "获取销售详情数据" })
   @ApiQuery({ name: "startTime", description: "开始时间" })
   @ApiQuery({ name: "endTime", description: "结束时间" })
@@ -318,57 +227,72 @@ export class PanelController {
     const shopId = await this.panelService.getUserShopId(req.user.userId);
     const { startTime, endTime } = query;
 
-    // 获取销售详情数据 - 按照PHP实现的结构
-    const salesData = await this.salesStatisticsService.getSalesDetail(
-      shopId,
-      startTime,
-      endTime,
-    );
-
-    // 获取图表统计数据
-    const salesStatisticsData =
-      await this.salesStatisticsService.getSalesStatisticsData(
-        shopId,
-        1, // dateType = 1 (按月统计)
-        startTime?.substring(0, 4) || new Date().getFullYear().toString(),
-      );
-
-    // 按照PHP实现返回结构
-    const data = {
-      salesData: {
-        productView: salesData.totalOrders || 0, // 暂时用订单数代替浏览量
-        productViewGrowthRate: 0,
-        productVisitor: salesData.completedOrders || 0, // 暂时用完成订单数代替访客数
-        productVisitorGrowthRate: 0,
-        orderNum: salesData.totalOrders || 0,
-        orderNumGrowthRate: 0,
-        paymentAmount: salesData.totalSales || 0,
-        paymentAmountGrowthRate: 0,
-        refundAmount: 0, // 暂时设为0
-        refundAmountGrowthRate: 0,
-        refundQuantity: 0, // 暂时设为0
-        refundQuantityGrowthRate: 0,
-      },
-      salesStatisticsData: {
-        horizontalAxis: salesStatisticsData.horizontalAxis || [],
-        longitudinalAxisPaymentAmount:
-          salesStatisticsData.longitudinalAxis || [],
-        longitudinalAxisRefundAmount: [],
-        longitudinalAxisProductView: [],
-        longitudinalAxisProductVisitor: [],
-      },
-    };
+    const result = await this.salesStatisticsService.getSalesDetail({
+      shop_id: shopId,
+      start_time: startTime,
+      end_time: endTime,
+    });
 
     return {
       code: 0,
       message: "success",
-      data,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get("salesStatistics/salesProductDetail")
+  @Authorities("statisticsSalesManage")
+  @ApiOperation({ summary: "获取销售商品明细" })
+  @ApiQuery({ name: "startTime", required: false, description: "开始时间" })
+  @ApiQuery({ name: "endTime", required: false, description: "结束时间" })
+  @ApiQuery({ name: "keyword", required: false, description: "搜索关键词" })
+  @ApiQuery({ name: "page", required: false, description: "页码" })
+  @ApiQuery({ name: "size", required: false, description: "每页数量" })
+  @ApiQuery({ name: "sortField", required: false, description: "排序字段" })
+  @ApiQuery({ name: "sortOrder", required: false, description: "排序方式" })
+  async getSalesProductDetail(
+    @Query()
+    query: {
+      startTime?: string;
+      endTime?: string;
+      keyword?: string;
+      page?: number;
+      size?: number;
+      sortField?: string;
+      sortOrder?: string;
+    },
+    @Request() req,
+  ) {
+    const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+    if (!userShopInfo) {
+      return {
+        code: 1,
+        message: "用户未登录",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    const { shopId } = userShopInfo;
+    const result = await this.salesStatisticsService.getSaleProductDetail(
+      shopId,
+      query,
+    );
+
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: result.list,
+        total: result.count,
+      },
       timestamp: new Date().toISOString(),
     };
   }
 
   @Get("salesStatistics/salesRanking")
-  @Authorities("consoleManage")
+  @Authorities("statisticsSalesManage")
   @ApiOperation({ summary: "获取销售排行数据" })
   @ApiQuery({ name: "startTime", required: false, description: "开始时间" })
   @ApiQuery({ name: "endTime", required: false, description: "结束时间" })
@@ -406,29 +330,14 @@ export class PanelController {
       query,
     );
 
-    const page = Number.isFinite(Number(query.page)) ? Number(query.page) : 1;
-    const size = Number.isFinite(Number(query.size)) ? Number(query.size) : 15;
     const total = Number(result.count ?? 0);
-    const pages = size > 0 ? Math.ceil(total / size) : 0;
-
-    const records = (result.list ?? []).map((item) => ({
-      productId: item.product_id,
-      productName: item.product_name,
-      productSn: item.product_sn,
-      skuData: item.sku_data,
-      totalSalesNum: item.total_sales_num,
-      totalSalesAmount: item.total_sales_amount,
-    }));
 
     return {
       code: 0,
       message: "success",
       data: {
-        records,
+        records: result.list ?? [],
         total,
-        size,
-        current: page,
-        pages,
       },
       timestamp: new Date().toISOString(),
     };
