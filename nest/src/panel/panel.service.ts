@@ -27,7 +27,9 @@ export class PanelService {
    * @param req 请求对象
    * @returns { userId: number, shopId: number } | null
    */
-  async validateUserAndGetShopId(req: any): Promise<{ userId: number; shopId: number } | null> {
+  async validateUserAndGetShopId(
+    req: any,
+  ): Promise<{ userId: number; shopId: number } | null> {
     const userId = req.user?.userId;
     if (!userId) {
       return null;
@@ -173,7 +175,7 @@ export class PanelService {
         },
         distinct: ["user_id"],
       })
-      .then((result) => Array.isArray(result) ? result.length : 0);
+      .then((result) => (Array.isArray(result) ? result.length : 0));
 
     // 昨日支付买家数
     const yesterdayBuyerNum = await this.prisma.order
@@ -191,7 +193,7 @@ export class PanelService {
         },
         distinct: ["user_id"],
       })
-      .then((result) => Array.isArray(result) ? result.length : 0);
+      .then((result) => (Array.isArray(result) ? result.length : 0));
 
     const buyerGrowthRate = calculateGrowthRate(
       todayBuyerNum,
@@ -299,10 +301,13 @@ export class PanelService {
 
     // 手动按日期分组统计
     const accessDataMap = new Map();
-    accessLogs.forEach(log => {
-      const date = new Date(log.access_time * 1000).toISOString().split('T')[0];
+    accessLogs.forEach((log) => {
+      const date = new Date(log.access_time * 1000).toISOString().split("T")[0];
       if (!accessDataMap.has(date)) {
-        accessDataMap.set(date, { access_time: log.access_time, _count: { id: 0 } });
+        accessDataMap.set(date, {
+          access_time: log.access_time,
+          _count: { id: 0 },
+        });
       }
       accessDataMap.get(date)._count.id++;
     });
@@ -310,7 +315,8 @@ export class PanelService {
     const accessData = Array.from(accessDataMap.values());
 
     // 获取订单统计
-    const orderData = (await this.prisma.$queryRaw`
+    const orderData =
+      ((await this.prisma.$queryRaw`
       SELECT
         DATE(FROM_UNIXTIME(pay_time)) as period,
         COUNT(*) as order_count,
@@ -322,7 +328,11 @@ export class PanelService {
         AND pay_status = 1
       GROUP BY DATE(FROM_UNIXTIME(pay_time))
       ORDER BY period
-    `) as Array<{ period: string; order_count: bigint; order_amount: number }> || [];
+    `) as Array<{
+        period: string;
+        order_count: bigint;
+        order_amount: number;
+      }>) || [];
 
     // 构建访问统计纵轴数据
     const longitudinalAxisAccess = horizontalAxis.map((date) => {
@@ -416,7 +426,9 @@ export class PanelService {
     const shopId = await this.getUserShopId(req.user.userId);
 
     // 动态导入SalesStatisticsService以避免循环依赖
-    const { SalesStatisticsService } = await import('../statistics/sales-statistics.service');
+    const { SalesStatisticsService } = await import(
+      "../statistics/sales-statistics.service"
+    );
     const salesStatisticsService = new SalesStatisticsService(this.prisma);
 
     // 调用SalesStatisticsService获取销售指标数据
