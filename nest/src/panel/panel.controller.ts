@@ -342,4 +342,52 @@ export class PanelController {
       timestamp: new Date().toISOString(),
     };
   }
+
+  @Get("statisticsUser/userStatisticsPanel")
+  @Authorities("statisticsUserManage")
+  @ApiOperation({ summary: "用户统计面板" })
+  @ApiQuery({ name: "startTime", required: false, description: "开始日期 YYYY-MM-DD" })
+  @ApiQuery({ name: "endTime", required: false, description: "结束日期 YYYY-MM-DD" })
+  @ApiQuery({ name: "isExport", required: false, description: "是否导出，1为导出" })
+  async getUserStatisticsPanel(
+    @Query()
+    query: {
+      startTime?: string;
+      endTime?: string;
+      isExport?: string | number;
+    },
+    @Request() req,
+  ) {
+    try {
+      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      if (!userShopInfo) {
+        return {
+          code: 1,
+          message: "用户未登录",
+          data: null,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      const { shopId } = userShopInfo;
+      const result = await this.panelService.getUserStatisticsPanel(shopId, query?.startTime, query?.endTime);
+
+      // 预留：如需导出，这里根据 isExport 返回文件流
+      // 目前前端仅需要JSON数据以渲染『用户概览』，导出后续补充
+
+      return {
+        code: 0,
+        message: "success",
+        data: result,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        code: 1,
+        message: error?.message || "获取用户统计失败",
+        data: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
 }

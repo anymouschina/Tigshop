@@ -434,4 +434,189 @@ export class PanelService {
     // 调用SalesStatisticsService获取销售指标数据
     return await salesStatisticsService.getSalesIndicators(shopId);
   }
+
+  /**
+   * 用户统计面板数据
+   * - 访客数/浏览量：来自 statistics_base 区间聚合（访客=visitor_count，浏览量=click_count），按 shop_id 过滤
+   * - 新增用户数：user.reg_time 落在区间内
+   * - 成交用户数：区间内已支付订单的去重 user_id 数，按 shop_id 过滤
+   * - 充值用户数：user_recharge_order 在区间内且 status=1 的去重 user_id 数
+   * - 转化率与各项环比：对比上一等长时间区间
+   */
+  async getUserStatisticsPanel(
+    shopId: number,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<{
+    visitNum: number | string;
+    visitGrowthRate: number | string;
+    viewNum: number;
+    viewGrowthRate: number | string;
+    addUserNum: number;
+    addUserGrowthRate: number | string;
+    dealUserNum: number;
+    dealUserGrowthRate: number | string;
+    visitToUser: number;
+    visitToUserRate: number | string;
+    rechargeUserNum: number;
+    rechargeUserGrowthRate: number | string;
+  }> {
+    // 规范化日期区间（默认最近30天）
+    const today = new Date();
+    const defaultStart = new Date(today.getTime() - 29 * 24 * 3600 * 1000);
+    const sDate = startDate ? new Date(startDate) : defaultStart;
+    const eDate = endDate ? new Date(endDate) : today;
+
+    // 对齐到天
+    const start = this.startOfDay(sDate);
+    const end = this.endOfDay(eDate);
+
+    // 上一等长区间
+    const rangeMs = Math.max(end.getTime() - start.getTime(), 0);
+    const prevEnd = new Date(start.getTime() - 1000);
+    const prevStart = new Date(prevEnd.getTime() - rangeMs);
+
+    // Prisma用：statistics_base 使用 Date 列 date；其他表使用 Unix 秒
+    const dateStart = start; // Date
+    const dateEnd = end; // Date
+    const tsStart = Math.floor(start.getTime() / 1000);
+    const tsEnd = Math.floor(end.getTime() / 1000);
+    const prevDateStart = this.startOfDay(prevStart);
+    const prevDateEnd = this.endOfDay(prevEnd);
+    const prevTsStart = Math.floor(prevDateStart.getTime() / 1000);
+    const prevTsEnd = Math.floor(prevDateEnd.getTime() / 1000);
+
+    // 辅助：环比增长率，若任一为0则返回"--"以对齐旧版前端预期
+    const growth = (cur: number, prev: number): number | string => {
+      if (!cur || !prev) return "--";
+      const rate = ((cur - prev) / prev) * 100;
+      return Number(rate.toFixed(2));
+    };
+
+    // 访客/浏览量来自 statistics_base
+    const [curStatsBase, prevStatsBase] = await Promise.all([
+      this.prisma.statistics_base.aggregate({
+        where: {
+          date: {
+            gte: dateStart,
+            lte: dateEnd,
+          },
+          shop_id: shopId > 0 ? shopId : 0,
+        },
+        _sum: { visitor_count: true, click_count: true },
+      }),
+      this.prisma.statistics_base.aggregate({
+        where: {
+          date: {
+            gte: prevDateStart,
+            lte: prevDateEnd,
+          },
+          shop_id: shopId > 0 ? shopId : 0,
+        },
+        _sum: { visitor_count: true, click_count: true },
+      }),
+    ]);
+
+    const visitNum = Number(curStatsBase._sum.visitor_count ?? 0);
+    const prevVisitNum = Number(prevStatsBase._sum.visitor_count ?? 0);
+    const viewNum = Number(curStatsBase._sum.click_count ?? 0);
+    const prevViewNum = Number(prevStatsBase._sum.click_count ?? 0);
+
+    // 新增用户数
+    const [addUserNum, prevAddUserNum] = await Promise.all([
+      this.prisma.user.count({
+        where: {
+          reg_time: { gte: tsStart, lte: tsEnd },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          reg_time: { gte: prevTsStart, lte: prevTsEnd },
+        },
+      }),
+    ]);
+
+    // 成交用户数（已支付订单去重用户）
+    const [dealUserNum, prevDealUserNum] = await Promise.all([
+      this.prisma.order
+        .findMany({
+          where: {
+            is_del: 0,
+            pay_status: 2, // PAYMENT_PAID (align with sales stats service)
+            pay_time: { gte: tsStart, lte: tsEnd },
+            ...(shopId > 0 ? { shop_id: shopId } : {}),
+          },
+          select: { user_id: true },
+          distinct: ["user_id"],
+        })
+        .then((arr) => arr.length),
+      this.prisma.order
+        .findMany({
+          where: {
+            is_del: 0,
+            pay_status: 2,
+            pay_time: { gte: prevTsStart, lte: prevTsEnd },
+            ...(shopId > 0 ? { shop_id: shopId } : {}),
+          },
+          select: { user_id: true },
+          distinct: ["user_id"],
+        })
+        .then((arr) => arr.length),
+    ]);
+
+    // 充值用户数（已支付/成功的充值订单去重用户）
+    const [rechargeUserNum, prevRechargeUserNum] = await Promise.all([
+      this.prisma.user_recharge_order
+        .findMany({
+          where: {
+            status: true, // STATUS_SUCCESS
+            paid_time: { gte: tsStart, lte: tsEnd },
+          },
+          select: { user_id: true },
+          distinct: ["user_id"],
+        })
+        .then((arr) => arr.length),
+      this.prisma.user_recharge_order
+        .findMany({
+          where: {
+            status: true,
+            paid_time: { gte: prevTsStart, lte: prevTsEnd },
+          },
+          select: { user_id: true },
+          distinct: ["user_id"],
+        })
+        .then((arr) => arr.length),
+    ]);
+
+    // 转化率（访客-支付转化率：新增用户数/访客数*100）
+    const visitToUser = visitNum > 0 && addUserNum > 0 ? Number(((addUserNum / visitNum) * 100).toFixed(2)) : 0;
+    const prevVisitToUser = prevVisitNum > 0 && prevAddUserNum > 0 ? Number(((prevAddUserNum / prevVisitNum) * 100).toFixed(2)) : 0;
+
+    return {
+      visitNum, // 前端类型允许 number|string
+      visitGrowthRate: growth(visitNum, prevVisitNum),
+      viewNum,
+      viewGrowthRate: growth(viewNum, prevViewNum),
+      addUserNum,
+      addUserGrowthRate: growth(addUserNum, prevAddUserNum),
+      dealUserNum,
+      dealUserGrowthRate: growth(dealUserNum, prevDealUserNum),
+      visitToUser,
+      visitToUserRate: growth(visitToUser, prevVisitToUser),
+      rechargeUserNum,
+      rechargeUserGrowthRate: growth(rechargeUserNum, prevRechargeUserNum),
+    };
+  }
+
+  private startOfDay(d: Date): Date {
+    const nd = new Date(d);
+    nd.setHours(0, 0, 0, 0);
+    return nd;
+  }
+
+  private endOfDay(d: Date): Date {
+    const nd = new Date(d);
+    nd.setHours(23, 59, 59, 999);
+    return nd;
+  }
 }
