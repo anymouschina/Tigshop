@@ -30,7 +30,8 @@ export class AdminApiProductServicesCompatController {
       this.svc.getFilterList(filter),
       this.svc.getFilterCount(filter),
     ]);
-    return { code: 0, message: "success", data: { records, total } };
+    const pages = Math.max(1, Math.ceil((total || 0) / size));
+    return { code: 0, message: "success", data: { records, total, size, current: page, pages } };
   }
 
   @Get("detail")

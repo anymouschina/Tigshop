@@ -59,11 +59,11 @@
     - POST productBatchEdit（批量编辑预处理成功标记）
   - [ ] 实际批量处理与编辑逻辑落地（解析上传文件/表格并应用到商品）
 - Product Inventory Log 库存日志
-  - [ ] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
+  - [x] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
 - Price Inquiry 询价
-  - [ ] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
+  - [x] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
 - Product Attributes Template 属性模板
-  - [ ] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
+  - [x] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
 - Product Services 售后服务
   - [x] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
 
@@ -73,7 +73,53 @@
 
 ### 6) 其它域（按优先级逐步补齐）
 - [ ] 营销 Marketing
-- [ ] 订单 Orders
+- [ ] 订单 Orders（Admin 兼容）
+  - 基于 PHP 路由对齐 /adminapi/order 下接口（参考 php/app/adminapi/route/order.php）：
+    - 售后 Aftersales（已存在非兼容控制器，需补 /adminapi 路由别名是否必要）
+      - [ ] GET  /adminapi/order/aftersales/list
+      - [ ] GET  /adminapi/order/aftersales/applyType
+      - [ ] GET  /adminapi/order/aftersales/returnGoodsStatus
+      - [ ] GET  /adminapi/order/aftersales/detail
+      - [ ] POST /adminapi/order/aftersales/update
+      - [ ] POST /adminapi/order/aftersales/receive
+      - [ ] POST /adminapi/order/aftersales/record
+      - [ ] POST /adminapi/order/aftersales/complete
+    - 订单管理 Order（新增了兼容服务与控制器 skeleton）
+      - [x] GET  /adminapi/order/list（已添加 AdminOrderCompatController.list）
+      - [x] GET  /adminapi/order/detail（已添加 AdminOrderCompatController.detail）
+      - [ ] GET  /adminapi/order/orderWayBill（获取电子面单）
+      - [ ] GET  /adminapi/order/parentDetail（父订单详情）
+      - [ ] POST /adminapi/order/deliver（订单发货）
+      - [ ] POST /adminapi/order/confirmReceipt（订单收货）
+      - [ ] POST /adminapi/order/modifyConsignee（修改收货人）
+      - [ ] POST /adminapi/order/modifyShipping（修改配送信息）
+      - [ ] POST /adminapi/order/modifyMoney（修改订单金额）
+      - [ ] POST /adminapi/order/cancelOrder（取消订单）
+      - [ ] POST /adminapi/order/setConfirm（设置为已确认）
+      - [ ] POST /adminapi/order/delOrder（订单软删除）
+      - [ ] POST /adminapi/order/splitStoreOrder（订单拆分）
+      - [ ] POST /adminapi/order/setPaid（设置为已支付）
+      - [ ] POST /adminapi/order/modifyProduct（修改商品信息）
+      - [ ] POST /adminapi/order/getAddProductInfo（添加商品前置信息）
+      - [ ] POST /adminapi/order/setAdminNote（设置商家备注）
+      - [ ] GET  /adminapi/order/orderPrint（打印订单）
+      - [ ] GET  /adminapi/order/orderPrintBill（打印电子面单）
+      - [x] GET  /adminapi/order/getExportItemList（导出标签列表，占位）
+      - [x] POST /adminapi/order/saveExportItem（保存导出字段，已添加 AdminOrderCompatController.saveExportItem）
+      - [x] GET  /adminapi/order/exportItemInfo（标签详情，占位）
+      - [ ] GET  /adminapi/order/orderExport（导出 CSV）
+      - [ ] POST /adminapi/order/batch（批量操作）
+      - [ ] GET  /adminapi/order/severalDetail（批量详情）
+      - [ ] GET  /adminapi/order/printSeveral（批量打印）
+      - [ ] GET  /adminapi/order/shippingInfo（物流信息）
+      - [ ] GET  /adminapi/order/getOrderPageConfig（订单列表配置）
+      - [x] POST /adminapi/order/changeOrderStatus 或 updateField（字段更新：已添加 updateField 简化版）
+    - 日志管理 OrderLog
+      - [x] GET  /adminapi/order/log/list（已添加 AdminOrderCompatController.logList）
+      - [x] POST /adminapi/order/log/create（已添加 AdminOrderCompatController.logCreate）
+    - 订单配置 Config（如需对齐 /adminapi/order/config/*）
+      - [ ] GET  /adminapi/order/config/detail
+      - [ ] POST /adminapi/order/config/save
 - [ ] 组织/权限 Organization
 - [ ] 店铺装修 Decorate
 - [ ] 分销 Distribution
@@ -90,6 +136,8 @@
 
 ## 变更记录（完成项之后在此追加）
 - 2025-09-29：创建本清单，勾选已完成模块（品牌、分类、翻译、素材库、商品分组、商品评价、商品列表 ids 过滤、ShippingTplList、ProductBatch 兼容路由、面板统计）。
+- 2025-09-29：商品域补齐并对齐完成（除“Product Batch 实际处理逻辑”外）：新增并接通 /adminapi 兼容控制器 productInventoryLog/priceInquiry/productAttributesTpl/productServices；修复若干 Prisma 字段映射问题；统一返回驼峰；productServices 增加 updateField；属性模板 update 入参支持 tplId/tplName/tplData 并序列化存储，create 返回新建记录。
+- 2025-09-29：新增“订单 Orders（Admin 兼容）”任务清单；创建 AdminOrderCompatService/Controller，接通 /adminapi/order 的 list/detail/updateField、日志 list/create、saveExportItem（占位），其余路由按 PHP 清单列入待办。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：
