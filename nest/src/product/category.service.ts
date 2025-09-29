@@ -127,9 +127,6 @@ export class CategoryService {
   async getDetail(id: number): Promise<any> {
     const result = await this.prisma.category.findUnique({
       where: { category_id: id },
-      include: {
-        parent: true,
-      },
     });
 
     if (!result) {

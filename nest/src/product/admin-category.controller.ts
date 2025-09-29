@@ -100,4 +100,41 @@ export class AdminApiCategoryController {
       },
     };
   }
+
+  /**
+   * 兼容前端 product/category/detail
+   * 入参: id (number)
+   * 返回: 单条分类详情，字段为驼峰
+   */
+  @Get("detail")
+  @ApiOperation({ summary: "获取商品分类详情（admin 兼容）" })
+  async detail(@Query("id") id: string) {
+    const categoryId = Number(id);
+    const item = await this.categoryService.getDetail(categoryId);
+    const parentName = await this.categoryService.getParentName(item.parent_id);
+
+    // 映射为前端期望的驼峰字段
+    const data = {
+      categoryId: item.category_id,
+      parentId: item.parent_id,
+  parentName,
+      categoryName: item.category_name,
+      shortName: item.short_name,
+      categoryPic: item.category_pic,
+      categoryIco: item.category_ico,
+      measureUnit: item.measure_unit,
+      seoTitle: item.seo_title,
+      searchKeywords: item.search_keywords,
+      keywords: item.keywords,
+      categoryDesc: item.category_desc,
+      isHot: item.is_hot,
+      isShow: item.is_show,
+      sortOrder: item.sort_order,
+      // 名称显示（服务层已提供）
+      showName: item.show_name,
+      hotName: item.hot_name,
+    };
+
+    return { code: 0, message: "success", data };
+  }
 }
