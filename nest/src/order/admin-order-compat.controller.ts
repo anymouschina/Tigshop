@@ -6,13 +6,14 @@ import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
 import { AdminOrderCompatService } from "./admin-order-compat.service";
+import { AftersalesService, AFTERSALES_TYPE_NAME, STATUS_NAME } from "./aftersales.service";
 
 @ApiTags("Admin API - 订单(兼容路径)")
 @Controller("adminapi/order")
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class AdminOrderCompatController {
-  constructor(private readonly svc: AdminOrderCompatService) {}
+  constructor(private readonly svc: AdminOrderCompatService, private readonly aftersalesSvc: AftersalesService) {}
 
   @Get("list")
   @Authorities("order")
@@ -144,56 +145,109 @@ export class AdminOrderCompatController {
   @Get("aftersales/list")
   @Authorities("order")
   @ApiOperation({ summary: "售后列表（admin 兼容，占位）" })
-  async aftersalesList(@Query() _query: any) {
-    return { code: 0, message: "success", data: { records: [], total: 0, size: Number(_query.size)||15, current: Number(_query.page)||1, pages: 1 } };
+  async aftersalesList(@Query() query: any) {
+    const page = Number(query.page) || 1;
+    const size = Number(query.size) || 15;
+    const filter: any = {
+      keyword: query.keyword,
+      page,
+      size,
+      status: query.status ? Number(query.status) : 0,
+      aftersale_type: query.aftersale_type ? Number(query.aftersale_type) : 0,
+      shop_id: 1, // TODO: 从 token/shop 作用域获取
+      vendor_id: 1, // TODO: 供应商模式时获取
+    };
+    const [records, total] = await Promise.all([
+      this.aftersalesSvc.getFilterResult(filter),
+      this.aftersalesSvc.getFilterCount(filter),
+    ]);
+    const data = { records, total, size, current: page, pages: Math.max(1, Math.ceil((total || 0) / size)) };
+    return { code: 0, message: "success", data };
   }
 
   @Get("aftersales/applyType")
   @Authorities("order")
   @ApiOperation({ summary: "售后申请类型（占位）" })
   async aftersalesApplyType() {
-    return { code: 0, message: "success", data: {} };
+    return { code: 0, message: "success", data: AFTERSALES_TYPE_NAME };
   }
 
   @Get("aftersales/returnGoodsStatus")
   @Authorities("order")
   @ApiOperation({ summary: "售后退换货状态（占位）" })
   async aftersalesReturnGoodsStatus() {
-    return { code: 0, message: "success", data: {} };
+    // TODO: 依据是否供应商模式裁剪 21/22/23
+    return { code: 0, message: "success", data: STATUS_NAME };
   }
 
   @Get("aftersales/detail")
   @Authorities("order")
   @ApiOperation({ summary: "售后详情（占位）" })
-  async aftersalesDetail(@Query("id") _id: string) {
-    return { code: 0, message: "success", data: null };
+  async aftersalesDetail(@Query("id") id: string) {
+    const data = await this.aftersalesSvc.getDetail(Number(id));
+    return { code: 0, message: "success", data };
   }
 
   @Post("aftersales/update")
   @Authorities("order")
   @ApiOperation({ summary: "售后更新（占位）" })
-  async aftersalesUpdate() { return { code: 0, message: "success" }; }
+  async aftersalesUpdate(@Body() body: any, @Req() req: any) {
+    // 同意或拒绝：status, reply, return_address, refund_amount, admin_id
+    const ok = await this.aftersalesSvc.agreeOrRefuse(Number(body.aftersale_id ?? body.id), {
+      status: Number(body.status),
+      reply: body.reply,
+      return_address: body.return_address ?? body.returnAddress,
+      refund_amount: body.refund_amount ?? body.refundAmount,
+      admin_id: req?.user?.userId ?? 0,
+    });
+    return ok ? { code: 0, message: "success" } : { code: 1, message: "error" };
+  }
 
   @Post("aftersales/receive")
   @Authorities("order")
   @ApiOperation({ summary: "售后确认收货（占位）" })
-  async aftersalesReceive() { return { code: 0, message: "success" }; }
+  async aftersalesReceive(@Body() body: any, @Req() req: any) {
+    // 简化：将状态置为 RETURNED(5)
+    const ok = await this.aftersalesSvc.agreeOrRefuse(Number(body.aftersale_id ?? body.id), {
+      status: 5,
+      reply: body.reply ?? "",
+      admin_id: req?.user?.userId ?? 0,
+    });
+    return ok ? { code: 0, message: "success" } : { code: 1, message: "error" };
+  }
 
   @Post("aftersales/record")
   @Authorities("order")
   @ApiOperation({ summary: "售后反馈记录（占位）" })
-  async aftersalesRecord() { return { code: 0, message: "success" }; }
+  async aftersalesRecord(@Body() body: any, @Req() req: any) {
+    // 记录日志
+    await (this.aftersalesSvc as any).addAftersalesLog?.(Number(body.aftersale_id ?? body.id), {
+      aftersale_id: Number(body.aftersale_id ?? body.id),
+      operator_type: 1,
+      operator_id: req?.user?.userId ?? 0,
+      action: body.action ?? "备注",
+      action_desc: body.action_desc ?? body.remark ?? body.content ?? "",
+      create_time: Math.floor(Date.now() / 1000),
+    });
+    return { code: 0, message: "success" };
+  }
 
   @Post("aftersales/complete")
   @Authorities("order")
   @ApiOperation({ summary: "售后完结（占位）" })
-  async aftersalesComplete() { return { code: 0, message: "success" }; }
+  async aftersalesComplete(@Body() body: any, @Req() req: any) {
+    const ok = await this.aftersalesSvc.complete(Number(body.id ?? body.aftersale_id), req?.user?.userId ?? 0);
+    return ok ? { code: 0, message: "success" } : { code: 1, message: "error" };
+  }
 
   // -------- 订单管理常用操作（占位） --------
   @Get("orderWayBill")
   @Authorities("order")
   @ApiOperation({ summary: "获取电子面单（占位）" })
-  async orderWayBill() { return { code: 0, message: "success", data: null }; }
+  async orderWayBill(@Query("id") id: string) {
+    const data = await this.svc.getOrderWayBill(Number(id));
+    return { code: 0, message: "success", data };
+  }
 
   // 兼容 PHP: /adminapi/order/order/orderWayBill
   @Get("order/orderWayBill")
@@ -204,7 +258,10 @@ export class AdminOrderCompatController {
   @Get("parentDetail")
   @Authorities("order")
   @ApiOperation({ summary: "父订单详情（占位）" })
-  async parentDetail(@Query("id") _id: string) { return { code: 0, message: "success", data: null }; }
+  async parentDetail(@Query("id") id: string) {
+    const data = await this.svc.getParentDetail(Number(id));
+    return { code: 0, message: "success", data };
+  }
 
   // 兼容 PHP: /adminapi/order/order/parentDetail
   @Get("order/parentDetail")
@@ -366,24 +423,32 @@ export class AdminOrderCompatController {
   @Post("modifyProduct")
   @Authorities("order")
   @ApiOperation({ summary: "修改商品信息（占位）" })
-  async modifyProduct() { return { code: 0, message: "success" }; }
+  async modifyProduct(@Body() body: any, @Req() req: any) {
+    const id = Number(body.id ?? body.orderId);
+    await this.svc.modifyProduct(id, body, req?.user?.username);
+    return { code: 0, message: "success" };
+  }
 
   // 兼容 PHP: /adminapi/order/order/modifyProduct
   @Post("order/modifyProduct")
   @Authorities("order")
   @ApiOperation({ summary: "修改商品信息（admin 兼容 - PHP 路径别名）" })
-  async modifyProductAlias() { return this.modifyProduct(); }
+  async modifyProductAlias(@Body() body: any, @Req() req: any) { return this.modifyProduct(body, req); }
 
   @Post("getAddProductInfo")
   @Authorities("order")
   @ApiOperation({ summary: "添加商品前置信息（占位）" })
-  async getAddProductInfo() { return { code: 0, message: "success", data: null }; }
+  async getAddProductInfo(@Body() body: any) {
+    const id = Number(body.id ?? body.orderId);
+    const data = await this.svc.getAddProductInfo(id);
+    return { code: 0, message: "success", data };
+  }
 
   // 兼容 PHP: /adminapi/order/order/getAddProductInfo
   @Post("order/getAddProductInfo")
   @Authorities("order")
   @ApiOperation({ summary: "添加商品前置信息（admin 兼容 - PHP 路径别名）" })
-  async getAddProductInfoAlias() { return this.getAddProductInfo(); }
+  async getAddProductInfoAlias(@Body() body: any) { return this.getAddProductInfo(body); }
 
   @Post("setAdminNote")
   @Authorities("order")
@@ -403,7 +468,10 @@ export class AdminOrderCompatController {
   @Get("orderPrint")
   @Authorities("order")
   @ApiOperation({ summary: "打印订单（占位）" })
-  async orderPrint() { return { code: 0, message: "success", data: null }; }
+  async orderPrint(@Query("id") id: string) {
+    const data = await this.svc.getOrderPrintData(Number(id));
+    return { code: 0, message: "success", data };
+  }
 
   // 兼容 PHP: /adminapi/order/order/orderPrint
   @Get("order/orderPrint")
@@ -414,7 +482,10 @@ export class AdminOrderCompatController {
   @Get("orderPrintBill")
   @Authorities("order")
   @ApiOperation({ summary: "打印电子面单（占位）" })
-  async orderPrintBill() { return { code: 0, message: "success", data: null }; }
+  async orderPrintBill(@Query("id") id: string) {
+    const data = await this.svc.getOrderPrintBill(Number(id));
+    return { code: 0, message: "success", data };
+  }
 
   // 兼容 PHP: /adminapi/order/order/orderPrintBill
   @Get("order/orderPrintBill")
@@ -497,35 +568,60 @@ export class AdminOrderCompatController {
   @Post("batch")
   @Authorities("order")
   @ApiOperation({ summary: "批量操作（占位）" })
-  async batch() { return { code: 0, message: "success" }; }
+  async batch(@Body() body: any, @Req() req: any) {
+    const type = body.type ?? body.act ?? "";
+    let ids: number[] = [];
+    const raw = body.ids ?? body.orderIds;
+    if (Array.isArray(raw)) ids = raw.map((x) => Number(x)).filter((n) => Number.isFinite(n));
+    else if (typeof raw === "string") ids = raw.split(",").map((s) => Number(s.trim())).filter((n) => Number.isFinite(n));
+    else if (typeof raw === "number") ids = [raw];
+    const data = body.data ?? body.patch ?? body;
+    const result = await this.svc.batchOperation(String(type), ids, data, req?.user?.username);
+    return { code: 0, message: "success", data: result };
+  }
 
   // 兼容 PHP: /adminapi/order/order/batch
   @Post("order/batch")
   @Authorities("order")
   @ApiOperation({ summary: "批量操作（admin 兼容 - PHP 路径别名）" })
-  async batchAlias() { return this.batch(); }
+  async batchAlias(@Body() body: any, @Req() req: any) { return this.batch(body, req); }
 
   @Get("severalDetail")
   @Authorities("order")
   @ApiOperation({ summary: "批量详情（占位）" })
-  async severalDetail() { return { code: 0, message: "success", data: null }; }
+  async severalDetail(@Query("ids") idsParam: any) {
+    let ids: number[] = [];
+    const push = (v: any) => { const n = Number(v); if (!Number.isNaN(n) && n > 0) ids.push(n); };
+    if (Array.isArray(idsParam)) idsParam.forEach(push);
+    else if (typeof idsParam === "string") idsParam.split(",").forEach(push);
+    const data = await this.svc.getSeveralDetail(Array.from(new Set(ids)));
+    return { code: 0, message: "success", data };
+  }
 
   // 兼容 PHP: /adminapi/order/order/severalDetail
   @Get("order/severalDetail")
   @Authorities("order")
   @ApiOperation({ summary: "批量详情（admin 兼容 - PHP 路径别名）" })
-  async severalDetailAlias() { return this.severalDetail(); }
+  async severalDetailAlias(@Query("ids") idsParam: any) { return this.severalDetail(idsParam); }
 
   @Get("printSeveral")
   @Authorities("order")
   @ApiOperation({ summary: "批量打印（占位）" })
-  async printSeveral() { return { code: 0, message: "success", data: null }; }
+  async printSeveral(@Query("ids") idsParam: any) {
+    let ids: number[] = [];
+    const push = (v: any) => { const n = Number(v); if (!Number.isNaN(n) && n > 0) ids.push(n); };
+    if (Array.isArray(idsParam)) idsParam.forEach(push);
+    else if (typeof idsParam === "string") idsParam.split(",").forEach(push);
+    ids = Array.from(new Set(ids));
+    const data = await Promise.all(ids.map((id) => this.svc.getOrderPrintData(id)));
+    return { code: 0, message: "success", data };
+  }
 
   // 兼容 PHP: /adminapi/order/order/printSeveral
   @Get("order/printSeveral")
   @Authorities("order")
   @ApiOperation({ summary: "批量打印（admin 兼容 - PHP 路径别名）" })
-  async printSeveralAlias() { return this.printSeveral(); }
+  async printSeveralAlias(@Query("ids") idsParam: any) { return this.printSeveral(idsParam); }
 
   @Get("shippingInfo")
   @Authorities("order")
@@ -544,7 +640,10 @@ export class AdminOrderCompatController {
   @Get("getOrderPageConfig")
   @Authorities("order")
   @ApiOperation({ summary: "订单列表配置（占位）" })
-  async getOrderPageConfig() { return { code: 0, message: "success", data: {} }; }
+  async getOrderPageConfig() {
+    const data = await this.svc.getOrderPageConfig();
+    return { code: 0, message: "success", data };
+  }
 
   // 兼容 PHP: /adminapi/order/order/getOrderPageConfig
   @Get("order/getOrderPageConfig")

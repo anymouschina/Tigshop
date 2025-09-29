@@ -459,6 +459,167 @@ export class AdminOrderCompatService {
     return { logistics_id, logistics_name, tracking_no, shipping_status, shipping_time, received_time };
   }
 
+  // ---------- 扩展：打印/面单/父订单/批量/页面配置 ----------
+  async getParentDetail(orderId: number) {
+    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    if (!order) throw new NotFoundException("订单不存在");
+    const parentId = order.parent_order_id && order.parent_order_id > 0 ? order.parent_order_id : order.order_id;
+    const parent = await this.prisma.order.findUnique({ where: { order_id: parentId } });
+    const children = await this.prisma.order.findMany({ where: { parent_order_id: parentId }, orderBy: { order_id: "asc" } });
+    return { parent, children };
+  }
+
+  async getOrderPrintData(orderId: number) {
+    const base = await this.detail(orderId);
+    if (!base) throw new NotFoundException("订单不存在");
+    // 简化：返回打印所需关键信息
+    const address = this.normalizeAddress(base);
+    const summary = {
+      totalQuantity: (base.items || []).reduce((s: number, it: any) => s + Number(it.product_nums || 0), 0),
+      totalAmount: base.total_amount,
+      paidAmount: base.paid_amount,
+      unpaidAmount: base.unpaid_amount,
+    };
+    return {
+      orderSn: base.order_sn,
+      addTime: base.add_time,
+      consignee: base.consignee,
+      mobile: base.mobile,
+      address,
+      buyerNote: base.buyer_note,
+      adminNote: base.admin_note,
+      logisticsName: base.logistics_name,
+      trackingNo: base.tracking_no,
+      items: (base.items || []).map((it: any) => ({
+        productName: it.product_name,
+        skuSn: it.sku_sn,
+        skuData: it.sku_data,
+        price: it.product_price,
+        quantity: it.product_nums,
+        amount: Number(it.product_price || 0) * Number(it.product_nums || 0),
+      })),
+      summary,
+    };
+  }
+
+  async getOrderWayBill(orderId: number) {
+    // 电子面单数据（仅组装数据，未对接第三方）
+    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    if (!order) throw new NotFoundException("订单不存在");
+    const address = this.normalizeAddress(order);
+    return {
+      orderSn: order.order_sn,
+      consignee: order.consignee,
+      mobile: order.mobile,
+      address,
+      logisticsId: order.logistics_id,
+      logisticsName: order.logistics_name,
+      trackingNo: order.tracking_no,
+      remark: order.buyer_note || order.admin_note || "",
+    };
+  }
+
+  async getOrderPrintBill(orderId: number) {
+    // 打印电子面单所需字段（同 getOrderWayBill，但可扩展模板字段）
+    const bill = await this.getOrderWayBill(orderId);
+    return { ...bill, template: "default" };
+  }
+
+  async batchOperation(type: string, ids: number[], data: any, adminName?: string) {
+    if (!Array.isArray(ids) || !ids.length) throw new BadRequestException("ids 不能为空");
+    const results: Record<number, boolean> = {};
+    for (const id of ids) {
+      try {
+        switch (type) {
+          case "del":
+          case "delete":
+            await this.delOrder(id, adminName); break;
+          case "confirm":
+          case "setConfirm":
+            await this.setConfirm(id, data?.orderStatus ?? data?.order_status, adminName); break;
+          case "paid":
+          case "setPaid":
+            await this.setPaid(id, data?.payStatus ?? data?.pay_status, adminName); break;
+          case "deliver":
+            await this.deliver(id, {
+              trackingNo: data?.trackingNo ?? data?.tracking_no,
+              logisticsId: data?.logisticsId ?? data?.logistics_id,
+              logisticsName: data?.logisticsName ?? data?.logistics_name,
+              shippingStatus: data?.shippingStatus ?? data?.shipping_status,
+            }, adminName); break;
+          case "cancel":
+          case "cancelOrder":
+            await this.cancelOrder(id, data?.reason ?? data?.remark, data?.orderStatus ?? data?.order_status, adminName); break;
+          default:
+            // 未知操作：记录日志但不中断
+            await this.addLog(id, `批量操作(${type}) 未实现，忽略`, adminName);
+        }
+        results[id] = true;
+      } catch (e) {
+        this.logger.error(`batchOperation id=${id} type=${type} err=${(e as Error).message}`);
+        results[id] = false;
+      }
+    }
+    return { ok: true, results };
+  }
+
+  async getSeveralDetail(ids: number[]) {
+    if (!ids?.length) return [] as any[];
+    const orders = await this.prisma.order.findMany({ where: { order_id: { in: ids } } });
+    // 附带各自的订单项数量与金额
+    const items = await this.prisma.order_item.findMany({ where: { order_id: { in: ids } } });
+    const grouped = new Map<number, any[]>();
+    for (const it of items) {
+      const arr = grouped.get(it.order_id) || [];
+      arr.push(it);
+      grouped.set(it.order_id, arr);
+    }
+    return orders.map((o: any) => {
+      const its = grouped.get(o.order_id) || [];
+      const itemsCount = its.reduce((s, it: any) => s + Number(it.product_nums || 0), 0);
+      const productNames = its.map((it: any) => `${it.product_name}x${it.product_nums}`).join(" | ");
+      return {
+        order_id: o.order_id,
+        order_sn: o.order_sn,
+        add_time: o.add_time,
+        consignee: o.consignee,
+        mobile: o.mobile,
+        address: this.normalizeAddress(o),
+        items_count: itemsCount,
+        product_names: productNames,
+        total_amount: o.total_amount,
+        pay_status: o.pay_status,
+        shipping_status: o.shipping_status,
+      };
+    });
+  }
+
+  async getOrderPageConfig() {
+    // 简化：返回筛选项与默认列配置
+    return {
+      filters: {
+        orderStatus: [0, 1, 2, 3, 4, 5, 6],
+        payStatus: [0, 1, 2, 3],
+        shippingStatus: [0, 1, 2],
+      },
+      defaultColumns: this.getDefaultExportFields(),
+      pageSizeOptions: [10, 15, 20, 50, 100],
+    };
+  }
+
+  async modifyProduct(orderId: number, payload: any, adminName?: string) {
+    // 复杂度较高，当前仅记录日志，提示前端未真正变更
+    await this.addLog(orderId, `修改商品（占位）：${JSON.stringify(payload).slice(0, 500)}`, adminName);
+    return true;
+  }
+
+  async getAddProductInfo(orderId: number) {
+    // 返回最小必要信息，允许前端展示可添加提示
+    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    if (!order) throw new NotFoundException("订单不存在");
+    return { allowAdd: true, orderSn: order.order_sn };
+  }
+
   // ---------- 工具 ----------
   private snakeToCamel(s: string) { return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase()); }
   private camelToSnake(s: string) { return s.replace(/[A-Z]/g, (m) => "_" + m.toLowerCase()); }

@@ -46,6 +46,7 @@ import { DecorateModule } from "./common/decorate/decorate.module";
 import { StatisticsModule } from "./statistics/statistics.module";
 import { AppController } from "./app.contronller";
 import { TranslationsModule } from "./lang/translations/translations.module";
+import { PrintModule } from "./print/print.module";
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { TranslationsModule } from "./lang/translations/translations.module";
     CsrfModule,
     StatisticsModule,
     TranslationsModule,
+    PrintModule,
   ],
   controllers: [AppController],
   providers: [
