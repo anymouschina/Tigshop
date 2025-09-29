@@ -87,6 +87,10 @@ export class AdminApiBrandController {
           brandIsHot: r.brand_is_hot,
           isShow: r.is_show,
           sortOrder: r.sort_order,
+          status: r.check_status,
+          statusText: r.status_text,
+          rejectRemark: r.reject_remark,
+          shop: r.shop ? { shopId: r.shop.shop_id, shopTitle: r.shop.shop_title } : undefined,
         })),
         filter: { page },
         total,
@@ -147,10 +151,61 @@ export class AdminApiBrandController {
           brandIsHot: r.brand_is_hot,
           isShow: r.is_show,
           sortOrder: r.sort_order,
+          // 审核相关字段
+          status: r.check_status,
+          statusText: r.status_text,
+          rejectRemark: r.reject_remark,
+          // 店铺信息（用于展示“店铺：xxx”）
+          shop: r.shop
+            ? { shopId: r.shop.shop_id, shopTitle: r.shop.shop_title }
+            : undefined,
         })),
         filter: { page },
         total: result.total,
       },
     };
+  }
+
+  /**
+   * 兼容前端 product/brand/detail
+   */
+  @Get("detail")
+  @ApiOperation({ summary: "获取品牌详情（admin）" })
+  async detail(@Query("id") id: string) {
+    const brand = await this.brandService.getDetail(Number(id));
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        brandId: brand.brand_id,
+        brandName: brand.brand_name,
+        brandLogo: brand.brand_logo,
+        brandDesc: brand.brand_desc,
+        sortOrder: brand.sort_order,
+        firstWord: brand.first_word,
+        isShow: brand.is_show,
+        brandIsHot: brand.brand_is_hot,
+        brandType: brand.brand_type,
+        brandEnName: brand.brand_en_name,
+        siteUrl: brand.site_url,
+        shopId: brand.shop_id,
+        checkStatus: brand.check_status,
+        rejectRemark: brand.reject_remark,
+        showName: brand.show_name,
+        hotName: brand.hot_name,
+        statusName: brand.status_name,
+      },
+    };
+  }
+
+  /**
+   * 兼容前端 product/brand/del
+   */
+  @Post("del")
+  @ApiOperation({ summary: "删除品牌（admin）" })
+  async del(@Body() body: any) {
+    const id = Number(body.id);
+    await this.brandService.delete(id);
+    return { code: 0, message: "success" };
   }
 }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Injectable } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
 export const BRAND_SHOW_STATUS = {
@@ -32,7 +32,25 @@ export class BrandService {
         where,
         orderBy,
       });
-      return results;
+      const shopIds = Array.from(new Set(results.filter((r: any) => (r.shop_id || 0) > 0).map((r: any) => r.shop_id)));
+      let shopMap: Record<number, { shop_id: number; shop_title: string | null }> = {};
+      if (shopIds.length) {
+        const shops = await this.prisma.shop.findMany({
+          where: { shop_id: { in: shopIds as any } },
+          select: { shop_id: true, shop_title: true },
+        });
+        shopMap = shops.reduce((acc, s) => {
+          acc[s.shop_id] = s;
+          return acc;
+        }, {} as Record<number, { shop_id: number; shop_title: string | null }>);
+      }
+      return results.map((r: any) => ({
+        ...r,
+        status_text: BRAND_AUDIT_STATUS[r.check_status],
+        shop: r.shop_id && shopMap[r.shop_id]
+          ? { shop_id: r.shop_id, shop_title: shopMap[r.shop_id].shop_title }
+          : null,
+      }));
     }
 
     // 分页查询
@@ -45,8 +63,26 @@ export class BrandService {
       skip,
       take,
     });
+    const shopIds = Array.from(new Set(results.filter((r: any) => (r.shop_id || 0) > 0).map((r: any) => r.shop_id)));
+    let shopMap: Record<number, { shop_id: number; shop_title: string | null }> = {};
+    if (shopIds.length) {
+      const shops = await this.prisma.shop.findMany({
+        where: { shop_id: { in: shopIds as any } },
+        select: { shop_id: true, shop_title: true },
+      });
+      shopMap = shops.reduce((acc, s) => {
+        acc[s.shop_id] = s;
+        return acc;
+      }, {} as Record<number, { shop_id: number; shop_title: string | null }>);
+    }
 
-    return results;
+    return results.map((r: any) => ({
+      ...r,
+      status_text: BRAND_AUDIT_STATUS[r.check_status],
+      shop: r.shop_id && shopMap[r.shop_id]
+        ? { shop_id: r.shop_id, shop_title: shopMap[r.shop_id].shop_title }
+        : null,
+    }));
   }
 
   async getFilterCount(filter: any): Promise<number> {
@@ -123,7 +159,7 @@ export class BrandService {
     });
 
     if (!result) {
-      throw new Error("品牌不存在");
+  throw new NotFoundException("品牌不存在");
     }
 
     return {
@@ -137,12 +173,12 @@ export class BrandService {
   async create(data: any): Promise<any> {
     // 验证品牌名称不能为空
     if (!data.brand_name || data.brand_name.trim() === "") {
-      throw new Error("品牌名称不能为空");
+  throw new BadRequestException("品牌名称不能为空");
     }
 
     // 验证品牌名称长度
     if (data.brand_name.length > 30) {
-      throw new Error("品牌名称不能超过30个字符");
+  throw new BadRequestException("品牌名称不能超过30个字符");
     }
 
     // 检查品牌名称是否重复
@@ -154,7 +190,7 @@ export class BrandService {
     });
 
     if (existingBrand) {
-      throw new Error("品牌名称已存在");
+  throw new BadRequestException("品牌名称已存在");
     }
 
     // 如果没有提供首字母，自动生成
@@ -190,7 +226,7 @@ export class BrandService {
     });
 
     if (!brand) {
-      throw new Error("品牌不存在");
+  throw new NotFoundException("品牌不存在");
     }
 
     // 验证品牌名称不能为空
@@ -198,12 +234,12 @@ export class BrandService {
       data.brand_name !== undefined &&
       (!data.brand_name || data.brand_name.trim() === "")
     ) {
-      throw new Error("品牌名称不能为空");
+  throw new BadRequestException("品牌名称不能为空");
     }
 
     // 验证品牌名称长度
     if (data.brand_name !== undefined && data.brand_name.length > 30) {
-      throw new Error("品牌名称不能超过30个字符");
+  throw new BadRequestException("品牌名称不能超过30个字符");
     }
 
     // 检查品牌名称是否重复（排除自己）
@@ -217,7 +253,7 @@ export class BrandService {
       });
 
       if (existingBrand) {
-        throw new Error("品牌名称已存在");
+  throw new BadRequestException("品牌名称已存在");
       }
     }
 
@@ -249,7 +285,7 @@ export class BrandService {
     });
 
     if (!brand) {
-      throw new Error("品牌不存在");
+  throw new NotFoundException("品牌不存在");
     }
 
     // 验证字段
@@ -262,16 +298,16 @@ export class BrandService {
       "brand_type",
     ];
     if (!allowedFields.includes(field)) {
-      throw new Error("不支持的字段");
+  throw new BadRequestException("不支持的字段");
     }
 
     // 特殊字段验证
     if (field === "brand_name") {
       if (!value || value.trim() === "") {
-        throw new Error("品牌名称不能为空");
+  throw new BadRequestException("品牌名称不能为空");
       }
       if (value.length > 30) {
-        throw new Error("品牌名称不能超过30个字符");
+  throw new BadRequestException("品牌名称不能超过30个字符");
       }
 
       // 检查品牌名称是否重复
@@ -284,7 +320,7 @@ export class BrandService {
       });
 
       if (existingBrand) {
-        throw new Error("品牌名称已存在");
+        throw new BadRequestException("品牌名称已存在");
       }
     }
 
@@ -309,7 +345,7 @@ export class BrandService {
     });
 
     if (!brand) {
-      throw new Error("品牌不存在");
+  throw new NotFoundException("品牌不存在");
     }
 
     // 检查是否有商品关联
@@ -318,7 +354,7 @@ export class BrandService {
     });
 
     if (hasProducts > 0) {
-      throw new Error("有商品关联该品牌，请先更换品牌后再删除");
+  throw new BadRequestException("有商品关联该品牌，请先更换品牌后再删除");
     }
 
     const result = await this.prisma.brand.delete({
@@ -450,15 +486,15 @@ export class BrandService {
     });
 
     if (!brand) {
-      throw new Error("品牌不存在");
+  throw new NotFoundException("品牌不存在");
     }
 
     if (brand.check_status !== 0) {
-      throw new Error("该品牌已经审核过了");
+  throw new BadRequestException("该品牌已经审核过了");
     }
 
     if (status === 2 && !rejectRemark) {
-      throw new Error("请填写拒绝理由");
+  throw new BadRequestException("请填写拒绝理由");
     }
 
     const result = await this.prisma.brand.update({
@@ -507,8 +543,32 @@ export class BrandService {
       this.prisma.brand.count({ where }),
     ]);
 
+    // 组装店铺信息与状态文案，兼容 PHP 输出
+    const shopIds = Array.from(
+      new Set(records.filter((r: any) => (r.shop_id || 0) > 0).map((r: any) => r.shop_id)),
+    );
+    let shopMap: Record<number, { shop_id: number; shop_title: string | null }> = {};
+    if (shopIds.length) {
+      const shops = await this.prisma.shop.findMany({
+        where: { shop_id: { in: shopIds as any } },
+        select: { shop_id: true, shop_title: true },
+      });
+      shopMap = shops.reduce((acc, s) => {
+        acc[s.shop_id] = s;
+        return acc;
+      }, {} as Record<number, { shop_id: number; shop_title: string | null }>);
+    }
+
+    const enriched = records.map((r: any) => ({
+      ...r,
+      status_text: BRAND_AUDIT_STATUS[r.check_status],
+      shop: r.shop_id && shopMap[r.shop_id]
+        ? { shop_id: r.shop_id, shop_title: shopMap[r.shop_id].shop_title }
+        : null,
+    }));
+
     return {
-      records,
+      records: enriched,
       total,
     };
   }
