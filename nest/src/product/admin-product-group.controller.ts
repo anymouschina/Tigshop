@@ -67,11 +67,11 @@ export class AdminApiProductGroupController {
   @ApiOperation({ summary: "商品分组提交（create/update）" })
   @Authorities("productGroupManage")
   async postAct(@Param("act") act: string, @Body() body: any) {
-    if (act === "create") {
+    if (act === "create" || (act === "save" && !body.id)) {
       const created = await this.service.create(body);
       return { code: 0, message: "success", data: { productGroupId: created.productGroupId } };
     }
-    if (act === "update") {
+    if (act === "update" || (act === "save" && body.id)) {
       const id = Number(body.id);
       await this.service.update(id, body);
       return { code: 0, message: "success" };

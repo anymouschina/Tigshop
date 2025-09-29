@@ -44,6 +44,22 @@ export class AdminCommentCompatService {
     return [];
   }
 
+  private shouldMarkShowed(showPicsStr: string | null | undefined): boolean {
+    if (!showPicsStr) return false;
+    const s = String(showPicsStr).trim();
+    if (!s) return false;
+    // Treat non-empty JSON array/object or any non-empty string as showed
+    try {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) return parsed.length > 0;
+      if (parsed && typeof parsed === "object") return Object.keys(parsed).length > 0;
+    } catch (_) {
+      // not JSON, but non-empty string -> consider true
+      return true;
+    }
+    return false;
+  }
+
   async getFilterResult(filter: any) {
     const where: any = {};
     if (filter.keyword) {
@@ -52,8 +68,9 @@ export class AdminCommentCompatService {
         { content: { contains: filter.keyword } },
       ];
     }
-    if (filter.is_showed !== undefined && filter.is_showed !== -1) {
-      where.is_showed = Number(filter.is_showed) || 0;
+    const isShowedVal = filter.is_showed ?? filter.isShowed;
+    if (isShowedVal !== undefined && Number(isShowedVal) !== -1) {
+      where.is_showed = Number(isShowedVal) || 0;
     }
     if (filter.shop_id) where.shop_id = Number(filter.shop_id);
     const page = Number(filter.page) || 1;
@@ -75,8 +92,9 @@ export class AdminCommentCompatService {
         { content: { contains: filter.keyword } },
       ];
     }
-    if (filter.is_showed !== undefined && filter.is_showed !== -1) {
-      where.is_showed = Number(filter.is_showed) || 0;
+    const isShowedVal = filter.is_showed ?? filter.isShowed;
+    if (isShowedVal !== undefined && Number(isShowedVal) !== -1) {
+      where.is_showed = Number(isShowedVal) || 0;
     }
     if (filter.shop_id) where.shop_id = Number(filter.shop_id);
     return this.prisma.comment.count({ where });
@@ -106,6 +124,12 @@ export class AdminCommentCompatService {
       add_time: body.addTime ? Number(body.addTime) : now,
       shop_id: body.shopId ? Number(body.shopId) : 0,
     };
+    // Align PHP: if show_pics not empty, mark is_showed = 1 when not explicitly set
+    if (body.isShowed === undefined && body.is_showed === undefined) {
+      if (this.shouldMarkShowed(data.show_pics)) {
+        data.is_showed = 1;
+      }
+    }
     const created = await this.prisma.comment.create({ data });
     return { commentId: created.comment_id };
   }
@@ -118,8 +142,15 @@ export class AdminCommentCompatService {
     if (body.avatar !== undefined) data.avatar = String(body.avatar || "");
     if (body.commentRank !== undefined) data.comment_rank = Number(body.commentRank);
     if (body.content !== undefined) data.content = String(body.content || "");
-    if (body.showPics !== undefined || body.show_pics !== undefined)
+    if (body.showPics !== undefined || body.show_pics !== undefined) {
       data.show_pics = this.serializeShowPics(body.showPics ?? body.show_pics);
+      // Align PHP: auto mark is_showed=1 if show_pics is non-empty and caller didn't explicitly pass isShowed
+      if (body.isShowed === undefined && body.is_showed === undefined) {
+        if (this.shouldMarkShowed(data.show_pics)) {
+          data.is_showed = 1;
+        }
+      }
+    }
     if (body.sortOrder !== undefined) data.sort_order = Number(body.sortOrder);
     if (body.isRecommend !== undefined) data.is_recommend = Number(body.isRecommend);
     if (body.isTop !== undefined) data.is_top = Number(body.isTop);

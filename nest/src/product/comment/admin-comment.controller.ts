@@ -23,7 +23,11 @@ export class AdminApiProductCommentController {
       keyword: query.keyword || "",
       sort_field: query.sortField || "comment_id",
       sort_order: query.sortOrder || "desc",
-      is_showed: query.isShowed !== undefined ? Number(query.isShowed) : -1,
+      // 对齐PHP：is_showed = -1 表示不过滤；接受 isShowed / is_showed 两种写法
+      is_showed:
+        query.isShowed !== undefined || query.is_showed !== undefined
+          ? Number(query.isShowed ?? query.is_showed)
+          : -1,
       page,
       size,
     };

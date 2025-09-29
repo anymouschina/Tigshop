@@ -67,6 +67,13 @@ export class ShippingTplService {
     };
   }
 
+  // 兼容 admin 端简单列表调用
+  async getList(params: { page?: number; size?: number; keyword?: string }) {
+    const { page = 1, size = 100, keyword = "" } = params || {};
+    const result = await this.findAll({ page, size, keyword } as any);
+    return { records: result.records, total: result.total };
+  }
+
   async findById(id: number) {
     const item = await this.prisma.shipping_tpl.findUnique({
       where: { tpl_id: id },
