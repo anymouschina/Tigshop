@@ -20,9 +20,25 @@ import { AdminCommentCompatService } from "./comment/admin-comment-compat.servic
 import { AdminApiProductShippingCompatController } from "./admin-product-shipping-compat.controller";
 import { ShippingTplService } from "src/setting/shipping-tpl/shippingTpl.service";
 import { AdminApiProductBatchCompatController } from "./admin-product-batch-compat.controller";
+import { AdminApiProductInventoryLogCompatController } from "./admin-product-inventory-log-compat.controller";
+import { AdminApiPriceInquiryCompatController } from "./admin-price-inquiry-compat.controller";
+import { AdminApiProductAttributesTplCompatController } from "./admin-product-attributes-tpl-compat.controller";
+import { AdminApiProductServicesCompatController } from "./admin-product-services-compat.controller";
+import { ProductInventoryLogModule } from "./product-inventory-log/product-inventory-log.module";
+import { PriceInquiryModule } from "./price-inquiry/price-inquiry.module";
+import { ProductAttributesTplModule } from "./product-attributes-tpl/product-attributes-tpl.module";
+import { ProductServicesModule } from "./product-services/product-services.module";
 
 @Module({
-  imports: [CommentModule, SkuModule, PrismaModule],
+  imports: [
+    CommentModule,
+    SkuModule,
+    PrismaModule,
+    ProductInventoryLogModule,
+    PriceInquiryModule,
+    ProductAttributesTplModule,
+    ProductServicesModule,
+  ],
   controllers: [
     ProductController,
     CategoryController,
@@ -35,6 +51,10 @@ import { AdminApiProductBatchCompatController } from "./admin-product-batch-comp
     AdminApiProductCommentController,
     AdminApiProductShippingCompatController,
     AdminApiProductBatchCompatController,
+    AdminApiProductInventoryLogCompatController,
+    AdminApiPriceInquiryCompatController,
+    AdminApiProductAttributesTplCompatController,
+    AdminApiProductServicesCompatController,
   ],
   providers: [
     ProductService,

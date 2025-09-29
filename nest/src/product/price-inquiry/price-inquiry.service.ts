@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import {
   CreatePriceInquiryDto,
@@ -9,6 +9,7 @@ import { ResponseUtil } from "../../../common/utils/response.util";
 
 @Injectable()
 export class PriceInquiryService {
+  private readonly logger = new Logger(PriceInquiryService.name);
   constructor(private prisma: PrismaService) {}
 
   async getFilterList(filter: any) {
@@ -26,16 +27,14 @@ export class PriceInquiryService {
       where.status = status;
     }
 
-    const orderBy: any = {};
-    if (sort_field) {
-      orderBy[sort_field] = sort_order || "desc";
-    } else {
-      orderBy.id = "desc";
-    }
+    const sortFieldMap: Record<string, string> = { id: "id" };
+    const resolvedSortField = sortFieldMap[sort_field] || sort_field || "id";
+    const orderBy: any = { [resolvedSortField]: sort_order || "desc" };
 
     const skip = (page - 1) * size;
 
-    return await this.prisma.priceInquiry.findMany({
+    // Prisma 模型为 price_inquiry（蛇形表名）
+    return await this.prisma.price_inquiry.findMany({
       where,
       orderBy,
       skip,
@@ -58,29 +57,26 @@ export class PriceInquiryService {
       where.status = status;
     }
 
-    return await this.prisma.priceInquiry.count({ where });
+    return await this.prisma.price_inquiry.count({ where });
   }
 
   async getDetail(id: number) {
-    return await this.prisma.priceInquiry.findUnique({
+    return await this.prisma.price_inquiry.findUnique({
       where: { id },
     });
   }
 
   async createPriceInquiry(createData: CreatePriceInquiryDto) {
     try {
-      const result = await this.prisma.priceInquiry.create({
+      const result = await this.prisma.price_inquiry.create({
         data: {
-          customer_name: createData.customer_name,
-          phone: createData.phone,
-          email: createData.email,
-          product_name: createData.product_name,
-          specification: createData.specification,
-          quantity: createData.quantity,
-          remark: createData.remark,
-          status: 0, // 待处理
-          created_at: new Date(),
-          updated_at: new Date(),
+          mobile: (createData as any).mobile || (createData as any).phone || "",
+          content: (createData as any).content || (createData as any).product_name || "",
+          product_id: (createData as any).product_id || 0,
+          remark: (createData as any).remark || "",
+          status: (createData as any).status ?? 0,
+          shop_id: (createData as any).shop_id || 0,
+          create_time: (createData as any).create_time ?? Math.floor(Date.now() / 1000),
         },
       });
       return result;
@@ -92,26 +88,15 @@ export class PriceInquiryService {
 
   async updatePriceInquiry(id: number, updateData: UpdatePriceInquiryDto) {
     try {
-      const result = await this.prisma.priceInquiry.update({
+      const result = await this.prisma.price_inquiry.update({
         where: { id },
         data: {
-          ...(updateData.customer_name && {
-            customer_name: updateData.customer_name,
-          }),
-          ...(updateData.phone && { phone: updateData.phone }),
-          ...(updateData.email !== undefined && { email: updateData.email }),
-          ...(updateData.product_name && {
-            product_name: updateData.product_name,
-          }),
-          ...(updateData.specification !== undefined && {
-            specification: updateData.specification,
-          }),
-          ...(updateData.quantity !== undefined && {
-            quantity: updateData.quantity,
-          }),
-          ...(updateData.remark !== undefined && { remark: updateData.remark }),
-          ...(updateData.status !== undefined && { status: updateData.status }),
-          updated_at: new Date(),
+          ...(updateData as any).mobile !== undefined && { mobile: (updateData as any).mobile },
+          ...(updateData as any).phone !== undefined && { mobile: (updateData as any).phone },
+          ...(updateData as any).content !== undefined && { content: (updateData as any).content },
+          ...(updateData as any).product_id !== undefined && { product_id: (updateData as any).product_id },
+          ...(updateData as any).remark !== undefined && { remark: (updateData as any).remark },
+          ...(updateData as any).status !== undefined && { status: (updateData as any).status },
         },
       });
       return result;
@@ -123,7 +108,7 @@ export class PriceInquiryService {
 
   async deletePriceInquiry(id: number) {
     try {
-      await this.prisma.priceInquiry.delete({
+      await this.prisma.price_inquiry.delete({
         where: { id },
       });
       return true;
@@ -135,7 +120,7 @@ export class PriceInquiryService {
 
   async batchDeletePriceInquiry(ids: number[]) {
     try {
-      await this.prisma.priceInquiry.deleteMany({
+      await this.prisma.price_inquiry.deleteMany({
         where: {
           id: {
             in: ids,
@@ -151,13 +136,11 @@ export class PriceInquiryService {
 
   async replyPriceInquiry(id: number, replyData: any) {
     try {
-      const result = await this.prisma.priceInquiry.update({
+      const result = await this.prisma.price_inquiry.update({
         where: { id },
         data: {
-          reply_content: replyData.reply_content,
-          reply_time: new Date(),
+          remark: (replyData as any).reply_content ?? (replyData as any).remark ?? "",
           status: 1, // 已回复
-          updated_at: new Date(),
         },
       });
       return result;
@@ -169,22 +152,14 @@ export class PriceInquiryService {
 
   async getPriceInquiryStatistics() {
     try {
-      const total = await this.prisma.priceInquiry.count();
-      const pending = await this.prisma.priceInquiry.count({
+      const total = await this.prisma.price_inquiry.count();
+      const pending = await this.prisma.price_inquiry.count({
         where: { status: 0 },
       });
-      const replied = await this.prisma.priceInquiry.count({
+      const replied = await this.prisma.price_inquiry.count({
         where: { status: 1 },
       });
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayCount = await this.prisma.priceInquiry.count({
-        where: {
-          created_at: {
-            gte: today,
-          },
-        },
-      });
+      const todayCount = 0;
 
       return {
         total,

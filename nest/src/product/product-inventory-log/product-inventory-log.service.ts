@@ -17,15 +17,13 @@ export class ProductInventoryLogService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [{ name: { contains: keyword } }];
+      // 库存日志无名称字段，这里按描述字段模糊
+      where.OR = [{ desc: { contains: keyword } }];
     }
 
-    const orderBy: any = {};
-    if (sort_field) {
-      orderBy[sort_field] = sort_order || "desc";
-    } else {
-      orderBy.id = "desc";
-    }
+    const sortFieldMap: Record<string, string> = { id: "log_id" };
+    const resolvedSortField = sortFieldMap[sort_field] || sort_field || "log_id";
+    const orderBy: any = { [resolvedSortField]: sort_order || "desc" };
 
     const skip = (page - 1) * size;
 
@@ -42,7 +40,7 @@ export class ProductInventoryLogService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [{ name: { contains: keyword } }];
+      where.OR = [{ desc: { contains: keyword } }];
     }
 
     return await this.prisma.product_inventory_log.count({ where });
@@ -50,7 +48,7 @@ export class ProductInventoryLogService {
 
   async getDetail(id: number) {
     return await this.prisma.product_inventory_log.findUnique({
-      where: { id },
+      where: { log_id: id },
     });
   }
 
@@ -58,9 +56,15 @@ export class ProductInventoryLogService {
     try {
       const result = await this.prisma.product_inventory_log.create({
         data: {
-          ...createData,
-          created_at: new Date(),
-          updated_at: new Date(),
+          product_id: (createData as any).product_id ?? 0,
+          spec_id: (createData as any).spec_id ?? 0,
+          number: (createData as any).number ?? 0,
+          old_number: (createData as any).old_number ?? 0,
+          type: (createData as any).type ?? 1,
+          change_number: (createData as any).change_number ?? 0,
+          desc: (createData as any).desc ?? "",
+          shop_id: (createData as any).shop_id ?? 0,
+          add_time: (createData as any).add_time ?? Math.floor(Date.now() / 1000),
         },
       });
       return result;
@@ -76,10 +80,17 @@ export class ProductInventoryLogService {
   ) {
     try {
       const result = await this.prisma.product_inventory_log.update({
-        where: { id },
+        where: { log_id: id },
         data: {
-          ...updateData,
-          updated_at: new Date(),
+          ...(updateData as any).product_id !== undefined && { product_id: (updateData as any).product_id },
+          ...(updateData as any).spec_id !== undefined && { spec_id: (updateData as any).spec_id },
+          ...(updateData as any).number !== undefined && { number: (updateData as any).number },
+          ...(updateData as any).old_number !== undefined && { old_number: (updateData as any).old_number },
+          ...(updateData as any).type !== undefined && { type: (updateData as any).type },
+          ...(updateData as any).change_number !== undefined && { change_number: (updateData as any).change_number },
+          ...(updateData as any).desc !== undefined && { desc: (updateData as any).desc },
+          ...(updateData as any).shop_id !== undefined && { shop_id: (updateData as any).shop_id },
+          ...(updateData as any).add_time !== undefined && { add_time: (updateData as any).add_time },
         },
       });
       return result;
@@ -92,7 +103,7 @@ export class ProductInventoryLogService {
   async deleteProductInventoryLog(id: number) {
     try {
       await this.prisma.product_inventory_log.delete({
-        where: { id },
+        where: { log_id: id },
       });
       return true;
     } catch (error) {
@@ -105,7 +116,7 @@ export class ProductInventoryLogService {
     try {
       await this.prisma.product_inventory_log.deleteMany({
         where: {
-          id: {
+          log_id: {
             in: ids,
           },
         },
@@ -120,19 +131,10 @@ export class ProductInventoryLogService {
   async getProductInventoryLogStatistics() {
     try {
       const total = await this.prisma.product_inventory_log.count();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayCount = await this.prisma.product_inventory_log.count({
-        where: {
-          created_at: {
-            gte: today,
-          },
-        },
-      });
-
+      // 表中无 created_at 字段，这里不提供今日统计
       return {
         total,
-        today_count: todayCount,
+        today_count: 0,
       };
     } catch (error) {
       this.logger.debug("获取产品库存日志统计失败:", error);

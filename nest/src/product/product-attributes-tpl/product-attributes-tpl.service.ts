@@ -15,17 +15,16 @@ export class ProductAttributesTplService {
   async getFilterList(filter: any) {
     const { keyword, page, size, sort_field, sort_order } = filter;
 
+    // 真实字段：tpl_id, tpl_name, tpl_data, shop_id
     const where: any = {};
     if (keyword) {
-      where.OR = [{ name: { contains: keyword } }];
+      where.OR = [{ tpl_name: { contains: keyword } }];
     }
 
-    const orderBy: any = {};
-    if (sort_field) {
-      orderBy[sort_field] = sort_order || "desc";
-    } else {
-      orderBy.id = "desc";
-    }
+    // 将通用的 id 映射为实际主键字段 tpl_id
+    const sortFieldMap: Record<string, string> = { id: "tpl_id" };
+    const resolvedSortField = sortFieldMap[sort_field] || sort_field || "tpl_id";
+    const orderBy: any = { [resolvedSortField]: sort_order || "desc" };
 
     const skip = (page - 1) * size;
 
@@ -42,7 +41,7 @@ export class ProductAttributesTplService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [{ name: { contains: keyword } }];
+      where.OR = [{ tpl_name: { contains: keyword } }];
     }
 
     return await this.prisma.product_attributes_tpl.count({ where });
@@ -50,7 +49,7 @@ export class ProductAttributesTplService {
 
   async getDetail(id: number) {
     return await this.prisma.product_attributes_tpl.findUnique({
-      where: { id },
+      where: { tpl_id: id },
     });
   }
 
@@ -58,9 +57,9 @@ export class ProductAttributesTplService {
     try {
       const result = await this.prisma.product_attributes_tpl.create({
         data: {
-          ...createData,
-          created_at: new Date(),
-          updated_at: new Date(),
+          tpl_name: (createData as any).tpl_name || (createData as any).name || "",
+          tpl_data: (createData as any).tpl_data || JSON.stringify((createData as any).data || {}),
+          shop_id: (createData as any).shop_id || 0,
         },
       });
       return result;
@@ -76,10 +75,13 @@ export class ProductAttributesTplService {
   ) {
     try {
       const result = await this.prisma.product_attributes_tpl.update({
-        where: { id },
+        where: { tpl_id: id },
         data: {
-          ...updateData,
-          updated_at: new Date(),
+          ...(updateData as any).tpl_name !== undefined && { tpl_name: (updateData as any).tpl_name },
+          ...(updateData as any).name !== undefined && { tpl_name: (updateData as any).name },
+          ...(updateData as any).tpl_data !== undefined && { tpl_data: (updateData as any).tpl_data },
+          ...(updateData as any).data !== undefined && { tpl_data: JSON.stringify((updateData as any).data) },
+          ...(updateData as any).shop_id !== undefined && { shop_id: (updateData as any).shop_id },
         },
       });
       return result;
@@ -92,7 +94,7 @@ export class ProductAttributesTplService {
   async deleteProductAttributesTpl(id: number) {
     try {
       await this.prisma.product_attributes_tpl.delete({
-        where: { id },
+        where: { tpl_id: id },
       });
       return true;
     } catch (error) {
@@ -105,7 +107,7 @@ export class ProductAttributesTplService {
     try {
       await this.prisma.product_attributes_tpl.deleteMany({
         where: {
-          id: {
+          tpl_id: {
             in: ids,
           },
         },

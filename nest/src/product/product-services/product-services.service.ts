@@ -17,15 +17,12 @@ export class ProductServicesService {
 
     const where: any = {};
     if (keyword) {
-      where.OR = [{ name: { contains: keyword } }];
+      where.OR = [{ product_service_name: { contains: keyword } }];
     }
 
-    const orderBy: any = {};
-    if (sort_field) {
-      orderBy[sort_field] = sort_order || "desc";
-    } else {
-      orderBy.id = "desc";
-    }
+    const sortFieldMap: Record<string, string> = { id: "product_service_id" };
+    const resolvedSortField = sortFieldMap[sort_field] || sort_field || "product_service_id";
+    const orderBy: any = { [resolvedSortField]: sort_order || "desc" };
 
     const skip = (page - 1) * size;
 
@@ -50,7 +47,7 @@ export class ProductServicesService {
 
   async getDetail(id: number) {
     return await this.prisma.product_services.findUnique({
-      where: { id },
+      where: { product_service_id: id },
     });
   }
 
@@ -58,9 +55,12 @@ export class ProductServicesService {
     try {
       const result = await this.prisma.product_services.create({
         data: {
-          ...createData,
-          created_at: new Date(),
-          updated_at: new Date(),
+          product_service_name: (createData as any).product_service_name || (createData as any).name || "",
+          product_service_desc: (createData as any).product_service_desc || (createData as any).desc || "",
+          ico_img: (createData as any).ico_img || (createData as any).icon || "",
+          sort_order: (createData as any).sort_order ?? 50,
+          default_on: (createData as any).default_on ?? 0,
+          shop_id: (createData as any).shop_id || 0,
         },
       });
       return result;
@@ -76,10 +76,17 @@ export class ProductServicesService {
   ) {
     try {
       const result = await this.prisma.product_services.update({
-        where: { id },
+        where: { product_service_id: id },
         data: {
-          ...updateData,
-          updated_at: new Date(),
+          ...(updateData as any).product_service_name !== undefined && { product_service_name: (updateData as any).product_service_name },
+          ...(updateData as any).name !== undefined && { product_service_name: (updateData as any).name },
+          ...(updateData as any).product_service_desc !== undefined && { product_service_desc: (updateData as any).product_service_desc },
+          ...(updateData as any).desc !== undefined && { product_service_desc: (updateData as any).desc },
+          ...(updateData as any).ico_img !== undefined && { ico_img: (updateData as any).ico_img },
+          ...(updateData as any).icon !== undefined && { ico_img: (updateData as any).icon },
+          ...(updateData as any).sort_order !== undefined && { sort_order: (updateData as any).sort_order },
+          ...(updateData as any).default_on !== undefined && { default_on: (updateData as any).default_on },
+          ...(updateData as any).shop_id !== undefined && { shop_id: (updateData as any).shop_id },
         },
       });
       return result;
@@ -92,7 +99,7 @@ export class ProductServicesService {
   async deleteProductServices(id: number) {
     try {
       await this.prisma.product_services.delete({
-        where: { id },
+        where: { product_service_id: id },
       });
       return true;
     } catch (error) {
@@ -105,7 +112,7 @@ export class ProductServicesService {
     try {
       await this.prisma.product_services.deleteMany({
         where: {
-          id: {
+          product_service_id: {
             in: ids,
           },
         },
@@ -120,20 +127,8 @@ export class ProductServicesService {
   async getProductServicesStatistics() {
     try {
       const total = await this.prisma.product_services.count();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayCount = await this.prisma.product_services.count({
-        where: {
-          created_at: {
-            gte: today,
-          },
-        },
-      });
-
-      return {
-        total,
-        today_count: todayCount,
-      };
+      // product_services 表没有 created_at 字段，返回总数即可
+      return { total, today_count: 0 };
     } catch (error) {
       this.logger.debug("获取产品服务统计失败:", error);
       return {
