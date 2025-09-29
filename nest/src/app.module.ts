@@ -45,6 +45,7 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
 import { StatisticsModule } from "./statistics/statistics.module";
 import { AppController } from "./app.contronller";
+import { TranslationsModule } from "./lang/translations/translations.module";
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { AppController } from "./app.contronller";
     VerificationModule,
     CsrfModule,
     StatisticsModule,
+    TranslationsModule,
   ],
   controllers: [AppController],
   providers: [
