@@ -264,10 +264,26 @@ export class BrandService {
     if (data.brand_desc !== undefined) updateData.brand_desc = data.brand_desc;
     if (data.brand_logo !== undefined) updateData.brand_logo = data.brand_logo;
     if (data.site_url !== undefined) updateData.site_url = data.site_url;
-    if (data.brand_is_hot !== undefined)
-      updateData.brand_is_hot = data.brand_is_hot;
-    if (data.is_show !== undefined) updateData.is_show = data.is_show;
-    if (data.sort_order !== undefined) updateData.sort_order = data.sort_order;
+    if (data.brand_is_hot !== undefined) {
+      let v = data.brand_is_hot;
+      if (typeof v === "string") v = v === "true" ? 1 : Number(v);
+      if (typeof v === "boolean") v = v ? 1 : 0;
+      updateData.brand_is_hot = Number.isInteger(v) ? v : 0;
+    }
+    if (data.is_show !== undefined) {
+      let v = data.is_show;
+      if (typeof v === "string") v = v === "true" ? 1 : Number(v);
+      if (typeof v === "boolean") v = v ? 1 : 0;
+      updateData.is_show = Number.isInteger(v) ? v : 0;
+    }
+    if (data.sort_order !== undefined) {
+      let v = data.sort_order;
+      if (typeof v === "string") v = parseInt(v, 10);
+      if (!Number.isInteger(v)) {
+        throw new BadRequestException("排序值必须为整数");
+      }
+      updateData.sort_order = v;
+    }
     if (data.brand_en_name !== undefined)
       updateData.brand_en_name = data.brand_en_name;
 
@@ -327,6 +343,30 @@ export class BrandService {
     if (field === "first_word" && !value) {
       // 如果清空首字母，自动重新生成
       value = this.generateFirstWord(brand.brand_name);
+    }
+
+    // 字段类型纠正
+    if (["brand_is_hot", "is_show"].includes(field)) {
+      if (typeof value === "string") {
+        if (value === "true" || value === "false") {
+          value = value === "true" ? 1 : 0;
+        } else {
+          value = Number(value);
+        }
+      }
+      if (typeof value === "boolean") {
+        value = value ? 1 : 0;
+      }
+      value = Number(value);
+      if (!Number.isInteger(value)) {
+        throw new BadRequestException("布尔/数值字段必须为数字");
+      }
+    }
+    if (field === "sort_order") {
+      if (typeof value === "string") value = parseInt(value, 10);
+      if (!Number.isInteger(value)) {
+        throw new BadRequestException("排序值必须为整数");
+      }
     }
 
     const result = await this.prisma.brand.update({

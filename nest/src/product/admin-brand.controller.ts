@@ -123,6 +123,29 @@ export class AdminApiBrandController {
   }
 
   /**
+   * 兼容前端 product/brand/update
+   */
+  @Post("update")
+  @ApiOperation({ summary: "更新品牌（admin）" })
+  async update(@Body() body: any) {
+    const id = Number(body.id);
+    const data: any = {
+      brand_name: body.brandName,
+      brand_logo: body.brandLogo,
+      brand_desc: body.brandDesc,
+      sort_order: body.sortOrder,
+      first_word: body.firstWord,
+      is_show: body.isShow,
+      brand_is_hot: body.brandIsHot,
+      brand_type: body.brandType,
+      brand_en_name: body.brandEnName,
+      site_url: body.siteUrl,
+    };
+    await this.brandService.update(id, data);
+    return { code: 0, message: "success" };
+  }
+
+  /**
    * 兼容前端 product/brand/auditList
    */
   @Get("auditList")
@@ -164,6 +187,65 @@ export class AdminApiBrandController {
         total: result.total,
       },
     };
+  }
+
+  /**
+   * 兼容前端 product/brand/updateField
+   */
+  @Post("updateField")
+  @ApiOperation({ summary: "更新品牌单个字段（admin）" })
+  async updateField(@Body() body: any) {
+    const id = Number(body.id);
+    const fieldMap: Record<string, string> = {
+      brandName: "brand_name",
+      firstWord: "first_word",
+      brandIsHot: "brand_is_hot",
+      isShow: "is_show",
+      sortOrder: "sort_order",
+      brandType: "brand_type",
+    };
+    const field = fieldMap[body.field];
+    const value = body.val;
+    await this.brandService.updateField(id, field, value);
+    return { code: 0, message: "success" };
+  }
+
+  /**
+   * 兼容前端 product/brand/batch（仅支持 del）
+   */
+  @Post("batch")
+  @ApiOperation({ summary: "批量操作品牌（admin）" })
+  async batch(@Body() body: any) {
+    const type = body.type;
+    const ids = Array.isArray(body.ids) ? body.ids.map((n: any) => Number(n)) : [];
+    if (type === "del" && ids.length > 0) {
+      await this.brandService.batchDelete(ids);
+      return { code: 0, message: "success" };
+    }
+    return { code: 400, message: "不支持的批量操作或未选择项目" } as any;
+  }
+
+  /**
+   * 兼容前端 product/brand/audit
+   */
+  @Post("audit")
+  @ApiOperation({ summary: "审核品牌（admin）" })
+  async audit(@Body() body: any) {
+    const brandId = Number(body.brandId ?? body.brand_id);
+    const status = Number(body.status);
+    const rejectRemark = body.rejectRemark ?? body.reject_remark;
+    await this.brandService.auditBrand(brandId, status, rejectRemark);
+    return { code: 0, message: "success" };
+  }
+
+  /**
+   * 兼容前端 product/brand/updateFirstWord
+   */
+  @Post("updateFirstWord")
+  @ApiOperation({ summary: "批量更新品牌首字母（admin）" })
+  async updateFirstWord() {
+    await this.brandService.updateAllFirstWords();
+    return { code: 0, message: "success" };
   }
 
   /**
