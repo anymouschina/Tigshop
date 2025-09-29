@@ -55,11 +55,23 @@ export class ProductAttributesTplService {
 
   async createProductAttributesTpl(createData: CreateProductAttributesTplDto) {
     try {
+      const name = (createData as any).tpl_name ?? (createData as any).tplName ?? (createData as any).name ?? "";
+      const rawTplData =
+        (createData as any).tpl_data ??
+        (createData as any).tplData ??
+        (createData as any).data ??
+        null;
+      const tplData =
+        typeof rawTplData === "string"
+          ? rawTplData
+          : JSON.stringify(rawTplData ?? {});
+      const shopId = (createData as any).shop_id ?? (createData as any).shopId ?? 0;
+
       const result = await this.prisma.product_attributes_tpl.create({
         data: {
-          tpl_name: (createData as any).tpl_name || (createData as any).name || "",
-          tpl_data: (createData as any).tpl_data || JSON.stringify((createData as any).data || {}),
-          shop_id: (createData as any).shop_id || 0,
+          tpl_name: name,
+          tpl_data: tplData,
+          shop_id: shopId,
         },
       });
       return result;
@@ -74,14 +86,26 @@ export class ProductAttributesTplService {
     updateData: UpdateProductAttributesTplDto,
   ) {
     try {
+      const rawTplData =
+        (updateData as any).tpl_data ??
+        (updateData as any).tplData ??
+        (updateData as any).data;
+      const tplData =
+        rawTplData === undefined
+          ? undefined
+          : typeof rawTplData === "string"
+            ? rawTplData
+            : JSON.stringify(rawTplData ?? {});
+
       const result = await this.prisma.product_attributes_tpl.update({
         where: { tpl_id: id },
         data: {
           ...(updateData as any).tpl_name !== undefined && { tpl_name: (updateData as any).tpl_name },
+          ...(updateData as any).tplName !== undefined && { tpl_name: (updateData as any).tplName },
           ...(updateData as any).name !== undefined && { tpl_name: (updateData as any).name },
-          ...(updateData as any).tpl_data !== undefined && { tpl_data: (updateData as any).tpl_data },
-          ...(updateData as any).data !== undefined && { tpl_data: JSON.stringify((updateData as any).data) },
+          ...(tplData !== undefined) && { tpl_data: tplData },
           ...(updateData as any).shop_id !== undefined && { shop_id: (updateData as any).shop_id },
+          ...(updateData as any).shopId !== undefined && { shop_id: (updateData as any).shopId },
         },
       });
       return result;

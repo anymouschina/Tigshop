@@ -26,18 +26,45 @@ export class AdminApiProductAttributesTplCompatController {
       sort_field: query.sortField || query.sort_field || "id",
       sort_order: query.sortOrder || query.sort_order || "desc",
     };
-    const [records, total] = await Promise.all([
+    const [recordsRaw, total] = await Promise.all([
       this.svc.getFilterList(filter),
       this.svc.getFilterCount(filter),
     ]);
-    return { code: 0, message: "success", data: { records, total } };
+    // 解析 tpl_data 为对象，交由全局拦截器做蛇转驼
+    const records = (recordsRaw || []).map((r: any) => {
+      let tplDataParsed: any = null;
+      const raw = r?.tpl_data;
+      if (raw != null) {
+        try {
+          tplDataParsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+        } catch (e) {
+          tplDataParsed = null;
+        }
+      }
+      return { ...r, tpl_data: tplDataParsed };
+    });
+    const pages = Math.max(1, Math.ceil((total || 0) / size));
+    return { code: 0, message: "success", data: { records, total, size, current: page, pages } };
   }
 
   @Get("detail")
   @Authorities("productManage")
   @ApiOperation({ summary: "属性模板详情（admin 兼容）" })
   async detail(@Query("id") id: string) {
-    const data = await this.svc.getDetail(Number(id));
+    const raw = await this.svc.getDetail(Number(id));
+    let data: any = raw;
+    if (raw && typeof raw === "object") {
+      let tplDataParsed: any = null;
+      const t = (raw as any).tpl_data;
+      if (t != null) {
+        try {
+          tplDataParsed = typeof t === "string" ? JSON.parse(t) : t;
+        } catch (e) {
+          tplDataParsed = null;
+        }
+      }
+      data = { ...raw, tpl_data: tplDataParsed };
+    }
     return { code: 0, message: "success", data };
   }
 
@@ -53,7 +80,12 @@ export class AdminApiProductAttributesTplCompatController {
   @Authorities("productManage")
   @ApiOperation({ summary: "更新属性模板（admin 兼容）" })
   async update(@Body() body: any) {
-    await this.svc.updateProductAttributesTpl(Number(body.id), body);
+    const id = Number(body.tplId ?? body.id);
+    const payload: any = { ...body };
+    if (payload.tplData && typeof payload.tplData !== "string") {
+      payload.tplData = JSON.stringify(payload.tplData);
+    }
+    await this.svc.updateProductAttributesTpl(id, payload);
     return { code: 0, message: "success" };
   }
 
@@ -61,7 +93,8 @@ export class AdminApiProductAttributesTplCompatController {
   @Authorities("productManage")
   @ApiOperation({ summary: "删除属性模板（admin 兼容）" })
   async del(@Body() body: any) {
-    await this.svc.deleteProductAttributesTpl(Number(body.id));
+    const id = Number(body.tplId ?? body.id);
+    await this.svc.deleteProductAttributesTpl(id);
     return { code: 0, message: "success" };
   }
 
