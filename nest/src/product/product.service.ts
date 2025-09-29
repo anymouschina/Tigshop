@@ -103,21 +103,23 @@ export class ProductService {
 
     if (keyword) {
       where.OR = [
-        { name: { contains: keyword } },
-        { description: { contains: keyword } },
+        { product_name: { contains: keyword } },
+        { product_desc: { contains: keyword } },
+        { keywords: { contains: keyword } },
       ];
     }
 
     if (categoryId) {
-      where.categoryId = categoryId;
+      where.category_id = Number(categoryId);
     }
 
     if (brandId) {
-      where.brandId = brandId;
+      where.brand_id = Number(brandId);
     }
 
     if (isEnable !== undefined) {
-      where.isEnable = isEnable;
+      // 映射为 product_status: 1/0
+      where.product_status = isEnable ? 1 : 0;
     }
 
     if (isBest !== undefined) {
@@ -137,12 +139,12 @@ export class ProductService {
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
-      where.price = {};
+      where.product_price = {};
       if (minPrice !== undefined) {
-        where.price.gte = minPrice;
+        where.product_price.gte = minPrice as any;
       }
       if (maxPrice !== undefined) {
-        where.price.lte = maxPrice;
+        where.product_price.lte = maxPrice as any;
       }
     }
 
@@ -186,11 +188,20 @@ export class ProductService {
 
     // 确保排序字段使用正确的数据库字段名
     const finalOrderBy: any = {};
-    if (sortField === "productId") {
-      finalOrderBy.product_id = sortOrder;
-    } else {
-      finalOrderBy[sortField] = sortOrder;
-    }
+    // 常见排序字段映射（驼峰 -> 下划线）
+    const sortFieldMap: Record<string, string> = {
+      productId: "product_id",
+      productPrice: "product_price",
+      productStock: "product_stock",
+      virtualSales: "virtual_sales",
+      sortOrder: "sort_order",
+      addTime: "add_time",
+      lastUpdate: "last_update",
+      productStatus: "product_status",
+      clickCount: "click_count",
+    };
+    const prismaSortField = sortFieldMap[sortField] || sortField;
+    finalOrderBy[prismaSortField] = sortOrder;
 
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({

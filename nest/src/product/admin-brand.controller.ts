@@ -18,13 +18,19 @@ export class AdminApiBrandController {
   @ApiOperation({ summary: "搜索品牌（admin）" })
   async search(@Query("word") word?: string) {
     const result = await this.brandService.searchBrands(word || "");
+    const brandList = (result.brand_list || []).map((b: any) => ({
+      brandId: b.brand_id,
+      brandName: b.brand_name,
+      brandLogo: b.brand_logo,
+      firstWord: b.first_word,
+    }));
     // 前端定义 BrandSearchFilterResult:
     // { brandList: BrandFilterState[]; firstWordList: string[]; message: string; errcode: number; }
     return {
       code: 0,
       message: "success",
       data: {
-        brandList: result.brand_list || [],
+        brandList,
         firstWordList: result.firstWord_list || [],
         message: "success",
         errcode: 0,

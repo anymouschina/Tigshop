@@ -87,6 +87,13 @@ export class CategoryService {
       where.parent_id = filter.parent_id;
     }
 
+    // 显示状态筛选（0/1）。部分前端传 isShow，我们在 controller 中已做映射；这里兜底支持两种写法。
+    const isShowVal =
+      filter.is_show !== undefined ? filter.is_show : filter.isShow;
+    if (isShowVal !== undefined && isShowVal !== "" && isShowVal !== -1) {
+      where.is_show = Number(isShowVal);
+    }
+
     return where;
   }
 
@@ -99,6 +106,22 @@ export class CategoryService {
     return {
       category_id: "asc",
     };
+  }
+
+  // 批量判断是否存在子分类，返回映射: { [category_id]: boolean }
+  async hasChildrenForIds(
+    ids: number[],
+  ): Promise<Record<number, boolean>> {
+    if (!ids || ids.length === 0) return {};
+    const children = await this.prisma.category.findMany({
+      where: { parent_id: { in: ids } },
+      select: { parent_id: true },
+    });
+    const map: Record<number, boolean> = {};
+    for (const c of children) {
+      if (c.parent_id != null) map[c.parent_id] = true;
+    }
+    return map;
   }
 
   async getDetail(id: number): Promise<any> {

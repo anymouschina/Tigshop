@@ -362,9 +362,9 @@ export class BrandService {
 
   // 搜索品牌
   async searchBrands(word: string = ""): Promise<any> {
+    // 与旧 PHP 行为对齐：仅按 is_show=1 过滤，不强制审核通过
     const where: any = {
       is_show: 1,
-      check_status: 1, // 只搜索审核通过的品牌
     };
 
     if (word) {
@@ -402,7 +402,6 @@ export class BrandService {
     const firstWords = await this.prisma.brand.findMany({
       where: {
         is_show: 1,
-        check_status: 1,
         first_word: {
           not: "",
         },
