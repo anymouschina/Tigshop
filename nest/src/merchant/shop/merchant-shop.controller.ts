@@ -107,18 +107,9 @@ export class MerchantShopController {
       orderBy: { shop_id: "desc" },
       select: { shop_id: true, shop_title: true },
     });
-    return {
-      code: 0,
-      message: "success",
-      data: {
-        records: records.map((r) => ({
-          shopId: r.shop_id,
-          shopTitle: r.shop_title,
-        })),
-        filter: { page: 1 },
-        total: records.length,
-      },
-    };
+    // 与 PHP 版本对齐：下拉选择接口直接返回数组，不带分页元信息
+    const items = records.map((r) => ({ shopId: r.shop_id, shopTitle: r.shop_title }));
+    return { code: 0, message: "success", data: items };
   }
 
   /**
