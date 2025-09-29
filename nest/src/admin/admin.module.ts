@@ -7,6 +7,7 @@ import { AdminService } from "./admin.service";
 import { AuthorityModule } from "./authority/authority.module";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthModule } from "../auth/auth.module";
+import { AdminAccountCompatController } from "./admin-account-compat.controller";
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { AuthModule } from "../auth/auth.module";
       signOptions: { expiresIn: "24h" },
     }),
   ],
-  controllers: [AdminController, AdminApiCsrfController, AdminLoginController],
+  controllers: [AdminController, AdminApiCsrfController, AdminLoginController, AdminAccountCompatController],
   providers: [AdminService],
   exports: [AdminService],
 })

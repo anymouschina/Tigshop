@@ -22,8 +22,12 @@ import {
   BatchDeleteConfigDto,
   BatchUpdateConfigDto,
 } from "./dto/config.dto";
+// 旧版基于 RolesGuard 的实现保留给 admin/config 前缀；兼容 adminapi 需使用 AdminJwtAuthGuard + AuthorityGuard
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
+import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
+import { AuthorityGuard } from "src/auth/guards/authority.guard";
+import { Authorities } from "src/auth/decorators/authority.decorator";
 import { Public } from "../auth/decorators/public.decorator";
 import {
   ApiTags,
@@ -35,10 +39,66 @@ import {
 
 @ApiTags("系统配置管理")
 @Controller(["admin/config", "adminapi/setting/config"])
-@UseGuards(RolesGuard)
+// 对 adminapi 前缀使用 AdminJwtAuthGuard + AuthorityGuard，旧 admin/config 仍可由 RolesGuard 兼容
+@UseGuards(AdminJwtAuthGuard, AuthorityGuard)
+// Roles 仍保留以兼容原逻辑（非 adminapi 路径）
 @Roles("admin")
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
+
+  // 兼容 PHP: GET /adminapi/setting/config/merchantSettings
+  @Get("merchantSettings")
+  @ApiOperation({ summary: "获取商户配置（兼容）" })
+  @Authorities("configMerchantView")
+  async merchantSettings() {
+    const data = await this.configService.getJsonConfig("merchantSettings");
+    return { code: 0, message: "success", data };
+  }
+
+  // 兼容 PHP: POST /adminapi/setting/config/saveMerchant
+  @Post("saveMerchant")
+  @ApiOperation({ summary: "保存商户配置（兼容）" })
+  @Authorities("configMerchantUpdate")
+  async saveMerchant(@Body() body: any) {
+    await this.configService.setJsonConfig("merchantSettings", body ?? {});
+    return { code: 0, message: "success", data: true };
+  }
+
+  // 兼容 PHP: GET /adminapi/setting/config/shopSettings
+  @Get("shopSettings")
+  @ApiOperation({ summary: "获取店铺配置（兼容）" })
+  @Authorities("configShopView")
+  async shopSettings() {
+    const data = await this.configService.getJsonConfig("shopSettings");
+    return { code: 0, message: "success", data };
+  }
+
+  // 兼容 PHP: POST /adminapi/setting/config/saveShop
+  @Post("saveShop")
+  @ApiOperation({ summary: "保存店铺配置（兼容）" })
+  @Authorities("configShopUpdate")
+  async saveShop(@Body() body: any) {
+    await this.configService.setJsonConfig("shopSettings", body ?? {});
+    return { code: 0, message: "success", data: true };
+  }
+
+  // 兼容 PHP: GET /adminapi/setting/config/vendorSettings
+  @Get("vendorSettings")
+  @ApiOperation({ summary: "获取供应商配置（兼容）" })
+  @Authorities("configVendorView")
+  async vendorSettings() {
+    const data = await this.configService.getJsonConfig("vendorSettings");
+    return { code: 0, message: "success", data };
+  }
+
+  // 兼容 PHP: POST /adminapi/setting/config/saveVendor
+  @Post("saveVendor")
+  @ApiOperation({ summary: "保存供应商配置（兼容）" })
+  @Authorities("configVendorUpdate")
+  async saveVendor(@Body() body: any) {
+    await this.configService.setJsonConfig("vendorSettings", body ?? {});
+    return { code: 0, message: "success", data: true };
+  }
 
   @Get()
   @ApiOperation({ summary: "获取配置列表" })

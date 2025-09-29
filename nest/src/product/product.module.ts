@@ -27,6 +27,8 @@ import { AdminApiProductServicesCompatController } from "./admin-product-service
 import { ProductInventoryLogModule } from "./product-inventory-log/product-inventory-log.module";
 import { PriceInquiryModule } from "./price-inquiry/price-inquiry.module";
 import { ProductAttributesTplModule } from "./product-attributes-tpl/product-attributes-tpl.module";
+import { PanelModule } from "src/panel/panel.module";
+import { AdminProductBatchCompatService } from "./admin-product-batch-compat.service";
 import { ProductServicesModule } from "./product-services/product-services.module";
 
 @Module({
@@ -38,6 +40,7 @@ import { ProductServicesModule } from "./product-services/product-services.modul
     PriceInquiryModule,
     ProductAttributesTplModule,
     ProductServicesModule,
+    PanelModule,
   ],
   controllers: [
     ProductController,
@@ -64,6 +67,7 @@ import { ProductServicesModule } from "./product-services/product-services.modul
     ProductGroupCompatService,
     AdminCommentCompatService,
     ShippingTplService,
+    AdminProductBatchCompatService,
   ],
   exports: [
     ProductService,

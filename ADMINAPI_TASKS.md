@@ -59,7 +59,7 @@
     - POST productBatchModify（多段上传场景的提交成功标记）
     - GET downloadTemplate（下载 CSV 模板）
     - POST productBatchEdit（批量编辑预处理成功标记）
-  - [ ] 实际批量处理与编辑逻辑落地（解析上传文件/表格并应用到商品）
+  - [x] 实际批量处理与编辑逻辑落地（解析上传文件/表格并应用到商品）
 - Product Inventory Log 库存日志
   - [x] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
 - Price Inquiry 询价
@@ -90,8 +90,8 @@
       - [x] GET  /adminapi/order/list（已添加 AdminOrderCompatController.list）
       - [x] GET  /adminapi/order/detail（已添加 AdminOrderCompatController.detail）
       - [x] 兼容别名 /adminapi/order/order/*（list/detail/updateField/log/*/deliver/... 导出等均已提供别名，消除 404）
-      - [ ] GET  /adminapi/order/orderWayBill（获取电子面单）
-      - [ ] GET  /adminapi/order/parentDetail（父订单详情）
+  - [x] GET  /adminapi/order/orderWayBill（获取电子面单）
+  - [x] GET  /adminapi/order/parentDetail（父订单详情）
       - [x] POST /adminapi/order/deliver（订单发货）
       - [x] POST /adminapi/order/confirmReceipt（订单收货）
       - [x] POST /adminapi/order/modifyConsignee（修改收货人）
@@ -100,37 +100,109 @@
       - [x] POST /adminapi/order/cancelOrder（取消订单）
       - [x] POST /adminapi/order/setConfirm（设置为已确认）
       - [x] POST /adminapi/order/delOrder（订单软删除）
-      - [ ] POST /adminapi/order/splitStoreOrder（订单拆分）
+  - [ ] POST /adminapi/order/splitStoreOrder（订单拆分）
       - [x] POST /adminapi/order/setPaid（设置为已支付）
-      - [ ] POST /adminapi/order/modifyProduct（修改商品信息）
-      - [ ] POST /adminapi/order/getAddProductInfo（添加商品前置信息）
+  - [x] POST /adminapi/order/modifyProduct（修改商品信息）
+  - [x] POST /adminapi/order/getAddProductInfo（添加商品前置信息）
       - [x] POST /adminapi/order/setAdminNote（设置商家备注）
-      - [ ] GET  /adminapi/order/orderPrint（打印订单）
-      - [ ] GET  /adminapi/order/orderPrintBill（打印电子面单）
+  - [x] GET  /adminapi/order/orderPrint（打印订单）
+  - [x] GET  /adminapi/order/orderPrintBill（打印电子面单）
       - [x] GET  /adminapi/order/getExportItemList（导出标签列表，已实现）
       - [x] POST /adminapi/order/saveExportItem（保存导出字段，已实现）
       - [x] GET  /adminapi/order/exportItemInfo（标签详情，已实现）
       - [x] GET  /adminapi/order/orderExport（导出 CSV，已实现）
-      - [ ] POST /adminapi/order/batch（批量操作）
-      - [ ] GET  /adminapi/order/severalDetail（批量详情）
-      - [ ] GET  /adminapi/order/printSeveral（批量打印）
+  - [x] POST /adminapi/order/batch（批量操作）
+  - [x] GET  /adminapi/order/severalDetail（批量详情）
+  - [x] GET  /adminapi/order/printSeveral（批量打印）
       - [x] GET  /adminapi/order/shippingInfo（物流信息）
-      - [ ] GET  /adminapi/order/getOrderPageConfig（订单列表配置）
+  - [x] GET  /adminapi/order/getOrderPageConfig（订单列表配置）
       - [x] POST /adminapi/order/changeOrderStatus 或 updateField（字段更新：已添加 updateField 简化版）
-    - 打印 Print（与 PHP /adminapi/print/* 对齐）
+  - 打印 Print（与 PHP /adminapi/print/* 对齐）
       - [x] POST /adminapi/print/print/hasEnabled（已新增兼容控制器 AdminPrintCompatController，按店铺判断是否存在启用打印机）
-    - 日志管理 OrderLog
+  - 日志管理 OrderLog
       - [x] GET  /adminapi/order/log/list（已添加 AdminOrderCompatController.logList）
       - [x] POST /adminapi/order/log/create（已添加 AdminOrderCompatController.logCreate）
-    - 订单配置 Config（如需对齐 /adminapi/order/config/*）
+  - 订单配置 Config（如需对齐 /adminapi/order/config/*）
       - [ ] GET  /adminapi/order/config/detail
       - [ ] POST /adminapi/order/config/save
 - [ ] 组织/权限 Organization
+  - 权限与组织模块接口清单（来自 PHP /adminapi/authority/*，先罗列待办，逐步对齐）：
+    - 顶层
+      - [ ] GET  /adminapi/authority/authority/getAllAuthority
+      - [ ] GET  /adminapi/authority/authority/getAuthority
+    - 管理员日志 adminLog
+      - [ ] GET  /adminapi/authority/adminLog/list
+    - 角色管理 adminRole
+      - [ ] GET  /adminapi/authority/adminRole/list
+      - [ ] GET  /adminapi/authority/adminRole/detail
+      - [ ] POST /adminapi/authority/adminRole/create
+      - [ ] POST /adminapi/authority/adminRole/update
+      - [ ] POST /adminapi/authority/adminRole/del
+      - [ ] POST /adminapi/authority/adminRole/updateField
+      - [ ] POST /adminapi/authority/adminRole/batch
+    - 管理员 adminUser
+      - [ ] GET  /adminapi/authority/adminUser/list
+      - [ ] GET  /adminapi/authority/adminUser/detail
+      - [ ] GET  /adminapi/authority/adminUser/mineDetail
+      - [ ] POST /adminapi/authority/adminUser/create
+      - [ ] POST /adminapi/authority/adminUser/update
+      - [ ] POST /adminapi/authority/adminUser/del
+      - [ ] POST /adminapi/authority/adminUser/updateField
+      - [ ] GET  /adminapi/authority/adminUser/config
+      - [ ] POST /adminapi/authority/adminUser/batch
+      - [ ] POST /adminapi/authority/adminUser/modifyManageAccounts
+      - [ ] GET  /adminapi/authority/adminUser/getCode
+      - [ ] POST /adminapi/authority/adminUser/checkCode
+    - 权限管理 authority
+      - [ ] GET  /adminapi/authority/authority/list
+      - [ ] GET  /adminapi/authority/authority/getAuthorityParentName
+      - [ ] GET  /adminapi/authority/authority/detail
+      - [ ] POST /adminapi/authority/authority/create
+      - [ ] POST /adminapi/authority/authority/update
+      - [ ] POST /adminapi/authority/authority/del
+      - [ ] POST /adminapi/authority/authority/updateField
+      - [ ] POST /adminapi/authority/authority/batch
+    - 供应商 suppliers
+      - [ ] GET  /adminapi/authority/suppliers/list
+      - [ ] GET  /adminapi/authority/suppliers/detail
+      - [ ] POST /adminapi/authority/suppliers/create
+      - [ ] POST /adminapi/authority/suppliers/update
+      - [ ] POST /adminapi/authority/suppliers/del
+      - [ ] POST /adminapi/authority/suppliers/updateField
+      - [ ] POST /adminapi/authority/suppliers/batch
+  - 店铺/商户相关（分布在 setting 与 admin 模块，罗列用于对齐）：
+    - 设置 Setting 下（config）
+      - [ ] GET  /adminapi/setting/config/merchantSettings
+      - [ ] POST /adminapi/setting/config/saveMerchant
+      - [ ] GET  /adminapi/setting/config/shopSettings
+      - [ ] POST /adminapi/setting/config/saveShop
+      - [ ] GET  /adminapi/setting/config/vendorSettings
+      - [ ] POST /adminapi/setting/config/saveVendor
+    - 主账号 Admin 下（admin/adminAccount）
+      - [ ] GET  /adminapi/admin/adminAccount/getMainAccount
+      - [ ] GET  /adminapi/admin/adminAccount/pageShopOrVendor
+      - [ ] POST /adminapi/admin/adminAccount/bindMainAccount
+      - [ ] POST /adminapi/admin/adminAccount/updateMainAccount
+      - [ ] POST /adminapi/admin/adminAccount/updateMainAccountPwd
+      - [ ] GET  /adminapi/admin/adminAccount/pageAdminUser
 - [ ] 店铺装修 Decorate
 - [ ] 分销 Distribution
 - [ ] 内容 Content
 - [ ] 财务 Finance
 - [ ] 会员 Member
+  
+### 8) 用户侧模块（User App）
+- [ ] 用户售后 Aftersales（对齐 PHP user/Aftersales/*）
+  - [x] GET  /aftersales/user/aftersales/list（可售后订单列表）
+  - [x] GET  /aftersales/user/aftersales/config（售后配置）
+  - [x] GET  /aftersales/user/aftersales/applyData（售后申请详情）
+  - [x] POST /aftersales/user/aftersales/create（创建售后申请）
+  - [x] POST /aftersales/user/aftersales/update（更新售后申请）
+  - [x] GET  /aftersales/user/aftersales/getRecord（售后申请记录）
+  - [x] GET  /aftersales/user/aftersales/detail（售后记录详情）
+  - [x] GET  /aftersales/user/aftersales/detailLog（售后日志记录）
+  - [x] POST /aftersales/user/aftersales/feedback（提交售后反馈记录）
+  - [x] POST /aftersales/user/aftersales/cancel（撤销售后申请）
 
 ### 7) 验证与发布
 - [ ] 本地构建通过（pnpm build）
@@ -148,6 +220,10 @@
   - 新增 /adminapi/order/order/* 路由别名，映射至现有处理（列表、详情、日志、更新字段、发货/收货/金额/收货人/配送/取消/确认/删除/已支付、导出相关、批量/打印占位等）。
   - 新增 /adminapi/setting/logisticsCompany/list 兼容控制器，复用 LogisticsCompanyService，支持 paging=false 返回扁平数组；paging=true 返回 {records,total,size,current,pages}。
   - 新增 /adminapi/print/print/hasEnabled 兼容接口，判断是否存在启用打印机（status=1 且按当前管理员 shop_id 过滤）。
+ - 2025-09-30：商品批量处理落地：新增 AdminProductBatchCompatService，实现：
+   - GET /adminapi/product/productBatch/productBatchDeal 实际导出逻辑（按全部/分类/品牌/商品范围导出，分类路径 a|b|c，品牌名映射，UTF-8 BOM + CRLF）。
+   - POST /adminapi/product/productBatch/productBatchModify 解析上传 CSV 批量创建商品（支持自动创建分类/品牌，生成唯一商品编号，写入相册）。
+   - POST /adminapi/product/productBatch/productBatchEdit 支持按行批量编辑（字段白名单与校验，避免重复 SN，更新 last_update）。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：
