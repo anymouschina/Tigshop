@@ -15,6 +15,8 @@ import { AdminApiBrandController } from "./admin-brand.controller";
 import { AdminApiProductGroupController } from "./admin-product-group.controller";
 import { ProductGroupCompatService } from "./product-group-compat.service";
 import { PrismaModule } from "src/prisma/prisma.module";
+import { AdminApiProductCommentController } from "./comment/admin-comment.controller";
+import { AdminCommentCompatService } from "./comment/admin-comment-compat.service";
 
 @Module({
   imports: [CommentModule, SkuModule, PrismaModule],
@@ -27,6 +29,7 @@ import { PrismaModule } from "src/prisma/prisma.module";
     AdminApiCategoryController,
     AdminApiBrandController,
     AdminApiProductGroupController,
+    AdminApiProductCommentController,
   ],
   providers: [
     ProductService,
@@ -34,6 +37,7 @@ import { PrismaModule } from "src/prisma/prisma.module";
     CategoryService,
     BrandService,
     ProductGroupCompatService,
+    AdminCommentCompatService,
   ],
   exports: [
     ProductService,

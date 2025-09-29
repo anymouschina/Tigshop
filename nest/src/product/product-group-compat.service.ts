@@ -67,11 +67,21 @@ export class ProductGroupCompatService {
   }
 
   async delete(id: number) {
+    const group = await this.prisma.product_group.findUnique({ where: { product_group_id: id } });
+    if (!group) return true; // 视为已删除
+    if (["新品", "热卖"].includes(group.product_group_name || "")) {
+      throw new BadRequestException("新品和热卖分组不能删除");
+    }
     await this.prisma.product_group.delete({ where: { product_group_id: id } });
     return true;
   }
 
   async batchDelete(ids: number[]) {
+    const groups = await this.prisma.product_group.findMany({ where: { product_group_id: { in: ids } } });
+    const protectedOnes = groups.filter((g) => ["新品", "热卖"].includes(g.product_group_name || ""));
+    if (protectedOnes.length) {
+      throw new BadRequestException("新品和热卖分组不能删除");
+    }
     await this.prisma.product_group.deleteMany({ where: { product_group_id: { in: ids } } });
     return true;
   }
