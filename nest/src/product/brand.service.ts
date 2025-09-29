@@ -31,14 +31,6 @@ export class BrandService {
       const results = await this.prisma.brand.findMany({
         where,
         orderBy,
-        include: {
-          shop: {
-            select: {
-              shop_id: true,
-              shop_name: true,
-            },
-          },
-        },
       });
       return results;
     }
@@ -52,14 +44,6 @@ export class BrandService {
       orderBy,
       skip,
       take,
-      include: {
-        shop: {
-          select: {
-            shop_id: true,
-            shop_name: true,
-          },
-        },
-      },
     });
 
     return results;
@@ -136,14 +120,6 @@ export class BrandService {
   async getDetail(id: number): Promise<any> {
     const result = await this.prisma.brand.findUnique({
       where: { brand_id: id },
-      include: {
-        shop: {
-          select: {
-            shop_id: true,
-            shop_name: true,
-          },
-        },
-      },
     });
 
     if (!result) {
@@ -527,14 +503,6 @@ export class BrandService {
         orderBy: this.buildOrderBy(filter),
         skip: (filter.page - 1) * filter.size,
         take: filter.size,
-        include: {
-          shop: {
-            select: {
-              shop_id: true,
-              shop_name: true,
-            },
-          },
-        },
       }),
       this.prisma.brand.count({ where }),
     ]);
