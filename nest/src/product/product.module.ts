@@ -12,9 +12,12 @@ import { SkuModule } from "./sku/sku.module";
 import { AdminApiProductController } from "./admin-product.controller";
 import { AdminApiCategoryController } from "./admin-category.controller";
 import { AdminApiBrandController } from "./admin-brand.controller";
+import { AdminApiProductGroupController } from "./admin-product-group.controller";
+import { ProductGroupCompatService } from "./product-group-compat.service";
+import { PrismaModule } from "src/prisma/prisma.module";
 
 @Module({
-  imports: [CommentModule, SkuModule],
+  imports: [CommentModule, SkuModule, PrismaModule],
   controllers: [
     ProductController,
     CategoryController,
@@ -23,12 +26,14 @@ import { AdminApiBrandController } from "./admin-brand.controller";
     AdminApiProductController,
     AdminApiCategoryController,
     AdminApiBrandController,
+    AdminApiProductGroupController,
   ],
   providers: [
     ProductService,
     ProductDetailService,
     CategoryService,
     BrandService,
+    ProductGroupCompatService,
   ],
   exports: [
     ProductService,
