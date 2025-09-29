@@ -208,4 +208,30 @@ export class AdminApiBrandController {
     await this.brandService.delete(id);
     return { code: 0, message: "success" };
   }
+
+  /**
+   * 兼容前端 product/brand/update
+   */
+  @Post("update")
+  @ApiOperation({ summary: "更新品牌（admin）" })
+  async update(@Body() body: any) {
+    const id = Number(body.id || body.brandId);
+    const data: any = {
+      brand_name: body.brandName,
+      brand_logo: body.brandLogo,
+      brand_desc: body.brandDesc,
+      sort_order: body.sortOrder,
+      first_word: body.firstWord,
+      is_show: body.isShow,
+      brand_is_hot: body.brandIsHot,
+      brand_type: body.brandType,
+      brand_en_name: body.brandEnName,
+      site_url: body.siteUrl,
+    };
+    // 去除 undefined 字段，避免覆盖
+    Object.keys(data).forEach((k) => data[k] === undefined && delete data[k]);
+
+    await this.brandService.update(id, data);
+    return { code: 0, message: "success" };
+  }
 }
