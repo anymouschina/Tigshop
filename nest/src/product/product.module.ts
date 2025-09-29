@@ -19,6 +19,7 @@ import { AdminApiProductCommentController } from "./comment/admin-comment.contro
 import { AdminCommentCompatService } from "./comment/admin-comment-compat.service";
 import { AdminApiProductShippingCompatController } from "./admin-product-shipping-compat.controller";
 import { ShippingTplService } from "src/setting/shipping-tpl/shippingTpl.service";
+import { AdminApiProductBatchCompatController } from "./admin-product-batch-compat.controller";
 
 @Module({
   imports: [CommentModule, SkuModule, PrismaModule],
@@ -33,6 +34,7 @@ import { ShippingTplService } from "src/setting/shipping-tpl/shippingTpl.service
     AdminApiProductGroupController,
     AdminApiProductCommentController,
     AdminApiProductShippingCompatController,
+    AdminApiProductBatchCompatController,
   ],
   providers: [
     ProductService,
