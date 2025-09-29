@@ -45,8 +45,8 @@ export class AdminApiProductServicesCompatController {
   @Authorities("productManage")
   @ApiOperation({ summary: "创建产品服务（admin 兼容）" })
   async create(@Body() body: any) {
-    await this.svc.createProductServices(body);
-    return { code: 0, message: "success" };
+    const created = await this.svc.createProductServices(body);
+    return { code: 0, message: "success", data: created };
   }
 
   @Post("update")
@@ -62,6 +62,42 @@ export class AdminApiProductServicesCompatController {
   @ApiOperation({ summary: "删除产品服务（admin 兼容）" })
   async del(@Body() body: any) {
     await this.svc.deleteProductServices(Number(body.id));
+    return { code: 0, message: "success" };
+  }
+
+  /**
+   * 兼容前端 product/productServices/updateField
+   */
+  @Post("updateField")
+  @Authorities("productManage")
+  @ApiOperation({ summary: "更新产品服务单个字段（admin 兼容）" })
+  async updateField(@Body() body: any) {
+    const id = Number(body.id);
+    const fieldMap: Record<string, string> = {
+      productServiceName: "product_service_name",
+      name: "product_service_name",
+      productServiceDesc: "product_service_desc",
+      desc: "product_service_desc",
+      icon: "ico_img",
+      icoImg: "ico_img",
+      sortOrder: "sort_order",
+      defaultOn: "default_on",
+    };
+    const field = fieldMap[body.field] ?? body.field;
+    let val = body.val ?? body.value;
+    // 基础类型强转
+    if (field === "sort_order") {
+      if (typeof val === "string") val = parseInt(val, 10);
+      if (!Number.isFinite(val)) val = 50;
+    }
+    if (field === "default_on") {
+      if (typeof val === "string") {
+        val = val === "1" || val.toLowerCase() === "true" ? 1 : 0;
+      } else {
+        val = val ? 1 : 0;
+      }
+    }
+    await this.svc.updateField(id, field, val);
     return { code: 0, message: "success" };
   }
 

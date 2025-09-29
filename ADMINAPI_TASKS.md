@@ -65,7 +65,7 @@
 - Product Attributes Template 属性模板
   - [ ] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
 - Product Services 售后服务
-  - [ ] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
+  - [x] /adminapi 前缀映射控制器（复用现有 admin/product 服务）
 
 ### 5) 统计与面板（Panel / Statistics）
 - [x] 面板统计接口完善，含 CSV 导出
