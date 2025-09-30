@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, UseGuards, Request } from "@nestjs/common";
 import { AccessStatisticsService } from "./access-statistics.service";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
+import { PanelService } from "../panel/panel.service";
 
 @ApiTags("访问统计")
 @Controller("admin/statistics/access")
@@ -12,13 +13,14 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 export class AccessStatisticsController {
   constructor(
     private readonly accessStatisticsService: AccessStatisticsService,
+    private readonly panelService: PanelService,
   ) {}
 
   @Get("overview")
   @ApiOperation({ summary: "获取访问统计概览" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getAccessOverview() {
-    const shopId = 1; // TODO: 从token中获取
+  async getAccessOverview(@Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
 
     const [totalVisits, uniqueVisitors, pageViews, avgSessionDuration] =
       await Promise.all([
@@ -29,8 +31,8 @@ export class AccessStatisticsController {
       ]);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: {
         total_visits: totalVisits,
         unique_visitors: uniqueVisitors,
@@ -58,16 +60,17 @@ export class AccessStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const trend = await this.accessStatisticsService.getAccessTrend(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: trend,
     };
   }
@@ -76,16 +79,16 @@ export class AccessStatisticsController {
   @ApiOperation({ summary: "获取页面访问统计" })
   @ApiQuery({ name: "limit", required: false, description: "返回数量限制" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getPageStatistics(@Query("limit") limit: number = 10) {
-    const shopId = 1; // TODO: 从token中获取
+  async getPageStatistics(@Query("limit") limit: number = 10, @Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const pageStats = await this.accessStatisticsService.getPageStatistics(
       shopId,
       limit,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: pageStats,
     };
   }
@@ -93,13 +96,13 @@ export class AccessStatisticsController {
   @Get("sources")
   @ApiOperation({ summary: "获取访问来源统计" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getAccessSources() {
-    const shopId = 1; // TODO: 从token中获取
+  async getAccessSources(@Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const sources = await this.accessStatisticsService.getAccessSources(shopId);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: sources,
     };
   }
@@ -115,16 +118,17 @@ export class AccessStatisticsController {
   @ApiResponse({ status: 200, description: "获取成功" })
   async getDeviceStatistics(
     @Query("type") type: "device" | "browser" | "os" = "device",
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const deviceStats = await this.accessStatisticsService.getDeviceStatistics(
       shopId,
       type,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: deviceStats,
     };
   }
@@ -140,16 +144,17 @@ export class AccessStatisticsController {
   @ApiResponse({ status: 200, description: "获取成功" })
   async getGeographyStatistics(
     @Query("type") type: "country" | "province" | "city" = "province",
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const geography = await this.accessStatisticsService.getGeographyStatistics(
       shopId,
       type,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: geography,
     };
   }
@@ -157,14 +162,14 @@ export class AccessStatisticsController {
   @Get("realtime")
   @ApiOperation({ summary: "获取实时访问数据" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getRealtimeAccess() {
-    const shopId = 1; // TODO: 从token中获取
+  async getRealtimeAccess(@Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const realtime =
       await this.accessStatisticsService.getRealtimeAccess(shopId);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: realtime,
     };
   }
@@ -179,8 +184,9 @@ export class AccessStatisticsController {
   @ApiResponse({ status: 200, description: "获取成功" })
   async getConversionStatistics(
     @Query("period") period: "day" | "week" | "month" = "day",
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const conversion =
       await this.accessStatisticsService.getConversionStatistics(
         shopId,
@@ -188,8 +194,8 @@ export class AccessStatisticsController {
       );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: conversion,
     };
   }
@@ -216,16 +222,17 @@ export class AccessStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const result = await this.accessStatisticsService.exportAccessStatistics(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "导出成功",
+      code: 0,
+      message: "success",
       data: result,
     };
   }

@@ -1,22 +1,26 @@
 // @ts-nocheck
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, UseGuards, Request } from "@nestjs/common";
 import { UserStatisticsService } from "./user-statistics.service";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
+import { PanelService } from "../panel/panel.service";
 
 @ApiTags("用户统计")
 @Controller("admin/statistics/user")
 @UseGuards(RolesGuard)
 @Roles("admin")
 export class UserStatisticsController {
-  constructor(private readonly userStatisticsService: UserStatisticsService) {}
+  constructor(
+    private readonly userStatisticsService: UserStatisticsService,
+    private readonly panelService: PanelService,
+  ) {}
 
   @Get("overview")
   @ApiOperation({ summary: "获取用户统计概览" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getUserOverview() {
-    const shopId = 1; // TODO: 从token中获取
+  async getUserOverview(@Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
 
     const [totalUsers, newUsersToday, activeUsers, userGrowth] =
       await Promise.all([
@@ -27,8 +31,8 @@ export class UserStatisticsController {
       ]);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: {
         total_users: totalUsers,
         new_users_today: newUsersToday,
@@ -56,13 +60,14 @@ export class UserStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const trend = await this.userStatisticsService.getUserTrend(shopId, query);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: trend,
     };
   }
@@ -78,16 +83,17 @@ export class UserStatisticsController {
   @ApiResponse({ status: 200, description: "获取成功" })
   async getUserDistribution(
     @Query("type") type: "region" | "device" | "source" = "region",
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const distribution = await this.userStatisticsService.getUserDistribution(
       shopId,
       type,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: distribution,
     };
   }
@@ -95,14 +101,14 @@ export class UserStatisticsController {
   @Get("rank")
   @ApiOperation({ summary: "获取用户等级分布" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getUserRankDistribution() {
-    const shopId = 1; // TODO: 从token中获取
+  async getUserRankDistribution(@Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const rankDistribution =
       await this.userStatisticsService.getUserRankDistribution(shopId);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: rankDistribution,
     };
   }
@@ -117,16 +123,17 @@ export class UserStatisticsController {
   @ApiResponse({ status: 200, description: "获取成功" })
   async getUserActivity(
     @Query("period") period: "day" | "week" | "month" = "week",
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const activity = await this.userStatisticsService.getUserActivity(
       shopId,
       period,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: activity,
     };
   }
@@ -139,16 +146,16 @@ export class UserStatisticsController {
     description: "统计周期：7, 30, 90",
   })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getUserRetention(@Query("period") period: number = 7) {
-    const shopId = 1; // TODO: 从token中获取
+  async getUserRetention(@Query("period") period: number = 7, @Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const retention = await this.userStatisticsService.getUserRetention(
       shopId,
       period,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: retention,
     };
   }
@@ -175,16 +182,17 @@ export class UserStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const result = await this.userStatisticsService.exportUserStatistics(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "导出成功",
+      code: 0,
+      message: "success",
       data: result,
     };
   }

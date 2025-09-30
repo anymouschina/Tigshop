@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, UseGuards, Request } from "@nestjs/common";
 import { GeneralStatisticsService } from "./general-statistics.service";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
+import { PanelService } from "../panel/panel.service";
 
 @ApiTags("综合统计")
 @Controller("admin/statistics/general")
@@ -12,6 +13,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 export class GeneralStatisticsController {
   constructor(
     private readonly generalStatisticsService: GeneralStatisticsService,
+    private readonly panelService: PanelService,
   ) {}
 
   @Get("dashboard")
@@ -25,16 +27,17 @@ export class GeneralStatisticsController {
   @ApiResponse({ status: 200, description: "获取成功" })
   async getDashboard(
     @Query("period") period: "today" | "week" | "month" = "today",
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const dashboard = await this.generalStatisticsService.getDashboard(
       shopId,
       period,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: dashboard,
     };
   }
@@ -56,14 +59,15 @@ export class GeneralStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const financial =
       await this.generalStatisticsService.getFinancialStatistics(shopId, query);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: financial,
     };
   }
@@ -71,14 +75,14 @@ export class GeneralStatisticsController {
   @Get("inventory")
   @ApiOperation({ summary: "获取库存统计" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getInventoryStatistics() {
-    const shopId = 1; // TODO: 从token中获取
+  async getInventoryStatistics(@Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const inventory =
       await this.generalStatisticsService.getInventoryStatistics(shopId);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: inventory,
     };
   }
@@ -98,14 +102,15 @@ export class GeneralStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const marketing =
       await this.generalStatisticsService.getMarketingStatistics(shopId, query);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: marketing,
     };
   }
@@ -156,16 +161,17 @@ export class GeneralStatisticsController {
       period?: "day" | "week" | "month" | "year";
       base_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const comparison = await this.generalStatisticsService.getComparisonData(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: comparison,
     };
   }
@@ -191,16 +197,17 @@ export class GeneralStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const trends = await this.generalStatisticsService.getTrendsAnalysis(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: trends,
     };
   }
@@ -226,16 +233,17 @@ export class GeneralStatisticsController {
       format?: "pdf" | "excel";
       date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const result = await this.generalStatisticsService.exportReport(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "导出成功",
+      code: 0,
+      message: "success",
       data: result,
     };
   }
@@ -243,14 +251,14 @@ export class GeneralStatisticsController {
   @Get("real-time")
   @ApiOperation({ summary: "获取实时统计数据" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getRealTimeStatistics() {
-    const shopId = 1; // TODO: 从token中获取
+  async getRealTimeStatistics(@Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const realtime =
       await this.generalStatisticsService.getRealTimeStatistics(shopId);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: realtime,
     };
   }

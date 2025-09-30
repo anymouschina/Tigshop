@@ -77,20 +77,21 @@ export class PanelController {
   @Get()
   @ApiOperation({ summary: "获取控制台面板数据" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getDashboard() {
-    const shopId = 1; // TODO: 从token中获取
-
-    const [consoleData, realTimeData, panelStatisticalData] = await Promise.all(
-      [
-        this.panelService.getConsoleData(shopId),
-        this.panelService.getRealTimeData(shopId),
-        this.panelService.getPanelStatisticalData(shopId),
-      ],
-    );
+  async getDashboard(@Request() req) {
+    const info = await this.panelService.validateUserAndGetShopId(req);
+    if (!info) {
+      return { code: 1, message: "用户未登录", data: null };
+    }
+    const { shopId } = info;
+    const [consoleData, realTimeData, panelStatisticalData] = await Promise.all([
+      this.panelService.getConsoleData(shopId),
+      this.panelService.getRealTimeData(shopId),
+      this.panelService.getPanelStatisticalData(shopId),
+    ]);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: {
         console_data: consoleData,
         real_time_data: realTimeData,
@@ -103,8 +104,8 @@ export class PanelController {
   @ApiOperation({ summary: "搜索菜单" })
   @ApiQuery({ name: "keyword", description: "关键词" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async searchMenu(@Query("keyword") keyword: string) {
-    const adminType = 1; // TODO: 从token中获取
+  async searchMenu(@Query("keyword") keyword: string, @Request() req) {
+    const adminType = await this.panelService.getUserAdminType(req.user?.userId);
     const trimmedKeyword = keyword?.trim() || "";
 
     const menuList = await this.authorityService.getAuthorityList(
@@ -112,33 +113,22 @@ export class PanelController {
       adminType,
     );
 
-    return {
-      code: 200,
-      message: "获取成功",
-      data: menuList,
-    };
+    return { code: 0, message: "success", data: menuList };
   }
 
   @Get("vendor")
   @ApiOperation({ summary: "获取供应商面板数据" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getVendorPanel() {
-    const vendorId = 1; // TODO: 从token中获取
+  async getVendorPanel(@Request() req) {
+    const vendorId = await this.panelService.getUserVendorId(req.user?.userId);
 
     if (vendorId <= 0) {
-      return {
-        code: 400,
-        message: "无效的供应商ID",
-      };
+      return { code: 400, message: "无效的供应商ID" };
     }
 
     const data = await this.panelService.getPanelVendorIndex(vendorId);
 
-    return {
-      code: 200,
-      message: "获取成功",
-      data,
-    };
+    return { code: 0, message: "success", data };
   }
 
   @Get("salesStatistics/list")

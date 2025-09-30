@@ -36,6 +36,19 @@ export class PanelService {
   }
 
   /**
+   * 获取用户的管理员类型（admin_type）
+   * @param userId 管理员ID
+   * @returns adminType（默认 1）
+   */
+  async getUserAdminType(userId: number): Promise<number> {
+    const adminUser = await this.prisma.admin_user.findUnique({
+      where: { admin_id: userId },
+      select: { admin_type: true },
+    });
+    return adminUser?.admin_type ?? 1;
+  }
+
+  /**
    * 新增会员趋势
    * - dateType: "1" 年-按月, "2" 月-按日, "3" 日-按时
    * - startEndTime: 对应的起点值：YYYY | YYYY-MM | YYYY-MM-DD

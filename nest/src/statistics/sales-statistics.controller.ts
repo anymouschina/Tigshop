@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, UseGuards, Request } from "@nestjs/common";
 import { SalesStatisticsService } from "./sales-statistics.service";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
+import { PanelService } from "../panel/panel.service";
 
 @ApiTags("销售统计")
 @Controller("admin/statistics/sales")
@@ -12,13 +13,14 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
 export class SalesStatisticsController {
   constructor(
     private readonly salesStatisticsService: SalesStatisticsService,
+    private readonly panelService: PanelService,
   ) {}
 
   @Get("overview")
   @ApiOperation({ summary: "获取销售统计概览" })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getSalesOverview() {
-    const shopId = 1; // TODO: 从token中获取
+  async getSalesOverview(@Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
 
     const [totalSales, orderCount, avgOrderValue, conversionRate] =
       await Promise.all([
@@ -29,8 +31,8 @@ export class SalesStatisticsController {
       ]);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: {
         total_sales: totalSales,
         order_count: orderCount,
@@ -58,16 +60,17 @@ export class SalesStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const trend = await this.salesStatisticsService.getSalesTrend(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: trend,
     };
   }
@@ -89,16 +92,17 @@ export class SalesStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const productSales = await this.salesStatisticsService.getProductSales(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: productSales,
     };
   }
@@ -118,16 +122,17 @@ export class SalesStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const categorySales = await this.salesStatisticsService.getCategorySales(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: categorySales,
     };
   }
@@ -147,8 +152,9 @@ export class SalesStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const paymentStats =
       await this.salesStatisticsService.getPaymentMethodStatistics(
         shopId,
@@ -156,8 +162,8 @@ export class SalesStatisticsController {
       );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: paymentStats,
     };
   }
@@ -184,16 +190,17 @@ export class SalesStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const regionSales = await this.salesStatisticsService.getRegionSales(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: regionSales,
     };
   }
@@ -217,16 +224,17 @@ export class SalesStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const customerSales = await this.salesStatisticsService.getCustomerSales(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: customerSales,
     };
   }
@@ -239,16 +247,16 @@ export class SalesStatisticsController {
     description: "预测周期：7, 30, 90",
   })
   @ApiResponse({ status: 200, description: "获取成功" })
-  async getSalesForecast(@Query("period") period: number = 30) {
-    const shopId = 1; // TODO: 从token中获取
+  async getSalesForecast(@Query("period") period: number = 30, @Request() req) {
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const forecast = await this.salesStatisticsService.getSalesForecast(
       shopId,
       period,
     );
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: forecast,
     };
   }
@@ -275,16 +283,17 @@ export class SalesStatisticsController {
       start_date?: string;
       end_date?: string;
     },
+    @Request() req,
   ) {
-    const shopId = 1; // TODO: 从token中获取
+    const shopId = await this.panelService.getUserShopId(req.user?.userId);
     const result = await this.salesStatisticsService.exportSalesStatistics(
       shopId,
       query,
     );
 
     return {
-      code: 200,
-      message: "导出成功",
+      code: 0,
+      message: "success",
       data: result,
     };
   }

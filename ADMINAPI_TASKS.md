@@ -144,18 +144,18 @@
 - [ ] 组织/权限 Organization
   - 权限与组织模块接口清单（来自 PHP /adminapi/authority/*，先罗列待办，逐步对齐）：
     - 顶层
-      - [ ] GET  /adminapi/authority/authority/getAllAuthority
-      - [ ] GET  /adminapi/authority/authority/getAuthority
+      - [x] GET  /adminapi/authority/authority/getAllAuthority
+      - [x] GET  /adminapi/authority/authority/getAuthority
     - 管理员日志 adminLog
-      - [ ] GET  /adminapi/authority/adminLog/list
+      - [x] GET  /adminapi/authority/adminLog/list
     - 角色管理 adminRole
-      - [ ] GET  /adminapi/authority/adminRole/list
-      - [ ] GET  /adminapi/authority/adminRole/detail
-      - [ ] POST /adminapi/authority/adminRole/create
-      - [ ] POST /adminapi/authority/adminRole/update
-      - [ ] POST /adminapi/authority/adminRole/del
-      - [ ] POST /adminapi/authority/adminRole/updateField
-      - [ ] POST /adminapi/authority/adminRole/batch
+        - [x] GET  /adminapi/authority/adminRole/list
+        - [x] GET  /adminapi/authority/adminRole/detail
+        - [x] POST /adminapi/authority/adminRole/create
+        - [x] POST /adminapi/authority/adminRole/update
+        - [x] POST /adminapi/authority/adminRole/del
+        - [x] POST /adminapi/authority/adminRole/updateField
+        - [x] POST /adminapi/authority/adminRole/batch
     - 管理员 adminUser
       - [x] GET  /adminapi/authority/adminUser/list
       - [x] GET  /adminapi/authority/adminUser/detail
@@ -249,6 +249,8 @@
  - 2025-09-30：地区树兼容：实现 GET /adminapi/setting/region/getAllRegionTree（复用 RegionService.getRegionTree），去除相关 404。
  - 2025-09-30：Prisma 字段映射修复：修正 merchant/shop 相关 include/select 使用错误（去除 shop.include.merchant；merchant 选择 company_name/corporate_name，并从 merchant_data 解析联系方式）。
  - 2025-09-30：入驻申请筛选语义：list 接受 status=-1 表示“不过滤”，避免 400，保持 1/10/20 正常筛选。
+ - 2025-09-30：组织/权限（部分）：新增 AdminRole 兼容控制器，提供 /adminapi/authority/adminRole 的 list/detail/create/update/del/updateField/batch，使用现有 AdminRoleService；保留返回包装与字段别名。
+ - 2025-09-30：组织/权限（继续）：新增 AuthorityCompatController（getAllAuthority/list/getAuthorityParentName/detail/create/update/del/updateField/batch）与 AdminLogCompatController（adminLog/list），注册进 AuthorityModule。
  - 2025-09-30：售后 Admin 兼容对齐：
    - 控制器补全 /adminapi/order/aftersales/* 全套路由并接通 PanelService 推导 shopId/vendorId；
    - AftersalesService 去除非法 include，新增 addLog 公共方法，agreeOrRefuse/complete 使用标准日志表字段映射；
