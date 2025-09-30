@@ -58,7 +58,9 @@ import { AdminDecorateCompatController } from "./decorate/admin-decorate-compat.
 import { AdminDecorateShareCompatController } from "./decorate/admin-decorate-share-compat.controller";
 import { AdminDecorateRequestCompatController } from "./decorate/admin-decorate-request-compat.controller";
 import { AdminPcNavigationCompatController } from "./decorate/admin-pc-navigation-compat.controller";
+import { AdminMobileDecorateCompatController } from "./decorate/admin-mobile-decorate-compat.controller";
 import { AdminPcCatFloorCompatController } from "./decorate/admin-pc-cat-floor-compat.controller";
+import { AdminMemberCompatController } from "./user/admin-user-compat.controller";
 import { AdminSalesmanConfigCompatController } from "./salesman/admin-salesman-config-compat.controller";
 import { AdminSalesmanOverviewCompatController } from "./salesman/admin-salesman-overview-compat.controller";
 import { AdminSalesmanProductCompatController } from "./salesman/admin-salesman-product-compat.controller";
@@ -130,6 +132,8 @@ import { AdminSalesmanCustomerTransactionCompatController } from "./salesman/adm
     AdminDecorateRequestCompatController,
     AdminPcNavigationCompatController,
     AdminPcCatFloorCompatController,
+  AdminMobileDecorateCompatController,
+    AdminMemberCompatController,
     AdminSalesmanConfigCompatController,
     AdminSalesmanOverviewCompatController,
     AdminSalesmanProductCompatController,

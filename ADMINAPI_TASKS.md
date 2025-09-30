@@ -216,7 +216,16 @@
       - [x] POST /adminapi/admin/adminAccount/updateMainAccount
       - [x] POST /adminapi/admin/adminAccount/updateMainAccountPwd
       - [x] GET  /adminapi/admin/adminAccount/pageAdminUser
-- [ ] 店铺装修 Decorate
+ - [x] 店铺装修 Decorate（Admin 兼容）
+   - [x] /adminapi/decorate/decorate：list/detail/loadDraftData/saveDraft/publish/copy/setHome/create/update/updateField/del/batch
+   - [x] /adminapi/decorate/decorateDiscrete：detail/memberDecorateData
+   - [x] /adminapi/decorate/pcNavigation：list/detail/getParentNav/selectLink/create/update/updateField/del/batch
+   - [x] /adminapi/decorate/pcCatFloor：list/detail/create/update/updateField/del/batch/clearCache
+   - [x] /adminapi/decorate/mobileCatNav：list/detail/create/update/updateField/del/batch
+   - [x] /adminapi/decorate/decorateShare：share/import（占位实现）
+   - [x] /adminapi/decorate/decorateRequest：productList/decorateByModule（占位）
+   - [x] /adminapi/setting/config：categoryDecorateSettings/themeStyleSettings（装修相关配置）
+   - （备注）decorateShare.import、pcCatFloor.clearCache、decorateRequest.decorateByModule 为占位，后续按需求接入真实逻辑
 - [ ] 分销 Distribution
 - [ ] 内容 Content
 - [ ] 财务 Finance
@@ -296,6 +305,14 @@
    - 新增商品电子卡分组 eCardGroup 管理端兼容控制器；
    - 修复 PointsExchange 模型引用与包含关系（转为手动联表聚合 product/sku）；
    - 所有营销路由均接入统一守卫与返回包装，前端页面无 404/403。
+ - 2025-09-30：店铺装修 Decorate 管理端兼容完成：
+   - 新增并接通 /adminapi/decorate/decorate（列表/详情/草稿/发布/复制/设为首页/新增/更新/单字段/删除/批量）、
+     decorateDiscrete（detail/memberDecorateData）、pcNavigation（list/detail/getParentNav/selectLink/create/update/updateField/del/batch）、
+     pcCatFloor（list/detail/create/update/updateField/del/batch/clearCache）、mobileCatNav（list/detail/create/update/updateField/del/batch）、
+     decorateShare（share/import 占位）、decorateRequest（productList/decorateByModule 占位）。
+   - 新增装修相关配置：/adminapi/setting/config/categoryDecorateSettings 与 /themeStyleSettings；
+   - 统一接入 AdminJwtAuthGuard + AuthorityGuard 与 @Authorities，响应驼峰 {code,message,data}；
+   - 标注占位项待后续接入真实逻辑（分享导入、清缓存、按模块取数据）。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：
