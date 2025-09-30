@@ -59,6 +59,11 @@ import { AdminDecorateShareCompatController } from "./decorate/admin-decorate-sh
 import { AdminDecorateRequestCompatController } from "./decorate/admin-decorate-request-compat.controller";
 import { AdminPcNavigationCompatController } from "./decorate/admin-pc-navigation-compat.controller";
 import { AdminPcCatFloorCompatController } from "./decorate/admin-pc-cat-floor-compat.controller";
+import { AdminSalesmanConfigCompatController } from "./salesman/admin-salesman-config-compat.controller";
+import { AdminSalesmanOverviewCompatController } from "./salesman/admin-salesman-overview-compat.controller";
+import { AdminSalesmanProductCompatController } from "./salesman/admin-salesman-product-compat.controller";
+import { AdminSalesmanMaterialCategoryCompatController } from "./salesman/admin-salesman-material-category-compat.controller";
+import { AdminSalesmanMaterialCompatController } from "./salesman/admin-salesman-material-compat.controller";
 
 @Module({
   imports: [
@@ -120,6 +125,11 @@ import { AdminPcCatFloorCompatController } from "./decorate/admin-pc-cat-floor-c
     AdminDecorateRequestCompatController,
     AdminPcNavigationCompatController,
     AdminPcCatFloorCompatController,
+    AdminSalesmanConfigCompatController,
+    AdminSalesmanOverviewCompatController,
+    AdminSalesmanProductCompatController,
+    AdminSalesmanMaterialCategoryCompatController,
+    AdminSalesmanMaterialCompatController,
   ],
   providers: [
     {
