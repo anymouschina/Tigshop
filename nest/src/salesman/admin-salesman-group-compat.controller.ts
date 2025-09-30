@@ -19,6 +19,31 @@ export class AdminSalesmanGroupCompatController {
     return Number.isFinite(n) ? n : dft;
   }
 
+  // 格式化时间为 YYYY-MM-DD HH:mm:ss
+  private formatDateTime(input: any): string {
+    if (input == null || input === 0) return "";
+    let ms: number;
+    if (input instanceof Date) ms = input.getTime();
+    else if (typeof input === "string") {
+      const n = Number(input);
+      if (Number.isFinite(n)) ms = n < 1e12 ? n * 1000 : n; // 可能是秒或毫秒
+      else return String(input);
+    } else if (typeof input === "number") {
+      ms = input < 1e12 ? input * 1000 : input;
+    } else {
+      return String(input);
+    }
+    const d = new Date(ms);
+    const pad = (v: number) => (v < 10 ? `0${v}` : String(v));
+    const YYYY = d.getFullYear();
+    const MM = pad(d.getMonth() + 1);
+    const DD = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    const ss = pad(d.getSeconds());
+    return `${YYYY}-${MM}-${DD} ${hh}:${mm}:${ss}`;
+  }
+
   @Get("list")
   @ApiOperation({ summary: "分销组列表（兼容）" })
   @Authorities("salesmanGroupManage")
@@ -34,7 +59,12 @@ export class AdminSalesmanGroupCompatController {
       this.prisma.salesman_group.findMany({ where, orderBy: { group_id: "desc" }, skip, take: size }),
       this.prisma.salesman_group.count({ where }),
     ]);
-    return { code: 0, message: "success", data: { records, total } };
+    // 转换 add_time 为格式化字符串；键名保持 snake_case，交由全局拦截器转为驼峰
+    const mapped = records.map((r) => ({
+      ...r,
+      add_time: this.formatDateTime((r as any).add_time),
+    }));
+    return { code: 0, message: "success", data: { records: mapped, total } };
   }
 
   @Get("detail")
@@ -42,7 +72,8 @@ export class AdminSalesmanGroupCompatController {
   @Authorities("salesmanGroupManage")
   async detail(@Query("id") id: number) {
     const record = await this.prisma.salesman_group.findUnique({ where: { group_id: this.coerceNumber(id, 0) } });
-    return { code: 0, message: "success", data: record };
+    const data = record ? { ...record, add_time: this.formatDateTime((record as any).add_time) } : null;
+    return { code: 0, message: "success", data };
   }
 
   @Post("create")
