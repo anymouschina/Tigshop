@@ -100,7 +100,7 @@
       - [x] POST /adminapi/order/cancelOrder（取消订单）
       - [x] POST /adminapi/order/setConfirm（设置为已确认）
       - [x] POST /adminapi/order/delOrder（订单软删除）
-  - [ ] POST /adminapi/order/splitStoreOrder（订单拆分）
+  - [x] POST /adminapi/order/splitStoreOrder（订单拆分）
       - [x] POST /adminapi/order/setPaid（设置为已支付）
   - [x] POST /adminapi/order/modifyProduct（修改商品信息）
   - [x] POST /adminapi/order/getAddProductInfo（添加商品前置信息）
@@ -125,6 +125,22 @@
   - 订单配置 Config（如需对齐 /adminapi/order/config/*）
       - [ ] GET  /adminapi/order/config/detail
       - [ ] POST /adminapi/order/config/save
+
+- 商户 Merchant（Admin 兼容）
+  - [x] GET  /adminapi/merchant/merchant/list（列表，支持 keyword/status/sort/pagination）
+  - [x] GET  /adminapi/merchant/merchant/:id（详情）
+  - [x] POST /adminapi/merchant/merchant/create（创建，支持 admin 绑定与 JSON 字段序列化）
+  - [x] POST /adminapi/merchant/merchant/update（更新，支持按 id/merchantId/query.id 识别）
+  - [x] POST /adminapi/merchant/merchant/updateField（字段白名单：status/type/company_name/corporate_name/settlement_cycle）
+  - [x] POST /adminapi/merchant/merchant/:id（operate：approve/reject/enable/disable，拒绝理由写入 merchant_data）
+
+- 商户入驻申请 Merchant Apply（Admin 兼容）
+  - [x] GET  /adminapi/merchant/apply/list（筛选：status/username/keyword；排序：add_time/merchant_apply_id）
+  - [x] GET  /adminapi/merchant/apply/config（返回数组：[{status, statusText}]，1/10/20）
+  - [x] GET  /adminapi/merchant/apply/:id（详情，附带 user）
+  - [x] POST /adminapi/merchant/apply/del（支持单个或批量 ids）
+  - [x] POST /adminapi/merchant/apply/audit（status=10 通过会落地创建 merchant，20 拒绝）
+  - [x] POST /adminapi/merchant/apply/batch（delete/auditPass/auditReject）
 - [ ] 组织/权限 Organization
   - 权限与组织模块接口清单（来自 PHP /adminapi/authority/*，先罗列待办，逐步对齐）：
     - 顶层
@@ -224,6 +240,10 @@
    - GET /adminapi/product/productBatch/productBatchDeal 实际导出逻辑（按全部/分类/品牌/商品范围导出，分类路径 a|b|c，品牌名映射，UTF-8 BOM + CRLF）。
    - POST /adminapi/product/productBatch/productBatchModify 解析上传 CSV 批量创建商品（支持自动创建分类/品牌，生成唯一商品编号，写入相册）。
    - POST /adminapi/product/productBatch/productBatchEdit 支持按行批量编辑（字段白名单与校验，避免重复 SN，更新 last_update）。
+ - 2025-09-30：商户与入驻申请对齐：新增 MerchantCompatController 与 MerchantApplyCompatController 一揽子兼容路由；
+   - 商户：实现 list/detail/create/update/updateField/:id(operate)；list 支持状态与关键词筛选，operate 支持 approve/reject/enable/disable；字段返回驼峰。
+   - 入驻申请：实现 list/config/detail/del/audit/batch；状态对齐 1/10/20；audit 通过自动创建 merchant；config 返回数组以兼容前端 SelectConfig.vue。
+ - 2025-09-30：订单拆分落地：完成 /adminapi/order/splitStoreOrder，按 vendor_id 优先、否则按 shop_id 分组，创建子订单并迁移明细，金额按小计比例分摊，原单 is_store_splited=1。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：

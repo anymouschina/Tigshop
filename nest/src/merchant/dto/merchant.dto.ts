@@ -1,4 +1,4 @@
-import { Type } from "class-transformer";
+import { Type, Transform } from "class-transformer";
 import { IsIn, IsInt, IsObject, IsOptional, IsPositive, IsString, ValidateNested } from "class-validator";
 
 export class MerchantListQueryDto {
@@ -8,6 +8,7 @@ export class MerchantListQueryDto {
 
   // 允许字符串传入，后续在控制器中 Number() 处理
   @IsOptional()
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
   @IsInt()
   status?: number;

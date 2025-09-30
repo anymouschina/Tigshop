@@ -51,6 +51,7 @@ import { MerchantApplyCompatController } from "./merchant/merchant-apply-compat.
 import { MerchantCompatController } from "./merchant/merchant-compat.controller";
 import { TranslationsModule } from "./lang/translations/translations.module";
 import { PrintModule } from "./print/print.module";
+import { AdminOrderConfigCompatController } from "./order/admin-order-config-compat.controller";
 
 @Module({
   imports: [
@@ -104,6 +105,7 @@ import { PrintModule } from "./print/print.module";
     DecorateDiscreteCompatController,
     MerchantApplyCompatController,
     MerchantCompatController,
+    AdminOrderConfigCompatController,
   ],
   providers: [
     {

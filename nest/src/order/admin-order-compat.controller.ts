@@ -396,14 +396,19 @@ export class AdminOrderCompatController {
 
   @Post("splitStoreOrder")
   @Authorities("order")
-  @ApiOperation({ summary: "订单拆分（占位）" })
-  async splitStoreOrder() { return { code: 0, message: "success" }; }
+  @ApiOperation({ summary: "订单拆分（按店铺/供应商自动拆分并分摊金额）" })
+  async splitStoreOrder(@Body() body: any) {
+    const id = Number(body.id ?? body.orderId);
+    if (!id) return { code: 400, message: "缺少订单ID", data: false };
+    await this.svc.splitStoreOrder(id);
+    return { code: 0, message: "success", data: true };
+  }
 
   // 兼容 PHP: /adminapi/order/order/splitStoreOrder
   @Post("order/splitStoreOrder")
   @Authorities("order")
   @ApiOperation({ summary: "订单拆分（admin 兼容 - PHP 路径别名）" })
-  async splitStoreOrderAlias() { return this.splitStoreOrder(); }
+  async splitStoreOrderAlias(@Body() body: any) { return this.splitStoreOrder(body); }
 
   @Post("setPaid")
   @Authorities("order")

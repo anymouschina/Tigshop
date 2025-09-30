@@ -1,4 +1,4 @@
-import { Type } from "class-transformer";
+import { Type, Transform } from "class-transformer";
 import {
   IsArray,
   IsIn,
@@ -13,12 +13,14 @@ import {
 
 export class ApplyListQueryDto {
   @IsOptional()
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number = 1;
 
   @IsOptional()
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -26,6 +28,7 @@ export class ApplyListQueryDto {
 
   // 1 待审核 | 10 已通过 | 20 已拒绝
   @IsOptional()
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
   @IsNumber()
   @IsIn([1, 10, 20])
@@ -50,23 +53,30 @@ export class ApplyListQueryDto {
 
 export class ApplyDelDto {
   @IsOptional()
+  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
   @IsInt()
   @IsPositive()
   id?: number;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value.map((v) => Number(v)).filter((v) => !Number.isNaN(v));
+    return value;
+  })
   @IsArray()
   ids?: number[];
 }
 
 export class ApplyAuditDto {
+  @Transform(({ value }) => (value === "" ? undefined : value))
   @Type(() => Number)
   @IsInt()
   @IsPositive()
   id!: number;
 
   // 10 通过 | 20 拒绝
+  @Transform(({ value }) => (value === "" ? undefined : value))
   @Type(() => Number)
   @IsInt()
   @IsIn([10, 20])

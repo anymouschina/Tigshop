@@ -124,6 +124,162 @@ export class AdminOrderCompatService {
     return true;
   }
 
+  /**
+   * 订单按店铺/供应商拆分：
+   * - 若 order_item.vendor_id 存在且分组数>1，按 vendor_id 拆分；否则按 item.shop_id 拆分
+   * - 为每个分组创建子订单（parent_order_id/parent_order_sn 指向原订单），并迁移对应的 order_item 到新订单
+   * - 金额按各分组商品小计占比对原订单金额进行比例分摊（保留两位小数，最后一个分组吃掉尾差）
+   * - 将原订单标记 is_store_splited=1
+   */
+  async splitStoreOrder(orderId: number): Promise<boolean> {
+    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    if (!order) throw new NotFoundException("订单不存在");
+    if (order.is_store_splited) return true;
+
+    const items = await this.prisma.order_item.findMany({ where: { order_id: orderId } });
+    if (!items.length) return true;
+
+    // 选择分组键：优先 vendor_id，其次 shop_id
+    const hasVendorSplit = items.some((it) => (it.vendor_id ?? 0) > 0);
+    const key: "vendor_id" | "shop_id" = hasVendorSplit ? "vendor_id" : "shop_id";
+    const groups = new Map<number, typeof items>();
+    for (const it of items) {
+      const k = Number((it as any)[key] || 0);
+      const arr = groups.get(k) || [];
+      arr.push(it);
+      groups.set(k, arr);
+    }
+    if (groups.size <= 1) return true; // 不需拆分
+
+    // 计算各分组小计
+    const sum2 = (n: any) => Number(n ?? 0);
+    const itemSubtotal = (it: any) => sum2(it.price) * sum2(it.quantity);
+    const groupList = Array.from(groups.entries()).map(([k, arr]) => {
+      const subtotal = arr.reduce((acc, it) => acc + itemSubtotal(it), 0);
+      return { key: k, items: arr, subtotal };
+    });
+    const totalSubtotal = groupList.reduce((acc, g) => acc + g.subtotal, 0) || 1;
+
+    // 原金额
+    const oShipping = Number(order.shipping_fee || 0);
+    const oProduct = Number(order.product_amount || 0);
+    const oTotal = Number(order.total_amount || 0);
+    const oPaid = Number(order.paid_amount || 0);
+    const oUnpaid = Number(order.unpaid_amount || 0);
+
+    // 生成子单并迁移明细
+    const now = Math.floor(Date.now() / 1000);
+    const children: number[] = [];
+
+    // 辅助：生成唯一订单号（20位内）
+    const genSn = async (): Promise<string> => {
+      for (let i = 0; i < 5; i++) {
+        const base = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+        const sn = base.slice(-20);
+        const exists = await this.prisma.order.findUnique({ where: { order_sn: sn } }).catch(() => null);
+        if (!exists) return sn;
+      }
+      // 兜底：原单号+时间尾巴裁剪
+      const fallback = `${order.order_sn}${Date.now()}`.slice(-20);
+      return fallback;
+    };
+
+    let shipAssigned = 0, paidAssigned = 0, unpaidAssigned = 0, totalAssigned = 0, productAssigned = 0;
+    await this.prisma.$transaction(async (tx) => {
+      for (let idx = 0; idx < groupList.length; idx++) {
+        const g = groupList[idx];
+        const isLast = idx === groupList.length - 1;
+        const ratio = g.subtotal / totalSubtotal;
+
+        // 分摊金额，最后一个吃尾差
+        const product_amount = isLast ? (oProduct - productAssigned) : Number((oProduct * ratio).toFixed(2));
+        const shipping_fee = isLast ? (oShipping - shipAssigned) : Number((oShipping * ratio).toFixed(2));
+        const total_amount = isLast ? (oTotal - totalAssigned) : Number((oTotal * ratio).toFixed(2));
+        const paid_amount = isLast ? (oPaid - paidAssigned) : Number((oPaid * ratio).toFixed(2));
+        const unpaid_amount = isLast ? (oUnpaid - unpaidAssigned) : Number((oUnpaid * ratio).toFixed(2));
+
+        shipAssigned += shipping_fee; paidAssigned += paid_amount; unpaidAssigned += unpaid_amount; totalAssigned += total_amount; productAssigned += product_amount;
+
+        const childSn = await genSn();
+        const child = await tx.order.create({
+          data: {
+            // 父子关联与标识
+            parent_order_id: order.order_id,
+            parent_order_sn: order.order_sn,
+            order_sn: childSn,
+            add_time: now,
+            // 继承关键状态/收货信息
+            user_id: order.user_id,
+            order_status: order.order_status,
+            shipping_status: order.shipping_status,
+            pay_status: order.pay_status,
+            consignee: order.consignee,
+            address: order.address,
+            region_ids: order.region_ids,
+            region_names: order.region_names,
+            address_data: order.address_data,
+            mobile: order.mobile,
+            email: order.email,
+            buyer_note: order.buyer_note,
+            admin_note: order.admin_note,
+            shipping_method: order.shipping_method,
+            logistics_id: order.logistics_id,
+            logistics_name: order.logistics_name,
+            shipping_type_id: order.shipping_type_id,
+            shipping_type_name: order.shipping_type_name,
+            tracking_no: "",
+            shipping_time: 0,
+            received_time: 0,
+            pay_type_id: order.pay_type_id,
+            pay_time: 0,
+            use_points: order.use_points,
+            is_need_commisson: order.is_need_commisson,
+            distribution_status: order.distribution_status,
+            referrer_user_id: order.referrer_user_id,
+            is_del: 0,
+            shop_id: key === "shop_id" ? g.key : order.shop_id,
+            is_store_splited: 0,
+            comment_status: order.comment_status,
+            // 金额分摊
+            product_amount,
+            shipping_fee,
+            total_amount,
+            paid_amount,
+            unpaid_amount,
+            coupon_amount: order.coupon_amount,
+            points_amount: order.points_amount,
+            discount_amount: order.discount_amount,
+            balance: order.balance,
+            online_paid_amount: order.online_paid_amount,
+            offline_paid_amount: order.offline_paid_amount,
+            service_fee: order.service_fee,
+            invoice_fee: order.invoice_fee,
+            order_extension: order.order_extension,
+            order_source: order.order_source,
+            invoice_data: order.invoice_data,
+            out_trade_no: "",
+            is_settlement: order.is_settlement ?? 0,
+            is_exchange_order: order.is_exchange_order ?? false,
+            order_type: order.order_type ?? 1,
+            mark: order.mark ?? 0,
+            vendor_id: key === "vendor_id" ? (g.key || null) : order.vendor_id,
+          },
+        });
+        children.push(child.order_id);
+
+        // 迁移明细
+        await tx.order_item.updateMany({
+          where: { order_id: order.order_id, item_id: { in: g.items.map((it) => it.item_id) } },
+          data: { order_id: child.order_id, order_sn: child.order_sn, shop_id: child.shop_id, vendor_id: child.vendor_id ?? undefined },
+        });
+      }
+
+      // 标记原单已拆分
+      await tx.order.update({ where: { order_id: order.order_id }, data: { is_store_splited: 1 } });
+    });
+    return true;
+  }
+
   // ---------- 导出：字段清单/读取偏好/生成 CSV ----------
   getExportFieldDict() {
     // key -> { name: 列名, col?: 直接从 order 表取的列名, render?: 自定义渲染 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Controller, Get, Post, Param, Body, Query, UseGuards, ParseIntPipe } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApplyAuditDto, ApplyBatchDto, ApplyDelDto, ApplyListQueryDto } from "./dto/merchant-apply.dto";
@@ -15,7 +14,7 @@ export class MerchantApplyCompatController {
   constructor(private prisma: PrismaService) {}
 
   @Get("list")
-  @ApiOperation({ summary: "商户入驻申请列表（兼容占位）" })
+  @ApiOperation({ summary: "商户入驻申请列表（兼容）" })
   @Authorities("merchantApplyList")
   async list(@Query() query: ApplyListQueryDto) {
     const page = Math.max(Number(query.page) || 1, 1);
@@ -23,7 +22,7 @@ export class MerchantApplyCompatController {
     const skip = (page - 1) * size;
     const where: any = {};
     // 状态筛选（1 待审核, 10 已通过, 20 已拒绝）
-    if (query.status !== undefined && query.status !== "" && query.status !== null) {
+    if (query.status !== undefined) {
       const status = Number(query.status);
       if (!Number.isNaN(status)) where.status = status;
     }
@@ -132,7 +131,7 @@ export class MerchantApplyCompatController {
     const now = Math.floor(Date.now() / 1000);
     await this.prisma.merchant_apply.update({
       where: { merchant_apply_id: id },
-  data: { status, audit_time: now, audit_remark: body.remark ?? "" },
+      data: { status, audit_time: now, audit_remark: body.remark ?? "" },
     });
 
     // 通过则创建 merchant（若未创建过）
