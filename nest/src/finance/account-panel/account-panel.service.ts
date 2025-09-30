@@ -37,6 +37,36 @@ export class AccountPanelService {
     };
   }
 
+  // Admin compat: return the exact keys expected by PHP admin panel
+  async getCompatSummary(filter: any) {
+    const { search_start_date, search_end_date } = filter;
+
+    const [
+      voucherAmount,
+      toCashAmount,
+      balanceIncome,
+      frozenMoney,
+      surplusUsage,
+      usePoints,
+    ] = await Promise.all([
+      this.getVoucherAmount(search_start_date, search_end_date),
+      this.getToCashAmount(search_start_date, search_end_date),
+      this.getBalanceIncome(search_start_date, search_end_date),
+      this.getFrozenMoneyChange(search_start_date, search_end_date),
+      this.getBalanceUsage(search_start_date, search_end_date),
+      this.getUsePoints(search_start_date, search_end_date),
+    ]);
+
+    return {
+      voucherAmount,
+      toCashAmount,
+      balance: balanceIncome,
+      frozenMoney,
+      surplus: surplusUsage,
+      usePoints,
+    };
+  }
+
   async getStatistics() {
     const now = new Date();
     const startOfToday = new Date(
@@ -57,6 +87,14 @@ export class AccountPanelService {
       month: monthStats,
       total: totalStats,
     };
+  }
+
+  private toUnixRange(startDate?: string, endDate?: string) {
+    if (!startDate || !endDate) return undefined;
+    return {
+      gte: Math.floor(new Date(startDate).getTime() / 1000),
+      lte: Math.floor(new Date(endDate).getTime() / 1000),
+    } as { gte: number; lte: number };
   }
 
   async getTrend(period: string) {
@@ -206,6 +244,96 @@ export class AccountPanelService {
     return Math.abs(Number(result._sum.balance || 0));
   }
 
+  // Sum of successful recharge amounts within period
+  private async getVoucherAmount(startDate?: string, endDate?: string) {
+    const timeRange = this.toUnixRange(startDate, endDate);
+    const result = await this.prisma.user_recharge_order.aggregate({
+      _sum: { amount: true },
+      where: {
+        status: true,
+        ...(timeRange && { paid_time: timeRange }),
+      },
+    });
+    return Number(result._sum.amount || 0);
+  }
+
+  // Sum of completed withdraw amounts within period
+  private async getToCashAmount(startDate?: string, endDate?: string) {
+    const timeRange = this.toUnixRange(startDate, endDate);
+    const result = await this.prisma.user_withdraw_apply.aggregate({
+      _sum: { amount: true },
+      where: {
+        status: true,
+        ...(timeRange && { finished_time: timeRange }),
+      },
+    });
+    return Number(result._sum.amount || 0);
+  }
+
+  // Sum of positive balance changes (income) within period
+  private async getBalanceIncome(startDate?: string, endDate?: string) {
+    const timeRange = this.toUnixRange(startDate, endDate);
+    const result = await this.prisma.user_balance_log.aggregate({
+      _sum: { balance: true },
+      where: {
+        balance: { gt: 0 },
+        ...(timeRange && { change_time: timeRange }),
+      },
+    });
+    return Number(result._sum.balance || 0);
+  }
+
+  // Sum of balance usage (absolute of negative balance changes) within period
+  private async getBalanceUsage(startDate?: string, endDate?: string) {
+    const timeRange = this.toUnixRange(startDate, endDate);
+    const result = await this.prisma.user_balance_log.aggregate({
+      _sum: { balance: true },
+      where: {
+        balance: { lt: 0 },
+        ...(timeRange && { change_time: timeRange }),
+      },
+    });
+    return Math.abs(Number(result._sum.balance || 0));
+  }
+
+  // Sum of absolute frozen balance changes within period
+  private async getFrozenMoneyChange(startDate?: string, endDate?: string) {
+    const timeRange = this.toUnixRange(startDate, endDate);
+    const [pos, neg] = await Promise.all([
+      this.prisma.user_balance_log.aggregate({
+        _sum: { frozen_balance: true },
+        where: {
+          frozen_balance: { gt: 0 },
+          ...(timeRange && { change_time: timeRange }),
+        },
+      }),
+      this.prisma.user_balance_log.aggregate({
+        _sum: { frozen_balance: true },
+        where: {
+          frozen_balance: { lt: 0 },
+          ...(timeRange && { change_time: timeRange }),
+        },
+      }),
+    ]);
+    return (
+      Number(pos._sum.frozen_balance || 0) +
+      Math.abs(Number(neg._sum.frozen_balance || 0))
+    );
+  }
+
+  // Sum of used points (absolute of negative points) within period
+  private async getUsePoints(startDate?: string, endDate?: string) {
+    const timeRange = this.toUnixRange(startDate, endDate);
+    const result = await this.prisma.user_points_log.aggregate({
+      _sum: { points: true },
+      where: {
+        points: { lt: 0 },
+        ...(timeRange && { change_time: timeRange }),
+      },
+    });
+    return Math.abs(Number(result._sum.points || 0));
+  }
+
   private async getAccountDistribution() {
     const distribution = (await this.prisma.$queryRaw`
       SELECT
@@ -215,11 +343,11 @@ export class AccountPanelService {
           WHEN balance BETWEEN 101 AND 1000 THEN '101-1000'
           WHEN balance BETWEEN 1001 AND 10000 THEN '1001-10000'
           ELSE '10000+'
-        END as range,
+        END as \`range\`,
         COUNT(*) as count
       FROM user
-      GROUP BY range
-      ORDER BY range
+      GROUP BY \`range\`
+      ORDER BY \`range\`
     `) as any[];
 
     return distribution;

@@ -39,15 +39,65 @@ export class AdminUserWithdrawApplyCompatController {
       startTime: query.start_time ?? query.startTime,
       endTime: query.end_time ?? query.endTime,
     });
+    // 兼容 PHP 管理端所需字段与格式
+    const mapTime = (sec?: number) => {
+      const s = Number(sec || 0);
+      if (!s) return "";
+      const d = new Date(s * 1000);
+      const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+      const yyyy = d.getFullYear();
+      const MM = pad(d.getMonth() + 1);
+      const dd = pad(d.getDate());
+      const hh = pad(d.getHours());
+      const mm = pad(d.getMinutes());
+      const ss = pad(d.getSeconds());
+      return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
+    };
+
+    const mapped = (result.records || []).map((r: any) => {
+      let accountData: any = {};
+      try {
+        if (r.account_data) accountData = JSON.parse(r.account_data);
+      } catch (e) {
+        accountData = {};
+      }
+      // 兼容下划线键名，统一转为驼峰
+      if (accountData && typeof accountData === "object") {
+        accountData = {
+          accountType:
+            accountData.accountType ?? accountData.account_type ?? accountData.type,
+          accountName:
+            accountData.accountName ?? accountData.account_name ?? accountData.name,
+          accountNo:
+            accountData.accountNo ?? accountData.account_no ?? accountData.no,
+          bankName: accountData.bankName ?? accountData.bank_name ?? accountData.bank,
+        };
+      }
+      const statusNum = Number(r.status ? 1 : 0);
+      const statusType = statusNum === 0 ? "待处理" : "已完成";
+      return {
+        statusType,
+        id: r.id,
+        userId: r.user_id,
+        amount: (typeof r.amount === "string"
+          ? Number(r.amount)
+          : Number(r.amount || 0)
+        ).toFixed(2),
+        addTime: mapTime(r.add_time),
+        finishedTime: mapTime(r.finished_time),
+        postscript: r.postscript || "",
+        status: statusNum,
+        accountData,
+        username: r.user?.username || "",
+      };
+    });
+
     return {
       code: 0,
       message: "success",
       data: {
-        records: result.records,
+        records: mapped,
         total: result.total,
-        page: result.page,
-        size: result.size,
-        totalPages: result.totalPages,
       },
     };
   }

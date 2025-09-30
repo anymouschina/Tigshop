@@ -71,25 +71,31 @@ export class UserWithdrawApplyService {
     const orderBy: any = {};
     orderBy[sortField] = sortOrder;
 
-    const [records, total] = await Promise.all([
+    const [rawRecords, total] = await Promise.all([
       this.prisma.user_withdraw_apply.findMany({
         where,
         skip,
         take: size,
         orderBy,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              username: true,
-              email: true,
-              mobile: true,
-            },
-          },
-        },
       }),
       this.prisma.user_withdraw_apply.count({ where }),
     ]);
+
+    // 手动关联 user 基础信息（schema 未定义关系）
+    const userIds = Array.from(
+      new Set(rawRecords.map((r: any) => r.user_id).filter(Boolean)),
+    );
+    const users = userIds.length
+      ? await this.prisma.user.findMany({
+          where: { user_id: { in: userIds } },
+          select: { user_id: true, username: true, email: true, mobile: true },
+        })
+      : [];
+    const userMap = new Map(users.map((u) => [u.user_id, u]));
+    const records = rawRecords.map((r: any) => ({
+      ...r,
+      user: userMap.get(r.user_id) || null,
+    }));
 
     return {
       records,
@@ -103,23 +109,20 @@ export class UserWithdrawApplyService {
   async findById(id: number) {
     const apply = await this.prisma.user_withdraw_apply.findUnique({
       where: { id },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
-      },
     });
 
     if (!apply) {
       throw new NotFoundException("提现申请不存在");
     }
 
-    return apply;
+    const user = apply.user_id
+      ? await this.prisma.user.findUnique({
+          where: { user_id: apply.user_id },
+          select: { user_id: true, username: true, email: true, mobile: true },
+        })
+      : null;
+
+    return { ...apply, user } as any;
   }
 
   async create(createDto: CreateUserWithdrawApplyDto) {
@@ -138,19 +141,16 @@ export class UserWithdrawApplyService {
         status: createDto.status || WithdrawStatus.PENDING,
         add_time: Math.floor(Date.now() / 1000),
       },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
-      },
     });
 
-    return apply;
+    const user = apply.user_id
+      ? await this.prisma.user.findUnique({
+          where: { user_id: apply.user_id },
+          select: { user_id: true, username: true, email: true, mobile: true },
+        })
+      : null;
+
+    return { ...apply, user } as any;
   }
 
   async update(id: number, updateDto: UpdateUserWithdrawApplyDto) {
@@ -213,19 +213,16 @@ export class UserWithdrawApplyService {
     const updatedApply = await this.prisma.user_withdraw_apply.update({
       where: { id },
       data: updateData,
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
-      },
     });
 
-    return updatedApply;
+    const user = updatedApply.user_id
+      ? await this.prisma.user.findUnique({
+          where: { user_id: updatedApply.user_id },
+          select: { user_id: true, username: true, email: true, mobile: true },
+        })
+      : null;
+
+    return { ...updatedApply, user } as any;
   }
 
   async delete(id: number) {

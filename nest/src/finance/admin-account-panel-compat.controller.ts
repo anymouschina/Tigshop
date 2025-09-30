@@ -23,7 +23,7 @@ export class AdminAccountPanelCompatController {
       search_start_date: query.search_start_date ?? query.searchStartDate ?? "",
       search_end_date: query.search_end_date ?? query.searchEndDate ?? "",
     };
-    const data = await this.service.getFilterResult(filter);
+    const data = await this.service.getCompatSummary(filter);
     return { code: 0, message: "success", data };
   }
 }

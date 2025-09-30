@@ -9,6 +9,13 @@ import * as path from "path";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 
 async function bootstrap() {
+  // 统一处理 BigInt 的 JSON 序列化（例如 MySQL COUNT(*)/$queryRaw 返回 BigInt）
+  // 避免 Express 在 JSON.stringify 时抛出 “Do not know how to serialize a BigInt”
+  if (!(BigInt.prototype as any).toJSON) {
+    (BigInt.prototype as any).toJSON = function () {
+      return this.toString();
+    };
+  }
   // 创建全局日志实例
   const logger = new Logger("Application");
   logger.debug(1111);
