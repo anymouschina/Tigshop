@@ -27,6 +27,11 @@ import { AdminPointsExchangeCompatController } from "./admin-points-exchange-com
 import { AdminPromotionCompatController } from "./admin-promotion-compat.controller";
 import { AdminSeckillCompatController } from "./admin-seckill-compat.controller";
 import { AdminTimeDiscountCompatController } from "./admin-time-discount-compat.controller";
+import { AdminProductTeamCompatController } from "./admin-product-team-compat.controller";
+import { AdminProductGiftCompatController } from "./admin-product-gift-compat.controller";
+import { AdminRechargeSettingCompatController } from "./admin-recharge-setting-compat.controller";
+import { AdminWechatLiveCompatController } from "./admin-wechat-live-compat.controller";
+import { AdminSignInCompatController } from "./admin-sign-in-compat.controller";
 
 @Module({
   imports: [
@@ -50,6 +55,11 @@ import { AdminTimeDiscountCompatController } from "./admin-time-discount-compat.
     AdminPromotionCompatController,
     AdminSeckillCompatController,
     AdminTimeDiscountCompatController,
+    AdminProductTeamCompatController,
+    AdminProductGiftCompatController,
+    AdminRechargeSettingCompatController,
+    AdminWechatLiveCompatController,
+    AdminSignInCompatController,
   ],
   providers: [
     PromotionService,

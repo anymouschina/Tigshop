@@ -83,6 +83,13 @@
 ### 6) 其它域（按优先级逐步补齐）
 - [ ] 营销 Marketing
   - [x] ProductPromotion：补齐服务与 DTO，新增 /adminapi 兼容控制器（adminapi/promotion/productPromotion/*），统一守卫与 envelope，shopId 通过 PanelService 解析（后续与前端联调字段名细节）
+  - [x] Seckill 秒杀：新增 /adminapi 兼容控制器（adminapi/promotion/seckill/*），接入 AdminJwtAuthGuard + AuthorityGuard + @Authorities("promotionManage")，返回驼峰与 {code,message,data}
+  - [x] TimeDiscount 时段折扣：新增 /adminapi 兼容控制器（adminapi/promotion/timeDiscount/*），同上；支持 Name/StartTime/EndTime/Discount 别名
+  - [x] ProductTeam 团购：新增 /adminapi 兼容控制器（adminapi/promotion/productTeam/*），列表/配置/详情/创建/更新/删除/批量
+  - [x] ProductGift 赠品：新增 /adminapi 兼容控制器（adminapi/promotion/productGift/*），列表/详情/创建/更新/删除/统计/可用列表
+  - [x] RechargeSetting 充值设置：新增 /adminapi 兼容控制器（adminapi/promotion/rechargeSetting/*），列表/配置/详情/创建/更新/删除/批量
+  - [x] WechatLive 微信直播：新增 /adminapi 兼容控制器（adminapi/promotion/wechatLive/*），列表/配置/详情/创建/更新/删除/批量
+  - [x] SignIn 签到：新增 /adminapi 兼容控制器（adminapi/promotion/signIn/*），列表/详情/创建/更新/删除/批量
 - [ ] 订单 Orders（Admin 兼容）
   - 基于 PHP 路由对齐 /adminapi/order 下接口（参考 php/app/adminapi/route/order.php）：
     - 售后 Aftersales（已对齐 /adminapi 路由并落地逻辑）
@@ -274,6 +281,10 @@
    - AccessStatisticsService 以“订单”退化近似访问：PV/UV、趋势（hour/day/week/month）、来源/地域分布、实时 10 分钟、转化率、CSV 导出。
    - GeneralStatisticsService 实现仪表盘（订单/营收/新用户/商品总数）、财务（按周期聚合）、库存（总数/上架/低库存/缺货）、营销（促销商品数/优惠券下单/来源 TOP）、性能（吞吐/营收）、同期对比、趋势分析、CSV 报告导出与实时 1 小时统计。
  - 2025-09-30：营销模块推进：补齐 ProductPromotionService 与 DTO；新增 AdminProductPromotionCompatController（/adminapi/promotion/productPromotion/*）；PromotionModule 注册服务与控制器；控制器使用 AdminJwtAuthGuard + AuthorityGuard + @Authorities，响应统一 {code,message,data}；shopId 通过 PanelService 获取。
+ - 2025-09-30：营销模块兼容补全：新增 /adminapi 兼容控制器
+   - 秒杀 seckill（/adminapi/promotion/seckill/*）与时段折扣 timeDiscount（/adminapi/promotion/timeDiscount/*）；
+   - 团购 productTeam（/adminapi/promotion/productTeam/*）、赠品 productGift（/adminapi/promotion/productGift/*）、充值设置 rechargeSetting（/adminapi/promotion/rechargeSetting/*）、微信直播 wechatLive（/adminapi/promotion/wechatLive/*）、签到 signIn（/adminapi/promotion/signIn/*）；
+   - 统一接入 AdminJwtAuthGuard + AuthorityGuard 与 @Authorities("promotionManage")，返回驼峰 envelope；已在 PromotionModule 完成注册，消除前端 404。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：

@@ -63,7 +63,7 @@ export class CouponService {
 
     const payload = createCouponDto as any;
 
-    const data: any = {
+  const data: any = {
       // 必填/主字段
       coupon_name: payload.couponName ?? payload.coupon_name,
       coupon_desc: payload.couponDesc ?? payload.coupon_desc ?? "",
@@ -80,10 +80,19 @@ export class CouponService {
       ),
       // 发送范围
       send_range: Number(payload.sendRange ?? payload.send_range ?? 0),
-      send_range_data:
-        typeof payload.sendRangeData === "string"
-          ? payload.sendRangeData
-          : payload.send_range_data ?? "",
+      send_range_data: (() => {
+        const v1 = payload.sendRangeData;
+        const v2 = payload.send_range_data;
+        const v = v1 !== undefined ? v1 : v2;
+        if (v == null) return "";
+        if (typeof v === "string") return v;
+        // 如果传入数组或对象，序列化为 JSON 字符串
+        try {
+          return JSON.stringify(v);
+        } catch {
+          return String(v);
+        }
+      })(),
       // 使用期限
       use_start_date: Number(
         payload.useStartDateTs ?? parseDateToTs(payload.useStartDate ?? payload.use_start_date),
@@ -107,8 +116,22 @@ export class CouponService {
         ? 1
         : 0,
       // 用户等级
-      limit_user_rank:
-        payload.limitUserRank ?? payload.limit_user_rank ?? "",
+      limit_user_rank: (() => {
+        const v1 = payload.limitUserRank;
+        const v2 = payload.limit_user_rank;
+        const v = v1 !== undefined ? v1 : v2;
+        if (v == null) return "";
+        if (typeof v === "string") return v;
+        if (Array.isArray(v)) {
+          // 规范化为以逗号分隔的 id 列表
+          return v
+            .map((x: any) => (typeof x === "object" && x !== null ? x.id ?? x.rank_id ?? x : x))
+            .map((x: any) => Number(x))
+            .filter((n: any) => Number.isFinite(n))
+            .join(",");
+        }
+        return String(v);
+      })(),
       // 门店
       shop_id: Number(payload.shop_id ?? payload.shopId),
     };
@@ -137,7 +160,17 @@ export class CouponService {
     if (p.minOrderAmount ?? p.min_order_amount) data.min_order_amount = Number(p.minOrderAmount ?? p.min_order_amount);
     if (p.maxOrderAmount ?? p.max_order_amount) data.max_order_amount = Number(p.maxOrderAmount ?? p.max_order_amount);
     if (p.sendRange ?? p.send_range) data.send_range = Number(p.sendRange ?? p.send_range);
-    if (p.sendRangeData ?? p.send_range_data) data.send_range_data = (typeof p.sendRangeData === "string" ? p.sendRangeData : p.send_range_data) ?? "";
+    if (p.sendRangeData ?? p.send_range_data) {
+      const v = p.sendRangeData ?? p.send_range_data;
+      if (typeof v === "string") data.send_range_data = v;
+      else {
+        try {
+          data.send_range_data = JSON.stringify(v);
+        } catch {
+          data.send_range_data = String(v);
+        }
+      }
+    }
     const sTs = parseDateToTs(p.useStartDate ?? p.use_start_date);
     const eTs = parseDateToTs(p.useEndDate ?? p.use_end_date);
     if (sTs != null) data.use_start_date = sTs;
@@ -152,7 +185,17 @@ export class CouponService {
     if (p.isNewUser ?? p.is_new_user) data.is_new_user = (p.isNewUser ?? p.is_new_user) ? 1 : 0;
     if (p.isShow ?? p.is_show) data.is_show = (p.isShow ?? p.is_show) ? 1 : 0;
     if (p.enabledClickGet ?? p.enabled_click_get) data.enabled_click_get = (p.enabledClickGet ?? p.enabled_click_get) ? 1 : 0;
-    if (p.limitUserRank ?? p.limit_user_rank) data.limit_user_rank = p.limitUserRank ?? p.limit_user_rank;
+    if (p.limitUserRank ?? p.limit_user_rank) {
+      const v = p.limitUserRank ?? p.limit_user_rank;
+      if (typeof v === "string") data.limit_user_rank = v;
+      else if (Array.isArray(v)) {
+        data.limit_user_rank = v
+          .map((x: any) => (typeof x === "object" && x !== null ? x.id ?? x.rank_id ?? x : x))
+          .map((x: any) => Number(x))
+          .filter((n: any) => Number.isFinite(n))
+          .join(",");
+      } else data.limit_user_rank = String(v);
+    }
 
     return this.prisma.coupon.update({ where: { coupon_id: id }, data });
   }
