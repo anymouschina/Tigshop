@@ -276,8 +276,8 @@ export class ConfigService {
             data: {
               biz_code: config.biz_code,
               biz_val: config.biz_val,
-              create_time: new Date(),
-              update_time: new Date(),
+              create_time: BigInt(Math.floor(Date.now() / 1000)),
+              update_time: BigInt(Math.floor(Date.now() / 1000)),
             },
           });
           this.logger.debug(
@@ -289,7 +289,7 @@ export class ConfigService {
             where: { id: existing.id },
             data: {
               biz_val: config.biz_val,
-              update_time: new Date(),
+              update_time: BigInt(Math.floor(Date.now() / 1000)),
             },
           });
           this.logger.debug(
@@ -414,8 +414,8 @@ export class ConfigService {
       data: {
         biz_code: data.biz_code,
         biz_val: String(data.biz_val),
-        create_time: new Date(),
-        update_time: new Date(),
+        create_time: BigInt(Math.floor(Date.now() / 1000)),
+        update_time: BigInt(Math.floor(Date.now() / 1000)),
       },
     });
 
@@ -462,7 +462,7 @@ export class ConfigService {
     }
 
     const updateData: any = {
-      update_time: new Date(),
+      update_time: BigInt(Math.floor(Date.now() / 1000)),
     };
     if (data.biz_code !== undefined) updateData.biz_code = data.biz_code;
     if (data.biz_val !== undefined) updateData.biz_val = String(data.biz_val);
@@ -508,7 +508,7 @@ export class ConfigService {
       where: { id },
       data: {
         [field]: field === "biz_val" ? String(value) : value,
-        update_time: new Date(),
+        update_time: BigInt(Math.floor(Date.now() / 1000)),
       },
     });
 
@@ -553,7 +553,7 @@ export class ConfigService {
         where: { id: config.id },
         data: {
           biz_val: String(config.biz_val),
-          update_time: new Date(),
+          update_time: BigInt(Math.floor(Date.now() / 1000)),
         },
       });
     });
@@ -654,7 +654,8 @@ export class ConfigService {
         where: { id: existingConfig.id },
         data: {
           biz_val: jsonString,
-          update_time: new Date(),
+          // store unix seconds as BigInt to match schema
+          update_time: BigInt(Math.floor(Date.now() / 1000)),
         },
       });
     } else {
@@ -662,8 +663,9 @@ export class ConfigService {
         data: {
           biz_code: bizCode,
           biz_val: jsonString,
-          create_time: new Date(),
-          update_time: new Date(),
+          // store unix seconds as BigInt to match schema
+          create_time: BigInt(Math.floor(Date.now() / 1000)),
+          update_time: BigInt(Math.floor(Date.now() / 1000)),
         },
       });
     }
@@ -742,7 +744,8 @@ export class ConfigService {
         where: { id: existingConfig.id },
         data: {
           biz_val: value,
-          update_time: new Date(),
+          // store unix seconds as BigInt to match schema
+          update_time: BigInt(Math.floor(Date.now() / 1000)),
         },
       });
     } else {
@@ -750,8 +753,9 @@ export class ConfigService {
         data: {
           biz_code: bizCode,
           biz_val: value,
-          create_time: new Date(),
-          update_time: new Date(),
+          // store unix seconds as BigInt to match schema
+          create_time: BigInt(Math.floor(Date.now() / 1000)),
+          update_time: BigInt(Math.floor(Date.now() / 1000)),
         },
       });
     }
