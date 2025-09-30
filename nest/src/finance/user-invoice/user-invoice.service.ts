@@ -41,15 +41,19 @@ export class UserInvoiceService {
     const where: any = {};
 
     if (keyword) {
+      // 按照实际表结构可搜索的字段：公司名称/税号/开户行
       where.OR = [
-        { title: { contains: keyword } },
-        { tax_number: { contains: keyword } },
-        { bank_name: { contains: keyword } },
+        { company_name: { contains: keyword } },
+        { company_code: { contains: keyword } },
+        { company_bank: { contains: keyword } },
       ];
     }
 
+    // admin 列表默认排除 0（普票），与 PHP 端行为一致
     if (status !== undefined) {
       where.status = status;
+    } else {
+      where.NOT = { status: 0 };
     }
 
     if (userId) {
@@ -60,26 +64,42 @@ export class UserInvoiceService {
     const orderBy: any = {};
     orderBy[sortField] = sortOrder;
 
-    // 查询数据
-    const [records, total] = await Promise.all([
+    // 查询数据（不使用 include，手动补全 user 信息）
+    const [rawRecords, total] = await Promise.all([
       this.prisma.user_invoice.findMany({
         where,
         skip,
         take: size,
         orderBy,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              username: true,
-              email: true,
-              mobile: true,
-            },
-          },
-        },
       }),
       this.prisma.user_invoice.count({ where }),
     ]);
+
+    // 批量查询用户信息并补充
+    const userIds = Array.from(
+      new Set(rawRecords.map((r: any) => r.user_id).filter(Boolean)),
+    );
+    let userMap: Record<number, any> = {};
+    if (userIds.length) {
+      const users = await this.prisma.user.findMany({
+        where: { user_id: { in: userIds } },
+        select: {
+          user_id: true,
+          username: true,
+          email: true,
+          mobile: true,
+        },
+      });
+      userMap = users.reduce((acc: any, u: any) => {
+        acc[u.user_id] = u;
+        return acc;
+      }, {} as Record<number, any>);
+    }
+
+    const records = rawRecords.map((r: any) => ({
+      ...r,
+      user: userMap[r.user_id] || null,
+    }));
 
     return {
       records,
@@ -98,23 +118,24 @@ export class UserInvoiceService {
   async findById(id: number) {
     const invoice = await this.prisma.user_invoice.findUnique({
       where: { invoice_id: id },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
-      },
     });
 
     if (!invoice) {
       throw new NotFoundException("用户发票不存在");
     }
 
-    return invoice;
+    // 手动补充用户信息
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: invoice.user_id },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        mobile: true,
+      },
+    });
+
+    return { ...invoice, user: user || null };
   }
 
   /**
@@ -140,33 +161,29 @@ export class UserInvoiceService {
       throw new BadRequestException("企业发票必须提供纳税人识别号");
     }
 
+    // 映射到实际表结构字段
     const invoice = await this.prisma.user_invoice.create({
       data: {
         user_id: createDto.userId,
         title_type: createDto.titleType,
-        title: createDto.title,
-        tax_number: createDto.taxNumber || "",
-        register_address: createDto.registerAddress || "",
-        register_phone: createDto.registerPhone || "",
-        bank_name: createDto.bankName || "",
-        bank_account: createDto.bankAccount || "",
+        company_name: createDto.title,
+        company_code: createDto.taxNumber || "",
+        company_address: createDto.registerAddress || "",
+        company_phone: createDto.registerPhone || "",
+        company_bank: createDto.bankName || "",
+        company_account: createDto.bankAccount || "",
         status: createDto.status || UserInvoiceStatus.PENDING,
-        apply_remark: createDto.applyRemark || "",
+        apply_reply: createDto.applyRemark || "",
         add_time: Math.floor(Date.now() / 1000),
-      },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
       },
     });
 
-    return invoice;
+    // 补充用户信息以保持兼容
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: invoice.user_id },
+      select: { user_id: true, username: true, email: true, mobile: true },
+    });
+    return { ...invoice, user: user || null };
   }
 
   /**
@@ -206,43 +223,39 @@ export class UserInvoiceService {
       updateData.title_type = updateDto.titleType;
     }
     if (updateDto.title !== undefined) {
-      updateData.title = updateDto.title;
+      updateData.company_name = updateDto.title;
     }
     if (updateDto.taxNumber !== undefined) {
-      updateData.tax_number = updateDto.taxNumber;
+      updateData.company_code = updateDto.taxNumber;
     }
     if (updateDto.registerAddress !== undefined) {
-      updateData.register_address = updateDto.registerAddress;
+      updateData.company_address = updateDto.registerAddress;
     }
     if (updateDto.registerPhone !== undefined) {
-      updateData.register_phone = updateDto.registerPhone;
+      updateData.company_phone = updateDto.registerPhone;
     }
     if (updateDto.bankName !== undefined) {
-      updateData.bank_name = updateDto.bankName;
+      updateData.company_bank = updateDto.bankName;
     }
     if (updateDto.bankAccount !== undefined) {
-      updateData.bank_account = updateDto.bankAccount;
+      updateData.company_account = updateDto.bankAccount;
     }
     if (updateDto.applyRemark !== undefined) {
-      updateData.apply_remark = updateDto.applyRemark;
+      // 原 PHP 的 apply_remark 行为与本表结构不一致，这里延用到 apply_reply 字段
+      updateData.apply_reply = updateDto.applyRemark;
     }
 
     const updatedInvoice = await this.prisma.user_invoice.update({
       where: { invoice_id: id },
       data: updateData,
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
-      },
     });
 
-    return updatedInvoice;
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: updatedInvoice.user_id },
+      select: { user_id: true, username: true, email: true, mobile: true },
+    });
+
+    return { ...updatedInvoice, user: user || null };
   }
 
   /**

@@ -34,11 +34,8 @@ export class RefundLogService {
 
     if (keyword) {
       where.OR = [
-        { refund_note: { contains: keyword } },
-        { admin_remark: { contains: keyword } },
-        { payment_voucher: { contains: keyword } },
-        { order: { order_sn: { contains: keyword } } },
-        { user: { nickname: { contains: keyword } } },
+        { refund_pay_code: { contains: keyword } },
+        { transaction_id: { contains: keyword } },
       ];
     }
 
@@ -58,49 +55,27 @@ export class RefundLogService {
       where.refund_type = refund_type;
     }
 
-    if (status >= 0) {
-      where.status = status;
-    }
+    // refund_log 无 status 字段，忽略 status 过滤
 
-    const orderBy = {};
-    orderBy[sort_field] = sort_order;
+    // 排序字段映射：id -> log_id
+    const sortKey = sort_field === "id" ? "log_id" : sort_field;
+    const orderBy: any = {};
+    orderBy[sortKey] = sort_order;
 
     const skip = (page - 1) * size;
 
+    const effectiveOrderBy = Object.keys(orderBy).length
+      ? orderBy
+      : { log_id: "desc" };
+
     const [items, total] = await Promise.all([
-      this.prisma.refundLog.findMany({
+      this.prisma.refund_log.findMany({
         where,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              nickname: true,
-              avatar: true,
-              mobile: true,
-            },
-          },
-          order: {
-            select: {
-              order_id: true,
-              order_sn: true,
-              order_amount: true,
-              pay_time: true,
-            },
-          },
-          refund_apply: {
-            select: {
-              id: true,
-              refund_amount: true,
-              refund_reason: true,
-              status: true,
-            },
-          },
-        },
-        orderBy,
+        orderBy: effectiveOrderBy as any,
         skip,
         take: size,
       }),
-      this.prisma.refundLog.count({ where }),
+      this.prisma.refund_log.count({ where }),
     ]);
 
     return {
@@ -113,38 +88,8 @@ export class RefundLogService {
   }
 
   async findOne(id: number) {
-    const refundLog = await this.prisma.refundLog.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            nickname: true,
-            avatar: true,
-            mobile: true,
-            email: true,
-          },
-        },
-        order: {
-          select: {
-            order_id: true,
-            order_sn: true,
-            order_amount: true,
-            pay_time: true,
-            shipping_time: true,
-            confirm_time: true,
-          },
-        },
-        refund_apply: {
-          select: {
-            id: true,
-            refund_amount: true,
-            refund_reason: true,
-            status: true,
-            create_time: true,
-          },
-        },
-      },
+    const refundLog = await this.prisma.refund_log.findUnique({
+      where: { log_id: Number(id) },
     });
 
     if (!refundLog) {
@@ -175,8 +120,8 @@ export class RefundLogService {
 
     // 检查退款申请是否存在（如果提供了）
     if (data.refund_apply_id > 0) {
-      const refundApply = await this.prisma.refundApply.findUnique({
-        where: { id: data.refund_apply_id },
+      const refundApply = await this.prisma.refund_apply.findUnique({
+        where: { refund_id: data.refund_apply_id },
       });
 
       if (!refundApply) {
@@ -189,12 +134,17 @@ export class RefundLogService {
       throw new Error("退款金额不能为负数");
     }
 
-    const refundLog = await this.prisma.refundLog.create({
+    const refundLog = await this.prisma.refund_log.create({
       data: {
-        ...data,
-        create_time: new Date(),
-        update_time: new Date(),
-        status: 0, // 默认待处理
+        refund_apply_id: data.refund_apply_id ?? 0,
+        refund_type: data.refund_type ?? 0,
+        refund_pay_code: data.refund_pay_code ?? "",
+        transaction_id: data.transaction_id ?? "",
+        refund_amount: data.refund_amount ?? 0,
+        add_time: Math.floor(Date.now() / 1000),
+        description: data.description ?? null,
+        user_id: data.user_id,
+        order_id: data.order_id,
       },
     });
 
@@ -202,40 +152,27 @@ export class RefundLogService {
   }
 
   async update(data: UpdateRefundLogDto) {
-    const refundLog = await this.prisma.refundLog.findUnique({
-      where: { id: data.id },
+    const refundLog = await this.prisma.refund_log.findUnique({
+      where: { log_id: Number(data.id) },
     });
 
     if (!refundLog) {
       throw new Error("退款记录不存在");
     }
 
-    // 状态变更检查
-    if (data.status !== undefined && data.status !== refundLog.status) {
-      // 只有待处理状态可以变为退款成功、退款失败或已取消
-      if (refundLog.status === 0) {
-        if (data.status === 1 || data.status === 2 || data.status === 3) {
-          // 允许状态变更
-        } else {
-          throw new Error("无效的状态变更");
-        }
-      }
-      // 其他状态不允许变更
-      else {
-        throw new Error("当前状态不允许变更");
-      }
-    }
+    // refund_log 表没有 status 字段，跳过状态流转检查
 
-    const updateData: any = {
-      ...data,
-      update_time: new Date(),
-    };
+    const updateData: any = {};
+    if (data.refund_pay_code !== undefined) updateData.refund_pay_code = data.refund_pay_code;
+    if (data.transaction_id !== undefined) updateData.transaction_id = data.transaction_id;
+    if (data.refund_amount !== undefined) updateData.refund_amount = data.refund_amount;
+    if (data.description !== undefined) updateData.description = data.description;
 
     // 移除id字段，不允许更新ID
-    delete updateData.id;
+    delete (updateData as any).id;
 
-    const updatedRefundLog = await this.prisma.refundLog.update({
-      where: { id: data.id },
+    const updatedRefundLog = await this.prisma.refund_log.update({
+      where: { log_id: Number(data.id) },
       data: updateData,
     });
 
@@ -243,44 +180,25 @@ export class RefundLogService {
   }
 
   async remove(id: number) {
-    const refundLog = await this.prisma.refundLog.findUnique({
-      where: { id },
+    const refundLog = await this.prisma.refund_log.findUnique({
+      where: { log_id: Number(id) },
     });
 
     if (!refundLog) {
       throw new Error("退款记录不存在");
     }
 
-    // 只有待处理状态可以删除
-    if (refundLog.status !== 0) {
-      throw new Error("只有待处理状态的退款记录可以删除");
-    }
-
-    await this.prisma.refundLog.delete({
-      where: { id },
+    await this.prisma.refund_log.delete({
+      where: { log_id: Number(id) },
     });
 
     return true;
   }
 
   async batchRemove(ids: number[]) {
-    // 检查是否都是待处理状态
-    const refundLogs = await this.prisma.refundLog.findMany({
+    await this.prisma.refund_log.deleteMany({
       where: {
-        id: {
-          in: ids,
-        },
-        status: 0, // 只有待处理状态可以删除
-      },
-    });
-
-    if (refundLogs.length !== ids.length) {
-      throw new Error("只能删除待处理状态的退款记录");
-    }
-
-    await this.prisma.refundLog.deleteMany({
-      where: {
-        id: {
+        log_id: {
           in: ids,
         },
       },
@@ -290,70 +208,46 @@ export class RefundLogService {
   }
 
   async getRefundLogStats() {
-    const stats = await this.prisma.refundLog.groupBy({
-      by: ["status"],
-      _count: {
-        status: true,
-      },
-    });
+    // refund_log 无状态统计字段，返回空结构或聚合退款金额
+    const stats: any[] = [];
 
     const result = {};
     for (let i = 0; i <= 3; i++) {
       result[i] = 0;
     }
 
-    stats.forEach((stat) => {
-      result[stat.status] = stat._count.status;
-    });
+    // 无状态字段，保持默认 0
 
     return result;
   }
 
   async getRefundLogByOrder(orderId: number) {
-    return await this.prisma.refundLog.findMany({
+    return await this.prisma.refund_log.findMany({
       where: { order_id: orderId },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            nickname: true,
-            avatar: true,
-          },
-        },
-      },
-      orderBy: { create_time: "desc" },
+      orderBy: { add_time: "desc" },
     });
   }
 
   async getRefundLogByUser(userId: number) {
-    return await this.prisma.refundLog.findMany({
+    return await this.prisma.refund_log.findMany({
       where: { user_id: userId },
-      include: {
-        order: {
-          select: {
-            order_id: true,
-            order_sn: true,
-            order_amount: true,
-          },
-        },
-      },
-      orderBy: { create_time: "desc" },
+      orderBy: { add_time: "desc" },
     });
   }
 
   async getRefundAmountStats(dateRange?: [Date, Date]) {
-    const where: any = {
-      status: 1, // 退款成功
-    };
-
+    const where: any = {};
     if (dateRange && dateRange.length === 2) {
-      where.create_time = {
-        gte: dateRange[0],
-        lte: dateRange[1],
+      const [start, end] = dateRange;
+      const startSec = Math.floor(start.getTime() / 1000);
+      const endSec = Math.floor(end.getTime() / 1000);
+      where.add_time = {
+        gte: startSec,
+        lte: endSec,
       };
     }
 
-    const result = await this.prisma.refundLog.aggregate({
+    const result = await this.prisma.refund_log.aggregate({
       where,
       _sum: {
         refund_amount: true,

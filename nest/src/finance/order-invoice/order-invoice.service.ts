@@ -28,11 +28,12 @@ export class OrderInvoiceService {
 
     const where: any = {};
     if (keyword) {
+      // 由于没有 Prisma 关系，无法在 where 中嵌套 user 条件，这里仅对可用字段模糊
       where.OR = [
-        { user: { username: { contains: keyword } } },
-        { user: { mobile: { contains: keyword } } },
-        { invoice_title: { contains: keyword } },
+        { company_name: { contains: keyword } },
         { invoice_no: { contains: keyword } },
+        { email: { contains: keyword } },
+        { mobile: { contains: keyword } },
       ];
     }
     if (invoice_type) {
@@ -48,30 +49,50 @@ export class OrderInvoiceService {
       where.shop_id = parseInt(shop_id);
     }
 
-    const records = await this.prisma.orderInvoice.findMany({
+    const rawRecords = await this.prisma.orderInvoice.findMany({
       where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            mobile: true,
-            email: true,
-          },
-        },
-        order: {
-          select: {
-            id: true,
-            order_sn: true,
-          },
-        },
-      },
       skip,
       take: size,
       orderBy,
     });
 
-    return records;
+    // 手动补全用户与订单信息
+    const userIds = Array.from(
+      new Set(rawRecords.map((r: any) => r.user_id).filter(Boolean)),
+    );
+    const orderIds = Array.from(
+      new Set(rawRecords.map((r: any) => r.order_id).filter(Boolean)),
+    );
+
+    let userMap: Record<number, any> = {};
+    if (userIds.length) {
+      const users = await this.prisma.user.findMany({
+        where: { user_id: { in: userIds } },
+        select: { user_id: true, username: true, mobile: true, email: true },
+      });
+      userMap = users.reduce((acc: any, u: any) => {
+        acc[u.user_id] = u;
+        return acc;
+      }, {} as Record<number, any>);
+    }
+
+    let orderMap: Record<number, any> = {};
+    if (orderIds.length) {
+      const orders = await this.prisma.order.findMany({
+        where: { order_id: { in: orderIds } },
+        select: { order_id: true, order_sn: true, total_amount: true },
+      });
+      orderMap = orders.reduce((acc: any, o: any) => {
+        acc[o.order_id] = o;
+        return acc;
+      }, {} as Record<number, any>);
+    }
+
+    return rawRecords.map((r: any) => ({
+      ...r,
+      user: userMap[r.user_id] || null,
+      order: orderMap[r.order_id] || null,
+    }));
   }
 
   async getFilterCount(filter: any): Promise<number> {
@@ -90,10 +111,10 @@ export class OrderInvoiceService {
     const where: any = {};
     if (keyword) {
       where.OR = [
-        { user: { username: { contains: keyword } } },
-        { user: { mobile: { contains: keyword } } },
-        { invoice_title: { contains: keyword } },
+        { company_name: { contains: keyword } },
         { invoice_no: { contains: keyword } },
+        { email: { contains: keyword } },
+        { mobile: { contains: keyword } },
       ];
     }
     if (invoice_type) {
@@ -113,32 +134,22 @@ export class OrderInvoiceService {
   }
 
   async getDetail(id: number) {
-    const item = await this.prisma.orderInvoice.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            mobile: true,
-            email: true,
-          },
-        },
-        order: {
-          select: {
-            id: true,
-            order_sn: true,
-            order_amount: true,
-          },
-        },
-      },
-    });
+    const item = await this.prisma.orderInvoice.findUnique({ where: { id } });
 
     if (!item) {
       throw new Error("发票申请不存在");
     }
 
-    return item;
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: item.user_id },
+      select: { user_id: true, username: true, mobile: true, email: true },
+    });
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: item.order_id },
+      select: { order_id: true, order_sn: true, total_amount: true },
+    });
+
+    return { ...item, user: user || null, order: order || null };
   }
 
   async updateOrderInvoice(id: number, updateData: UpdateOrderInvoiceDto) {
@@ -167,20 +178,22 @@ export class OrderInvoiceService {
   }
 
   async createOrderInvoice(createData: CreateOrderInvoiceDto) {
+    // 映射字段到实际表结构
     return this.prisma.orderInvoice.create({
       data: {
         user_id: createData.user_id,
         order_id: createData.order_id,
         invoice_type: createData.invoice_type,
-        invoice_title: createData.invoice_title,
-        tax_no: createData.tax_no,
-        address: createData.address,
-        phone: createData.phone,
-        bank_name: createData.bank_name,
-        bank_account: createData.bank_account,
+        // 发票抬头与公司信息
+        company_name: createData.invoice_title || "",
+        company_code: createData.tax_no || "",
+        company_address: createData.address || "",
+        company_phone: createData.phone || "",
+        company_bank: createData.bank_name || "",
+        company_account: createData.bank_account || "",
         amount: createData.amount,
         status: 0, // 待审核
-        create_time: new Date(),
+        add_time: Math.floor(Date.now() / 1000),
       },
     });
   }
@@ -208,25 +221,29 @@ export class OrderInvoiceService {
   }
 
   async getInvoicesByUser(userId: number) {
-    return this.prisma.orderInvoice.findMany({
+    const raw = await this.prisma.orderInvoice.findMany({
       where: { user_id: userId },
-      include: {
-        order: {
-          select: {
-            id: true,
-            order_sn: true,
-            order_amount: true,
-          },
-        },
-      },
-      orderBy: { create_time: "desc" },
+      orderBy: { add_time: "desc" },
     });
+    const orderIds = Array.from(new Set(raw.map((r: any) => r.order_id)));
+    let orderMap: Record<number, any> = {};
+    if (orderIds.length) {
+      const orders = await this.prisma.order.findMany({
+        where: { order_id: { in: orderIds } },
+        select: { order_id: true, order_sn: true, total_amount: true },
+      });
+      orderMap = orders.reduce((acc: any, o: any) => {
+        acc[o.order_id] = o;
+        return acc;
+      }, {} as Record<number, any>);
+    }
+    return raw.map((r: any) => ({ ...r, order: orderMap[r.order_id] || null }));
   }
 
   async getInvoicesByOrder(orderId: number) {
     return this.prisma.orderInvoice.findMany({
       where: { order_id: orderId },
-      orderBy: { create_time: "desc" },
+      orderBy: { add_time: "desc" },
     });
   }
 }

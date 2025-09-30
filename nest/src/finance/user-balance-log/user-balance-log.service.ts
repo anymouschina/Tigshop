@@ -35,19 +35,7 @@ export class UserBalanceLogService {
 
     if (keyword) {
       where.OR = [
-        { description: { contains: keyword } },
-        { admin_remark: { contains: keyword } },
-        { related_id: { contains: keyword } },
-        { order: { order_sn: { contains: keyword } } },
-        {
-          user: {
-            OR: [
-              { nickname: { contains: keyword } },
-              { username: { contains: keyword } },
-              { mobile: { contains: keyword } },
-            ],
-          },
-        },
+        { change_desc: { contains: keyword } },
       ];
     }
 
@@ -55,9 +43,7 @@ export class UserBalanceLogService {
       where.user_id = user_id;
     }
 
-    if (order_id > 0) {
-      where.order_id = order_id;
-    }
+    // user_balance_log 无 order_id 字段
 
     if (type >= 0) {
       where.type = type;
@@ -67,52 +53,26 @@ export class UserBalanceLogService {
       where.change_type = change_type;
     }
 
-    if (start_date && end_date) {
-      where.create_time = {
-        gte: new Date(start_date),
-        lte: new Date(end_date),
-      };
-    } else if (start_date) {
-      where.create_time = {
-        gte: new Date(start_date),
-      };
-    } else if (end_date) {
-      where.create_time = {
-        lte: new Date(end_date),
-      };
+    if (start_date || end_date) {
+      where.change_time = {};
+      if (start_date) where.change_time.gte = Math.floor(new Date(start_date).getTime() / 1000);
+      if (end_date) where.change_time.lte = Math.floor(new Date(end_date).getTime() / 1000);
     }
 
-    const orderBy = {};
-    orderBy[sort_field] = sort_order;
+  const sortKey = sort_field === "id" ? "log_id" : sort_field;
+  const orderBy: any = {};
+  orderBy[sortKey] = sort_order;
 
     const skip = (page - 1) * size;
 
     const [items, total] = await Promise.all([
-      this.prisma.userBalanceLog.findMany({
+      this.prisma.user_balance_log.findMany({
         where,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              nickname: true,
-              avatar: true,
-              mobile: true,
-              balance: true,
-            },
-          },
-          order: {
-            select: {
-              order_id: true,
-              order_sn: true,
-              order_amount: true,
-            },
-          },
-        },
         orderBy,
         skip,
         take: size,
       }),
-      this.prisma.userBalanceLog.count({ where }),
+      this.prisma.user_balance_log.count({ where }),
     ]);
 
     return {
@@ -125,30 +85,8 @@ export class UserBalanceLogService {
   }
 
   async findOne(id: number) {
-    const userBalanceLog = await this.prisma.userBalanceLog.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            nickname: true,
-            avatar: true,
-            mobile: true,
-            email: true,
-            balance: true,
-          },
-        },
-        order: {
-          select: {
-            order_id: true,
-            order_sn: true,
-            order_amount: true,
-            pay_time: true,
-            shipping_time: true,
-            confirm_time: true,
-          },
-        },
-      },
+    const userBalanceLog = await this.prisma.user_balance_log.findUnique({
+      where: { log_id: Number(id) },
     });
 
     if (!userBalanceLog) {
@@ -184,10 +122,16 @@ export class UserBalanceLogService {
       throw new Error("余额不足");
     }
 
-    const userBalanceLog = await this.prisma.userBalanceLog.create({
+    const userBalanceLog = await this.prisma.user_balance_log.create({
       data: {
-        ...data,
-        create_time: new Date(),
+        user_id: data.user_id,
+        balance: data.balance ?? user.balance,
+        frozen_balance: data.frozen_balance ?? 0,
+        new_balance: data.new_balance ?? user.balance,
+        new_frozen_balance: data.new_frozen_balance ?? 0,
+        change_time: Math.floor(Date.now() / 1000),
+        change_desc: data.description ?? "",
+        change_type: data.change_type,
       },
     });
 
@@ -195,24 +139,27 @@ export class UserBalanceLogService {
   }
 
   async update(data: UpdateUserBalanceLogDto) {
-    const userBalanceLog = await this.prisma.userBalanceLog.findUnique({
-      where: { id: data.id },
+    const userBalanceLog = await this.prisma.user_balance_log.findUnique({
+      where: { log_id: Number(data.id) },
     });
 
     if (!userBalanceLog) {
       throw new Error("余额记录不存在");
     }
 
-    const updateData: any = {
-      ...data,
-      update_time: new Date(),
-    };
+    const updateData: any = {};
+    if (data.balance !== undefined) updateData.balance = data.balance;
+    if (data.frozen_balance !== undefined) updateData.frozen_balance = data.frozen_balance;
+    if (data.new_balance !== undefined) updateData.new_balance = data.new_balance;
+    if (data.new_frozen_balance !== undefined) updateData.new_frozen_balance = data.new_frozen_balance;
+    if (data.description !== undefined) updateData.change_desc = data.description;
+    if (data.change_type !== undefined) updateData.change_type = data.change_type;
 
     // 移除id字段，不允许更新ID
-    delete updateData.id;
+  delete (updateData as any).id;
 
-    const updatedUserBalanceLog = await this.prisma.userBalanceLog.update({
-      where: { id: data.id },
+    const updatedUserBalanceLog = await this.prisma.user_balance_log.update({
+      where: { log_id: Number(data.id) },
       data: updateData,
     });
 
@@ -220,25 +167,25 @@ export class UserBalanceLogService {
   }
 
   async remove(id: number) {
-    const userBalanceLog = await this.prisma.userBalanceLog.findUnique({
-      where: { id },
+    const userBalanceLog = await this.prisma.user_balance_log.findUnique({
+      where: { log_id: Number(id) },
     });
 
     if (!userBalanceLog) {
       throw new Error("余额记录不存在");
     }
 
-    await this.prisma.userBalanceLog.delete({
-      where: { id },
+    await this.prisma.user_balance_log.delete({
+      where: { log_id: Number(id) },
     });
 
     return true;
   }
 
   async batchRemove(ids: number[]) {
-    await this.prisma.userBalanceLog.deleteMany({
+    await this.prisma.user_balance_log.deleteMany({
       where: {
-        id: {
+        log_id: {
           in: ids,
         },
       },
@@ -253,18 +200,9 @@ export class UserBalanceLogService {
       where.type = type;
     }
 
-    return await this.prisma.userBalanceLog.findMany({
+    return await this.prisma.user_balance_log.findMany({
       where,
-      include: {
-        order: {
-          select: {
-            order_id: true,
-            order_sn: true,
-            order_amount: true,
-          },
-        },
-      },
-      orderBy: { create_time: "desc" },
+      orderBy: { change_time: "desc" },
     });
   }
 
@@ -274,11 +212,11 @@ export class UserBalanceLogService {
       where.user_id = userId;
     }
 
-    const result = await this.prisma.userBalanceLog.groupBy({
+    const result = await this.prisma.user_balance_log.groupBy({
       by: ["type", "change_type"],
       where,
       _sum: {
-        amount: true,
+        balance: true,
       },
       _count: {
         _all: true,
@@ -297,17 +235,17 @@ export class UserBalanceLogService {
     result.forEach((stat) => {
       if (stat.change_type === 0) {
         stats[stat.type].increase = {
-          total: stat._sum.amount || 0,
+          total: stat._sum.balance || 0, // 近似：以 balance 聚合表示
           count: stat._count._all || 0,
         };
       } else if (stat.change_type === 1) {
         stats[stat.type].decrease = {
-          total: Math.abs(stat._sum.amount || 0),
+          total: Math.abs(stat._sum.balance || 0),
           count: stat._count._all || 0,
         };
       } else if (stat.change_type === 2) {
         stats[stat.type].freeze = {
-          total: stat._sum.amount || 0,
+          total: stat._sum.balance || 0,
           count: stat._count._all || 0,
         };
       }
@@ -325,17 +263,17 @@ export class UserBalanceLogService {
     if (year) {
       const startDate = new Date(year, 0, 1);
       const endDate = new Date(year + 1, 0, 1);
-      where.create_time = {
-        gte: startDate,
-        lte: endDate,
+      where.change_time = {
+        gte: Math.floor(startDate.getTime() / 1000),
+        lte: Math.floor(endDate.getTime() / 1000),
       };
     }
 
-    const result = await this.prisma.userBalanceLog.groupBy({
+    const result = await this.prisma.user_balance_log.groupBy({
       by: ["type", "change_type"],
       where,
       _sum: {
-        amount: true,
+        balance: true,
       },
       _count: {
         _all: true,

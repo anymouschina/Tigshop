@@ -30,11 +30,10 @@ export class RefundApplyService {
     const where: any = {};
 
     if (keyword) {
+      // refund_apply 表可用字段：refund_note/payment_voucher 等
       where.OR = [
-        { refund_reason: { contains: keyword } },
-        { admin_remark: { contains: keyword } },
-        { order: { order_sn: { contains: keyword } } },
-        { user: { nickname: { contains: keyword } } },
+        { refund_note: { contains: keyword } },
+        { payment_voucher: { contains: keyword } },
       ];
     }
 
@@ -47,40 +46,30 @@ export class RefundApplyService {
     }
 
     if (status >= 0) {
-      where.status = status;
+      // 模型实际字段为 refund_status
+      where.refund_status = status;
     }
 
-    const orderBy = {};
-    orderBy[sort_field] = sort_order;
+  // 排序字段映射：id -> refund_id
+  const sortKey = sort_field === "id" ? "refund_id" : sort_field;
+  const orderBy: any = {};
+  orderBy[sortKey] = sort_order;
 
     const skip = (page - 1) * size;
 
+    // 字段映射：refund_apply 主键 refund_id；常见排序字段为 add_time/ refund_id
+    const effectiveOrderBy = Object.keys(orderBy).length
+      ? orderBy
+      : { refund_id: "desc" };
+
     const [items, total] = await Promise.all([
-      this.prisma.refundApply.findMany({
+      this.prisma.refund_apply.findMany({
         where,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              nickname: true,
-              avatar: true,
-              mobile: true,
-            },
-          },
-          order: {
-            select: {
-              order_id: true,
-              order_sn: true,
-              order_amount: true,
-              pay_time: true,
-            },
-          },
-        },
-        orderBy,
+        orderBy: effectiveOrderBy as any,
         skip,
         take: size,
       }),
-      this.prisma.refundApply.count({ where }),
+      this.prisma.refund_apply.count({ where }),
     ]);
 
     return {
@@ -93,29 +82,9 @@ export class RefundApplyService {
   }
 
   async findOne(id: number) {
-    const refund = await this.prisma.refundApply.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            nickname: true,
-            avatar: true,
-            mobile: true,
-            email: true,
-          },
-        },
-        order: {
-          select: {
-            order_id: true,
-            order_sn: true,
-            order_amount: true,
-            pay_time: true,
-            shipping_time: true,
-            confirm_time: true,
-          },
-        },
-      },
+    // 兼容传入 id，实际主键为 refund_id
+    const refund = await this.prisma.refund_apply.findUnique({
+      where: { refund_id: Number(id) },
     });
 
     if (!refund) {
@@ -141,10 +110,10 @@ export class RefundApplyService {
     }
 
     // 检查是否已有未完成的退款申请
-    const existingRefund = await this.prisma.refundApply.findFirst({
+    const existingRefund = await this.prisma.refund_apply.findFirst({
       where: {
         order_id: data.order_id,
-        status: {
+        refund_status: {
           in: [0, 1], // 待审核、审核通过
         },
       },
@@ -154,11 +123,24 @@ export class RefundApplyService {
       throw new Error("该订单已有未完成的退款申请");
     }
 
-    const refund = await this.prisma.refundApply.create({
+    const refund = await this.prisma.refund_apply.create({
       data: {
-        ...data,
-        create_time: new Date(),
-        update_time: new Date(),
+        // 字段落盘映射
+        refund_type: data.refund_type ?? 0,
+        order_id: data.order_id,
+        user_id: data.user_id,
+        aftersale_id: data.aftersale_id ?? 0,
+        refund_status: data.status ?? 0,
+        add_time: Math.floor(Date.now() / 1000),
+        refund_note: data.refund_note ?? "",
+        online_balance: data.online_balance ?? 0,
+        offline_balance: data.offline_balance ?? 0,
+        refund_balance: data.refund_balance ?? 0,
+        is_online: data.is_online ?? 0,
+        is_offline: data.is_offline ?? 0,
+        is_receive: data.is_receive ?? 0,
+        shop_id: data.shop_id ?? 0,
+        payment_voucher: data.payment_voucher ?? null,
       },
     });
 
@@ -166,8 +148,8 @@ export class RefundApplyService {
   }
 
   async update(data: UpdateRefundApplyDto) {
-    const refund = await this.prisma.refundApply.findUnique({
-      where: { id: data.id },
+    const refund = await this.prisma.refund_apply.findUnique({
+      where: { refund_id: Number(data.id) },
     });
 
     if (!refund) {
@@ -175,9 +157,9 @@ export class RefundApplyService {
     }
 
     // 状态变更检查
-    if (data.status !== undefined && data.status !== refund.status) {
+  if (data.status !== undefined && data.status !== refund.refund_status) {
       // 只有待审核状态可以变为审核通过或已拒绝
-      if (refund.status === 0) {
+  if (refund.refund_status === 0) {
         if (data.status === 1 || data.status === 2) {
           // 允许状态变更
         } else {
@@ -185,7 +167,7 @@ export class RefundApplyService {
         }
       }
       // 只有审核通过状态可以变为已取消
-      else if (refund.status === 1) {
+  else if (refund.refund_status === 1) {
         if (data.status === 3) {
           // 允许状态变更
         } else {
@@ -198,16 +180,17 @@ export class RefundApplyService {
       }
     }
 
-    const updateData: any = {
-      ...data,
-      update_time: new Date(),
-    };
+    const updateData: any = {};
+    if (data.status !== undefined) updateData.refund_status = data.status;
+    if (data.refund_note !== undefined) updateData.refund_note = data.refund_note;
+    if (data.payment_voucher !== undefined)
+      updateData.payment_voucher = data.payment_voucher;
 
     // 移除id字段，不允许更新ID
-    delete updateData.id;
+  delete (updateData as any).id;
 
-    const updatedRefund = await this.prisma.refundApply.update({
-      where: { id: data.id },
+    const updatedRefund = await this.prisma.refund_apply.update({
+      where: { refund_id: Number(data.id) },
       data: updateData,
     });
 
@@ -215,8 +198,8 @@ export class RefundApplyService {
   }
 
   async remove(id: number) {
-    const refund = await this.prisma.refundApply.findUnique({
-      where: { id },
+    const refund = await this.prisma.refund_apply.findUnique({
+      where: { refund_id: Number(id) },
     });
 
     if (!refund) {
@@ -224,12 +207,12 @@ export class RefundApplyService {
     }
 
     // 只有待审核状态可以删除
-    if (refund.status !== 0) {
+    if (refund.refund_status !== 0) {
       throw new Error("只有待审核状态的退款申请可以删除");
     }
 
-    await this.prisma.refundApply.delete({
-      where: { id },
+    await this.prisma.refund_apply.delete({
+      where: { refund_id: Number(id) },
     });
 
     return true;
@@ -237,12 +220,12 @@ export class RefundApplyService {
 
   async batchRemove(ids: number[]) {
     // 检查是否都是待审核状态
-    const refunds = await this.prisma.refundApply.findMany({
+    const refunds = await this.prisma.refund_apply.findMany({
       where: {
-        id: {
+        refund_id: {
           in: ids,
         },
-        status: 0, // 只有待审核状态可以删除
+        refund_status: 0, // 只有待审核状态可以删除
       },
     });
 
@@ -250,9 +233,9 @@ export class RefundApplyService {
       throw new Error("只能删除待审核状态的退款申请");
     }
 
-    await this.prisma.refundApply.deleteMany({
+    await this.prisma.refund_apply.deleteMany({
       where: {
-        id: {
+        refund_id: {
           in: ids,
         },
       },
@@ -262,10 +245,10 @@ export class RefundApplyService {
   }
 
   async getRefundStats() {
-    const stats = await this.prisma.refundApply.groupBy({
-      by: ["status"],
+    const stats = await this.prisma.refund_apply.groupBy({
+      by: ["refund_status"],
       _count: {
-        status: true,
+        _all: true,
       },
     });
 
@@ -274,8 +257,8 @@ export class RefundApplyService {
       result[i] = 0;
     }
 
-    stats.forEach((stat) => {
-      result[stat.status] = stat._count.status;
+    stats.forEach((stat: any) => {
+      result[stat.refund_status] = stat._count._all;
     });
 
     return result;

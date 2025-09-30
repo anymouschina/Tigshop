@@ -21,14 +21,14 @@ export class PaylogService {
     } = filter;
 
     const skip = (page - 1) * size;
-    const orderBy = { [sort_field]: sort_order };
+    const sortKey = !sort_field || sort_field === "id" ? "paylog_id" : sort_field;
+    const orderBy: any = { [sortKey]: sort_order };
 
     const where: any = {};
     if (keyword) {
       where.OR = [
-        { user: { username: { contains: keyword } } },
-        { user: { mobile: { contains: keyword } } },
-        { order: { order_sn: { contains: keyword } } },
+        { pay_sn: { contains: keyword } },
+        { order_sn: { contains: keyword } },
         { transaction_id: { contains: keyword } },
       ];
     }
@@ -39,32 +39,15 @@ export class PaylogService {
       where.order_id = parseInt(order_id);
     }
     if (payment_code) {
-      where.payment_code = payment_code;
+      where.pay_code = payment_code;
     }
     if (start_time || end_time) {
-      where.create_time = {};
-      if (start_time) where.create_time.gte = new Date(start_time);
-      if (end_time) where.create_time.lte = new Date(end_time);
+      where.add_time = {};
+      if (start_time) where.add_time.gte = Math.floor(new Date(start_time).getTime() / 1000);
+      if (end_time) where.add_time.lte = Math.floor(new Date(end_time).getTime() / 1000);
     }
-
-    const records = await this.prisma.payLog.findMany({
+    const records = await this.prisma.paylog.findMany({
       where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            mobile: true,
-          },
-        },
-        order: {
-          select: {
-            id: true,
-            order_sn: true,
-            order_amount: true,
-          },
-        },
-      },
       skip,
       take: size,
       orderBy,
@@ -90,9 +73,8 @@ export class PaylogService {
     const where: any = {};
     if (keyword) {
       where.OR = [
-        { user: { username: { contains: keyword } } },
-        { user: { mobile: { contains: keyword } } },
-        { order: { order_sn: { contains: keyword } } },
+        { pay_sn: { contains: keyword } },
+        { order_sn: { contains: keyword } },
         { transaction_id: { contains: keyword } },
       ];
     }
@@ -103,37 +85,20 @@ export class PaylogService {
       where.order_id = parseInt(order_id);
     }
     if (payment_code) {
-      where.payment_code = payment_code;
+      where.pay_code = payment_code;
     }
     if (start_time || end_time) {
-      where.create_time = {};
-      if (start_time) where.create_time.gte = new Date(start_time);
-      if (end_time) where.create_time.lte = new Date(end_time);
+      where.add_time = {};
+      if (start_time) where.add_time.gte = Math.floor(new Date(start_time).getTime() / 1000);
+      if (end_time) where.add_time.lte = Math.floor(new Date(end_time).getTime() / 1000);
     }
 
-    return this.prisma.payLog.count({ where });
+    return this.prisma.paylog.count({ where });
   }
 
   async getDetail(id: number) {
-    const item = await this.prisma.payLog.findUnique({
+    const item = await this.prisma.paylog.findUnique({
       where: { paylog_id: id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            mobile: true,
-            email: true,
-          },
-        },
-        order: {
-          select: {
-            id: true,
-            order_sn: true,
-            order_amount: true,
-          },
-        },
-      },
     });
 
     if (!item) {
@@ -144,25 +109,25 @@ export class PaylogService {
   }
 
   async deletePaylog(id: number) {
-    return this.prisma.payLog.delete({
+    return this.prisma.paylog.delete({
       where: { paylog_id: id },
     });
   }
 
   async batchDeletePaylog(ids: number[]) {
-    return this.prisma.payLog.deleteMany({
+    return this.prisma.paylog.deleteMany({
       where: { paylog_id: { in: ids } },
     });
   }
 
   async getPayStatistics() {
     const [total, success, failed, totalAmount] = await Promise.all([
-      this.prisma.payLog.count(),
-      this.prisma.payLog.count({ where: { pay_status: 1 } }),
-      this.prisma.payLog.count({ where: { pay_status: 0 } }),
-      this.prisma.payLog.aggregate({
+      this.prisma.paylog.count(),
+      this.prisma.paylog.count({ where: { pay_status: 1 } }),
+      this.prisma.paylog.count({ where: { pay_status: 0 } }),
+      this.prisma.paylog.aggregate({
         where: { pay_status: 1 },
-        _sum: { amount: true },
+        _sum: { pay_amount: true },
       }),
     ]);
 
@@ -170,40 +135,39 @@ export class PaylogService {
       total,
       success,
       failed,
-      total_amount: totalAmount._sum.amount || 0,
+      total_amount: totalAmount._sum.pay_amount || 0,
       success_rate: total > 0 ? ((success / total) * 100).toFixed(2) : 0,
     };
   }
 
   async getPaymentMethodStats() {
-    const stats = await this.prisma.payLog.groupBy({
-      by: ["payment_code"],
+    const stats = await this.prisma.paylog.groupBy({
+      by: ["pay_code"],
       _count: {
-        payment_code: true,
+        pay_code: true,
       },
       _sum: {
-        amount: true,
+        pay_amount: true,
       },
     });
 
     return stats.map((stat) => ({
-      payment_code: stat.payment_code,
-      count: stat._count.payment_code,
-      amount: stat._sum.amount || 0,
+      payment_code: stat.pay_code,
+      count: stat._count.pay_code,
+      amount: stat._sum.pay_amount || 0,
     }));
   }
 
   async createPayLog(data: any) {
-    return this.prisma.payLog.create({
+    return this.prisma.paylog.create({
       data: {
         user_id: data.user_id,
         order_id: data.order_id,
-        payment_code: data.payment_code,
+        pay_code: data.payment_code,
         transaction_id: data.transaction_id,
-        amount: data.amount,
+        pay_amount: data.amount,
         pay_status: data.pay_status || 0,
-        pay_time: data.pay_time,
-        create_time: new Date(),
+        add_time: Math.floor(Date.now() / 1000),
       },
     });
   }
@@ -225,7 +189,7 @@ export class PaylogService {
       updateData.transaction_id = transactionId;
     }
 
-    return this.prisma.payLog.update({
+    return this.prisma.paylog.update({
       where: { paylog_id: paylogId },
       data: updateData,
     });
