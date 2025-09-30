@@ -168,19 +168,11 @@ export class MerchantShopService {
    * 获取店铺详情
    */
   async getShopDetail(shopId: number, adminId: number) {
+    // 先查店铺本身（shop 表无名为 merchant 的关系，避免 include 导致 Prisma 校验错误）
     const shop = await this.prisma.shop.findFirst({
       where: {
         shop_id: shopId,
         merchant_id: adminId,
-      },
-      include: {
-        merchant: {
-          select: {
-            merchant_name: true,
-            contact_person: true,
-            mobile: true,
-          },
-        },
       },
     });
 
@@ -188,7 +180,38 @@ export class MerchantShopService {
       throw new Error("店铺不存在或无权限访问");
     }
 
-    return shop;
+    // 补充商户信息（通过 merchant_id 二次查询）
+    const merchant = shop.merchant_id
+      ? await this.prisma.merchant.findUnique({
+          where: { merchant_id: shop.merchant_id },
+          select: {
+            merchant_id: true,
+            company_name: true,
+            corporate_name: true,
+            merchant_data: true, // 可能包含手机号等扩展信息
+          },
+        })
+      : null;
+
+    let merchantInfo: any = null;
+    if (merchant) {
+      // 兼容返回字段：名称/联系人/联系方式
+      let extra: any = {};
+      if (merchant.merchant_data) {
+        try { extra = JSON.parse(merchant.merchant_data as any); } catch {}
+      }
+      merchantInfo = {
+        merchantId: merchant.merchant_id,
+        companyName: merchant.company_name,
+        corporateName: merchant.corporate_name,
+        contactMobile: extra.contact_mobile || extra.mobile || "",
+      };
+    }
+
+    return {
+      ...shop,
+      merchant: merchantInfo,
+    };
   }
 
   /**

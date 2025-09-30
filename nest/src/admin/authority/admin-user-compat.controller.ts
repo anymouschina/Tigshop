@@ -257,11 +257,17 @@ export class AdminUserCompatController {
     return { code: 0, message: "success", data: { code } };
   }
 
-  /** 校验验证码（占位实现） */
+  /** 校验验证码（占位实现） - 兼容 GET/POST */
   @Get("checkCode")
+  @Post("checkCode")
   @ApiOperation({ summary: "校验验证码（占位）" })
   @Authorities("adminUserCheckCode")
-  async checkCode(@Query("mobile") mobile: string, @Query("code") c: string) {
+  async checkCode(@Query("mobile") mobile: string, @Query("code") c: string, @Body() body?: any) {
+    // 允许通过 body 传参（POST 兼容）
+    if ((!mobile || !c) && body) {
+      mobile = body.mobile ?? mobile;
+      c = body.code ?? c;
+    }
     const key = mobile || "global";
     const item = AdminUserCompatController.codeCache.get(key);
     const ok = !!item && item.code === c && item.expiredAt > Date.now();
