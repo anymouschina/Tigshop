@@ -223,6 +223,7 @@ export class AdminOrderCompatController {
       status: 5,
       reply: body.reply ?? "",
       admin_id: req?.user?.userId ?? 0,
+      admin_name: req?.user?.username ?? "admin",
     });
     return ok ? { code: 0, message: "success" } : { code: 1, message: "error" };
   }

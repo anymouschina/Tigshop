@@ -68,7 +68,7 @@ export class AftersalesService {
   constructor(private prisma: PrismaService) {}
 
   async getFilterResult(filter: any): Promise<any[]> {
-    const where = this.buildWhereClause(filter);
+    const where = await this.buildWhereClause(filter);
     const orderBy = this.buildOrderBy(filter);
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
@@ -78,73 +78,34 @@ export class AftersalesService {
       orderBy,
       skip,
       take,
-      include: {
-        // 订单与售后项、日志
-        aftersales_log: {
-          orderBy: { log_id: "desc" },
-        },
-      },
     });
 
-    return results.map((result) => ({
+    // 附带订单号，便于前端展示
+    const orderIds = Array.from(new Set(results.map((r: any) => r.order_id).filter(Boolean)));
+    const orderSnMap = new Map<number, string>();
+    if (orderIds.length) {
+      const orders = await this.prisma.order.findMany({
+        where: { order_id: { in: orderIds as number[] } },
+        select: { order_id: true, order_sn: true },
+      });
+      orders.forEach((o) => orderSnMap.set(o.order_id, o.order_sn));
+    }
+
+    return results.map((result: any) => ({
       ...result,
+      order_sn: orderSnMap.get(result.order_id) || "",
       aftersales_type_name: this.getAftersalesTypeName(result.aftersales_type),
       status_name: this.getStatusName(result.status),
     }));
   }
 
-  async getAfterSalesCount(orderId: number): Promise<number> {
-    return this.prisma.aftersales.count({
-      where: {
-        order_id: orderId,
-        status: {
-          in: VALID_STATUS,
-        },
-      },
-    });
-  }
-
-  async checkHasProcessingAfterSale(orderId: number): Promise<number> {
-    return this.prisma.aftersales.count({
-      where: {
-        order_id: orderId,
-        status: {
-          in: PROGRESSING_STATUS,
-        },
-      },
-    });
-  }
-
   async getFilterCount(filter: any): Promise<number> {
-    const where = this.buildWhereClause(filter);
+    const where = await this.buildWhereClause(filter);
     return this.prisma.aftersales.count({ where });
   }
 
-  private buildWhereClause(filter: any): any {
+  private async buildWhereClause(filter: any): Promise<any> {
     const where: any = {};
-
-    // 关键词搜索（搜索订单号）
-    if (filter.keyword) {
-      where.OR = [
-        {
-          order: {
-            order_sn: {
-              contains: filter.keyword,
-            },
-          },
-        },
-        {
-          aftersales_sn: {
-            contains: filter.keyword,
-          },
-        },
-      ];
-    }
-
-    // 状态筛选
-    if (filter.status && filter.status !== 0) {
-      where.status = filter.status;
-    }
 
     // 申请类型筛选
     if (filter.aftersale_type && filter.aftersale_type !== 0) {
@@ -185,33 +146,37 @@ export class AftersalesService {
   }
 
   async getDetail(id: number): Promise<any> {
-    const result = await this.prisma.aftersales.findUnique({
-      where: { aftersale_id: id },
-      include: {
-        aftersales_log: { orderBy: { log_id: "desc" } },
-      },
-    });
+    const result = await this.prisma.aftersales.findUnique({ where: { aftersale_id: id } });
+    if (!result) throw new Error("售后记录不存在");
 
-    if (!result) {
-      throw new Error("售后记录不存在");
-    }
+    const items = await this.prisma.aftersales_item.findMany({ where: { aftersale_id: id } });
+    const orderItemIds = items.map((it) => it.order_item_id).filter(Boolean) as number[];
+    const orderItems = orderItemIds.length
+      ? await this.prisma.order_item.findMany({ where: { item_id: { in: orderItemIds } } })
+      : [];
+    const orderItemMap = new Map(orderItems.map((oi) => [oi.item_id, oi] as const));
+    const aftersales_items = items.map((it) => ({ ...it, items: orderItemMap.get(it.order_item_id as number) || null }));
 
-    // 计算建议退款金额
-    let refundProductPrice = 0;
-    if (result.aftersales_items) {
-      result.aftersales_items.forEach((item: any) => {
-        refundProductPrice += item.number * item.price;
-      });
+    const order = result.order_id ? await this.prisma.order.findUnique({ where: { order_id: result.order_id } }) : null;
+    const aftersales_log = await this.prisma.aftersales_log.findMany({ where: { aftersale_id: id }, orderBy: { log_id: "desc" } });
+
+    let suggest = 0;
+    for (const it of items) {
+      const oi = orderItemMap.get(it.order_item_id as number);
+      if (oi) suggest += Number(oi.price || 0) * Number(it.number || 0);
     }
 
     return {
       ...result,
+      aftersales_items,
+      order,
+      aftersales_log,
       status_config: STATUS_NAME,
       aftersales_type_config: AFTERSALES_TYPE_NAME,
       refuse_reason: REFUSE_REASON,
       aftersales_type_name: this.getAftersalesTypeName(result.aftersales_type),
       status_name: this.getStatusName(result.status),
-      suggest_refund_amount: parseFloat(refundProductPrice.toFixed(2)),
+      suggest_refund_amount: parseFloat(suggest.toFixed(2)),
     };
   }
 
@@ -229,7 +194,7 @@ export class AftersalesService {
       reply: data.reply || "",
       return_address: data.return_address || "",
       refund_amount: data.refund_amount || 0,
-      update_time: Math.floor(Date.now() / 1000),
+      deal_time: Math.floor(Date.now() / 1000),
     };
 
     // 如果是退款操作，更新退款金额
@@ -270,7 +235,7 @@ export class AftersalesService {
       where: { aftersale_id: id },
       data: {
         status: AftersalesStatus.COMPLETE,
-        update_time: Math.floor(Date.now() / 1000),
+        final_time: Math.floor(Date.now() / 1000),
       },
     });
 

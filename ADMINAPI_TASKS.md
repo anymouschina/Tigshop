@@ -77,15 +77,15 @@
 - [ ] 营销 Marketing
 - [ ] 订单 Orders（Admin 兼容）
   - 基于 PHP 路由对齐 /adminapi/order 下接口（参考 php/app/adminapi/route/order.php）：
-    - 售后 Aftersales（已存在非兼容控制器，需补 /adminapi 路由别名是否必要）
-      - [ ] GET  /adminapi/order/aftersales/list
-      - [ ] GET  /adminapi/order/aftersales/applyType
-      - [ ] GET  /adminapi/order/aftersales/returnGoodsStatus
-      - [ ] GET  /adminapi/order/aftersales/detail
-      - [ ] POST /adminapi/order/aftersales/update
-      - [ ] POST /adminapi/order/aftersales/receive
-      - [ ] POST /adminapi/order/aftersales/record
-      - [ ] POST /adminapi/order/aftersales/complete
+    - 售后 Aftersales（已对齐 /adminapi 路由并落地逻辑）
+      - [x] GET  /adminapi/order/aftersales/list（按管理员解析 shopId/vendorId 过滤，支持 keyword/status/type/time 区间与排序）
+      - [x] GET  /adminapi/order/aftersales/applyType（返回类型枚举文案）
+      - [x] GET  /adminapi/order/aftersales/returnGoodsStatus（返回状态文案）
+      - [x] GET  /adminapi/order/aftersales/detail（拼装明细、日志、建议退款金额）
+      - [x] POST /adminapi/order/aftersales/update（同意/拒绝，记录日志，更新退款金额与时间戳）
+      - [x] POST /adminapi/order/aftersales/receive（确认收货：置为 RETURNED 并记录日志）
+      - [x] POST /adminapi/order/aftersales/record（追加备注日志）
+      - [x] POST /adminapi/order/aftersales/complete（完结并记录日志）
     - 订单管理 Order（新增了兼容服务与控制器 skeleton）
       - [x] GET  /adminapi/order/list（已添加 AdminOrderCompatController.list）
       - [x] GET  /adminapi/order/detail（已添加 AdminOrderCompatController.detail）
@@ -249,6 +249,11 @@
  - 2025-09-30：地区树兼容：实现 GET /adminapi/setting/region/getAllRegionTree（复用 RegionService.getRegionTree），去除相关 404。
  - 2025-09-30：Prisma 字段映射修复：修正 merchant/shop 相关 include/select 使用错误（去除 shop.include.merchant；merchant 选择 company_name/corporate_name，并从 merchant_data 解析联系方式）。
  - 2025-09-30：入驻申请筛选语义：list 接受 status=-1 表示“不过滤”，避免 400，保持 1/10/20 正常筛选。
+ - 2025-09-30：售后 Admin 兼容对齐：
+   - 控制器补全 /adminapi/order/aftersales/* 全套路由并接通 PanelService 推导 shopId/vendorId；
+   - AftersalesService 去除非法 include，新增 addLog 公共方法，agreeOrRefuse/complete 使用标准日志表字段映射；
+   - getDetail 聚合 aftersales_item 与 order_item 构建明细，附带日志并计算建议退款金额；
+   - 列表补充 order_sn 聚合字段，维持返回驼峰。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：
