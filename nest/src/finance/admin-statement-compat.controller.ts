@@ -131,6 +131,40 @@ export class AdminStatementCompatController {
   @Authorities("statementManage")
   @ApiOperation({ summary: "查询字段（admin 兼容 - 占位实现）" })
   async getStatementQueryConfig() {
-    return { code: 0, message: "success", data: { fields: ["keyword","user_id","shop_id","type","status","start_date","end_date"] } };
+    const data = {
+      statementType: [
+        { code: 1, description: "手续费" },
+        { code: 2, description: "服务费" },
+        { code: 3, description: "订单收支" },
+        { code: 4, description: "店铺提现收支" },
+        { code: 5, description: "门店提现收支" },
+        { code: 6, description: "供应商提现收支" },
+      ],
+      statementTimeType: [
+        { code: 1, description: "入账时间" },
+        { code: 2, description: "下单时间" },
+      ],
+      accountType: [
+        { code: 1, description: "账户余额" },
+      ],
+      entryType: [
+        { code: 1, description: "自动" },
+        { code: 2, description: "手动" },
+      ],
+      payMethodType: [
+        { code: "wechat", description: "微信" },
+        { code: "alipay", description: "支付宝" },
+        { code: "paypal", description: "paypal" },
+        { code: "offline", description: "线下支付" },
+        { code: "balance", description: "余额" },
+        { code: "other", description: "其他" },
+      ],
+      dateComponentType: [
+        { code: "day", description: "日" },
+        { code: "month", description: "月" },
+        { code: "year", description: "年" },
+      ],
+    };
+    return { code: 0, message: "success", data };
   }
 }

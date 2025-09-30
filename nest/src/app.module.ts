@@ -73,6 +73,9 @@ import { AdminSalesmanOrderCompatController } from "./salesman/admin-salesman-or
 import { AdminSalesmanCustomerTransactionCompatController } from "./salesman/admin-salesman-customer-transaction-compat.controller";
 import { AdminArticleCompatController } from "./content/admin-article-compat.controller";
 import { AdminArticleCategoryCompatController } from "./content/admin-article-category-compat.controller";
+import { AdminShopAccountCompatController } from "./merchant/admin-shop-account-compat.controller";
+import { AdminShopWithdrawCompatController } from "./merchant/admin-shop-withdraw-compat.controller";
+import { AdminVendorWithdrawCompatController } from "./vendor/admin-vendor-withdraw-compat.controller";
 
 @Module({
   imports: [
@@ -148,6 +151,9 @@ import { AdminArticleCategoryCompatController } from "./content/admin-article-ca
     AdminSalesmanCustomerTransactionCompatController,
     AdminArticleCompatController,
     AdminArticleCategoryCompatController,
+    AdminShopAccountCompatController,
+    AdminShopWithdrawCompatController,
+    AdminVendorWithdrawCompatController,
   ],
   providers: [
     {

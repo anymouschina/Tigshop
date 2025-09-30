@@ -27,6 +27,7 @@ export class StatementService {
       end_date = "",
       page = 1,
       size = 15,
+      // prisma字段不存在id，这里做映射：id->statement_id；create_time->record_time
       sort_field = "id",
       sort_order = "desc",
     } = query;
@@ -34,18 +35,15 @@ export class StatementService {
     const where: any = {};
 
     if (keyword) {
+      // 仅对现有列做关键词过滤（record_sn/payment_type/entry_type）
       where.OR = [
-        { description: { contains: keyword } },
-        { admin_remark: { contains: keyword } },
-        { related_id: { contains: keyword } },
-        { order: { order_sn: { contains: keyword } } },
-        { user: { nickname: { contains: keyword } } },
+        { record_sn: { contains: keyword } },
+        { payment_type: { contains: keyword } },
+        { entry_type: { contains: keyword } },
       ];
     }
 
-    if (user_id > 0) {
-      where.user_id = user_id;
-    }
+    // 模型无 user_id 字段，忽略 user 维度筛选
 
     if (shop_id > 0) {
       where.shop_id = shop_id;
@@ -56,56 +54,44 @@ export class StatementService {
     }
 
     if (status >= 0) {
-      where.status = status;
+      // 模型字段为 settlement_status
+      where.settlement_status = status;
     }
 
     if (start_date && end_date) {
-      where.create_time = {
-        gte: new Date(start_date),
-        lte: new Date(end_date),
-      };
+      // record_time 为 BigInt（秒级/毫秒级取决于历史，这里按秒存储）
+      const gte = BigInt(Math.floor(new Date(start_date).getTime() / 1000));
+      const lte = BigInt(Math.floor(new Date(end_date).getTime() / 1000));
+      where.record_time = { gte, lte };
     } else if (start_date) {
-      where.create_time = {
-        gte: new Date(start_date),
-      };
+      const gte = BigInt(Math.floor(new Date(start_date).getTime() / 1000));
+      where.record_time = { gte };
     } else if (end_date) {
-      where.create_time = {
-        lte: new Date(end_date),
-      };
+      const lte = BigInt(Math.floor(new Date(end_date).getTime() / 1000));
+      where.record_time = { lte };
     }
 
-    const orderBy = {};
-    orderBy[sort_field] = sort_order;
+    // 排序字段映射与白名单
+    const sortFieldMap: Record<string, string> = {
+      id: "statement_id",
+      statement_id: "statement_id",
+      create_time: "record_time",
+      record_time: "record_time",
+      settlement_time: "settlement_time",
+      type: "type",
+      amount: "amount",
+      settlement_status: "settlement_status",
+    };
+    const mappedSortField = sortFieldMap[sort_field] ?? "statement_id";
+    const orderBy: any = {};
+    orderBy[mappedSortField] = sort_order;
 
     const skip = (page - 1) * size;
 
     const [items, total] = await Promise.all([
       this.prisma.statement.findMany({
         where,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              nickname: true,
-              avatar: true,
-              mobile: true,
-            },
-          },
-          shop: {
-            select: {
-              shop_id: true,
-              shop_name: true,
-              shop_logo: true,
-            },
-          },
-          order: {
-            select: {
-              order_id: true,
-              order_sn: true,
-              order_amount: true,
-            },
-          },
-        },
+        // 当前模型未声明关系，去除 include 以避免 Prisma 校验错误
         orderBy,
         skip,
         take: size,
@@ -113,8 +99,16 @@ export class StatementService {
       this.prisma.statement.count({ where }),
     ]);
 
+    // 补充兼容字段别名（id/status）
+    const mappedItems = items.map((it: any) => ({
+      id: it.statement_id,
+      status: it.settlement_status,
+      // 保留原始字段，便于前端按需取用
+      ...it,
+    }));
+
     return {
-      items,
+      items: mappedItems,
       total,
       page,
       size,
@@ -124,44 +118,14 @@ export class StatementService {
 
   async findOne(id: number) {
     const statement = await this.prisma.statement.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            nickname: true,
-            avatar: true,
-            mobile: true,
-            email: true,
-          },
-        },
-        shop: {
-          select: {
-            shop_id: true,
-            shop_name: true,
-            shop_logo: true,
-            contact_name: true,
-            contact_phone: true,
-          },
-        },
-        order: {
-          select: {
-            order_id: true,
-            order_sn: true,
-            order_amount: true,
-            pay_time: true,
-            shipping_time: true,
-            confirm_time: true,
-          },
-        },
-      },
+      where: { statement_id: BigInt(id) },
     });
 
     if (!statement) {
       throw new Error("账单记录不存在");
     }
 
-    return statement;
+    return { id: statement.statement_id, status: statement.settlement_status, ...statement } as any;
   }
 
   async create(data: CreateStatementDto) {
@@ -203,19 +167,29 @@ export class StatementService {
 
     const statement = await this.prisma.statement.create({
       data: {
-        ...data,
-        create_time: new Date(),
-        update_time: new Date(),
-        status: 0, // 默认待审核
+        // 仅写入存在的列
+        type: data.type,
+        amount: data.amount,
+        shop_id: data.shop_id > 0 ? data.shop_id : null,
+        record_id: data.order_id && data.order_id > 0 ? data.order_id : null,
+        record_sn: data.related_id ?? null,
+        entry_type: "manual",
+        payment_type: null,
+        account_type: 1,
+        account_balance: 0 as any,
+        record_time: BigInt(Math.floor(Date.now() / 1000)),
+        settlement_time: null,
+        settlement_status: 0, // 待审核
+        gmt_create: new Date().toISOString(),
       },
     });
 
-    return statement;
+    return { id: statement.statement_id, status: statement.settlement_status, ...statement } as any;
   }
 
   async update(data: UpdateStatementDto) {
     const statement = await this.prisma.statement.findUnique({
-      where: { id: data.id },
+      where: { statement_id: BigInt(data.id) },
     });
 
     if (!statement) {
@@ -223,9 +197,9 @@ export class StatementService {
     }
 
     // 状态变更检查
-    if (data.status !== undefined && data.status !== statement.status) {
+    if (data.status !== undefined && data.status !== statement.settlement_status) {
       // 只有待审核状态可以变为已确认、已拒绝或已取消
-      if (statement.status === 0) {
+      if (statement.settlement_status === 0) {
         if (data.status === 1 || data.status === 2 || data.status === 3) {
           // 允许状态变更
         } else {
@@ -239,24 +213,26 @@ export class StatementService {
     }
 
     const updateData: any = {
-      ...data,
-      update_time: new Date(),
+      // 仅更新允许的字段
+      ...(data.type !== undefined ? { type: data.type } : {}),
+      ...(data.amount !== undefined ? { amount: data.amount as any } : {}),
+      ...(data.status !== undefined ? { settlement_status: data.status } : {}),
     };
 
     // 移除id字段，不允许更新ID
     delete updateData.id;
 
     const updatedStatement = await this.prisma.statement.update({
-      where: { id: data.id },
+      where: { statement_id: BigInt(data.id) },
       data: updateData,
     });
 
-    return updatedStatement;
+    return { id: updatedStatement.statement_id, status: updatedStatement.settlement_status, ...updatedStatement } as any;
   }
 
   async remove(id: number) {
     const statement = await this.prisma.statement.findUnique({
-      where: { id },
+      where: { statement_id: BigInt(id) },
     });
 
     if (!statement) {
@@ -264,12 +240,12 @@ export class StatementService {
     }
 
     // 只有待审核状态可以删除
-    if (statement.status !== 0) {
+    if (statement.settlement_status !== 0) {
       throw new Error("只有待审核状态的账单记录可以删除");
     }
 
     await this.prisma.statement.delete({
-      where: { id },
+      where: { statement_id: BigInt(id) },
     });
 
     return true;
@@ -279,10 +255,8 @@ export class StatementService {
     // 检查是否都是待审核状态
     const statements = await this.prisma.statement.findMany({
       where: {
-        id: {
-          in: ids,
-        },
-        status: 0, // 只有待审核状态可以删除
+        statement_id: { in: ids.map((x) => BigInt(x)) },
+        settlement_status: 0, // 只有待审核状态可以删除
       },
     });
 
@@ -291,11 +265,7 @@ export class StatementService {
     }
 
     await this.prisma.statement.deleteMany({
-      where: {
-        id: {
-          in: ids,
-        },
-      },
+      where: { statement_id: { in: ids.map((x) => BigInt(x)) } },
     });
 
     return true;
@@ -303,9 +273,9 @@ export class StatementService {
 
   async getStatementStats() {
     const stats = await this.prisma.statement.groupBy({
-      by: ["status"],
+      by: ["settlement_status"],
       _count: {
-        status: true,
+        _all: true,
       },
     });
 
@@ -314,8 +284,8 @@ export class StatementService {
       result[i] = 0;
     }
 
-    stats.forEach((stat) => {
-      result[stat.status] = stat._count.status;
+    stats.forEach((stat: any) => {
+      result[stat.settlement_status] = stat._count._all;
     });
 
     return result;
@@ -327,18 +297,10 @@ export class StatementService {
       where.type = type;
     }
 
+    // 当前模型未关联 user/order，这里仅返回按记录时间倒序的数据
     return await this.prisma.statement.findMany({
       where,
-      include: {
-        order: {
-          select: {
-            order_id: true,
-            order_sn: true,
-            order_amount: true,
-          },
-        },
-      },
-      orderBy: { create_time: "desc" },
+      orderBy: { record_time: "desc" },
     });
   }
 
@@ -350,36 +312,19 @@ export class StatementService {
 
     return await this.prisma.statement.findMany({
       where,
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            nickname: true,
-            avatar: true,
-          },
-        },
-        order: {
-          select: {
-            order_id: true,
-            order_sn: true,
-            order_amount: true,
-          },
-        },
-      },
-      orderBy: { create_time: "desc" },
+      orderBy: { record_time: "desc" },
     });
   }
 
   async getAmountStats(dateRange?: [Date, Date]) {
     const where: any = {
-      status: 1, // 已确认
+      settlement_status: 1, // 已确认
     };
 
     if (dateRange && dateRange.length === 2) {
-      where.create_time = {
-        gte: dateRange[0],
-        lte: dateRange[1],
-      };
+      const gte = BigInt(Math.floor(dateRange[0].getTime() / 1000));
+      const lte = BigInt(Math.floor(dateRange[1].getTime() / 1000));
+      where.record_time = { gte, lte };
     }
 
     const result = await this.prisma.statement.groupBy({
@@ -415,10 +360,10 @@ export class StatementService {
     const result = await this.prisma.statement.groupBy({
       by: ["type"],
       where: {
-        status: 1,
-        create_time: {
-          gte: startDate,
-          lte: endDate,
+        settlement_status: 1,
+        record_time: {
+          gte: BigInt(Math.floor(startDate.getTime() / 1000)),
+          lte: BigInt(Math.floor(endDate.getTime() / 1000)),
         },
       },
       _sum: {
