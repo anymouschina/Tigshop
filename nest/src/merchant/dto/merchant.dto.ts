@@ -1,5 +1,37 @@
 import { Type } from "class-transformer";
-import { IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsPositive, IsString, ValidateNested } from "class-validator";
+import { IsIn, IsInt, IsObject, IsOptional, IsPositive, IsString, ValidateNested } from "class-validator";
+
+export class MerchantListQueryDto {
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  // 允许字符串传入，后续在控制器中 Number() 处理
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  status?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  size?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(["add_time", "merchant_id"]) // 白名单
+  sortField?: "add_time" | "merchant_id";
+
+  @IsOptional()
+  @IsString()
+  @IsIn(["ascend", "descend"]) // 前端约定
+  sortOrder?: "ascend" | "descend";
+}
 
 class AdminBindDto {
   @Type(() => Number)

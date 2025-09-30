@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Controller,
   Get,
@@ -9,15 +8,18 @@ import {
   UseGuards,
   ParseIntPipe,
 } from "@nestjs/common";
+import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { PrismaService } from "src/prisma/prisma.service";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
-import { CreateMerchantDto, OperateMerchantDto, UpdateFieldDto, UpdateMerchantDto } from "./dto/merchant.dto";
+import { CreateMerchantDto, MerchantListQueryDto, OperateMerchantDto, UpdateFieldDto, UpdateMerchantDto } from "./dto/merchant.dto";
 
 // 兼容 PHP 后台商户管理路由: /adminapi/merchant/merchant/*
+@ApiTags("Admin API - 商户管理(兼容)")
 @Controller("adminapi/merchant/merchant")
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
+@ApiBearerAuth()
 export class MerchantCompatController {
   constructor(private prisma: PrismaService) {}
 
@@ -27,19 +29,20 @@ export class MerchantCompatController {
    * query: keyword, status, page, size, sortField, sortOrder
    */
   @Get("list")
+  @ApiOperation({ summary: "商户列表（兼容）" })
   @Authorities("merchantListView")
-  async list(@Query() query: any) {
-    const page = Math.max(parseInt(query.page) || 1, 1);
-    const size = Math.min(parseInt(query.size) || 20, 100);
+  async list(@Query() query: MerchantListQueryDto) {
+    const page = Math.max(Number(query.page) || 1, 1);
+    const size = Math.min(Number(query.size) || 20, 100);
     const skip = (page - 1) * size;
     const where: any = {};
-    if (query.status !== undefined && query.status !== "") {
+    if (query.status !== undefined && query.status !== null) {
       const statusNum = Number(query.status);
       if (!Number.isNaN(statusNum)) where.status = statusNum;
     }
     if (query.keyword) {
       // 基于可用字段 company_name / corporate_name / merchant_data JSON 模糊匹配
-      const kw = query.keyword;
+      const kw = query.keyword as string;
       where.OR = [
         { company_name: { contains: kw } },
         { corporate_name: { contains: kw } },
