@@ -85,11 +85,11 @@
   - [x] ProductPromotion：补齐服务与 DTO，新增 /adminapi 兼容控制器（adminapi/promotion/productPromotion/*），统一守卫与 envelope，shopId 通过 PanelService 解析（后续与前端联调字段名细节）
   - [x] Seckill 秒杀：新增 /adminapi 兼容控制器（adminapi/promotion/seckill/*），接入 AdminJwtAuthGuard + AuthorityGuard + @Authorities("promotionManage")，返回驼峰与 {code,message,data}
   - [x] TimeDiscount 时段折扣：新增 /adminapi 兼容控制器（adminapi/promotion/timeDiscount/*），同上；支持 Name/StartTime/EndTime/Discount 别名
-  - [x] ProductTeam 团购：新增 /adminapi 兼容控制器（adminapi/promotion/productTeam/*），列表/配置/详情/创建/更新/删除/批量
+  - [x] ProductTeam 团购：新增 /adminapi 兼容控制器（adminapi/promotion/productTeam/*），列表/配置/详情/创建/更新/删除/批量（内部对接 groupon/groupon_item 模型，状态按时间计算）
   - [x] ProductGift 赠品：新增 /adminapi 兼容控制器（adminapi/promotion/productGift/*），列表/详情/创建/更新/删除/统计/可用列表
   - [x] RechargeSetting 充值设置：新增 /adminapi 兼容控制器（adminapi/promotion/rechargeSetting/*），列表/配置/详情/创建/更新/删除/批量
   - [x] WechatLive 微信直播：新增 /adminapi 兼容控制器（adminapi/promotion/wechatLive/*），列表/配置/详情/创建/更新/删除/批量
-  - [x] SignIn 签到：新增 /adminapi 兼容控制器（adminapi/promotion/signIn/*），列表/详情/创建/更新/删除/批量
+  - [x] SignIn 签到：新增 /adminapi 兼容控制器（adminapi/promotion/signIn/*），列表/详情/创建/更新/删除/批量；补充 signInSetting 路由别名
 - [ ] 订单 Orders（Admin 兼容）
   - 基于 PHP 路由对齐 /adminapi/order 下接口（参考 php/app/adminapi/route/order.php）：
     - 售后 Aftersales（已对齐 /adminapi 路由并落地逻辑）
@@ -285,6 +285,11 @@
    - 秒杀 seckill（/adminapi/promotion/seckill/*）与时段折扣 timeDiscount（/adminapi/promotion/timeDiscount/*）；
    - 团购 productTeam（/adminapi/promotion/productTeam/*）、赠品 productGift（/adminapi/promotion/productGift/*）、充值设置 rechargeSetting（/adminapi/promotion/rechargeSetting/*）、微信直播 wechatLive（/adminapi/promotion/wechatLive/*）、签到 signIn（/adminapi/promotion/signIn/*）；
    - 统一接入 AdminJwtAuthGuard + AuthorityGuard 与 @Authorities("promotionManage")，返回驼峰 envelope；已在 PromotionModule 完成注册，消除前端 404。
+ - 2025-09-30：营销契约细化与别名补全：
+   - Seckill：新增 GET /adminapi/promotion/seckill/listForDecorate（装修用），服务层实现 getSeckillProductList，聚合 seckill_item 与 product/product_sku 生成所需字段；create/update 支持 seckill_start_time/seckill_end_time 与 seckill_item 别名。
+   - ProductPromotion：新增 GET /adminapi/promotion/productPromotion/conflict 路由别名，等价于 conflictList。
+   - SignIn：新增 /adminapi/promotion/signInSetting/* 路由别名控制器（list/detail/create/update/del/batch），对齐 PHP 路由。
+   - ProductTeam：Admin 兼容控制器改用 groupon/groupon_item 服务，状态/排序/筛选映射到实际字段，避免 Prisma 运行时错误。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：

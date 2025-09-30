@@ -52,6 +52,14 @@ export class AdminProductPromotionCompatController {
     return ResponseUtil.success({ records: res.list, total: res.total });
   }
 
+  // 路由别名：与 PHP 一致 GET /adminapi/promotion/productPromotion/conflict
+  @Get("conflict")
+  @Authorities("promotionManage")
+  @ApiOperation({ summary: "活动冲突列表（别名）" })
+  async conflict(@Query() query: any) {
+    return this.conflictList(query);
+  }
+
   @Get("config")
   @Authorities("promotionManage")
   @ApiOperation({ summary: "活动配置（rank/status 字典）" })

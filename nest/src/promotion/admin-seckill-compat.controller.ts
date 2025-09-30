@@ -43,6 +43,20 @@ export class AdminSeckillCompatController {
     return ResponseUtil.success({ status_list: SECKILL_STATUS_NAME });
   }
 
+  @Get("listForDecorate")
+  @Authorities("promotionManage")
+  @ApiOperation({ summary: "装修使用的秒杀商品列表（兼容 /adminapi）" })
+  async listForDecorate(@Query() query: any) {
+    const filter = {
+      page: Number(query.page || 1),
+      size: Number(query.size || 15),
+      un_started: query.un_started ?? query.unStarted ?? 0,
+    } as any;
+    const res = await this.svc.getSeckillProductList(filter);
+    // 与 PHP 对齐仅返回数组列表
+    return ResponseUtil.success(res.list);
+  }
+
   @Get("detail")
   @Authorities("promotionManage")
   @ApiOperation({ summary: "秒杀活动详情（兼容 /adminapi）" })
@@ -68,11 +82,16 @@ export class AdminSeckillCompatController {
     const payload: any = {
       seckill_name: body.seckill_name ?? body.seckillName,
       seckill_remark: body.seckill_remark ?? body.seckillRemark ?? "",
-      start_time: toTs(body.start_time ?? body.startTime),
-      end_time: toTs(body.end_time ?? body.endTime),
-      sort: Number(body.sort ?? 0),
+      start_time: toTs(body.start_time ?? body.startTime ?? body.seckill_start_time),
+      end_time: toTs(body.end_time ?? body.endTime ?? body.seckill_end_time),
+      seckill_limit_num: body.seckill_limit_num ?? body.seckillLimitNum ?? 0,
+      product_id: body.product_id ?? body.productId ?? 0,
       shop_id: shopId,
-      items: body.items,
+      items: Array.isArray(body.items)
+        ? body.items
+        : Array.isArray(body.seckill_item)
+        ? body.seckill_item.filter((it: any) => it.seconds_seckill ? true : true)
+        : [],
     };
     const r = await this.svc.create(payload);
     return ResponseUtil.success(r);
@@ -94,8 +113,9 @@ export class AdminSeckillCompatController {
     const id = Number(body.seckill_id || body.seckillId || body.id);
     const data: any = { ...body };
     delete data.seckill_id; delete data.seckillId; delete data.id;
-    if (data.start_time == null && data.startTime != null) data.start_time = toTs(data.startTime);
-    if (data.end_time == null && data.endTime != null) data.end_time = toTs(data.endTime);
+    if (data.start_time == null) data.start_time = toTs(data.startTime ?? data.seckill_start_time);
+    if (data.end_time == null) data.end_time = toTs(data.endTime ?? data.seckill_end_time);
+    if (!Array.isArray(data.items) && Array.isArray(data.seckill_item)) data.items = data.seckill_item;
     const r = await this.svc.update(id, data);
     return ResponseUtil.success(r);
   }

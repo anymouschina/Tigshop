@@ -157,6 +157,113 @@ export class SeckillService {
     };
   }
 
+  // 装修用：获取秒杀商品列表（对齐 PHP getSeckillProductList）
+  async getSeckillProductList(params: any): Promise<{ list: any[]; total: number }> {
+    const page = Number(params.page || 1);
+    const size = Number(params.size || 15);
+    const skip = (page - 1) * size;
+    const now = Math.floor(Date.now() / 1000);
+
+    const where: any = {};
+    if (params.un_started) {
+      where.seckill_start_time = { gt: now };
+    } else {
+      where.AND = [
+        { seckill_start_time: { lt: now } },
+        { seckill_end_time: { gt: now } },
+      ];
+    }
+
+    // 取出秒杀与其条目（按价格升序）
+    const seckills = await this.prisma.seckill.findMany({
+      where,
+      skip,
+      take: size,
+      orderBy: { seckill_id: "desc" },
+    });
+
+    const seckillIds = seckills.map((s) => s.seckill_id);
+    const items = seckillIds.length
+      ? await this.prisma.seckill_item.findMany({
+          where: { seckill_id: { in: seckillIds } },
+          orderBy: { seckill_price: "asc" },
+        })
+      : [];
+
+    // 聚合产品维度统计
+    const productStats = new Map<number, { sales: number; stock: number; sku_id?: number; sku_sn?: string }>();
+    const seckillByProduct = new Map<number, any>();
+    const productIds: number[] = [];
+    for (const s of seckills) {
+      if (s.product_id) seckillByProduct.set(s.product_id, s);
+    }
+    for (const it of items) {
+      const pid = it.product_id ?? 0;
+      if (!pid) continue;
+      productIds.push(pid);
+      const st = productStats.get(pid) || { sales: 0, stock: 0 };
+      st.sales += Number(it.seckill_sales ?? 0);
+      st.stock += Number(it.seckill_stock ?? 0);
+      if (st.sku_id == null && it.sku_id) st.sku_id = Number(it.sku_id);
+      productStats.set(pid, st);
+    }
+
+    const uniqProductIds = Array.from(new Set(productIds));
+    let products: any[] = [];
+    if (uniqProductIds.length) {
+      products = await this.prisma.product.findMany({
+        where: { product_id: { in: uniqProductIds } },
+        select: {
+          product_id: true,
+          product_name: true,
+          product_price: true,
+          market_price: true,
+          pic_thumb: true,
+        },
+      });
+    }
+    const skus = uniqProductIds.length
+      ? await this.prisma.product_sku.findMany({
+          where: { product_id: { in: uniqProductIds } },
+          select: { sku_id: true, product_id: true, sku_price: true, sku_sn: true },
+        })
+      : [];
+    const skuByProduct = new Map<number, any[]>();
+    for (const s of skus) {
+      const arr = skuByProduct.get(s.product_id) || [];
+      arr.push(s);
+      skuByProduct.set(s.product_id, arr);
+    }
+    // sku_sn 需从 product_sku 里找 sku_id 对应项
+    return {
+      list: products.map((p) => {
+        const st = productStats.get(p.product_id) || { sales: 0, stock: 0 };
+        const sec = seckillByProduct.get(p.product_id);
+        let market_price = p.product_price;
+        let sku_sn = "";
+        if (st.sku_id) {
+          const list = skuByProduct.get(p.product_id) || [];
+          const sku = list.find((x: any) => Number(x.sku_id) === Number(st.sku_id));
+          if (sku) {
+            market_price = sku.sku_price ?? market_price;
+            sku_sn = sku.sku_sn ?? "";
+          }
+        }
+        return {
+          ...p,
+          seckill_limit_num: sec?.seckill_limit_num ?? 0,
+          seckill_sales: st.sales,
+          seckill_stock: st.stock,
+          seckkill_data: sec || null,
+          sku_id: st.sku_id ?? 0,
+          sku_sn,
+          market_price,
+        };
+      }),
+      total: products.length,
+    };
+  }
+
   async create(data: any): Promise<any> {
     // 验证时间
     if (Number(data.start_time) >= Number(data.end_time)) {

@@ -9,7 +9,14 @@ export class ProductPromotionService {
   async getFilterResult(filter: any) {
     const where: any = {};
     if (filter.keyword) where.promotion_name = { contains: filter.keyword };
-    if (filter.promotion_type) where.promotion_type = Number(filter.promotion_type);
+    if (
+      filter.promotion_type !== undefined &&
+      filter.promotion_type !== null &&
+      `${filter.promotion_type}` !== "" &&
+      !Number.isNaN(Number(filter.promotion_type))
+    ) {
+      where.promotion_type = Number(filter.promotion_type);
+    }
     if (filter.is_going !== undefined && filter.is_going !== "") {
       const now = Math.floor(Date.now() / 1000);
       if (Number(filter.is_going) === 1) {
@@ -29,7 +36,14 @@ export class ProductPromotionService {
       where.range = Number(filter.range);
       where.range_data = { contains: "" }; // 仅作占位，前端通常传递范围数据做服务端冲突校验
     }
-    if (filter.shop_id) where.shop_id = Number(filter.shop_id);
+    if (
+      filter.shop_id !== undefined &&
+      filter.shop_id !== null &&
+      `${filter.shop_id}` !== "" &&
+      !Number.isNaN(Number(filter.shop_id))
+    ) {
+      where.shop_id = Number(filter.shop_id);
+    }
 
     const orderBy = { [filter.sort_field || "promotion_id"]: filter.sort_order || "desc" };
     const skip = ((filter.page || 1) - 1) * (filter.size || 15);
@@ -46,8 +60,22 @@ export class ProductPromotionService {
   async getFilterCount(filter: any) {
     const where: any = {};
     if (filter.keyword) where.promotion_name = { contains: filter.keyword };
-    if (filter.promotion_type) where.promotion_type = Number(filter.promotion_type);
-    if (filter.shop_id) where.shop_id = Number(filter.shop_id);
+    if (
+      filter.promotion_type !== undefined &&
+      filter.promotion_type !== null &&
+      `${filter.promotion_type}` !== "" &&
+      !Number.isNaN(Number(filter.promotion_type))
+    ) {
+      where.promotion_type = Number(filter.promotion_type);
+    }
+    if (
+      filter.shop_id !== undefined &&
+      filter.shop_id !== null &&
+      `${filter.shop_id}` !== "" &&
+      !Number.isNaN(Number(filter.shop_id))
+    ) {
+      where.shop_id = Number(filter.shop_id);
+    }
     return this.prisma.product_promotion.count({ where });
   }
 

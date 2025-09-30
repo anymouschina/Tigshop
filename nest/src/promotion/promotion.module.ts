@@ -33,6 +33,7 @@ import { AdminProductGiftCompatController } from "./admin-product-gift-compat.co
 import { AdminRechargeSettingCompatController } from "./admin-recharge-setting-compat.controller";
 import { AdminWechatLiveCompatController } from "./admin-wechat-live-compat.controller";
 import { AdminSignInCompatController } from "./admin-sign-in-compat.controller";
+import { AdminSignInSettingCompatController } from "./admin-sign-in-setting-compat.controller";
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { AdminSignInCompatController } from "./admin-sign-in-compat.controller";
     AdminRechargeSettingCompatController,
     AdminWechatLiveCompatController,
     AdminSignInCompatController,
+    AdminSignInSettingCompatController,
   ],
   providers: [
     PromotionService,
