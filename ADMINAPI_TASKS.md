@@ -12,6 +12,7 @@
 - 对齐参数命名（camelCase/snake_case）、字段返回结构与业务语义
 - 维持现有 Prisma 模式，避免与真实数据库列名不一致
 - 对部分需要 CSV 的接口提供导出能力
+- nest项目的接口，完全对齐 php项目的接口
 
 ## 进度清单
 
@@ -72,9 +73,16 @@
 ### 5) 统计与面板（Panel / Statistics）
 - [x] 面板统计接口完善，含 CSV 导出
 - [x] 对齐 PHP 查询参数与店铺作用域解析
+- [x] 去除硬编码 shopId/adminType/vendorId，统一返回 {code,message,data}
+- [x] 注册 Access/General/User 统计控制器与服务（占位实现，后续补齐查询）
+- [ ] 填充统计服务实际查询逻辑（必要时使用 Prisma.sql/$queryRaw 做分组聚合）
+  - [x] 用户统计 UserStatisticsService：注册趋势/活跃/分布/留存/导出（基于 user 与 order 数据）
+  - [x] 访问统计 AccessStatisticsService：趋势/来源/地域/导出（无埋点时退化为基于订单）
+  - [x] 综合统计 GeneralStatisticsService：仪表盘/财务/库存/营销/趋势/导出（已实现，退款聚合基于 paylog_refund）
 
 ### 6) 其它域（按优先级逐步补齐）
 - [ ] 营销 Marketing
+  - [x] ProductPromotion：补齐服务与 DTO，新增 /adminapi 兼容控制器（adminapi/promotion/productPromotion/*），统一守卫与 envelope，shopId 通过 PanelService 解析（后续与前端联调字段名细节）
 - [ ] 订单 Orders（Admin 兼容）
   - 基于 PHP 路由对齐 /adminapi/order 下接口（参考 php/app/adminapi/route/order.php）：
     - 售后 Aftersales（已对齐 /adminapi 路由并落地逻辑）
@@ -170,37 +178,37 @@
       - [x] GET  /adminapi/authority/adminUser/getCode
       - [x] POST /adminapi/authority/adminUser/checkCode
     - 权限管理 authority
-      - [ ] GET  /adminapi/authority/authority/list
-      - [ ] GET  /adminapi/authority/authority/getAuthorityParentName
-      - [ ] GET  /adminapi/authority/authority/detail
-      - [ ] POST /adminapi/authority/authority/create
-      - [ ] POST /adminapi/authority/authority/update
-      - [ ] POST /adminapi/authority/authority/del
-      - [ ] POST /adminapi/authority/authority/updateField
-      - [ ] POST /adminapi/authority/authority/batch
+      - [x] GET  /adminapi/authority/authority/list
+      - [x] GET  /adminapi/authority/authority/getAuthorityParentName
+      - [x] GET  /adminapi/authority/authority/detail
+      - [x] POST /adminapi/authority/authority/create
+      - [x] POST /adminapi/authority/authority/update
+      - [x] POST /adminapi/authority/authority/del
+      - [x] POST /adminapi/authority/authority/updateField
+      - [x] POST /adminapi/authority/authority/batch
     - 供应商 suppliers
-      - [ ] GET  /adminapi/authority/suppliers/list
-      - [ ] GET  /adminapi/authority/suppliers/detail
-      - [ ] POST /adminapi/authority/suppliers/create
-      - [ ] POST /adminapi/authority/suppliers/update
-      - [ ] POST /adminapi/authority/suppliers/del
-      - [ ] POST /adminapi/authority/suppliers/updateField
-      - [ ] POST /adminapi/authority/suppliers/batch
+      - [x] GET  /adminapi/authority/suppliers/list
+      - [x] GET  /adminapi/authority/suppliers/detail
+      - [x] POST /adminapi/authority/suppliers/create
+      - [x] POST /adminapi/authority/suppliers/update
+      - [x] POST /adminapi/authority/suppliers/del
+      - [x] POST /adminapi/authority/suppliers/updateField
+      - [x] POST /adminapi/authority/suppliers/batch
   - 店铺/商户相关（分布在 setting 与 admin 模块，罗列用于对齐）：
     - 设置 Setting 下（config）
-      - [ ] GET  /adminapi/setting/config/merchantSettings
-      - [ ] POST /adminapi/setting/config/saveMerchant
-      - [ ] GET  /adminapi/setting/config/shopSettings
-      - [ ] POST /adminapi/setting/config/saveShop
-      - [ ] GET  /adminapi/setting/config/vendorSettings
-      - [ ] POST /adminapi/setting/config/saveVendor
+      - [x] GET  /adminapi/setting/config/merchantSettings
+      - [x] POST /adminapi/setting/config/saveMerchant
+      - [x] GET  /adminapi/setting/config/shopSettings
+      - [x] POST /adminapi/setting/config/saveShop
+      - [x] GET  /adminapi/setting/config/vendorSettings
+      - [x] POST /adminapi/setting/config/saveVendor
     - 主账号 Admin 下（admin/adminAccount）
-      - [ ] GET  /adminapi/admin/adminAccount/getMainAccount
-      - [ ] GET  /adminapi/admin/adminAccount/pageShopOrVendor
-      - [ ] POST /adminapi/admin/adminAccount/bindMainAccount
-      - [ ] POST /adminapi/admin/adminAccount/updateMainAccount
-      - [ ] POST /adminapi/admin/adminAccount/updateMainAccountPwd
-      - [ ] GET  /adminapi/admin/adminAccount/pageAdminUser
+      - [x] GET  /adminapi/admin/adminAccount/getMainAccount
+      - [x] GET  /adminapi/admin/adminAccount/pageShopOrVendor
+      - [x] POST /adminapi/admin/adminAccount/bindMainAccount
+      - [x] POST /adminapi/admin/adminAccount/updateMainAccount
+      - [x] POST /adminapi/admin/adminAccount/updateMainAccountPwd
+      - [x] GET  /adminapi/admin/adminAccount/pageAdminUser
 - [ ] 店铺装修 Decorate
 - [ ] 分销 Distribution
 - [ ] 内容 Content
@@ -256,6 +264,16 @@
    - AftersalesService 去除非法 include，新增 addLog 公共方法，agreeOrRefuse/complete 使用标准日志表字段映射；
    - getDetail 聚合 aftersales_item 与 order_item 构建明细，附带日志并计算建议退款金额；
    - 列表补充 order_sn 聚合字段，维持返回驼峰。
+ - 2025-09-30：统计模块重构：
+   - Sales/Access/General/User 统计控制器统一通过 PanelService 从 token 解析作用域（移除硬编码 shopId/adminType/vendorId）；
+   - 返回包装统一为 { code:0, message:"success", data }；修复若干方法签名装饰器位置问题；
+   - 新增 AccessStatisticsService / GeneralStatisticsService / UserStatisticsService 占位实现，并在 StatisticsModule 注册导出；
+   - 修复运行时重复声明错误（去除重复类定义），建议清理 dist 后重新构建。
+ - 2025-09-30：统计查询落地（第一版）：
+   - UserStatisticsService 实现注册趋势/活跃（基于最近 7 天登录）/地域与来源分布（基于订单）/等级分布/留存（相邻周期对比）/CSV 导出（UTF-8 BOM + CRLF，保存至 /uploads/other）。
+   - AccessStatisticsService 以“订单”退化近似访问：PV/UV、趋势（hour/day/week/month）、来源/地域分布、实时 10 分钟、转化率、CSV 导出。
+   - GeneralStatisticsService 实现仪表盘（订单/营收/新用户/商品总数）、财务（按周期聚合）、库存（总数/上架/低库存/缺货）、营销（促销商品数/优惠券下单/来源 TOP）、性能（吞吐/营收）、同期对比、趋势分析、CSV 报告导出与实时 1 小时统计。
+ - 2025-09-30：营销模块推进：补齐 ProductPromotionService 与 DTO；新增 AdminProductPromotionCompatController（/adminapi/promotion/productPromotion/*）；PromotionModule 注册服务与控制器；控制器使用 AdminJwtAuthGuard + AuthorityGuard + @Authorities，响应统一 {code,message,data}；shopId 通过 PanelService 获取。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：

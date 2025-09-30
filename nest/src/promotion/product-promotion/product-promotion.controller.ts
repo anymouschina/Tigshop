@@ -20,7 +20,8 @@ import {
 import { AdminAuthGuard } from "../../../common/guards/admin-auth.guard";
 import { ResponseUtil } from "../../../common/utils/response.util";
 
-@ApiTags("优惠活动")
+@ApiTags("优惠活动（legacy admin 前缀）")
+// 说明：admin 前缀的旧路由保留；adminapi 前缀的兼容路由见 AdminProductPromotionCompatController
 @Controller("admin/promotion/product-promotion")
 @UseGuards(AdminAuthGuard)
 export class ProductPromotionController {

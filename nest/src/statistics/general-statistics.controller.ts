@@ -135,8 +135,8 @@ export class GeneralStatisticsController {
       await this.generalStatisticsService.getPerformanceStatistics(query);
 
     return {
-      code: 200,
-      message: "获取成功",
+      code: 0,
+      message: "success",
       data: performance,
     };
   }

@@ -19,9 +19,14 @@ import { ProductTeamModule } from "./product-team/productTeam.module";
 import { RechargeSettingModule } from "./recharge-setting/rechargeSetting.module";
 import { TimeDiscountModule } from "./time-discount/timeDiscount.module";
 import { WechatLiveModule } from "./wechat-live/wechatLive.module";
+import { ProductPromotionService } from "./product-promotion/product-promotion.service";
+import { AdminProductPromotionCompatController } from "./product-promotion/admin-product-promotion-compat.controller";
+import { AdminCouponCompatController } from "./admin-coupon-compat.controller";
+import { PanelModule } from "../panel/panel.module";
 
 @Module({
   imports: [
+    PanelModule,
     ProductTeamModule,
     RechargeSettingModule,
     TimeDiscountModule,
@@ -35,6 +40,8 @@ import { WechatLiveModule } from "./wechat-live/wechatLive.module";
     BargainController,
     PointsExchangeController,
     SignInController,
+    AdminProductPromotionCompatController,
+    AdminCouponCompatController,
   ],
   providers: [
     PromotionService,
@@ -44,6 +51,7 @@ import { WechatLiveModule } from "./wechat-live/wechatLive.module";
     BargainService,
     PointsExchangeService,
     SignInService,
+    ProductPromotionService,
   ],
   exports: [
     PromotionService,
