@@ -100,6 +100,40 @@ export class ConfigController {
     return { code: 0, message: "success", data: true };
   }
 
+  // 兼容 PHP: GET /adminapi/setting/config/categoryDecorateSettings
+  @Get("categoryDecorateSettings")
+  @ApiOperation({ summary: "获取分类装修设置（兼容）" })
+  @Authorities("configDecorateView")
+  async categoryDecorateSettings() {
+    // 使用已有 biz_code：productCategoryDecorateType / defaultHeaderStyle / lightShopLogo
+    const keys = [
+      "productCategoryDecorateType",
+      "defaultHeaderStyle",
+      "lightShopLogo",
+    ];
+    const map = await this.configService.getConfigsByCodes(keys);
+    const data = {
+      productCategoryDecorateType: Number(map.productCategoryDecorateType ?? 1),
+      defaultHeaderStyle: map.defaultHeaderStyle ?? "modern",
+      lightShopLogo: map.lightShopLogo ?? "",
+    };
+    return { code: 0, message: "success", data };
+  }
+
+  // 兼容 PHP: GET /adminapi/setting/config/themeStyleSettings
+  @Get("themeStyleSettings")
+  @ApiOperation({ summary: "获取主题风格设置（兼容）" })
+  @Authorities("configThemeView")
+  async themeStyleSettings() {
+    const keys = ["themeId", "themeStyle"];
+    const map = await this.configService.getConfigsByCodes(keys);
+    const data = {
+      themeId: Number(map.themeId ?? 1),
+      themeStyle: map.themeStyle ?? "default",
+    };
+    return { code: 0, message: "success", data };
+  }
+
   @Get()
   @ApiOperation({ summary: "获取配置列表" })
   @ApiQuery({ name: "keyword", required: false, description: "关键词" })
