@@ -11,7 +11,9 @@ export class PanelService {
    * @param userId 用户ID
    * @returns shopId
    */
-  async getUserShopId(userId: number): Promise<number> {
+  async getUserShopId(userId?: number | null): Promise<number> {
+    // 空安全：当 userId 缺失时，不触发数据库查询，直接返回 0（表示未绑定店铺）
+    if (!userId || !Number.isFinite(Number(userId))) return 0;
     // 这里应该通过AuthorityService获取用户信息，但为了避免循环依赖，
     // 我们暂时直接使用Prisma查询
     const adminUser = await this.prisma.admin_user.findUnique({
@@ -19,7 +21,7 @@ export class PanelService {
       select: { shop_id: true },
     });
 
-    return adminUser?.shop_id || 1;
+    return adminUser?.shop_id || 0;
   }
 
   /**
@@ -27,7 +29,8 @@ export class PanelService {
    * @param userId 管理员ID
    * @returns vendorId（无则返回 0）
    */
-  async getUserVendorId(userId: number): Promise<number> {
+  async getUserVendorId(userId?: number | null): Promise<number> {
+    if (!userId || !Number.isFinite(Number(userId))) return 0;
     const adminUser = await this.prisma.admin_user.findUnique({
       where: { admin_id: userId },
       select: { suppliers_id: true },
@@ -40,7 +43,8 @@ export class PanelService {
    * @param userId 管理员ID
    * @returns adminType（默认 1）
    */
-  async getUserAdminType(userId: number): Promise<number> {
+  async getUserAdminType(userId?: number | null): Promise<number> {
+    if (!userId || !Number.isFinite(Number(userId))) return 1;
     const adminUser = await this.prisma.admin_user.findUnique({
       where: { admin_id: userId },
       select: { admin_type: true },

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards, Request } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -22,13 +22,13 @@ export class AdminSalesmanMaterialCompatController {
   @Get("list")
   @ApiOperation({ summary: "素材列表（兼容）" })
   @Authorities("materialManage")
-  async list(@Query() query: any, @Query("userId") _userId?: number) {
+  async list(@Query() query: any, @Query("userId") _userId: number | undefined, @Request() req: any) {
     const page = Math.max(1, this.coerceNumber(query.page, 1));
     const size = Math.max(1, this.coerceNumber(query.size, 15));
     const skip = (page - 1) * size;
     const categoryId = this.coerceNumber(query.categoryId, 0);
     const keyword = (query.title || query.keyword || "").trim();
-    const shopId = await this.panel.getUserShopId();
+    const shopId = await this.panel.getUserShopId(req?.user?.userId);
     const where: any = { shop_id: shopId };
     if (categoryId) where.category_id = categoryId;
     if (keyword) where.title = { contains: keyword };
@@ -61,8 +61,8 @@ export class AdminSalesmanMaterialCompatController {
   @Post("create")
   @ApiOperation({ summary: "素材创建（兼容）" })
   @Authorities("materialManage")
-  async create(@Body() body: any) {
-    const shopId = await this.panel.getUserShopId();
+  async create(@Body() body: any, @Request() req: any) {
+    const shopId = await this.panel.getUserShopId(req?.user?.userId);
     const now = Math.floor(Date.now() / 1000);
     const data: any = {
       shop_id: shopId,

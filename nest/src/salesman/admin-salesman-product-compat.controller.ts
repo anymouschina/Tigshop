@@ -19,6 +19,16 @@ export class AdminSalesmanProductCompatController {
     return Number.isFinite(n) ? n : dft;
   }
 
+  private toAmountStr(v: any, digits = 2): string {
+    if (v == null) return (0).toFixed(digits);
+    try {
+      const n = typeof v === "number" ? v : Number(v as any);
+      return Number.isFinite(n) ? n.toFixed(digits) : String(v);
+    } catch {
+      return (0).toFixed(digits);
+    }
+  }
+
   private parseMaybeJson<T = any>(v: any): T | any {
     if (v == null) return v;
     if (typeof v === "string") {
@@ -45,6 +55,7 @@ export class AdminSalesmanProductCompatController {
     if (keyword) {
       where.product_name = { contains: keyword };
     }
+
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
@@ -55,20 +66,82 @@ export class AdminSalesmanProductCompatController {
           product_sn: true,
           product_price: true,
           pic_thumb: true,
+          pic_url: true,
+          pic_original: true,
         },
         skip,
         take: size,
       }),
       this.prisma.product.count({ where }),
     ]);
-    // 关联 salesman_product
+
     const productIds = products.map((p) => p.product_id);
-    const spList = await this.prisma.salesman_product.findMany({ where: { product_id: { in: productIds } } });
+    const [spList, galleries] = await Promise.all([
+      this.prisma.salesman_product.findMany({ where: { product_id: { in: productIds } } }),
+      productIds.length
+        ? this.prisma.product_gallery.findMany({
+            where: { product_id: { in: productIds } },
+            orderBy: { sort_order: "asc" },
+            select: { product_id: true, pic_url: true, pic_thumb: true, pic_original: true, pic_large: true, sort_order: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
     const spMap = new Map(spList.map((x) => [x.product_id, x] as const));
-    const records = products.map((p) => ({
-      ...p,
-      salesman_product: spMap.get(p.product_id) || null,
-    }));
+    const picsMap = new Map<number, any[]>();
+    for (const g of galleries as any[]) {
+      const arr = picsMap.get(g.product_id) || [];
+      arr.push({
+        pic_url: g.pic_url || "",
+        pic_thumb: g.pic_thumb || "",
+        pic_original: g.pic_original || "",
+        pic_large: g.pic_large || "",
+        sort_order: g.sort_order || 0,
+      });
+      picsMap.set(g.product_id, arr);
+    }
+
+    const normalizeSalesmanProduct = (sp: any) => {
+      if (!sp) return null;
+      const out: any = {
+        salesman_product_id: sp.salesman_product_id,
+        product_id: sp.product_id,
+        is_join: sp.is_join ?? 0,
+        commission_type: sp.commission_type ?? 1,
+        commission_data: sp.commission_data ?? "{}",
+        add_time: sp.add_time ?? 0,
+        update_time: sp.update_time ?? 0,
+        shop_id: sp.shop_id ?? shopId,
+      };
+      try {
+        const data = typeof sp.commission_data === "string" ? JSON.parse(sp.commission_data) : sp.commission_data || {};
+        const levels = [data.one ?? data.level1, data.two ?? data.level2, data.three ?? data.level3].filter((x) => x !== undefined);
+        if (Array.isArray(data) && !levels.length) {
+          for (const v of data) levels.push(v);
+        }
+        if (levels.length) {
+          const unit = sp.commission_type === 1 ? "%" : "";
+          out.product_commission = levels.map((x: any) => `${this.toAmountStr(x, sp.commission_type === 1 ? 0 : 2)}${unit}`).join("/");
+        }
+      } catch {}
+      return out;
+    };
+
+    const records = products.map((p) => {
+      const sp = spMap.get(p.product_id) || null;
+      return {
+        product_id: p.product_id,
+        product_name: p.product_name,
+        product_sn: p.product_sn,
+        product_price: this.toAmountStr(p.product_price),
+        pic_thumb: p.pic_thumb || "",
+        pic_url: p.pic_url || "",
+        pic_original: p.pic_original || "",
+        pics: picsMap.get(p.product_id) || [],
+        salesman_product: normalizeSalesmanProduct(sp),
+      };
+    });
+
     return { code: 0, message: "success", data: { records, total } };
   }
 
@@ -88,6 +161,32 @@ export class AdminSalesmanProductCompatController {
       commission_data: this.parseMaybeJson(sp?.commission_data) || {},
     };
     return { code: 0, message: "success", data: item };
+  }
+
+  // 创建（兼容 PHP：与 update 语义接近，按 productId 幂等 upsert）
+  @Post("create")
+  @ApiOperation({ summary: "分销商品创建（兼容）" })
+  @Authorities("salesmanProductManage")
+  async create(@Req() req: any, @Body() body: any) {
+    const shopId = await this.panel.getUserShopId(req.user?.userId);
+    const productId = this.coerceNumber(body.productId || body.product_id, 0);
+    if (!productId) return { code: 400, message: "productId required", data: null };
+    const data = {
+      product_id: productId,
+      is_join: this.coerceNumber(body.isJoin ?? body.is_join, 0),
+      commission_type: this.coerceNumber(body.commissionType ?? body.commission_type, 1),
+      commission_data: JSON.stringify(body.commissionData ?? body.commission_data ?? {}),
+      shop_id: shopId,
+      update_time: Math.floor(Date.now() / 1000),
+    } as any;
+    const exists = await this.prisma.salesman_product.findFirst({ where: { product_id: productId } });
+    if (exists) {
+      await this.prisma.salesman_product.update({ where: { salesman_product_id: exists.salesman_product_id }, data });
+    } else {
+      data.add_time = Math.floor(Date.now() / 1000);
+      await this.prisma.salesman_product.create({ data });
+    }
+    return { code: 0, message: "success", data: true };
   }
 
   // 更新
