@@ -9,8 +9,10 @@ export class SignInService {
   async getFilterResult(filter: any): Promise<any[]> {
     const where = this.buildWhereClause(filter);
     const orderBy = this.buildOrderBy(filter);
-    const skip = (filter.page - 1) * filter.size;
-    const take = filter.size;
+    const page = Number(filter.page) || 1;
+    const size = Number(filter.size) || 15;
+    const skip = (page - 1) * size;
+    const take = size;
 
     const results = await this.prisma.sign_in_setting.findMany({
       where,
@@ -45,14 +47,10 @@ export class SignInService {
   }
 
   private buildOrderBy(filter: any): any {
-    if (filter.sort_field && filter.sort_order) {
-      return {
-        [filter.sort_field]: filter.sort_order,
-      };
-    }
-    return {
-      id: "desc",
-    };
+    const allowed = new Set(["id", "name", "points", "day_num"]);
+    const sortField = allowed.has(filter?.sort_field) ? filter.sort_field : "id";
+    const sortOrder = filter?.sort_order === "asc" ? "asc" : "desc";
+    return { [sortField]: sortOrder };
   }
 
   async getDetail(id: number): Promise<any> {

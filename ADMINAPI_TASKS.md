@@ -81,7 +81,7 @@
   - [x] 综合统计 GeneralStatisticsService：仪表盘/财务/库存/营销/趋势/导出（已实现，退款聚合基于 paylog_refund）
 
 ### 6) 其它域（按优先级逐步补齐）
-- [ ] 营销 Marketing
+- [x] 营销 Marketing
   - [x] ProductPromotion：补齐服务与 DTO，新增 /adminapi 兼容控制器（adminapi/promotion/productPromotion/*），统一守卫与 envelope，shopId 通过 PanelService 解析（后续与前端联调字段名细节）
   - [x] Seckill 秒杀：新增 /adminapi 兼容控制器（adminapi/promotion/seckill/*），接入 AdminJwtAuthGuard + AuthorityGuard + @Authorities("promotionManage")，返回驼峰与 {code,message,data}
   - [x] TimeDiscount 时段折扣：新增 /adminapi 兼容控制器（adminapi/promotion/timeDiscount/*），同上；支持 Name/StartTime/EndTime/Discount 别名
@@ -290,6 +290,12 @@
    - ProductPromotion：新增 GET /adminapi/promotion/productPromotion/conflict 路由别名，等价于 conflictList。
    - SignIn：新增 /adminapi/promotion/signInSetting/* 路由别名控制器（list/detail/create/update/del/batch），对齐 PHP 路由。
    - ProductTeam：Admin 兼容控制器改用 groupon/groupon_item 服务，状态/排序/筛选映射到实际字段，避免 Prisma 运行时错误。
+ - 2025-09-30：营销模块完成：
+   - 修复 SignInService 使用的 Prisma 模型名（sign_in_setting）与分页参数类型问题（page/size 强制转 number）；
+   - 修复 RechargeSetting 服务排序字段（默认 recharge_id），兼容 status→is_show；
+   - 新增商品电子卡分组 eCardGroup 管理端兼容控制器；
+   - 修复 PointsExchange 模型引用与包含关系（转为手动联表聚合 product/sku）；
+   - 所有营销路由均接入统一守卫与返回包装，前端页面无 404/403。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：

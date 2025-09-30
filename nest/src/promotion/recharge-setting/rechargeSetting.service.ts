@@ -60,7 +60,7 @@ export class RechargeSettingService {
     orderBy[allowedSortFields.has(sortField) ? sortField : "recharge_id"] =
       sortOrder;
 
-    const [records, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       this.prisma.recharge_setting.findMany({
         where,
         skip,
@@ -69,6 +69,16 @@ export class RechargeSettingService {
       }),
       this.prisma.recharge_setting.count({ where }),
     ]);
+
+    // 映射为 PHP 兼容字段与格式：金额为字符串，isShow 为 1/0，主键为 rechargeId，排序字段为 sortOrder
+    const records = rows.map((r) => ({
+      rechargeId: r.recharge_id,
+      money: r.money != null ? r.money.toString() : "0.00",
+      discountMoney:
+        r.discount_money != null ? r.discount_money.toString() : "0.00",
+      sortOrder: r.sort_order ?? 0,
+      isShow: r.is_show ? 1 : 0,
+    }));
 
     return {
       records,
