@@ -317,7 +317,52 @@
     - [x] GET  /adminapi/finance/statement/exportStatementStatistics（导出统计 CSV）
     - [x] GET  /adminapi/finance/statement/getStatementQueryConfig（查询字段）
     - （备注）导出统一 UTF-8 BOM + CRLF；字段与筛选对齐 PHP；支持 large dataset 分页/流式
-- [ ] 会员 Member
+- [x] 会员 Member（Admin 兼容，对齐 php/app/adminapi/route/user.php）
+  - 会员 User（/adminapi/user/user/*）
+    - [x] GET  /list（筛选：keyword/from_tag/rank_id/balance/points_gt/points_lt；排序：user_id/reg_time/last_login/balance/points/order_count/order_amount；分页 is_page 兼容）
+    - [x] GET  /detail（id）
+    - [x] POST /create（子权限 userCreateManage）
+    - [x] POST /update（子权限 userModifyManage）
+    - [x] POST /del（子权限 userDelManage）
+    - [x] POST /updateField（限 username/nickname/status，子权限 userModifyFieldManage）
+    - [x] POST /batch（type=del/set_rank，子权限 userBatchManage）
+    - [x] GET  /search（兼容手机号/用户名/email 模糊）
+    - [x] GET  /userFundDetail（from_tag=1/2/3/4 切换余额/冻结/成长/积分明细）
+    - [x] POST /fundManagement（调整余额/冻结/积分/成长，子权限 fundManagementManage）
+    - [x] POST /logout（占位返回成功，消除 404）
+  - 会员留言 Feedback（/adminapi/user/feedback/*）
+    - [x] GET  /list（keyword/type/status/page/size/sort_field/sort_order）
+    - [x] GET  /detail（id）
+    - [x] POST /create（子权限 feedbackModifyManage）
+    - [x] POST /update（子权限 feedbackModifyManage）
+    - [x] POST /del（子权限 feedbackModifyManage）
+    - [x] POST /batch（type=del，子权限 feedbackModifyManage）
+  - 站内信 UserMessageLog（/adminapi/user/userMessageLog/*）
+    - [x] GET  /list（keyword/page/size/sort_field=message_log_id/sort_order）
+    - [x] GET  /detail（id）
+    - [x] POST /create（子权限 userMessageLogModifyManage）
+    - [x] POST /update（子权限 userMessageLogModifyManage）
+    - [x] POST /del（子权限 userMessageLogModifyManage）
+    - [x] POST /recall（子权限 userMessageLogModifyManage）
+    - [x] POST /batch（type=del/recall，子权限 userMessageLogModifyManage）
+  - 会员积分日志 UserPointsLog（/adminapi/user/userPointsLog/*）
+    - [x] GET  /list（keyword/page/size/sort_field=log_id/sort_order，权限 integralLogManage）
+    - [x] POST /del（子权限 userPointsLogModifyManage）
+    - [x] GET  /getPoints（user_id，权限 integralLogManage）
+    - [x] POST /batch（type=del，子权限 userPointsLogModifyManage）
+  - 会员等级 UserRank（/adminapi/user/userRank/*）
+    - [x] GET  /list（rank_name/page/size/sort_field=rank_id/sort_order；子权限 levelManageManage）
+    - [x] GET  /listByPro（别名，返回与 /list 一致，用于消除前端调用 404）
+    - [x] GET  /detail（rank_type）
+    - [x] POST /update（对齐 PHP 入参 {rank_type,data}）
+  - 会员等级变更日志 UserRankLog（/adminapi/user/userRankLog/*）
+    - [x] GET  /list（keyword/page/size/sort_field=id/sort_order；权限 userRankLogManage）
+  - 企业认证 UserCompany（/adminapi/user/userCompany/*）
+    - [x] GET  /list（username/type/status/page/size/sort）
+    - [x] GET  /detail（id）
+    - [x] POST /audit（status/audit_remark，权限 userCertificationManage）
+    - [x] POST /del（权限 userCertificationManage）
+  - 说明：以上均已接入 AdminJwtAuthGuard + AuthorityGuard 与 @Authorities，返回统一 { code, message, data }，列表返回 {records,total}。涉及 Prisma 表均按 snake_case 访问（feedback/user_message_log/user_points_log/user_rank/user_rank_log/user_company），去除无效 include，必要信息通过二次查询手动补齐。
   
 ### 8) 用户侧模块（User App）
 - [ ] 用户售后 Aftersales（对齐 PHP user/Aftersales/*）
@@ -342,6 +387,8 @@
 - [ ] 文档：补 README 或 docs 对应章节
 
 ## 变更记录（完成项之后在此追加）
+ - 2025-09-30：会员 Member 管理端兼容完成：接通 /adminapi/user 下 user/feedback/userMessageLog/userPointsLog/userRank/userRankLog/userCompany 全部路由与子权限，统一返回驼峰包装；修正 user_message_log 与 user_points_log 等服务的字段映射与时间字段（send_time/add_time/change_time）以避免 Prisma 运行时错误。
+ - 2025-09-30：会员等级别名补充：新增 GET /adminapi/user/userRank/listByPro 路由别名，复用 /list 返回结构，修复前端调用 404。
  - 2025-09-30：财务模块待办清单：基于 PHP 路由（php/app/adminapi/route/finance.php）梳理 accountPanel/orderInvoice/payLog/refundApply/refundLog/userBalanceLog/userInvoice/userRechargeOrder/userWithdrawApply/statement 的全部接口与子权限，后续将新增 /adminapi 兼容控制器逐项落地并消除 404。
  - 2025-09-30：内容模块进度更新：确认已存在基础控制器（Article: /admin/content/article；ArticleCategory: /content/article_category），下一步补充 /adminapi 兼容映射与筛选/字段/批量行为对齐；在用户侧模块新增“用户账户 User”待办以修复 /api/user/user/logout 404。
  - 2025-09-30：内容模块待办清单：依据 PHP /adminapi/content 路由梳理出 Article 与 ArticleCategory 的 list/detail/create/update/del/updateField/batch/tree 等接口，标注权限与筛选项；后续将新增 /adminapi 兼容控制器以消除 404 并逐项对齐。

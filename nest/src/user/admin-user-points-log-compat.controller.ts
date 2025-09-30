@@ -14,7 +14,7 @@ export class AdminUserPointsLogCompatController {
   constructor(private readonly service: UserPointsLogService) {}
 
   @Get("list")
-  @Authorities("userManage")
+  @Authorities("integralLogManage")
   @ApiOperation({ summary: "积分日志列表（兼容）" })
   async list(@Query() q: any) {
     const page = Number(q.page || 1);
@@ -58,8 +58,18 @@ export class AdminUserPointsLogCompatController {
     };
   }
 
+  @Get("getPoints")
+  @Authorities("integralLogManage")
+  @ApiOperation({ summary: "获取会员积分（兼容）" })
+  async getPoints(@Query("user_id") userId?: string) {
+    const id = Number(userId);
+    if (!id) return { code: 1, message: "缺少 user_id", data: null };
+    const user = await (this.service as any).prisma.user.findUnique({ where: { user_id: id }, select: { points: true } });
+    return { code: 0, message: "success", data: [user?.points || 0] };
+  }
+
   @Post("del")
-  @Authorities("userManage")
+  @Authorities("userPointsLogModifyManage")
   @ApiOperation({ summary: "删除积分日志（兼容）" })
   async del(@Body("id") id: any) {
     const num = Number(id);
@@ -69,7 +79,7 @@ export class AdminUserPointsLogCompatController {
   }
 
   @Post("batch")
-  @Authorities("userManage")
+  @Authorities("userPointsLogModifyManage")
   @ApiOperation({ summary: "积分日志批量操作（兼容，仅支持 del）" })
   async batch(@Body() body: any) {
     const ids: number[] = Array.isArray(body.ids)

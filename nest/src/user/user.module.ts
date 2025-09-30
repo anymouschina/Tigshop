@@ -17,6 +17,11 @@ import { UserHistoryModule } from "./history/history.module";
 import { UploadModule } from "../upload/upload.module";
 import { AuthDebugMiddleware } from "../auth/middlewares/auth-debug.middleware";
 import { AdminUserPointsLogCompatController } from "./admin-user-points-log-compat.controller";
+import { AdminFeedbackCompatController } from "./admin-feedback-compat.controller";
+import { AdminUserMessageLogCompatController } from "./admin-user-message-log-compat.controller";
+import { AdminUserRankCompatController } from "./admin-user-rank-compat.controller";
+import { AdminUserRankLogCompatController } from "./admin-user-rank-log-compat.controller";
+import { AdminUserCompanyCompatController } from "./admin-user-company-compat.controller";
 
 @Module({
   imports: [
@@ -34,7 +39,15 @@ import { AdminUserPointsLogCompatController } from "./admin-user-points-log-comp
     UserHistoryModule,
     UploadModule,
   ],
-  controllers: [UserController, AdminUserPointsLogCompatController],
+  controllers: [
+    UserController,
+    AdminUserPointsLogCompatController,
+    AdminFeedbackCompatController,
+    AdminUserMessageLogCompatController,
+    AdminUserRankCompatController,
+    AdminUserRankLogCompatController,
+    AdminUserCompanyCompatController,
+  ],
   providers: [UserService, AuthDebugMiddleware],
   exports: [
     UserService,

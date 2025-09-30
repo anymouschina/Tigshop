@@ -24,32 +24,17 @@ export class UserMessageLogService {
     const where: any = {};
     if (keyword) {
       where.OR = [
-        { user: { username: { contains: keyword } } },
-        { user: { mobile: { contains: keyword } } },
-        { user: { email: { contains: keyword } } },
-        { title: { contains: keyword } },
-        { content: { contains: keyword } },
+        { message_title: { contains: keyword } },
+        { message_content: { contains: keyword } },
       ];
     }
     if (message_type) {
       where.message_type = parseInt(message_type);
     }
-    if (status !== "") {
-      where.status = parseInt(status);
-    }
+    // user_message_log 无 status 字段，兼容忽略
 
     const records = await (this.prisma as any).user_message_log.findMany({
       where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            mobile: true,
-            email: true,
-          },
-        },
-      },
       skip,
       take: size,
       orderBy,
@@ -72,36 +57,19 @@ export class UserMessageLogService {
     const where: any = {};
     if (keyword) {
       where.OR = [
-        { user: { username: { contains: keyword } } },
-        { user: { mobile: { contains: keyword } } },
-        { user: { email: { contains: keyword } } },
-        { title: { contains: keyword } },
-        { content: { contains: keyword } },
+        { message_title: { contains: keyword } },
+        { message_content: { contains: keyword } },
       ];
     }
     if (message_type) {
       where.message_type = parseInt(message_type);
     }
-    if (status !== "") {
-      where.status = parseInt(status);
-    }
-
     return (this.prisma as any).user_message_log.count({ where });
   }
 
   async getDetail(id: number) {
     const item = await (this.prisma as any).user_message_log.findUnique({
       where: { message_log_id: id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            mobile: true,
-            email: true,
-          },
-        },
-      },
     });
 
     if (!item) {
@@ -161,28 +129,30 @@ export class UserMessageLogService {
   async getMessageStatistics(filter: any) {
     const { start_date, end_date, user_id } = filter;
 
-    const where: any = {};
+    const whereLog: any = {};
     if (start_date && end_date) {
-      where.create_time = {
-        gte: new Date(start_date),
-        lte: new Date(end_date),
+      whereLog.send_time = {
+        gte: Math.floor(new Date(start_date).getTime() / 1000),
+        lte: Math.floor(new Date(end_date).getTime() / 1000),
       };
     }
-    if (user_id) {
-      where.user_id = user_id;
+
+    const whereMsg: any = {};
+    if (user_id) whereMsg.user_id = user_id;
+    if (start_date && end_date) {
+      whereMsg.add_time = {
+        gte: Math.floor(new Date(start_date).getTime() / 1000),
+        lte: Math.floor(new Date(end_date).getTime() / 1000),
+      };
     }
 
     const [total, unread, byType] = await Promise.all([
-      (this.prisma as any).user_message_log.count({ where }),
-      (this.prisma as any).user_message.count({
-        where: { ...where, is_read: 0 },
-      }),
+      (this.prisma as any).user_message_log.count({ where: whereLog }),
+      (this.prisma as any).user_message.count({ where: { ...whereMsg, is_read: 0 } }),
       (this.prisma as any).user_message_log.groupBy({
         by: ["message_type"],
-        where,
-        _count: {
-          message_type: true,
-        },
+        where: whereLog,
+        _count: { message_type: true },
       }),
     ]);
 
@@ -199,41 +169,27 @@ export class UserMessageLogService {
     };
   }
 
-  async sendUserMessage(
-    userId: number,
-    title: string,
-    content: string,
-    messageType: number,
-  ) {
-    return this.prisma.userMessageLog.create({
+  async sendUserMessage(userId: number, title: string, content: string, messageType: number) {
+    // map to user_message table
+    return (this.prisma as any).user_message.create({
       data: {
         user_id: userId,
         title,
         content,
         message_type: messageType,
-        status: 0,
-        create_time: new Date(),
+        add_time: Math.floor(Date.now() / 1000),
       },
     });
   }
 
-  async sendBatchMessage(
-    userIds: number[],
-    title: string,
-    content: string,
-    messageType: number,
-  ) {
+  async sendBatchMessage(userIds: number[], title: string, content: string, messageType: number) {
     const messages = userIds.map((userId) => ({
       user_id: userId,
       title,
       content,
       message_type: messageType,
-      status: 0,
-      create_time: new Date(),
+      add_time: Math.floor(Date.now() / 1000),
     }));
-
-    return this.prisma.userMessageLog.createMany({
-      data: messages,
-    });
+    return (this.prisma as any).user_message.createMany({ data: messages });
   }
 }
