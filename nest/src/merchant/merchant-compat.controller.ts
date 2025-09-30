@@ -13,6 +13,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
+import { CreateMerchantDto, OperateMerchantDto, UpdateFieldDto, UpdateMerchantDto } from "./dto/merchant.dto";
 
 // 兼容 PHP 后台商户管理路由: /adminapi/merchant/merchant/*
 @Controller("adminapi/merchant/merchant")
@@ -126,12 +127,12 @@ export class MerchantCompatController {
    */
   @Post("create")
   @Authorities("merchantCreate")
-  async create(@Body() body: any) {
+  async create(@Body() body: CreateMerchantDto) {
     const now = Math.floor(Date.now() / 1000);
-    const baseData = body?.baseData ?? {};
-    const merchantData = body?.merchantData ?? {};
+    const baseData: any = body?.baseData ?? {};
+    const merchantData: any = body?.merchantData ?? {};
     const shopTitle = body?.shopTitle ?? merchantData?.merchantName ?? "";
-    const adminBind = body?.admin ?? {};
+    const adminBind: any = body?.admin ?? {};
     const isCompany = Number(baseData?.type ?? body?.type ?? 1) === 2;
 
     const data: any = {
@@ -180,14 +181,14 @@ export class MerchantCompatController {
    */
   @Post("update")
   @Authorities("merchantUpdate")
-  async update(@Body() body: any, @Query("id") idFromQuery?: string) {
+  async update(@Body() body: UpdateMerchantDto, @Query("id") idFromQuery?: string) {
     const id = Number(body?.id ?? body?.merchantId ?? idFromQuery);
     if (!id) {
       return { code: 400, message: "缺少商户ID", data: false };
     }
-    const baseData = body?.baseData;
+    const baseData: any = body?.baseData;
     const merchantData = body?.merchantData;
-    const adminBind = body?.admin ?? {};
+    const adminBind: any = body?.admin ?? {};
     const toUpdate: any = {};
     if (baseData !== undefined) {
       toUpdate.base_data = JSON.stringify(baseData);
@@ -205,7 +206,7 @@ export class MerchantCompatController {
       if (current?.shop_data) {
         try { shopData = JSON.parse(current.shop_data); } catch (e) {}
       }
-      shopData.shopTitle = body.shopTitle;
+      shopData.shopTitle = body.shopTitle as any;
       toUpdate.shop_data = JSON.stringify(shopData);
     }
 
@@ -237,7 +238,7 @@ export class MerchantCompatController {
   @Authorities("merchantUpdate")
   async operate(
     @Param("id", ParseIntPipe) id: number,
-    @Body() body: { action?: string; reason?: string }
+    @Body() body: OperateMerchantDto
   ) {
     const action = body?.action;
     const statusMap: Record<string, number> = {
@@ -275,8 +276,8 @@ export class MerchantCompatController {
    */
   @Post("updateField")
   @Authorities("merchantUpdateField")
-  async updateField(@Body() body: any) {
-    const { id, field, value } = body || {};
+  async updateField(@Body() body: UpdateFieldDto) {
+    const { id, field, value } = body || ({} as UpdateFieldDto);
     if (!id || !field) {
       return { code: 400, message: "缺少参数", data: false };
     }
