@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Get, Post, Put, Delete, Query, Body, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Query, Body, Param, UseGuards, Req } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -17,8 +17,9 @@ export class AdminProductPromotionCompatController {
   @Get("list")
   @Authorities("promotionManage")
   @ApiOperation({ summary: "优惠活动列表（兼容 /adminapi）" })
-  async list(@Query() query: any) {
-    const shopId = await this.panel.getUserShopId();
+  async list(@Query() query: any, @Req() req: any) {
+    const userId = req?.user?.userId;
+    const shopId = await this.panel.getUserShopId(Number(userId));
     const filter = {
       keyword: query.keyword || "",
       promotion_type: query.promotionType ?? query.promotion_type,
@@ -74,8 +75,9 @@ export class AdminProductPromotionCompatController {
   @Post("create")
   @Authorities("promotionManage")
   @ApiOperation({ summary: "创建活动（兼容 /adminapi）" })
-  async create(@Body() body: any) {
-    const shopId = await this.panel.getUserShopId();
+  async create(@Body() body: any, @Req() req: any) {
+    const userId = req?.user?.userId;
+    const shopId = await this.panel.getUserShopId(Number(userId));
     const payload = { ...body, shop_id: shopId };
     const r = await this.svc.createProductPromotion(payload);
     return ResponseUtil.success(r);

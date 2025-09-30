@@ -27,6 +27,7 @@ import { AdminPointsExchangeCompatController } from "./admin-points-exchange-com
 import { AdminPromotionCompatController } from "./admin-promotion-compat.controller";
 import { AdminSeckillCompatController } from "./admin-seckill-compat.controller";
 import { AdminTimeDiscountCompatController } from "./admin-time-discount-compat.controller";
+import { ProductGiftService } from "./product-gift/product-gift.service";
 import { AdminProductTeamCompatController } from "./admin-product-team-compat.controller";
 import { AdminProductGiftCompatController } from "./admin-product-gift-compat.controller";
 import { AdminRechargeSettingCompatController } from "./admin-recharge-setting-compat.controller";
@@ -70,6 +71,7 @@ import { AdminSignInCompatController } from "./admin-sign-in-compat.controller";
     PointsExchangeService,
     SignInService,
     ProductPromotionService,
+    ProductGiftService,
   ],
   exports: [
     PromotionService,

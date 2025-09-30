@@ -8,28 +8,114 @@ export class CouponService {
   constructor(private prisma: PrismaService) {}
 
   async getFilterResult(filter: any) {
-    const where: any = {
-      shop_id: filter.shop_id,
-    };
-
-    if (filter.keyword) {
-      where.coupon_name = {
-        contains: filter.keyword,
-      };
-    }
-
-    const orderBy: any = {};
-    orderBy[filter.sort_field || "coupon_id"] = filter.sort_order || "desc";
-
+    const where: any = { shop_id: filter.shop_id };
+    if (filter.keyword) where.coupon_name = { contains: filter.keyword };
+    const orderBy: any = { [filter.sort_field || "coupon_id"]: filter.sort_order || "desc" };
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
 
-    return this.prisma.coupon.findMany({
-      where,
-      orderBy,
-      skip,
-      take,
+    const rows = await this.prisma.coupon.findMany({ where, orderBy, skip, take });
+
+    // 批量统计领取数量 receiveNum
+    const ids = rows.map((r: any) => r.coupon_id);
+    let recvMap: Record<number, number> = {};
+    if (ids.length > 0) {
+      try {
+        // 优先使用 groupBy（Prisma >=2.13 支持）
+        const grouped: any[] = await (this.prisma as any).user_coupon.groupBy({
+          by: ["coupon_id"],
+          where: { coupon_id: { in: ids } },
+          _count: { coupon_id: true },
+        });
+        recvMap = grouped.reduce((acc: any, g: any) => {
+          acc[g.coupon_id] = g._count?.coupon_id ?? 0;
+          return acc;
+        }, {} as Record<number, number>);
+      } catch (e) {
+        // 兼容旧版 Prisma：降级为 Promise.all 逐一 count
+        const list = await Promise.all(
+          ids.map(async (id: number) => [id, await this.prisma.user_coupon.count({ where: { coupon_id: id } })] as const),
+        );
+        recvMap = Object.fromEntries(list);
+      }
+    }
+
+    const to2 = (v: any) => (v == null ? "0.00" : Number(v).toFixed(2));
+    const to1 = (v: any) => (v == null ? "0.0" : Number(v).toFixed(1));
+    const fmt = (ts?: number) => {
+      const t = Number(ts || 0);
+      if (!t) return "";
+      const d = new Date(t * 1000);
+      const p = (n: number) => (n < 10 ? "0" + n : String(n));
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    };
+    const parseList = (raw: any): any[] => {
+      if (raw == null) return [];
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw !== "string") return [];
+      const s = raw.trim();
+      if (!s) return [];
+      try {
+        const parsed = JSON.parse(s);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        if (s.includes(",")) return s.split(",").map((x) => Number(x)).filter((n) => Number.isFinite(n));
+        const n = Number(s);
+        return Number.isFinite(n) ? [n] : [];
+      }
+    };
+    const parseRanks = (raw: any): number[] => {
+      if (raw == null) return [];
+      if (Array.isArray(raw)) return raw.map((x) => Number(x)).filter((n) => Number.isFinite(n));
+      const s = String(raw).trim();
+      if (!s) return [];
+      return s
+        .split(",")
+        .map((x) => Number(x))
+        .filter((n) => Number.isFinite(n));
+    };
+
+    // 映射为 PHP 兼容的驼峰结构
+    const mapped = rows.map((r: any) => {
+      const useStart = fmt(r.use_start_date);
+      const useEnd = fmt(r.use_end_date);
+      return {
+        isReceive: r.is_new_user === 1 ? 1 : 0,
+        receiveNum: recvMap[r.coupon_id] || 0,
+        couponId: r.coupon_id,
+        couponName: r.coupon_name,
+        couponMoney: to2(r.coupon_money),
+        couponDiscount: to1(r.coupon_discount),
+        couponDesc: r.coupon_desc ?? "",
+        couponType: Number(r.coupon_type ?? 1),
+        sendRange: Number(r.send_range ?? 0),
+        sendRangeData: parseList(r.send_range_data),
+        minOrderAmount: to2(r.min_order_amount),
+        sendStartDate: fmt(r.send_start_date),
+        sendEndDate: fmt(r.send_end_date),
+        sendType: Number(r.send_type ?? 0),
+        useDay: Number(r.use_day ?? 0),
+        useStartDate: useStart,
+        useEndDate: useEnd,
+        isShow: Number(r.is_show ?? 0),
+        isGlobal: Number(r.is_global ?? 0),
+        isNewUser: Number(r.is_new_user ?? 0),
+        enabledClickGet: Number(r.enabled_click_get ?? 0),
+        limitUserRank: parseRanks(r.limit_user_rank),
+        shopId: Number(r.shop_id ?? 0),
+        isDelete: r.is_delete ? 1 : 0,
+        limitNum: Number(r.limit_num ?? 0),
+        delayDay: Number(r.delay_day ?? 0),
+        sendNum: Number(r.send_num ?? 0),
+        maxOrderAmount: to2(r.max_order_amount),
+        couponUnit: Number(r.coupon_unit ?? 1),
+        reduceType: Number(r.reduce_type ?? 1),
+        addTime: fmt(r.add_time),
+        timeText: useStart && useEnd ? `${useStart} 至 ${useEnd}` : "",
+      };
     });
+
+    return mapped;
   }
 
   async getFilterCount(filter: any): Promise<number> {

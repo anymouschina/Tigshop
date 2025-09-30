@@ -73,7 +73,8 @@ export class ProductPromotionService {
   }
 
   async getUserRankList() {
-    return this.prisma.user_rank.findMany({ where: { is_delete: 0, is_show: 1 }, orderBy: { sort_order: "asc" } });
+    // user_rank schema doesn't have is_delete/is_show; return all ranks ordered by min_growth_points or rank_id
+    return this.prisma.user_rank.findMany({ orderBy: { rank_id: "asc" } });
   }
 
   async getPromotionStatus() {

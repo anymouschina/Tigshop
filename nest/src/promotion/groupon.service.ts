@@ -26,71 +26,31 @@ export class GrouponService {
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
 
-    const results = await this.prisma.productTeam.findMany({
+    const results = await this.prisma.groupon.findMany({
       where,
       orderBy,
       skip,
       take,
-      include: {
-        product: {
-          select: {
-            product_id: true,
-            product_name: true,
-            image: true,
-          },
-        },
-        items: {
-          include: {
-            product_sku: {
-              select: {
-                sku_id: true,
-                sku_name: true,
-                sku_image: true,
-              },
-            },
-          },
-        },
-      },
     });
 
-    // 检查活动状态并更新
-    const now = Math.floor(Date.now() / 1000);
-    for (const result of results) {
-      if (
-        result.end_time < now &&
-        result.status === GrouponStatus.IN_PROGRESS
-      ) {
-        await this.prisma.productTeam.update({
-          where: { product_team_id: result.product_team_id },
-          data: { status: GrouponStatus.ENDED },
-        });
-        result.status = GrouponStatus.ENDED;
-      } else if (
-        result.start_time > now &&
-        result.status === GrouponStatus.WAITING
-      ) {
-        // 活动开始时间已到，更新为进行中
-        if (result.start_time <= now) {
-          await this.prisma.productTeam.update({
-            where: { product_team_id: result.product_team_id },
-            data: { status: GrouponStatus.IN_PROGRESS },
-          });
-          result.status = GrouponStatus.IN_PROGRESS;
-        }
-      }
-    }
-
-    return results.map((result) => ({
-      ...result,
-      status_name: this.getStatusName(result.status),
-      start_time_text: this.formatTime(result.start_time),
-      end_time_text: this.formatTime(result.end_time),
-    }));
+    return results.map((result) => {
+      const status = this.calculateStatusByTime(
+        result.start_time,
+        result.end_time,
+      );
+      return {
+        ...result,
+        status,
+        status_name: this.getStatusName(status),
+        start_time_text: this.formatTime(result.start_time),
+        end_time_text: this.formatTime(result.end_time),
+      };
+    });
   }
 
   async getFilterCount(filter: any): Promise<number> {
     const where = this.buildWhereClause(filter);
-    return this.prisma.productTeam.count({ where });
+    return this.prisma.groupon.count({ where });
   }
 
   private buildWhereClause(filter: any): any {
@@ -100,7 +60,7 @@ export class GrouponService {
     if (filter.keyword) {
       where.OR = [
         {
-          product_team_name: {
+          groupon_name: {
             contains: filter.keyword,
           },
         },
@@ -112,17 +72,33 @@ export class GrouponService {
       where.shop_id = filter.shop_id;
     }
 
-    // 状态筛选
+    // 状态筛选（基于时间）
     if (filter.status !== undefined && filter.status !== "") {
-      where.status = filter.status;
+      const now = Math.floor(Date.now() / 1000);
+      switch (Number(filter.status)) {
+        case GrouponStatus.WAITING:
+          where.start_time = { gt: now };
+          break;
+        case GrouponStatus.IN_PROGRESS:
+          where.AND = [
+            { start_time: { lte: now } },
+            { end_time: { gte: now } },
+          ];
+          break;
+        case GrouponStatus.ENDED:
+          where.end_time = { lt: now };
+          break;
+        default:
+          break;
+      }
     }
 
     // 时间筛选
     if (filter.add_time && filter.add_time.length === 2) {
       const [startDate, endDate] = filter.add_time;
-      where.create_time = {
-        gte: new Date(startDate).getTime() / 1000,
-        lte: new Date(endDate).getTime() / 1000 + 86400,
+      where.add_time = {
+        gte: Math.floor(new Date(startDate).getTime() / 1000),
+        lte: Math.floor(new Date(endDate).getTime() / 1000) + 86400,
       };
     }
 
@@ -131,66 +107,46 @@ export class GrouponService {
 
   private buildOrderBy(filter: any): any {
     if (filter.sort_field && filter.sort_order) {
-      return {
-        [filter.sort_field]: filter.sort_order,
+      const sortFieldMap: Record<string, string> = {
+        product_team_id: "groupon_id",
+        product_team_name: "groupon_name",
+        create_time: "add_time",
       };
+      const field = sortFieldMap[filter.sort_field] || filter.sort_field;
+      return { [field]: filter.sort_order };
     }
     return {
-      product_team_id: "desc",
+      groupon_id: "desc",
     };
   }
 
   async getDetail(id: number): Promise<any> {
-    const result = await this.prisma.productTeam.findUnique({
-      where: { product_team_id: id },
-      include: {
-        product: {
-          select: {
-            product_id: true,
-            product_name: true,
-            image: true,
-          },
-        },
-        items: {
-          include: {
-            product_sku: {
-              select: {
-                sku_id: true,
-                sku_name: true,
-                sku_image: true,
-              },
-            },
-          },
-        },
-      },
+    const result = await this.prisma.groupon.findUnique({
+      where: { groupon_id: id },
     });
 
     if (!result) {
       throw new Error("拼团活动不存在");
     }
 
-    // 检查并更新状态
-    const now = Math.floor(Date.now() / 1000);
-    let currentStatus = result.status;
-    if (result.end_time < now && result.status === GrouponStatus.IN_PROGRESS) {
-      currentStatus = GrouponStatus.ENDED;
-      await this.prisma.productTeam.update({
-        where: { product_team_id: id },
-        data: { status: GrouponStatus.ENDED },
-      });
-    } else if (
-      result.start_time <= now &&
-      result.status === GrouponStatus.WAITING
-    ) {
-      currentStatus = GrouponStatus.IN_PROGRESS;
-      await this.prisma.productTeam.update({
-        where: { product_team_id: id },
-        data: { status: GrouponStatus.IN_PROGRESS },
-      });
-    }
+    const items = await this.prisma.groupon_item.findMany({
+      where: { groupon_id: id },
+    });
+
+    const currentStatus = this.calculateStatusByTime(
+      result.start_time,
+      result.end_time,
+    );
 
     return {
       ...result,
+      items: items.map((it) => ({
+        sku_id: it.product_sku_id ?? 0,
+        price: it.price,
+        product_id: it.product_id ?? result.product_id ?? 0,
+        start_time: it.start_time ?? result.start_time,
+        end_time: it.end_time ?? result.end_time,
+      })),
       status: currentStatus,
       status_name: this.getStatusName(currentStatus),
       start_time_text: this.formatTime(result.start_time),
@@ -219,27 +175,31 @@ export class GrouponService {
     const itemData = validatedData.items;
     delete validatedData.items;
 
-    const result = await this.prisma.productTeam.create({
+    const result = await this.prisma.groupon.create({
       data: {
-        ...validatedData,
-        create_time: now,
-        update_time: now,
+        groupon_name: validatedData.product_team_name,
+        start_time: validatedData.start_time,
+        end_time: validatedData.end_time,
+        limit_num: validatedData.limit_num,
+        product_id: validatedData.product_id,
+        shop_id: validatedData.shop_id ?? 0,
+        add_time: now,
+        team_num: validatedData.team_num ?? undefined,
+        expiration_time: validatedData.expiration_time ?? undefined,
       },
     });
 
     // 创建拼团商品项
     if (itemData && itemData.length > 0) {
       for (const item of itemData) {
-        await this.prisma.productTeamItem.create({
+        await this.prisma.groupon_item.create({
           data: {
-            product_team_id: result.product_team_id,
+            groupon_id: result.groupon_id,
             product_id: validatedData.product_id,
-            sku_id: item.sku_id || 0,
+            product_sku_id: item.sku_id || 0,
             price: item.price,
             start_time: validatedData.start_time,
             end_time: validatedData.end_time,
-            shop_id: validatedData.shop_id,
-            create_time: now,
           },
         });
       }
@@ -249,8 +209,8 @@ export class GrouponService {
   }
 
   async update(id: number, data: any): Promise<any> {
-    const groupon = await this.prisma.productTeam.findUnique({
-      where: { product_team_id: id },
+    const groupon = await this.prisma.groupon.findUnique({
+      where: { groupon_id: id },
     });
 
     if (!groupon) {
@@ -273,35 +233,37 @@ export class GrouponService {
     }
 
     const updateData: any = {
-      ...validatedData,
-      update_time: Math.floor(Date.now() / 1000),
+      groupon_name: validatedData.product_team_name,
+      start_time: validatedData.start_time,
+      end_time: validatedData.end_time,
+      limit_num: validatedData.limit_num,
+      product_id: validatedData.product_id,
+      shop_id: validatedData.shop_id ?? groupon.shop_id ?? 0,
     };
     delete updateData.items;
 
-    const result = await this.prisma.productTeam.update({
-      where: { product_team_id: id },
+    const result = await this.prisma.groupon.update({
+      where: { groupon_id: id },
       data: updateData,
     });
 
     // 更新拼团商品项
     if (validatedData.items && validatedData.items.length > 0) {
       // 先删除原有商品项
-      await this.prisma.productTeamItem.deleteMany({
-        where: { product_team_id: id },
+      await this.prisma.groupon_item.deleteMany({
+        where: { groupon_id: id },
       });
 
       // 重新创建商品项
       for (const item of validatedData.items) {
-        await this.prisma.productTeamItem.create({
+        await this.prisma.groupon_item.create({
           data: {
-            product_team_id: id,
+            groupon_id: id,
             product_id: validatedData.product_id,
-            sku_id: item.sku_id || 0,
+            product_sku_id: item.sku_id || 0,
             price: item.price,
             start_time: validatedData.start_time,
             end_time: validatedData.end_time,
-            shop_id: validatedData.shop_id,
-            create_time: Math.floor(Date.now() / 1000),
           },
         });
       }
@@ -311,8 +273,8 @@ export class GrouponService {
   }
 
   async delete(id: number): Promise<boolean> {
-    const groupon = await this.prisma.productTeam.findUnique({
-      where: { product_team_id: id },
+    const groupon = await this.prisma.groupon.findUnique({
+      where: { groupon_id: id },
     });
 
     if (!groupon) {
@@ -320,12 +282,11 @@ export class GrouponService {
     }
 
     await this.prisma.$transaction(async (prisma) => {
-      await prisma.productTeam.delete({
-        where: { product_team_id: id },
+      await prisma.groupon_item.deleteMany({
+        where: { groupon_id: id },
       });
-
-      await prisma.productTeamItem.deleteMany({
-        where: { product_team_id: id },
+      await prisma.groupon.delete({
+        where: { groupon_id: id },
       });
     });
 
@@ -334,12 +295,11 @@ export class GrouponService {
 
   async batchDelete(ids: number[]): Promise<boolean> {
     await this.prisma.$transaction(async (prisma) => {
-      await prisma.productTeam.deleteMany({
-        where: { product_team_id: { in: ids } },
+      await prisma.groupon_item.deleteMany({
+        where: { groupon_id: { in: ids } },
       });
-
-      await prisma.productTeamItem.deleteMany({
-        where: { product_team_id: { in: ids } },
+      await prisma.groupon.deleteMany({
+        where: { groupon_id: { in: ids } },
       });
     });
 
@@ -353,12 +313,12 @@ export class GrouponService {
     const now = Math.floor(Date.now() / 1000);
     const where: any = {
       product_id: productId,
-      sku_id: skuId,
+      product_sku_id: skuId,
       start_time: { lte: now },
       end_time: { gte: now },
     };
 
-    const info = await this.prisma.productTeamItem.findFirst({
+    const info = await this.prisma.groupon_item.findFirst({
       where,
     });
 
@@ -391,13 +351,13 @@ export class GrouponService {
     endTime: number,
     excludeId: number = 0,
   ): Promise<boolean> {
-    const conflictingActivities = await this.prisma.seckillItem.findMany({
+    const conflictingActivities = await this.prisma.groupon_item.findMany({
       where: {
         product_id: productId,
         start_time: { lte: endTime },
         end_time: { gte: startTime },
         NOT: {
-          product_team_id: excludeId,
+          groupon_id: excludeId,
         },
       },
     });
@@ -411,5 +371,16 @@ export class GrouponService {
 
   private formatTime(timestamp: number): string {
     return new Date(timestamp * 1000).toLocaleString("zh-CN");
+  }
+
+  private calculateStatusByTime(
+    startTime?: number | null,
+    endTime?: number | null,
+  ): GrouponStatus {
+    const now = Math.floor(Date.now() / 1000);
+    if (!startTime || !endTime) return GrouponStatus.WAITING;
+    if (endTime < now) return GrouponStatus.ENDED;
+    if (startTime > now) return GrouponStatus.WAITING;
+    return GrouponStatus.IN_PROGRESS;
   }
 }

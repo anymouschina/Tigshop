@@ -31,61 +31,23 @@ export class SeckillService {
       orderBy,
       skip,
       take,
-      include: {
-        shop: {
-          select: {
-            shop_id: true,
-            shop_name: true,
-          },
-        },
-        seckill_items: {
-          include: {
-            items: {
-              select: {
-                item_id: true,
-                item_name: true,
-                item_price: true,
-                image: true,
-              },
-            },
-          },
-        },
-      },
     });
 
-    // 检查活动状态并更新
     const now = Math.floor(Date.now() / 1000);
-    for (const result of results) {
-      if (
-        result.end_time < now &&
-        result.status === SeckillStatus.IN_PROGRESS
-      ) {
-        await this.prisma.seckill.update({
-          where: { seckill_id: result.seckill_id },
-          data: { status: SeckillStatus.ENDED },
-        });
-        result.status = SeckillStatus.ENDED;
-      } else if (
-        result.start_time > now &&
-        result.status === SeckillStatus.WAITING
-      ) {
-        // 活动开始时间已到，更新为进行中
-        if (result.start_time <= now) {
-          await this.prisma.seckill.update({
-            where: { seckill_id: result.seckill_id },
-            data: { status: SeckillStatus.IN_PROGRESS },
-          });
-          result.status = SeckillStatus.IN_PROGRESS;
-        }
-      }
-    }
-
-    return results.map((result) => ({
-      ...result,
-      status_name: this.getStatusName(result.status),
-      start_time_text: this.formatTime(result.start_time),
-      end_time_text: this.formatTime(result.end_time),
-    }));
+    return results.map((result) => {
+      const status = this.calculateStatusByTime(
+        result.seckill_start_time ?? 0,
+        result.seckill_end_time ?? 0,
+        now,
+      );
+      return {
+        ...result,
+        status,
+        status_name: this.getStatusName(status),
+        start_time_text: this.formatTime(result.seckill_start_time ?? 0),
+        end_time_text: this.formatTime(result.seckill_end_time ?? 0),
+      };
+    });
   }
 
   async getFilterCount(filter: any): Promise<number> {
@@ -96,39 +58,40 @@ export class SeckillService {
   private buildWhereClause(filter: any): any {
     const where: any = {};
 
-    // 关键词搜索
+    // 关键词搜索（仅按名称）
     if (filter.keyword) {
-      where.OR = [
-        {
-          seckill_name: {
-            contains: filter.keyword,
-          },
-        },
-        {
-          seckill_remark: {
-            contains: filter.keyword,
-          },
-        },
-      ];
+      where.seckill_name = { contains: String(filter.keyword) };
     }
 
     // 店铺筛选
-    if (filter.shop_id && filter.shop_id > 0) {
-      where.shop_id = filter.shop_id;
+    if (filter.shop_id && Number(filter.shop_id) > 0) {
+      where.shop_id = Number(filter.shop_id);
     }
 
-    // 状态筛选
+    // 状态筛选（基于当前时间推导）
     if (filter.status !== undefined && filter.status !== "") {
-      where.status = filter.status;
+      const now = Math.floor(Date.now() / 1000);
+      const statusNum = Number(filter.status);
+      if (statusNum === SeckillStatus.WAITING) {
+        where.seckill_start_time = { gt: now };
+      } else if (statusNum === SeckillStatus.IN_PROGRESS) {
+        where.AND = [
+          { seckill_start_time: { lte: now } },
+          { seckill_end_time: { gt: now } },
+        ];
+      } else if (statusNum === SeckillStatus.ENDED) {
+        where.seckill_end_time = { lte: now };
+      }
     }
 
-    // 时间筛选
-    if (filter.add_time && filter.add_time.length === 2) {
+    // 时间筛选（解释为开始/结束时间区间重叠）
+    if (Array.isArray(filter.add_time) && filter.add_time.length === 2) {
       const [startDate, endDate] = filter.add_time;
-      where.create_time = {
-        gte: new Date(startDate).getTime() / 1000,
-        lte: new Date(endDate).getTime() / 1000 + 86400,
-      };
+      const startSec = Math.floor(new Date(startDate).getTime() / 1000);
+      const endSec = Math.floor(new Date(endDate).getTime() / 1000) + 86400;
+      where.AND = where.AND || [];
+      where.AND.push({ seckill_start_time: { gte: startSec } });
+      where.AND.push({ seckill_end_time: { lte: endSec } });
     }
 
     return where;
@@ -148,100 +111,81 @@ export class SeckillService {
   async getDetail(id: number): Promise<any> {
     const result = await this.prisma.seckill.findUnique({
       where: { seckill_id: id },
-      include: {
-        shop: {
-          select: {
-            shop_id: true,
-            shop_name: true,
-          },
-        },
-        seckill_items: {
-          include: {
-            items: {
-              select: {
-                item_id: true,
-                item_name: true,
-                item_price: true,
-                image: true,
-                product: {
-                  select: {
-                    suppliers_id: true,
-                    suppliers_name: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     });
 
     if (!result) {
       throw new Error("秒杀活动不存在");
     }
 
-    // 检查并更新状态
+    // 组装关联的商品信息
+    const items = await this.prisma.seckill_item.findMany({
+      where: { seckill_id: id },
+    });
+    const productIds = Array.from(
+      new Set(items.map((it) => it.product_id).filter(Boolean) as number[]),
+    );
+    const products = productIds.length
+      ? await this.prisma.product.findMany({
+          where: { product_id: { in: productIds } },
+          select: {
+            product_id: true,
+            product_name: true,
+            product_price: true,
+            pic_thumb: true,
+          },
+        })
+      : [];
+    const productMap = new Map(products.map((p) => [p.product_id, p]));
+
     const now = Math.floor(Date.now() / 1000);
-    let currentStatus = result.status;
-    if (result.end_time < now && result.status === SeckillStatus.IN_PROGRESS) {
-      currentStatus = SeckillStatus.ENDED;
-      await this.prisma.seckill.update({
-        where: { seckill_id: id },
-        data: { status: SeckillStatus.ENDED },
-      });
-    } else if (
-      result.start_time <= now &&
-      result.status === SeckillStatus.WAITING
-    ) {
-      currentStatus = SeckillStatus.IN_PROGRESS;
-      await this.prisma.seckill.update({
-        where: { seckill_id: id },
-        data: { status: SeckillStatus.IN_PROGRESS },
-      });
-    }
+    const currentStatus = this.calculateStatusByTime(
+      result.seckill_start_time ?? 0,
+      result.seckill_end_time ?? 0,
+      now,
+    );
 
     return {
       ...result,
       status: currentStatus,
       status_name: this.getStatusName(currentStatus),
-      start_time_text: this.formatTime(result.start_time),
-      end_time_text: this.formatTime(result.end_time),
+      start_time_text: this.formatTime(result.seckill_start_time ?? 0),
+      end_time_text: this.formatTime(result.seckill_end_time ?? 0),
+      seckill_items: items.map((it) => ({
+        ...it,
+        product: productMap.get(it.product_id ?? 0) || null,
+      })),
     };
   }
 
   async create(data: any): Promise<any> {
-    const now = Math.floor(Date.now() / 1000);
-
     // 验证时间
-    if (data.start_time >= data.end_time) {
+    if (Number(data.start_time) >= Number(data.end_time)) {
       throw new Error("开始时间必须小于结束时间");
     }
 
     const result = await this.prisma.seckill.create({
       data: {
-        seckill_name: data.seckill_name,
-        seckill_remark: data.seckill_remark || "",
-        start_time: data.start_time,
-        end_time: data.end_time,
-        shop_id: data.shop_id,
-        sort: data.sort || 0,
-        status: this.calculateInitialStatus(data.start_time, data.end_time),
-        create_time: now,
-        update_time: now,
+        seckill_name: data.seckill_name ?? "",
+        seckill_start_time: Number(data.start_time),
+        seckill_end_time: Number(data.end_time),
+        seckill_limit_num: Number(data.seckill_limit_num ?? 0),
+        product_id: Number(data.product_id ?? 0),
+        shop_id: Number(data.shop_id ?? 0),
       },
     });
 
     // 创建秒杀商品
-    if (data.items && data.items.length > 0) {
+    if (Array.isArray(data.items) && data.items.length > 0) {
       for (const item of data.items) {
-        await this.prisma.seckill_items.create({
+        await this.prisma.seckill_item.create({
           data: {
             seckill_id: result.seckill_id,
-            item_id: item.item_id,
-            seckill_price: item.seckill_price,
-            seckill_stock: item.seckill_stock,
-            limit_num: item.limit_num || 0,
-            create_time: now,
+            product_id: Number(item.product_id ?? 0),
+            sku_id: Number(item.sku_id ?? 0),
+            seckill_price: item.seckill_price ?? 0,
+            seckill_stock: Number(item.seckill_stock ?? 0),
+            seckill_start_time: Number(item.start_time ?? data.start_time ?? 0),
+            seckill_end_time: Number(item.end_time ?? data.end_time ?? 0),
           },
         });
       }
@@ -260,29 +204,27 @@ export class SeckillService {
     }
 
     // 验证时间
-    if (data.start_time && data.end_time && data.start_time >= data.end_time) {
+    if (
+      data.start_time !== undefined &&
+      data.end_time !== undefined &&
+      Number(data.start_time) >= Number(data.end_time)
+    ) {
       throw new Error("开始时间必须小于结束时间");
     }
 
-    const updateData: any = {
-      update_time: Math.floor(Date.now() / 1000),
-    };
+    const updateData: any = {};
 
     if (data.seckill_name !== undefined)
       updateData.seckill_name = data.seckill_name;
-    if (data.seckill_remark !== undefined)
-      updateData.seckill_remark = data.seckill_remark;
-    if (data.start_time !== undefined) updateData.start_time = data.start_time;
-    if (data.end_time !== undefined) updateData.end_time = data.end_time;
-    if (data.shop_id !== undefined) updateData.shop_id = data.shop_id;
-    if (data.sort !== undefined) updateData.sort = data.sort;
-
-    // 如果修改了时间，重新计算状态
-    if (data.start_time !== undefined || data.end_time !== undefined) {
-      const startTime = data.start_time || seckill.start_time;
-      const endTime = data.end_time || seckill.end_time;
-      updateData.status = this.calculateInitialStatus(startTime, endTime);
-    }
+    if (data.start_time !== undefined)
+      updateData.seckill_start_time = Number(data.start_time);
+    if (data.end_time !== undefined)
+      updateData.seckill_end_time = Number(data.end_time);
+    if (data.seckill_limit_num !== undefined)
+      updateData.seckill_limit_num = Number(data.seckill_limit_num);
+    if (data.product_id !== undefined)
+      updateData.product_id = Number(data.product_id);
+    if (data.shop_id !== undefined) updateData.shop_id = Number(data.shop_id);
 
     const result = await this.prisma.seckill.update({
       where: { seckill_id: id },
@@ -290,22 +232,25 @@ export class SeckillService {
     });
 
     // 更新秒杀商品
-    if (data.items && data.items.length > 0) {
+    if (Array.isArray(data.items)) {
       // 先删除原有商品
-      await this.prisma.seckill_items.deleteMany({
-        where: { seckill_id: id },
-      });
+      await this.prisma.seckill_item.deleteMany({ where: { seckill_id: id } });
 
       // 重新创建商品
       for (const item of data.items) {
-        await this.prisma.seckill_items.create({
+        await this.prisma.seckill_item.create({
           data: {
             seckill_id: id,
-            item_id: item.item_id,
-            seckill_price: item.seckill_price,
-            seckill_stock: item.seckill_stock,
-            limit_num: item.limit_num || 0,
-            create_time: Math.floor(Date.now() / 1000),
+            product_id: Number(item.product_id ?? 0),
+            sku_id: Number(item.sku_id ?? 0),
+            seckill_price: item.seckill_price ?? 0,
+            seckill_stock: Number(item.seckill_stock ?? 0),
+            seckill_start_time: Number(
+              item.start_time ?? result.seckill_start_time ?? 0,
+            ),
+            seckill_end_time: Number(
+              item.end_time ?? result.seckill_end_time ?? 0,
+            ),
           },
         });
       }
@@ -323,14 +268,21 @@ export class SeckillService {
       throw new Error("秒杀活动不存在");
     }
 
-    const updateData: any = {
-      [field]: value,
-      update_time: Math.floor(Date.now() / 1000),
+    // 字段白名单映射
+    const fieldMap: Record<string, string> = {
+      seckillName: "seckill_name",
+      seckill_start_time: "seckill_start_time",
+      seckill_end_time: "seckill_end_time",
+      start_time: "seckill_start_time",
+      end_time: "seckill_end_time",
+      seckill_limit_num: "seckill_limit_num",
+      product_id: "product_id",
+      shop_id: "shop_id",
     };
-
+    const realField = fieldMap[field] || field;
     const result = await this.prisma.seckill.update({
       where: { seckill_id: id },
-      data: updateData,
+      data: { [realField]: value },
     });
 
     return !!result;
@@ -340,12 +292,7 @@ export class SeckillService {
     const result = await this.prisma.seckill.delete({
       where: { seckill_id: id },
     });
-
-    // 同时删除关联的商品
-    await this.prisma.seckill_items.deleteMany({
-      where: { seckill_id: id },
-    });
-
+    await this.prisma.seckill_item.deleteMany({ where: { seckill_id: id } });
     return !!result;
   }
 
@@ -353,24 +300,25 @@ export class SeckillService {
     await this.prisma.seckill.deleteMany({
       where: { seckill_id: { in: ids } },
     });
-
-    // 同时删除关联的商品
-    await this.prisma.seckill_items.deleteMany({
+    await this.prisma.seckill_item.deleteMany({
       where: { seckill_id: { in: ids } },
     });
-
     return true;
   }
 
   private calculateInitialStatus(startTime: number, endTime: number): number {
     const now = Math.floor(Date.now() / 1000);
-    if (now < startTime) {
-      return SeckillStatus.WAITING;
-    } else if (now >= startTime && now < endTime) {
-      return SeckillStatus.IN_PROGRESS;
-    } else {
-      return SeckillStatus.ENDED;
-    }
+    return this.calculateStatusByTime(startTime, endTime, now);
+  }
+
+  private calculateStatusByTime(
+    startTime: number,
+    endTime: number,
+    now: number,
+  ): number {
+    if (now < startTime) return SeckillStatus.WAITING;
+    if (now >= startTime && now < endTime) return SeckillStatus.IN_PROGRESS;
+    return SeckillStatus.ENDED;
   }
 
   private getStatusName(status: number): string {
@@ -378,6 +326,7 @@ export class SeckillService {
   }
 
   private formatTime(timestamp: number): string {
+    if (!timestamp) return "";
     return new Date(timestamp * 1000).toLocaleString("zh-CN");
   }
 }
