@@ -12,7 +12,7 @@ export class SignInService {
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
 
-    const results = await this.prisma.signInSetting.findMany({
+    const results = await this.prisma.sign_in_setting.findMany({
       where,
       orderBy,
       skip,
@@ -24,7 +24,7 @@ export class SignInService {
 
   async getFilterCount(filter: any): Promise<number> {
     const where = this.buildWhereClause(filter);
-    return this.prisma.signInSetting.count({ where });
+  return this.prisma.sign_in_setting.count({ where });
   }
 
   private buildWhereClause(filter: any): any {
@@ -56,7 +56,7 @@ export class SignInService {
   }
 
   async getDetail(id: number): Promise<any> {
-    const result = await this.prisma.signInSetting.findUnique({
+    const result = await this.prisma.sign_in_setting.findUnique({
       where: { id },
     });
 
@@ -68,7 +68,7 @@ export class SignInService {
   }
 
   async getName(id: number): Promise<string | null> {
-    const result = await this.prisma.signInSetting.findUnique({
+    const result = await this.prisma.sign_in_setting.findUnique({
       where: { id },
       select: { name: true },
     });
@@ -87,7 +87,7 @@ export class SignInService {
       throw new Error("天数必须大于0");
     }
 
-    const result = await this.prisma.signInSetting.create({
+    const result = await this.prisma.sign_in_setting.create({
       data: {
         name: data.name,
         points: data.points,
@@ -99,7 +99,7 @@ export class SignInService {
   }
 
   async update(id: number, data: any): Promise<any> {
-    const signInSetting = await this.prisma.signInSetting.findUnique({
+    const signInSetting = await this.prisma.sign_in_setting.findUnique({
       where: { id },
     });
 
@@ -122,7 +122,7 @@ export class SignInService {
     if (data.points !== undefined) updateData.points = data.points;
     if (data.day_num !== undefined) updateData.day_num = data.day_num;
 
-    const result = await this.prisma.signInSetting.update({
+    const result = await this.prisma.sign_in_setting.update({
       where: { id },
       data: updateData,
     });
@@ -131,7 +131,7 @@ export class SignInService {
   }
 
   async delete(id: number): Promise<boolean> {
-    const signInSetting = await this.prisma.signInSetting.findUnique({
+    const signInSetting = await this.prisma.sign_in_setting.findUnique({
       where: { id },
     });
 
@@ -139,7 +139,7 @@ export class SignInService {
       throw new Error("签到设置不存在");
     }
 
-    const result = await this.prisma.signInSetting.delete({
+    const result = await this.prisma.sign_in_setting.delete({
       where: { id },
     });
 
@@ -147,7 +147,7 @@ export class SignInService {
   }
 
   async batchDelete(ids: number[]): Promise<boolean> {
-    await this.prisma.signInSetting.deleteMany({
+    await this.prisma.sign_in_setting.deleteMany({
       where: { id: { in: ids } },
     });
 
@@ -156,7 +156,7 @@ export class SignInService {
 
   // 用户签到相关方法
   async getSignSettingList(): Promise<any[]> {
-    const result = await this.prisma.signInSetting.findMany({
+    const result = await this.prisma.sign_in_setting.findMany({
       orderBy: {
         day_num: "asc",
       },

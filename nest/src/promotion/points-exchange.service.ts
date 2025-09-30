@@ -21,56 +21,83 @@ export class PointsExchangeService {
     const orderBy = this.buildOrderBy(filter);
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
-
-    const results = await this.prisma.pointsExchange.findMany({
+    // 若有关键字，则先解析 product_id 集合
+    if ((where as any).__keyword) {
+      const keyword = (where as any).__keyword as string;
+      delete (where as any).__keyword;
+      const matched = await this.prisma.product.findMany({
+        where: { product_name: { contains: keyword } },
+        select: { product_id: true },
+      });
+      const ids = matched.map((m) => m.product_id);
+      if (!ids.length) {
+        return [];
+      }
+      (where as any).product_id = { in: ids };
+    }
+    // 先查询数据
+    const rows = await this.prisma.points_exchange.findMany({
       where,
       orderBy,
       skip,
       take,
-      include: {
-        product: {
-          select: {
-            product_id: true,
-            product_name: true,
-            image: true,
-          },
-        },
-        product_sku: {
-          select: {
-            sku_id: true,
-            sku_name: true,
-            sku_image: true,
-            sku_price: true,
-            sku_stock: true,
-          },
-        },
-      },
     });
 
-    // 计算折扣价格
-    for (const item of results) {
-      let productPrice = 0;
-      if (item.product_sku && item.sku_id > 0) {
-        productPrice = Number(item.product_sku.sku_price);
-      } else if (item.product) {
-        // 如果没有SKU，使用商品基础价格
-        productPrice = Number(item.product.product_price || 0);
-      }
+    // 补齐产品与 SKU 信息
+    const productIds = Array.from(new Set(rows.map((r) => r.product_id).filter(Boolean)));
+    const skuIds = Array.from(new Set(rows.map((r) => r.sku_id).filter((x) => !!x && Number(x) > 0)));
 
-      const discountsPrice = Math.max(
-        0,
-        productPrice - Number(item.points_deducted_amount),
-      );
-      item.product_price = productPrice;
-      item.discounts_price = Number(discountsPrice.toFixed(2));
-    }
+    const [products, skus] = await Promise.all([
+      productIds.length
+        ? this.prisma.product.findMany({
+            where: { product_id: { in: productIds } },
+            select: { product_id: true, product_name: true, product_price: true, product_stock: true, pic_thumb: true },
+          })
+        : Promise.resolve([]),
+      skuIds.length
+        ? this.prisma.product_sku.findMany({
+            where: { sku_id: { in: skuIds as number[] } },
+            select: { sku_id: true, sku_price: true, sku_stock: true, sku_sn: true },
+          })
+        : Promise.resolve([]),
+    ]);
 
-    return results;
+    const productMap = new Map(products.map((p) => [p.product_id, p]));
+    const skuMap = new Map(skus.map((s) => [s.sku_id, s]));
+
+    // 计算折扣价与展示字段
+    return rows.map((item) => {
+      const prod = productMap.get(item.product_id);
+      const sku = item.sku_id ? skuMap.get(item.sku_id) : undefined;
+      const productPrice = sku?.sku_price != null ? Number(sku.sku_price) : Number(prod?.product_price || 0);
+      const discountsPrice = Math.max(0, productPrice - Number(item.points_deducted_amount));
+      return {
+        ...item,
+        product: prod
+          ? {
+              product_id: prod.product_id,
+              product_name: prod.product_name,
+              product_price: prod.product_price,
+              pic_thumb: prod.pic_thumb,
+            }
+          : null,
+        product_sku: sku
+          ? {
+              sku_id: sku.sku_id,
+              sku_price: sku.sku_price,
+              sku_stock: sku.sku_stock,
+              sku_sn: sku.sku_sn,
+            }
+          : null,
+        product_price: productPrice,
+        discounts_price: Number(discountsPrice.toFixed(2)),
+      };
+    });
   }
 
   async getFilterCount(filter: any): Promise<number> {
     const where = this.buildWhereClause(filter);
-    return this.prisma.pointsExchange.count({ where });
+    return this.prisma.points_exchange.count({ where });
   }
 
   private buildWhereClause(filter: any): any {
@@ -78,15 +105,9 @@ export class PointsExchangeService {
 
     // 关键词搜索
     if (filter.keyword) {
-      where.OR = [
-        {
-          product: {
-            product_name: {
-              contains: filter.keyword,
-            },
-          },
-        },
-      ];
+      // Prisma 无关联直接 like，先查商品 id 再反查积分兑换
+      where.product_id = { in: [] as number[] };
+      (where as any).__keyword = String(filter.keyword);
     }
 
     // 启用状态筛选
@@ -114,44 +135,22 @@ export class PointsExchangeService {
   }
 
   async getDetail(id: number): Promise<any> {
-    const result = await this.prisma.pointsExchange.findUnique({
-      where: { id },
-      include: {
-        product: {
-          select: {
-            product_id: true,
-            product_name: true,
-            image: true,
-            product_price: true,
-          },
-        },
-        product_sku: {
-          select: {
-            sku_id: true,
-            sku_name: true,
-            sku_image: true,
-            sku_price: true,
-            sku_stock: true,
-          },
-        },
-      },
-    });
+    const result = await this.prisma.points_exchange.findUnique({ where: { id } });
 
     if (!result) {
       throw new Error("积分商品不存在");
     }
+    // 读取产品与 SKU
+    const [prod, sku] = await Promise.all([
+      this.prisma.product.findUnique({ where: { product_id: result.product_id }, select: { product_id: true, product_name: true, product_price: true, product_stock: true, pic_thumb: true } }),
+      result.sku_id && Number(result.sku_id) > 0
+        ? this.prisma.product_sku.findUnique({ where: { sku_id: Number(result.sku_id) }, select: { sku_id: true, sku_price: true, sku_stock: true, sku_sn: true } })
+        : Promise.resolve(null),
+    ]);
 
-    let productPrice = 0;
-    let productStock = 0;
+    let productPrice = sku?.sku_price != null ? Number(sku.sku_price) : Number(prod?.product_price || 0);
+    let productStock = sku?.sku_stock != null ? Number(sku.sku_stock) : Number(prod?.product_stock || 0);
     let isEnabled = result.is_enabled;
-
-    if (result.product_sku && result.sku_id > 0) {
-      productPrice = Number(result.product_sku.sku_price);
-      productStock = Number(result.product_sku.sku_stock);
-    } else {
-      productPrice = Number(result.product?.product_price || 0);
-      productStock = Number(result.product?.product_stock || 0);
-    }
 
     const discountsPrice = Math.max(
       0,
@@ -159,7 +158,7 @@ export class PointsExchangeService {
     );
 
     // 检查SKU是否存在或商品是否有价格
-    if (result.sku_id > 0 && !result.product_sku) {
+    if (result.sku_id > 0 && !sku) {
       // 属性已变更，无属性可兑换
       isEnabled = 0;
       productStock = 0;
@@ -172,6 +171,12 @@ export class PointsExchangeService {
 
     return {
       ...result,
+      product: prod
+        ? { product_id: prod.product_id, product_name: prod.product_name, product_price: prod.product_price, pic_thumb: prod.pic_thumb }
+        : null,
+      product_sku: sku
+        ? { sku_id: sku.sku_id, sku_price: sku.sku_price, sku_stock: sku.sku_stock, sku_sn: sku.sku_sn }
+        : null,
       product_price: productPrice,
       product_stock: productStock,
       discounts_price: Number(discountsPrice.toFixed(2)),
@@ -192,7 +197,7 @@ export class PointsExchangeService {
       throw new Error("抵扣金额不能为负数");
     }
 
-    const result = await this.prisma.pointsExchange.create({
+    const result = await this.prisma.points_exchange.create({
       data: {
         product_id: data.product_id,
         exchange_integral: data.exchange_integral,
@@ -207,7 +212,7 @@ export class PointsExchangeService {
   }
 
   async update(id: number, data: any): Promise<any> {
-    const pointsExchange = await this.prisma.pointsExchange.findUnique({
+    const pointsExchange = await this.prisma.points_exchange.findUnique({
       where: { id },
     });
 
@@ -238,7 +243,7 @@ export class PointsExchangeService {
     if (data.is_enabled !== undefined) updateData.is_enabled = data.is_enabled;
     if (data.sku_id !== undefined) updateData.sku_id = data.sku_id;
 
-    const result = await this.prisma.pointsExchange.update({
+    const result = await this.prisma.points_exchange.update({
       where: { id },
       data: updateData,
     });
@@ -247,7 +252,7 @@ export class PointsExchangeService {
   }
 
   async updateField(id: number, field: string, value: any): Promise<boolean> {
-    const pointsExchange = await this.prisma.pointsExchange.findUnique({
+    const pointsExchange = await this.prisma.points_exchange.findUnique({
       where: { id },
     });
 

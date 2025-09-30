@@ -46,11 +46,11 @@ export class RechargeSettingQueryDto {
   @ApiProperty({
     description: "排序字段",
     required: false,
-    default: "setting_id",
+    default: "recharge_id",
   })
   @IsOptional()
   @IsString()
-  sortField?: string = "setting_id";
+  sortField?: string = "recharge_id";
 
   @ApiProperty({
     description: "排序方向",

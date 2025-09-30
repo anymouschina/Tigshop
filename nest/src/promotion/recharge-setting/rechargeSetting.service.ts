@@ -24,7 +24,7 @@ export class RechargeSettingService {
       page = 1,
       size = 15,
       status,
-      sortField = "setting_id",
+      sortField = "recharge_id",
       sortOrder = "desc",
     } = queryDto;
 
@@ -33,19 +33,32 @@ export class RechargeSettingService {
     const where: any = {};
 
     if (keyword) {
-      where.OR = [
-        { setting_id: { contains: keyword } },
-        { status: { contains: keyword } },
-        { sort: { contains: keyword } },
-      ];
+      // recharge_setting 没有文本字段，尝试按数字匹配金额或排序
+      const num = Number(keyword);
+      if (!Number.isNaN(num)) {
+        where.OR = [
+          { money: num },
+          { discount_money: num },
+          { sort_order: Math.trunc(num) },
+        ];
+      }
     }
 
     if (status !== undefined) {
-      where.status = status;
+      // 兼容老的 status（0/1）到 is_show（false/true）
+      where.is_show = status === 1;
     }
 
+    const allowedSortFields = new Set([
+      "recharge_id",
+      "money",
+      "discount_money",
+      "sort_order",
+      "is_show",
+    ]);
     const orderBy: any = {};
-    orderBy[sortField] = sortOrder;
+    orderBy[allowedSortFields.has(sortField) ? sortField : "recharge_id"] =
+      sortOrder;
 
     const [records, total] = await Promise.all([
       this.prisma.recharge_setting.findMany({
@@ -68,7 +81,7 @@ export class RechargeSettingService {
 
   async findById(id: number) {
     const item = await this.prisma.recharge_setting.findUnique({
-      where: { setting_id: id },
+      where: { recharge_id: id },
     });
 
     if (!item) {
@@ -79,17 +92,21 @@ export class RechargeSettingService {
   }
 
   async create(createDto: CreateRechargeSettingDto) {
-    if (createDto.amount <= 0) {
+    const amount = (createDto as any).amount ?? (createDto as any).Amount;
+    const giveAmount = (createDto as any).giveAmount ?? (createDto as any).GiveAmount;
+    const sort = (createDto as any).sort ?? (createDto as any).Sort;
+    const status = (createDto as any).status ?? (createDto as any).Status;
+
+    if (amount <= 0) {
       throw new BadRequestException("充值金额必须大于0");
     }
 
     const item = await this.prisma.recharge_setting.create({
       data: {
-        amount: createDto.amount,
-        give_amount: createDto.giveAmount,
-        status: createDto.status,
-        sort: createDto.sort,
-        add_time: Math.floor(Date.now() / 1000),
+        money: amount,
+        discount_money: giveAmount ?? 0,
+        is_show: status === 1,
+        sort_order: sort ?? 1,
       },
     });
 
@@ -98,7 +115,7 @@ export class RechargeSettingService {
 
   async update(id: number, updateDto: UpdateRechargeSettingDto) {
     const item = await this.prisma.recharge_setting.findUnique({
-      where: { setting_id: id },
+      where: { recharge_id: id },
     });
 
     if (!item) {
@@ -106,21 +123,26 @@ export class RechargeSettingService {
     }
 
     const updateData: any = {};
-    if (updateDto.amount !== undefined) {
-      updateData.amount = updateDto.amount;
+    const amount = (updateDto as any).amount ?? (updateDto as any).Amount;
+    const giveAmount = (updateDto as any).giveAmount ?? (updateDto as any).GiveAmount;
+    const status = (updateDto as any).status ?? (updateDto as any).Status;
+    const sort = (updateDto as any).sort ?? (updateDto as any).Sort;
+
+    if (amount !== undefined) {
+      updateData.money = amount;
     }
-    if (updateDto.giveAmount !== undefined) {
-      updateData.give_amount = updateDto.giveAmount;
+    if (giveAmount !== undefined) {
+      updateData.discount_money = giveAmount;
     }
-    if (updateDto.status !== undefined) {
-      updateData.status = updateDto.status;
+    if (status !== undefined) {
+      updateData.is_show = status === 1;
     }
-    if (updateDto.sort !== undefined) {
-      updateData.sort = updateDto.sort;
+    if (sort !== undefined) {
+      updateData.sort_order = sort;
     }
 
     const updatedItem = await this.prisma.recharge_setting.update({
-      where: { setting_id: id },
+      where: { recharge_id: id },
       data: updateData,
     });
 
@@ -129,7 +151,7 @@ export class RechargeSettingService {
 
   async delete(id: number) {
     const item = await this.prisma.recharge_setting.findUnique({
-      where: { setting_id: id },
+      where: { recharge_id: id },
     });
 
     if (!item) {
@@ -137,13 +159,13 @@ export class RechargeSettingService {
     }
 
     await this.prisma.recharge_setting.delete({
-      where: { setting_id: id },
+      where: { recharge_id: id },
     });
   }
 
   async batchDelete(ids: number[]) {
     await this.prisma.recharge_setting.deleteMany({
-      where: { setting_id: { in: ids } },
+      where: { recharge_id: { in: ids } },
     });
   }
 
