@@ -25,6 +25,8 @@ import { AdminCouponCompatController } from "./admin-coupon-compat.controller";
 import { PanelModule } from "../panel/panel.module";
 import { AdminPointsExchangeCompatController } from "./admin-points-exchange-compat.controller";
 import { AdminPromotionCompatController } from "./admin-promotion-compat.controller";
+import { AdminSeckillCompatController } from "./admin-seckill-compat.controller";
+import { AdminTimeDiscountCompatController } from "./admin-time-discount-compat.controller";
 
 @Module({
   imports: [
@@ -46,6 +48,8 @@ import { AdminPromotionCompatController } from "./admin-promotion-compat.control
     AdminCouponCompatController,
     AdminPointsExchangeCompatController,
     AdminPromotionCompatController,
+    AdminSeckillCompatController,
+    AdminTimeDiscountCompatController,
   ],
   providers: [
     PromotionService,

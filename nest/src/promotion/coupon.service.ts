@@ -53,29 +53,108 @@ export class CouponService {
   }
 
   async createCoupon(createCouponDto: CreateCouponDto) {
-    const data = {
-      ...createCouponDto,
-      create_time: Math.floor(Date.now() / 1000),
-      update_time: Math.floor(Date.now() / 1000),
+    // DTO 为驼峰，Prisma 为下划线；同时布尔需转 0/1，日期需转时间戳
+    const now = Math.floor(Date.now() / 1000);
+    const parseDateToTs = (s?: string) => {
+      if (!s) return 0;
+      const t = Date.parse(s.replace(/-/g, "/"));
+      return Number.isNaN(t) ? 0 : Math.floor(t / 1000);
     };
 
-    return this.prisma.coupon.create({
-      data,
-    });
+    const payload = createCouponDto as any;
+
+    const data: any = {
+      // 必填/主字段
+      coupon_name: payload.couponName ?? payload.coupon_name,
+      coupon_desc: payload.couponDesc ?? payload.coupon_desc ?? "",
+      coupon_type: Number(payload.couponType ?? payload.coupon_type ?? 1),
+      coupon_money: Number(payload.couponMoney ?? payload.coupon_money ?? 0),
+      coupon_discount: Number(
+        payload.couponDiscount ?? payload.coupon_discount ?? 10,
+      ),
+      min_order_amount: Number(
+        payload.minOrderAmount ?? payload.min_order_amount ?? 0,
+      ),
+      max_order_amount: Number(
+        payload.maxOrderAmount ?? payload.max_order_amount ?? 0,
+      ),
+      // 发送范围
+      send_range: Number(payload.sendRange ?? payload.send_range ?? 0),
+      send_range_data:
+        typeof payload.sendRangeData === "string"
+          ? payload.sendRangeData
+          : payload.send_range_data ?? "",
+      // 使用期限
+      use_start_date: Number(
+        payload.useStartDateTs ?? parseDateToTs(payload.useStartDate ?? payload.use_start_date),
+      ),
+      use_end_date: Number(
+        payload.useEndDateTs ?? parseDateToTs(payload.useEndDate ?? payload.use_end_date),
+      ),
+      // 领取相关
+      send_type: Number(payload.sendType ?? payload.send_type ?? 1),
+      delay_day: Number(payload.delayDay ?? payload.delay_day ?? 0),
+      send_num: Number(payload.sendNum ?? payload.send_num ?? 1),
+      // 类型与限制
+      coupon_unit: Number(payload.couponUnit ?? payload.coupon_unit ?? 1),
+      reduce_type: Number(payload.reduceType ?? payload.reduce_type ?? 1),
+      limit_num: Number(payload.limitNum ?? payload.limit_num ?? 0),
+      // 标志位（转 0/1）
+      is_global: (payload.isGlobal ?? payload.is_global) ? 1 : 0,
+      is_new_user: (payload.isNewUser ?? payload.is_new_user) ? 1 : 0,
+      is_show: (payload.isShow ?? payload.is_show) ? 1 : 0,
+      enabled_click_get: (payload.enabledClickGet ?? payload.enabled_click_get)
+        ? 1
+        : 0,
+      // 用户等级
+      limit_user_rank:
+        payload.limitUserRank ?? payload.limit_user_rank ?? "",
+      // 门店
+      shop_id: Number(payload.shop_id ?? payload.shopId),
+    };
+
+    // 补齐默认文本字段，Prisma 要求 send_range_data 为 string
+    if (data.send_range_data == null) data.send_range_data = "";
+
+    return this.prisma.coupon.create({ data });
   }
 
   async updateCoupon(id: number, updateCouponDto: UpdateCouponDto) {
-    const data = {
-      ...updateCouponDto,
-      update_time: Math.floor(Date.now() / 1000),
+    const parseDateToTs = (s?: string) => {
+      if (!s) return undefined;
+      const t = Date.parse(s.replace(/-/g, "/"));
+      return Number.isNaN(t) ? undefined : Math.floor(t / 1000);
     };
+    const p: any = updateCouponDto ? { ...updateCouponDto } : {};
+    delete p.coupon_id;
 
-    delete data.coupon_id;
+    const data: any = {};
+    if (p.couponName ?? p.coupon_name) data.coupon_name = p.couponName ?? p.coupon_name;
+    if (p.couponDesc ?? p.coupon_desc) data.coupon_desc = p.couponDesc ?? p.coupon_desc;
+    if (p.couponType ?? p.coupon_type) data.coupon_type = Number(p.couponType ?? p.coupon_type);
+    if (p.couponMoney ?? p.coupon_money) data.coupon_money = Number(p.couponMoney ?? p.coupon_money);
+    if (p.couponDiscount ?? p.coupon_discount) data.coupon_discount = Number(p.couponDiscount ?? p.coupon_discount);
+    if (p.minOrderAmount ?? p.min_order_amount) data.min_order_amount = Number(p.minOrderAmount ?? p.min_order_amount);
+    if (p.maxOrderAmount ?? p.max_order_amount) data.max_order_amount = Number(p.maxOrderAmount ?? p.max_order_amount);
+    if (p.sendRange ?? p.send_range) data.send_range = Number(p.sendRange ?? p.send_range);
+    if (p.sendRangeData ?? p.send_range_data) data.send_range_data = (typeof p.sendRangeData === "string" ? p.sendRangeData : p.send_range_data) ?? "";
+    const sTs = parseDateToTs(p.useStartDate ?? p.use_start_date);
+    const eTs = parseDateToTs(p.useEndDate ?? p.use_end_date);
+    if (sTs != null) data.use_start_date = sTs;
+    if (eTs != null) data.use_end_date = eTs;
+    if (p.sendType ?? p.send_type) data.send_type = Number(p.sendType ?? p.send_type);
+    if (p.delayDay ?? p.delay_day) data.delay_day = Number(p.delayDay ?? p.delay_day);
+    if (p.sendNum ?? p.send_num) data.send_num = Number(p.sendNum ?? p.send_num);
+    if (p.couponUnit ?? p.coupon_unit) data.coupon_unit = Number(p.couponUnit ?? p.coupon_unit);
+    if (p.reduceType ?? p.reduce_type) data.reduce_type = Number(p.reduceType ?? p.reduce_type);
+    if (p.limitNum ?? p.limit_num) data.limit_num = Number(p.limitNum ?? p.limit_num);
+    if (p.isGlobal ?? p.is_global) data.is_global = (p.isGlobal ?? p.is_global) ? 1 : 0;
+    if (p.isNewUser ?? p.is_new_user) data.is_new_user = (p.isNewUser ?? p.is_new_user) ? 1 : 0;
+    if (p.isShow ?? p.is_show) data.is_show = (p.isShow ?? p.is_show) ? 1 : 0;
+    if (p.enabledClickGet ?? p.enabled_click_get) data.enabled_click_get = (p.enabledClickGet ?? p.enabled_click_get) ? 1 : 0;
+    if (p.limitUserRank ?? p.limit_user_rank) data.limit_user_rank = p.limitUserRank ?? p.limit_user_rank;
 
-    return this.prisma.coupon.update({
-      where: { coupon_id: id },
-      data,
-    });
+    return this.prisma.coupon.update({ where: { coupon_id: id }, data });
   }
 
   async updateCouponField(id: number, field: string, value: any) {
@@ -107,14 +186,9 @@ export class CouponService {
   }
 
   async getUserRankList() {
+    // 按现有 schema 返回用户等级列表（无 is_delete/is_show/sort_order 字段）
     return this.prisma.user_rank.findMany({
-      where: {
-        is_delete: 0,
-        is_show: 1,
-      },
-      orderBy: {
-        sort_order: "asc",
-      },
+      orderBy: { rank_id: "asc" },
     });
   }
 }

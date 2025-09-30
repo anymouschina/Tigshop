@@ -23,7 +23,11 @@ export class PromotionService {
       // Prisma 中 is_delete 为 Boolean?，默认查询未删除（false）
       is_delete:
         filter.is_delete !== undefined
-          ? Boolean(Number(filter.is_delete))
+          ? Boolean(
+              typeof filter.is_delete === "string"
+                ? Number(filter.is_delete)
+                : filter.is_delete,
+            )
           : false,
       // is_available 为整型(可空)，默认 1；兼容字符串
       is_available:
@@ -109,7 +113,11 @@ export class PromotionService {
     const where: any = {
       is_delete:
         filter.is_delete !== undefined
-          ? Boolean(Number(filter.is_delete))
+          ? Boolean(
+              typeof filter.is_delete === "string"
+                ? Number(filter.is_delete)
+                : filter.is_delete,
+            )
           : false,
       is_available:
         filter.is_available !== undefined
@@ -157,25 +165,17 @@ export class PromotionService {
   }
 
   async createPromotion(createPromotionDto: CreatePromotionDto) {
-    const data = {
-      ...createPromotionDto,
-      create_time: Math.floor(Date.now() / 1000),
-      update_time: Math.floor(Date.now() / 1000),
-    };
-
+    // 根据 Prisma schema，promotion 表未定义 create_time/update_time 字段
     return this.prisma.promotion.create({
-      data,
+      data: {
+        ...createPromotionDto,
+      },
     });
   }
 
   async updatePromotion(id: number, updatePromotionDto: UpdatePromotionDto) {
-    const data = {
-      ...updatePromotionDto,
-      update_time: Math.floor(Date.now() / 1000),
-    };
-
+    const data = { ...updatePromotionDto } as any;
     delete data.promotion_id;
-
     return this.prisma.promotion.update({
       where: { promotion_id: id },
       data,
@@ -185,7 +185,6 @@ export class PromotionService {
   async updatePromotionField(id: number, field: string, value: any) {
     const updateData: any = {
       [field]: value,
-      update_time: Math.floor(Date.now() / 1000),
     };
 
     return this.prisma.promotion.update({
@@ -199,7 +198,6 @@ export class PromotionService {
       where: { promotion_id: id },
       data: {
         is_delete: true,
-        update_time: Math.floor(Date.now() / 1000),
       },
     });
   }
@@ -213,7 +211,6 @@ export class PromotionService {
       },
       data: {
         is_delete: true,
-        update_time: Math.floor(Date.now() / 1000),
       },
     });
   }

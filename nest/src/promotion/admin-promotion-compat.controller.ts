@@ -31,7 +31,7 @@ export class AdminPromotionCompatController {
       page: Number(query.page || 1),
       size: Number(query.size || 15),
       shop_id: shopId,
-      is_delete: 0,
+      is_delete: false,
       is_available: 1,
     };
     const [records, total] = await Promise.all([
