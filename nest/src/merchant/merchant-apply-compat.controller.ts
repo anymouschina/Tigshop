@@ -21,10 +21,10 @@ export class MerchantApplyCompatController {
     const size = Math.min(Number(query.size) || 15, 100);
     const skip = (page - 1) * size;
     const where: any = {};
-    // 状态筛选（1 待审核, 10 已通过, 20 已拒绝）
+    // 状态筛选（-1 不筛选 | 1 待审核 | 10 已通过 | 20 已拒绝）
     if (query.status !== undefined) {
       const status = Number(query.status);
-      if (!Number.isNaN(status)) where.status = status;
+      if (!Number.isNaN(status) && status !== -1) where.status = status;
     }
     // 关键字（公司/法人/店铺名）
     if (query.keyword) {

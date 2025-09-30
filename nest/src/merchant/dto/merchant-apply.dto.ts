@@ -26,12 +26,12 @@ export class ApplyListQueryDto {
   @Min(1)
   size?: number = 15;
 
-  // 1 待审核 | 10 已通过 | 20 已拒绝
+  // -1 不筛选 | 1 待审核 | 10 已通过 | 20 已拒绝
   @IsOptional()
   @Transform(({ value }) => (value === "" || value === null ? undefined : value))
   @Type(() => Number)
   @IsNumber()
-  @IsIn([1, 10, 20])
+  @IsIn([-1, 1, 10, 20])
   status?: number;
 
   @IsOptional()

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards, Request } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -78,13 +78,17 @@ export class AdminUserCompatController {
   @Get("detail")
   @ApiOperation({ summary: "管理员详情（兼容精简版）" })
   @Authorities("adminUserDetail")
-  async detail(@Query("adminId") adminId: number) {
-    const id = Number(adminId);
+  async detail(@Query() query: any, @Request() req: any) {
+    // 支持三种方式：?adminId=、?id=、缺省则返回当前登录管理员
+    const idFromQuery = Number(query.adminId || query.id);
+    const currentUserId = Number(req?.user?.userId || 0);
+    const id = idFromQuery || currentUserId;
+
     if (!id) return { code: 0, message: "success", data: null };
-    const r = await this.prisma.admin_user.findUnique({
-      where: { admin_id: id },
-    });
+
+    const r = await this.prisma.admin_user.findUnique({ where: { admin_id: id } });
     if (!r) return { code: 0, message: "success", data: null };
+
     return {
       code: 0,
       message: "success",
