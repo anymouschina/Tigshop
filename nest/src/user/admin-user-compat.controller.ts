@@ -268,11 +268,45 @@ export class AdminMemberCompatController {
   }
 
   @Get("userFundDetail")
-  @ApiOperation({ summary: "资金明细（兼容，简化版）" })
+  @ApiOperation({ summary: "资金明细（兼容：from_tag 切换余额/冻结/成长/积分，支持分页）" })
   @Authorities("userManage")
-  async userFundDetail(@Query("user_id") userIdStr?: string) {
-    const userId = Number(userIdStr);
+  async userFundDetail(@Query() q: any) {
+    const userId = Number(q.user_id ?? q.userId);
     if (!userId) return { code: 400, message: "user_id required", data: null };
+    const page = Number(q.page || 1);
+    const size = Number(q.size || 15);
+    const fromTag = q.from_tag !== undefined ? Number(q.from_tag) : (q.fromTag !== undefined ? Number(q.fromTag) : undefined);
+
+    // 如果提供 from_tag，则返回对应分类的分页列表结构 {records,total}
+    if ([1, 2, 3, 4].includes(Number(fromTag))) {
+      const skip = (page - 1) * size;
+      if (fromTag === 1 || fromTag === 2) {
+        const where: any = { user_id: userId };
+        if (fromTag === 1) where.balance = { not: 0 };
+        if (fromTag === 2) where.frozen_balance = { not: 0 };
+        const [records, total] = await Promise.all([
+          this.prisma.user_balance_log.findMany({ where, orderBy: { log_id: "desc" }, skip, take: size }),
+          this.prisma.user_balance_log.count({ where }),
+        ]);
+        return { code: 0, message: "success", data: { records, total } };
+      } else if (fromTag === 3) {
+        const where: any = { user_id: userId };
+        const [records, total] = await Promise.all([
+          this.prisma.user_growth_points_log.findMany({ where, orderBy: { log_id: "desc" }, skip, take: size }),
+          this.prisma.user_growth_points_log.count({ where }),
+        ]);
+        return { code: 0, message: "success", data: { records, total } };
+      } else if (fromTag === 4) {
+        const where: any = { user_id: userId };
+        const [records, total] = await Promise.all([
+          this.prisma.user_points_log.findMany({ where, orderBy: { log_id: "desc" }, skip, take: size }),
+          this.prisma.user_points_log.count({ where }),
+        ]);
+        return { code: 0, message: "success", data: { records, total } };
+      }
+    }
+
+    // 兼容：未提供 from_tag 时，返回三类明细的最近 50 条合并结构
     const [balanceLogs, pointsLogs, growthLogs] = await Promise.all([
       this.prisma.user_balance_log.findMany({ where: { user_id: userId }, orderBy: { log_id: "desc" }, take: 50 }),
       this.prisma.user_points_log.findMany({ where: { user_id: userId }, orderBy: { log_id: "desc" }, take: 50 }),
