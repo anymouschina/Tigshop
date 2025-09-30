@@ -23,6 +23,8 @@ import { ProductPromotionService } from "./product-promotion/product-promotion.s
 import { AdminProductPromotionCompatController } from "./product-promotion/admin-product-promotion-compat.controller";
 import { AdminCouponCompatController } from "./admin-coupon-compat.controller";
 import { PanelModule } from "../panel/panel.module";
+import { AdminPointsExchangeCompatController } from "./admin-points-exchange-compat.controller";
+import { AdminPromotionCompatController } from "./admin-promotion-compat.controller";
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { PanelModule } from "../panel/panel.module";
     SignInController,
     AdminProductPromotionCompatController,
     AdminCouponCompatController,
+    AdminPointsExchangeCompatController,
+    AdminPromotionCompatController,
   ],
   providers: [
     PromotionService,

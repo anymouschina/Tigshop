@@ -5,48 +5,70 @@ import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
 import { PanelService } from "src/panel/panel.service";
-import { CouponService } from "./coupon.service";
+import {
+  PointsExchangeService,
+  POINTS_EXCHANGE_ENABLED,
+  POINTS_EXCHANGE_HOT,
+} from "./points-exchange.service";
 import { ResponseUtil } from "src/common/utils/response.util";
 
-@ApiTags("AdminAPI-Coupon")
-@Controller("adminapi/promotion/coupon")
+@ApiTags("AdminAPI-PointsExchange")
+@Controller("adminapi/promotion/pointsExchange")
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
-export class AdminCouponCompatController {
-  constructor(private readonly svc: CouponService, private readonly panel: PanelService) {}
+export class AdminPointsExchangeCompatController {
+  constructor(
+    private readonly svc: PointsExchangeService,
+    private readonly panel: PanelService,
+  ) {}
 
   @Get("list")
   @Authorities("promotionManage")
-  @ApiOperation({ summary: "优惠券列表（兼容 /adminapi）" })
+  @ApiOperation({ summary: "积分兑换列表（兼容 /adminapi）" })
   async list(@Query() query: any, @Req() req: any) {
-    const userId = req?.user?.userId;
-    const shopId = await this.panel.getUserShopId(Number(userId));
+    // 注：points_exchange 无 shop_id 字段；若需按店铺过滤，应在服务层基于 product/shop 进行扩展
     const filter = {
       keyword: query.keyword || "",
       page: Number(query.page || 1),
       size: Number(query.size || 15),
-      sort_field: query.sortField || query.sort_field || "coupon_id",
+      sort_field: query.sortField || query.sort_field || "id",
       sort_order: query.sortOrder || query.sort_order || "desc",
-      shop_id: shopId,
+      is_enabled:
+        query.is_enabled !== undefined && query.is_enabled !== ""
+          ? Number(query.is_enabled)
+          : undefined,
+      is_hot:
+        query.is_hot !== undefined && query.is_hot !== ""
+          ? Number(query.is_hot)
+          : undefined,
     };
+
     const [records, total] = await Promise.all([
       this.svc.getFilterResult(filter),
       this.svc.getFilterCount(filter),
     ]);
-    return ResponseUtil.success({ records, total });
+
+    return ResponseUtil.success({
+      records,
+      total,
+      enabledList: POINTS_EXCHANGE_ENABLED,
+      hotList: POINTS_EXCHANGE_HOT,
+    });
   }
 
   @Get("config")
   @Authorities("promotionManage")
-  @ApiOperation({ summary: "优惠券配置（用户等级）" })
+  @ApiOperation({ summary: "积分兑换配置（字典项）" })
   async config() {
-    const rankList = await this.svc.getUserRankList();
-    return ResponseUtil.success(rankList);
+    return ResponseUtil.success({
+      enabledList: POINTS_EXCHANGE_ENABLED,
+      hotList: POINTS_EXCHANGE_HOT,
+    });
   }
 
   @Get("detail")
   @Authorities("promotionManage")
-  @ApiOperation({ summary: "优惠券详情（兼容 /adminapi）" })
-  async detail(@Query("couponId") id?: number, @Query("id") id2?: number) {
+  @ApiOperation({ summary: "积分兑换详情（兼容 /adminapi）" })
+  async detail(@Query("id") id?: number, @Query("pointsExchangeId") id2?: number) {
     const realId = Number(id ?? id2);
     const item = await this.svc.getDetail(realId);
     return ResponseUtil.success(item);
@@ -54,44 +76,38 @@ export class AdminCouponCompatController {
 
   @Post("create")
   @Authorities("promotionManage")
-  @ApiOperation({ summary: "创建优惠券（兼容 /adminapi）" })
-  async create(@Body() body: any, @Req() req: any) {
-    const userId = req?.user?.userId;
-    const shopId = await this.panel.getUserShopId(Number(userId));
-    const payload = { ...body, shop_id: shopId };
-    const r = await this.svc.createCoupon(payload);
+  @ApiOperation({ summary: "创建积分兑换（兼容 /adminapi）" })
+  async create(@Body() body: any) {
+    const r = await this.svc.create(body);
     return ResponseUtil.success(r);
   }
 
   @Post("update")
   @Authorities("promotionManage")
-  @ApiOperation({ summary: "更新优惠券（兼容 /adminapi）" })
+  @ApiOperation({ summary: "更新积分兑换（兼容 /adminapi）" })
   async update(@Body() body: any) {
-    const id = Number(body.couponId || body.coupon_id || body.id);
+    const id = Number(body.id);
     const data = { ...body };
-    delete data.couponId;
-    delete data.coupon_id;
     delete data.id;
-    const r = await this.svc.updateCoupon(id, data);
+    const r = await this.svc.update(id, data);
     return ResponseUtil.success(r);
   }
 
   @Post("updateField")
   @Authorities("promotionManage")
-  @ApiOperation({ summary: "更新优惠券字段（兼容 /adminapi）" })
+  @ApiOperation({ summary: "更新字段（兼容 /adminapi）" })
   async updateField(@Body() body: any) {
-    const id = Number(body.couponId || body.coupon_id || body.id);
-    const field = body.field;
-    const value = body.value ?? body.val;
-    const r = await this.svc.updateCouponField(id, field, value);
+    const id = Number(body.id);
+    const { field, value } = body;
+    const r = await this.svc.updateField(id, field, value);
     return ResponseUtil.success(r);
   }
 
   @Post("del")
   @Authorities("promotionManage")
-  @ApiOperation({ summary: "删除优惠券（兼容 /adminapi）" })
+  @ApiOperation({ summary: "删除积分兑换（兼容 /adminapi）" })
   async del(@Body("id") id: number) {
-    await this.svc.deleteCoupon(Number(id));
+    await this.svc.delete(Number(id));
     return ResponseUtil.success();
   }
 
@@ -100,7 +116,8 @@ export class AdminCouponCompatController {
   @ApiOperation({ summary: "批量操作（兼容 /adminapi）" })
   async batch(@Body() body: any) {
     const { type, ids } = body;
-    if (!Array.isArray(ids) || ids.length === 0) return ResponseUtil.error("未选择项目");
+    if (!Array.isArray(ids) || ids.length === 0)
+      return ResponseUtil.error("未选择项目");
     if (type === "del") {
       await this.svc.batchDelete(ids.map(Number));
       return ResponseUtil.success();
