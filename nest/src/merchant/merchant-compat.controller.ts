@@ -237,7 +237,7 @@ export class MerchantCompatController {
   @Authorities("merchantUpdate")
   async operate(
     @Param("id", ParseIntPipe) id: number,
-    @Body() body: { action?: string; reason?: string },
+    @Body() body: { action?: string; reason?: string }
   ) {
     const action = body?.action;
     const statusMap: Record<string, number> = {

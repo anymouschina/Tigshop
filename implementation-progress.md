@@ -141,6 +141,36 @@
 | 用户管理 | 4 | 4 | 100% ✅ |
 | **总计** | **21** | **21** | **100% ✅** |
 
+## 新增对齐与兼容（2025-09-30 增量）
+
+### 商户模块（Admin）
+- 新增并对齐以下兼容端点（/adminapi 前缀）：
+   - merchant/merchant/list（已）
+   - merchant/merchant/:id（已）
+   - merchant/merchant/:id POST 操作：审核/启用/禁用/拒绝（已）
+   - merchant/merchant/updateField（已）
+   - merchant/merchant/create（新增）
+   - merchant/merchant/update（新增）
+
+说明：create/update 支持 baseData/merchantData/shopTitle/admin 结构；布尔型 type 与前端 1/2 做了兼容；自动序列化 JSON 字段；在绑定管理员时写入 merchant_user 关系。
+
+### 商户入驻申请（Admin）
+- 完整实现以下端点并对齐 PHP 返回：
+   - merchant/apply/list：分页、status/keyword 过滤，返回 records/total/pages
+   - merchant/apply/config：返回状态数组 [{status, statusText}]，供前端直接 map
+   - merchant/apply/:id：详情
+   - merchant/apply/del：单/批量删除（id/ids）
+   - merchant/apply/audit：审核通过/拒绝，通过则自动生成 merchant（去重）
+   - merchant/apply/batch：批量 delete/auditPass/auditReject
+
+### 响应/权限
+- 保持 { code, message, data } 包装与驼峰化；新增 Authorities：merchantCreate、merchantUpdate、merchantApply* 系列。
+
+## 下一步建议（新增）
+- 为 merchant create/update/audit 等补充 DTO 与参数校验。
+- 若前端存在导出/批量接口入口，追加 CSV 导出与批处理（商户/入驻申请）。
+- 编写最小单测覆盖 list/detail/create/update/audit 正常流与参数错误场景。
+
 ## 下一步建议
 
 1. **服务层实现**: 为新创建的控制器实现对应的服务层逻辑
