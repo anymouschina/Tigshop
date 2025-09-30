@@ -7,13 +7,18 @@ import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
 import { AdminOrderCompatService } from "./admin-order-compat.service";
 import { AftersalesService, AFTERSALES_TYPE_NAME, STATUS_NAME } from "./aftersales.service";
+import { PanelService } from "src/panel/panel.service";
 
 @ApiTags("Admin API - 订单(兼容路径)")
 @Controller("adminapi/order")
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class AdminOrderCompatController {
-  constructor(private readonly svc: AdminOrderCompatService, private readonly aftersalesSvc: AftersalesService) {}
+  constructor(
+    private readonly svc: AdminOrderCompatService,
+    private readonly aftersalesSvc: AftersalesService,
+    private readonly panelService: PanelService,
+  ) {}
 
   @Get("list")
   @Authorities("order")
@@ -145,17 +150,22 @@ export class AdminOrderCompatController {
   @Get("aftersales/list")
   @Authorities("order")
   @ApiOperation({ summary: "售后列表（admin 兼容，占位）" })
-  async aftersalesList(@Query() query: any) {
+  async aftersalesList(@Query() query: any, @Req() req: any) {
     const page = Number(query.page) || 1;
     const size = Number(query.size) || 15;
+    const adminId = req?.user?.userId ?? 0;
+    const [shopId, vendorId] = await Promise.all([
+      this.panelService.getUserShopId(adminId),
+      this.panelService.getUserVendorId(adminId),
+    ]);
     const filter: any = {
       keyword: query.keyword,
       page,
       size,
       status: query.status ? Number(query.status) : 0,
       aftersale_type: query.aftersale_type ? Number(query.aftersale_type) : 0,
-      shop_id: 1, // TODO: 从 token/shop 作用域获取
-      vendor_id: 1, // TODO: 供应商模式时获取
+      shop_id: shopId,
+      vendor_id: vendorId,
     };
     const [records, total] = await Promise.all([
       this.aftersalesSvc.getFilterResult(filter),
@@ -199,6 +209,7 @@ export class AdminOrderCompatController {
       return_address: body.return_address ?? body.returnAddress,
       refund_amount: body.refund_amount ?? body.refundAmount,
       admin_id: req?.user?.userId ?? 0,
+      admin_name: req?.user?.username ?? "admin",
     });
     return ok ? { code: 0, message: "success" } : { code: 1, message: "error" };
   }
@@ -221,13 +232,10 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "售后反馈记录（占位）" })
   async aftersalesRecord(@Body() body: any, @Req() req: any) {
     // 记录日志
-    await (this.aftersalesSvc as any).addAftersalesLog?.(Number(body.aftersale_id ?? body.id), {
-      aftersale_id: Number(body.aftersale_id ?? body.id),
-      operator_type: 1,
-      operator_id: req?.user?.userId ?? 0,
-      action: body.action ?? "备注",
-      action_desc: body.action_desc ?? body.remark ?? body.content ?? "",
-      create_time: Math.floor(Date.now() / 1000),
+    await this.aftersalesSvc.addLog(Number(body.aftersale_id ?? body.id), {
+      admin_name: req?.user?.username ?? "admin",
+      log_info: body.action ?? "备注",
+      refund_desc: body.action_desc ?? body.remark ?? body.content ?? "",
     });
     return { code: 0, message: "success" };
   }

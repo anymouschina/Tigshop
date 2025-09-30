@@ -23,6 +23,19 @@ export class PanelService {
   }
 
   /**
+   * 获取用户的供应商ID（vendorId / suppliers_id）
+   * @param userId 管理员ID
+   * @returns vendorId（无则返回 0）
+   */
+  async getUserVendorId(userId: number): Promise<number> {
+    const adminUser = await this.prisma.admin_user.findUnique({
+      where: { admin_id: userId },
+      select: { suppliers_id: true },
+    });
+    return adminUser?.suppliers_id || 0;
+  }
+
+  /**
    * 新增会员趋势
    * - dateType: "1" 年-按月, "2" 月-按日, "3" 日-按时
    * - startEndTime: 对应的起点值：YYYY | YYYY-MM | YYYY-MM-DD

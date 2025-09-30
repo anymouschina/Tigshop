@@ -79,22 +79,9 @@ export class AftersalesService {
       skip,
       take,
       include: {
-        aftersales_items: {
-          include: {
-            items: true,
-          },
-        },
-        orderSn: {
-          select: {
-            order_sn: true,
-          },
-        },
-        orders: true,
-        refund: true,
+        // 订单与售后项、日志
         aftersales_log: {
-          orderBy: {
-            log_id: "desc",
-          },
+          orderBy: { log_id: "desc" },
         },
       },
     });
@@ -201,18 +188,7 @@ export class AftersalesService {
     const result = await this.prisma.aftersales.findUnique({
       where: { aftersale_id: id },
       include: {
-        aftersales_items: {
-          include: {
-            items: true,
-          },
-        },
-        aftersales_log: {
-          orderBy: {
-            log_id: "desc",
-          },
-        },
-        orders: true,
-        refund: true,
+        aftersales_log: { orderBy: { log_id: "desc" } },
       },
     });
 
@@ -267,16 +243,15 @@ export class AftersalesService {
     });
 
     // 记录操作日志
-    await this.addAftersalesLog(id, {
-      aftersale_id: id,
-      operator_type: 1, // 管理员
-      operator_id: data.admin_id || 0,
-      action:
+    await this.addLog(id, {
+      admin_name: String(data.admin_name || "admin"),
+      log_info:
         data.status === AftersalesStatus.APPROVED_FOR_PROCESSING
           ? "同意售后"
           : "拒绝售后",
-      action_desc: data.reply || "",
-      create_time: Math.floor(Date.now() / 1000),
+      refund_money: Number(data.refund_amount || 0),
+      refund_type: 0,
+      refund_desc: data.reply || "",
     });
 
     return !!result;
@@ -300,24 +275,42 @@ export class AftersalesService {
     });
 
     // 记录操作日志
-    await this.addAftersalesLog(id, {
-      aftersale_id: id,
-      operator_type: 1, // 管理员
-      operator_id: adminId,
-      action: "售后完成",
-      action_desc: "",
-      create_time: Math.floor(Date.now() / 1000),
+    await this.addLog(id, {
+      admin_name: "admin",
+      log_info: "售后完成",
+      refund_money: 0,
+      refund_type: 0,
+      refund_desc: "",
     });
 
     return !!result;
   }
 
-  private async addAftersalesLog(
+  async addLog(
     aftersalesId: number,
-    logData: any,
+    payload: {
+      admin_name: string;
+      log_info: string;
+      refund_money?: number;
+      refund_type?: number;
+      refund_desc?: string;
+      user_name?: string;
+      return_pic?: string;
+    },
   ): Promise<void> {
+    const now = Math.floor(Date.now() / 1000);
     await this.prisma.aftersales_log.create({
-      data: logData,
+      data: {
+        aftersale_id: aftersalesId,
+        admin_name: payload.admin_name ?? "admin",
+        log_info: payload.log_info ?? "",
+        refund_money: (payload.refund_money ?? 0) as any,
+        refund_type: payload.refund_type ?? 0,
+        refund_desc: payload.refund_desc ?? "",
+        user_name: payload.user_name ?? "",
+        return_pic: payload.return_pic ?? null,
+        add_time: now,
+      },
     });
   }
 

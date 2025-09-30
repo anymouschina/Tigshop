@@ -123,8 +123,8 @@
       - [x] GET  /adminapi/order/log/list（已添加 AdminOrderCompatController.logList）
       - [x] POST /adminapi/order/log/create（已添加 AdminOrderCompatController.logCreate）
   - 订单配置 Config（如需对齐 /adminapi/order/config/*）
-      - [ ] GET  /adminapi/order/config/detail
-      - [ ] POST /adminapi/order/config/save
+    - [x] GET  /adminapi/order/config/detail
+    - [x] POST /adminapi/order/config/save
 
 - 商户 Merchant（Admin 兼容）
   - [x] GET  /adminapi/merchant/merchant/list（列表，支持 keyword/status/sort/pagination）
@@ -157,18 +157,18 @@
       - [ ] POST /adminapi/authority/adminRole/updateField
       - [ ] POST /adminapi/authority/adminRole/batch
     - 管理员 adminUser
-      - [ ] GET  /adminapi/authority/adminUser/list
-      - [ ] GET  /adminapi/authority/adminUser/detail
-      - [ ] GET  /adminapi/authority/adminUser/mineDetail
-      - [ ] POST /adminapi/authority/adminUser/create
-      - [ ] POST /adminapi/authority/adminUser/update
-      - [ ] POST /adminapi/authority/adminUser/del
-      - [ ] POST /adminapi/authority/adminUser/updateField
-      - [ ] GET  /adminapi/authority/adminUser/config
-      - [ ] POST /adminapi/authority/adminUser/batch
-      - [ ] POST /adminapi/authority/adminUser/modifyManageAccounts
-      - [ ] GET  /adminapi/authority/adminUser/getCode
-      - [ ] POST /adminapi/authority/adminUser/checkCode
+      - [x] GET  /adminapi/authority/adminUser/list
+      - [x] GET  /adminapi/authority/adminUser/detail
+      - [x] GET  /adminapi/authority/adminUser/mineDetail
+      - [x] POST /adminapi/authority/adminUser/create
+      - [x] POST /adminapi/authority/adminUser/update
+      - [x] POST /adminapi/authority/adminUser/del
+      - [x] POST /adminapi/authority/adminUser/updateField
+      - [x] GET  /adminapi/authority/adminUser/config
+      - [x] POST /adminapi/authority/adminUser/batch
+      - [x] POST /adminapi/authority/adminUser/modifyManageAccounts
+      - [x] GET  /adminapi/authority/adminUser/getCode
+      - [x] POST /adminapi/authority/adminUser/checkCode
     - 权限管理 authority
       - [ ] GET  /adminapi/authority/authority/list
       - [ ] GET  /adminapi/authority/authority/getAuthorityParentName
@@ -244,6 +244,11 @@
    - 商户：实现 list/detail/create/update/updateField/:id(operate)；list 支持状态与关键词筛选，operate 支持 approve/reject/enable/disable；字段返回驼峰。
    - 入驻申请：实现 list/config/detail/del/audit/batch；状态对齐 1/10/20；audit 通过自动创建 merchant；config 返回数组以兼容前端 SelectConfig.vue。
  - 2025-09-30：订单拆分落地：完成 /adminapi/order/splitStoreOrder，按 vendor_id 优先、否则按 shop_id 分组，创建子订单并迁移明细，金额按小计比例分摊，原单 is_store_splited=1。
+ - 2025-09-30：订单配置兼容落地：新增 /adminapi/order/config/detail 与 /save，按 shop 作用域读写 JSON 配置，支持单项与批量保存；注册至 AppModule。
+ - 2025-09-30：管理员兼容完善：/adminapi/authority/adminUser/detail 支持未传 adminId 返回当前登录管理员；/adminUser/checkCode 兼容 GET/POST；补充精简 list/create/update/del/updateField/batch/modifyManageAccounts/config。
+ - 2025-09-30：地区树兼容：实现 GET /adminapi/setting/region/getAllRegionTree（复用 RegionService.getRegionTree），去除相关 404。
+ - 2025-09-30：Prisma 字段映射修复：修正 merchant/shop 相关 include/select 使用错误（去除 shop.include.merchant；merchant 选择 company_name/corporate_name，并从 merchant_data 解析联系方式）。
+ - 2025-09-30：入驻申请筛选语义：list 接受 status=-1 表示“不过滤”，避免 400，保持 1/10/20 正常筛选。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：

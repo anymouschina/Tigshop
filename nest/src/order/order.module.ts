@@ -10,9 +10,10 @@ import { CartModule } from "../cart/cart.module";
 import { AdminOrderCompatController } from "./admin-order-compat.controller";
 import { AdminOrderCompatService } from "./admin-order-compat.service";
 import { PrismaModule } from "src/prisma/prisma.module";
+import { PanelModule } from "src/panel/panel.module";
 
 @Module({
-  imports: [CartModule, PrismaModule],
+  imports: [CartModule, PrismaModule, PanelModule],
   controllers: [OrderController, OrderCheckController, AftersalesController, AdminOrderCompatController],
   providers: [OrderService, OrderCheckService, AftersalesService, AdminOrderCompatService],
   exports: [OrderService, OrderCheckService, AftersalesService],
