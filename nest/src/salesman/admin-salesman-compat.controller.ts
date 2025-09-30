@@ -25,8 +25,24 @@ export class AdminSalesmanCompatController {
     const size = Math.max(1, this.coerceNumber(query.size, 15));
     const skip = (page - 1) * size;
     const groupId = this.coerceNumber(query.groupId, 0);
+    const level = this.coerceNumber(query.level, 0);
+    const keyword = String(query.keyword || "").trim();
     const where: any = { shop_id: shopId };
     if (groupId) where.group_id = groupId;
+    if (level) where.level = level;
+
+    // 关键词搜索：匹配用户名/昵称/手机号
+    if (keyword) {
+      const users = await this.prisma.user.findMany({
+        where: { OR: [{ username: { contains: keyword } }, { nickname: { contains: keyword } }, { mobile: { contains: keyword } }] },
+        select: { user_id: true },
+      });
+      const uids = users.map((u) => u.user_id);
+      if (!uids.length) {
+        return { code: 0, message: "success", data: { records: [], total: 0 } };
+      }
+      where.user_id = { in: uids };
+    }
 
     // 基本分页查询
     const [rows, total] = await Promise.all([
@@ -40,7 +56,7 @@ export class AdminSalesmanCompatController {
     const pids = Array.from(new Set(rows.map((r) => r.pid).filter((x) => this.coerceNumber(x, 0) > 0)));
   const groupIds = Array.from(new Set(rows.map((r) => r.group_id).filter((x) => this.coerceNumber(x, 0) > 0)));
 
-    const [users, pidUsers, groups, customerCounts, inviteCounts] = await Promise.all([
+    const [users, pidUsers, groups, customerCounts, inviteCounts, commissionAgg] = await Promise.all([
       userIds.length
         ? this.prisma.user.findMany({
             where: { user_id: { in: userIds } },
@@ -68,6 +84,9 @@ export class AdminSalesmanCompatController {
         : Promise.resolve([]),
       userIds.length
         ? this.prisma.salesman.groupBy({ by: ["pid"], _count: { salesman_id: true }, where: { pid: { in: userIds }, shop_id: shopId } })
+        : Promise.resolve([]),
+      salesmanIds.length
+        ? this.prisma.salesman_order.groupBy({ by: ["salesman_id"], _sum: { amount: true }, where: { salesman_id: { in: salesmanIds } } })
         : Promise.resolve([]),
     ]);
 
@@ -102,14 +121,17 @@ export class AdminSalesmanCompatController {
       }
     };
 
+    const commissionMap = new Map(commissionAgg.map((c: any) => [c.salesman_id, c._sum?.amount || 0]));
+
     const records = rows.map((r) => {
       const base = userMap.get(r.user_id!);
       const grp = r.group_id ? groupMap.get(r.group_id) : null;
       const totalCustomer = customerCountMap.get(r.salesman_id) || 0;
       const totalInvite = inviteCountMap.get(r.user_id!) || 0;
       const pidUser = r.pid ? pidUserMap.get(r.pid) : null;
+      const totalCommission = commissionMap.get(r.salesman_id) || 0;
       return {
-        totalCommission: 0,
+        totalCommission,
         totalCustomer,
         totalInvite,
         salesmanId: r.salesman_id,

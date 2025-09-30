@@ -227,6 +227,11 @@
    - [x] /adminapi/setting/config：categoryDecorateSettings/themeStyleSettings（装修相关配置）
    - （备注）decorateShare.import、pcCatFloor.clearCache、decorateRequest.decorateByModule 为占位，后续按需求接入真实逻辑
 - [ ] 分销 Distribution
+  - [x] 业绩结算：GET /adminapi/salesman/order/list（返回结构对齐 PHP，聚合 salesman_order + order + order_item + user + salesman_product，金额转字符串、时间格式化、嵌套 salesman/orderUserInfo/userOrder/userOrderItem）
+  - [x] 业绩结算：导出 export（CSV 细节对齐、字段完备）
+  - [x] 业绩结算：状态筛选/时间区间筛选/关键词筛选（按 PHP 行为补全）
+  - [ ] 佣金管理：列表字段与 pics/images 命名再次核对（前端联调后确认）
+  - [ ] 分销员列表：与 PHP 示例的嵌套字段与统计值复核（必要时追加聚合）
 - [ ] 内容 Content
 - [ ] 财务 Finance
 - [ ] 会员 Member
@@ -313,6 +318,10 @@
    - 新增装修相关配置：/adminapi/setting/config/categoryDecorateSettings 与 /themeStyleSettings；
    - 统一接入 AdminJwtAuthGuard + AuthorityGuard 与 @Authorities，响应驼峰 {code,message,data}；
    - 标注占位项待后续接入真实逻辑（分享导入、清缓存、按模块取数据）。
+ - 2025-09-30：分销（业绩结算）推进：实现 GET /adminapi/salesman/order/list，返回结构与历史 PHP 对齐，包含 statusText/salesmanProductData（含 productCommission 文案与层级）/orderUserInfo/userOrder/userOrderItem 等，金额统一字符串、时间统一 YYYY-MM-DD HH:mm:ss；后续补齐导出与筛选。
+ - 2025-09-30：分销（业绩结算）导出与筛选完成：
+   - 导出：GET /adminapi/salesman/order/export，BOM+CRLF，列包含订单/明细/分销员/金额/时间/客户基础信息，支持 limit；
+   - 筛选：list/export 支持 status/salesmanId/productId/itemId/orderId/orderSn/keyword/addTimeStart&End/settlementStart&End 与店铺作用域。
 
 ## 维护说明
 - 本文件为事实来源；每交付一项，请：

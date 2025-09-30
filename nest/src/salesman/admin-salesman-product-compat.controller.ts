@@ -138,6 +138,8 @@ export class AdminSalesmanProductCompatController {
         pic_url: p.pic_url || "",
         pic_original: p.pic_original || "",
         pics: picsMap.get(p.product_id) || [],
+        // 兼容前端可能使用的别名 images
+        images: picsMap.get(p.product_id) || [],
         salesman_product: normalizeSalesmanProduct(sp),
       };
     });
