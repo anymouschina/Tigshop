@@ -232,7 +232,26 @@
   - [x] 业绩结算：状态筛选/时间区间筛选/关键词筛选（按 PHP 行为补全）
   - [ ] 佣金管理：列表字段与 pics/images 命名再次核对（前端联调后确认）
   - [ ] 分销员列表：与 PHP 示例的嵌套字段与统计值复核（必要时追加聚合）
-- [ ] 内容 Content
+ - [ ] 内容 Content
+   - 文章 Article（Admin 兼容 /adminapi/content/article/*）
+     - [ ] GET  /adminapi/content/article/list（列表：支持 keyword/is_show/is_hot/article_category_id/article_ids/page/size/sort_field/sort_order，返回 {records,total}）
+     - [ ] GET  /adminapi/content/article/detail（详情：id）
+     - [ ] POST /adminapi/content/article/create（新增，校验 ArticleValidate::scene('create')）
+     - [ ] POST /adminapi/content/article/update（更新，校验 ArticleValidate::scene('update')）
+     - [ ] POST /adminapi/content/article/del（删除）
+     - [ ] POST /adminapi/content/article/updateField（单字段更新：article_title/article_sn/sort_order/is_hot/is_show）
+     - [ ] POST /adminapi/content/article/batch（批量：del/show/hide/move_cat，含事务）
+     - （备注）权限：组 articleManage；子权限 articleModifyManage；与 PHP 返回驼峰包装一致；按店铺作用域（如有）解析。
+   - 文章分类 ArticleCategory（Admin 兼容 /adminapi/content/articleCategory/*）
+     - [ ] GET  /adminapi/content/articleCategory/list（列表：keyword/parent_id/is_show/page/size/sort_field/sort_order）
+     - [ ] GET  /adminapi/content/articleCategory/detail（详情：id）
+     - [ ] POST /adminapi/content/articleCategory/create（新增，校验 ArticleCategoryValidate::scene('create')）
+     - [ ] POST /adminapi/content/articleCategory/update（更新，校验 ArticleCategoryValidate::scene('update')）
+     - [ ] POST /adminapi/content/articleCategory/del（删除）
+     - [ ] POST /adminapi/content/articleCategory/updateField（单字段更新：article_category_name/category_sn/sort_order）
+     - [ ] GET  /adminapi/content/articleCategory/tree（分类树：id=父级id，返回 children）
+     - [ ] POST /adminapi/content/articleCategory/batch（批量删除，事务）
+     - （备注）权限：组 articleCategoryManage；子权限 articleCategoryModifyManage；返回驼峰包装与列表 {records,total}。
 - [ ] 财务 Finance
 - [ ] 会员 Member
   
@@ -257,6 +276,7 @@
 - [ ] 文档：补 README 或 docs 对应章节
 
 ## 变更记录（完成项之后在此追加）
+ - 2025-09-30：内容模块待办清单：依据 PHP /adminapi/content 路由梳理出 Article 与 ArticleCategory 的 list/detail/create/update/del/updateField/batch/tree 等接口，标注权限与筛选项；后续将新增 /adminapi 兼容控制器以消除 404 并逐项对齐。
 - 2025-09-29：创建本清单，勾选已完成模块（品牌、分类、翻译、素材库、商品分组、商品评价、商品列表 ids 过滤、ShippingTplList、ProductBatch 兼容路由、面板统计）。
 - 2025-09-29：商品域补齐并对齐完成（除“Product Batch 实际处理逻辑”外）：新增并接通 /adminapi 兼容控制器 productInventoryLog/priceInquiry/productAttributesTpl/productServices；修复若干 Prisma 字段映射问题；统一返回驼峰；productServices 增加 updateField；属性模板 update 入参支持 tplId/tplName/tplData 并序列化存储，create 返回新建记录。
 - 2025-09-29：新增“订单 Orders（Admin 兼容）”任务清单；创建 AdminOrderCompatService/Controller，接通 /adminapi/order 的 list/detail/updateField、日志 list/create、saveExportItem（占位），其余路由按 PHP 清单列入待办。

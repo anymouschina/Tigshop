@@ -71,6 +71,8 @@ import { AdminSalesmanCompatController } from "./salesman/admin-salesman-compat.
 import { AdminSalesmanContentCompatController } from "./salesman/admin-salesman-content-compat.controller";
 import { AdminSalesmanOrderCompatController } from "./salesman/admin-salesman-order-compat.controller";
 import { AdminSalesmanCustomerTransactionCompatController } from "./salesman/admin-salesman-customer-transaction-compat.controller";
+import { AdminArticleCompatController } from "./content/admin-article-compat.controller";
+import { AdminArticleCategoryCompatController } from "./content/admin-article-category-compat.controller";
 
 @Module({
   imports: [
@@ -144,6 +146,8 @@ import { AdminSalesmanCustomerTransactionCompatController } from "./salesman/adm
     AdminSalesmanContentCompatController,
     AdminSalesmanOrderCompatController,
     AdminSalesmanCustomerTransactionCompatController,
+    AdminArticleCompatController,
+    AdminArticleCategoryCompatController,
   ],
   providers: [
     {
