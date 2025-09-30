@@ -53,6 +53,12 @@ import { TranslationsModule } from "./lang/translations/translations.module";
 import { PrintModule } from "./print/print.module";
 import { AdminOrderConfigCompatController } from "./order/admin-order-config-compat.controller";
 import { AdminECardGroupCompatController } from "./product/admin-ecard-group-compat.controller";
+import { AdminMobileCatNavCompatController } from "./decorate/admin-mobile-cat-nav-compat.controller";
+import { AdminDecorateCompatController } from "./decorate/admin-decorate-compat.controller";
+import { AdminDecorateShareCompatController } from "./decorate/admin-decorate-share-compat.controller";
+import { AdminDecorateRequestCompatController } from "./decorate/admin-decorate-request-compat.controller";
+import { AdminPcNavigationCompatController } from "./decorate/admin-pc-navigation-compat.controller";
+import { AdminPcCatFloorCompatController } from "./decorate/admin-pc-cat-floor-compat.controller";
 
 @Module({
   imports: [
@@ -108,6 +114,12 @@ import { AdminECardGroupCompatController } from "./product/admin-ecard-group-com
     MerchantCompatController,
     AdminOrderConfigCompatController,
     AdminECardGroupCompatController,
+    AdminMobileCatNavCompatController,
+    AdminDecorateCompatController,
+    AdminDecorateShareCompatController,
+    AdminDecorateRequestCompatController,
+    AdminPcNavigationCompatController,
+    AdminPcCatFloorCompatController,
   ],
   providers: [
     {
