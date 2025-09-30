@@ -646,7 +646,7 @@ export class ConfigService {
     const jsonString = JSON.stringify(value);
 
     const existingConfig = await this.prisma.config.findFirst({
-      where: { biz_code },
+      where: { biz_code: bizCode },
     });
 
     if (existingConfig) {
@@ -660,7 +660,7 @@ export class ConfigService {
     } else {
       await this.prisma.config.create({
         data: {
-          biz_code,
+          biz_code: bizCode,
           biz_val: jsonString,
           create_time: new Date(),
           update_time: new Date(),

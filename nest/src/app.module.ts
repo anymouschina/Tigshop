@@ -45,6 +45,10 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
 import { StatisticsModule } from "./statistics/statistics.module";
 import { AppController } from "./app.contronller";
+import { AdminUserCompatController } from "./admin/authority/admin-user-compat.controller";
+import { DecorateDiscreteCompatController } from "./decorate/decorate-discrete-compat.controller";
+import { MerchantApplyCompatController } from "./merchant/merchant-apply-compat.controller";
+import { MerchantCompatController } from "./merchant/merchant-compat.controller";
 import { TranslationsModule } from "./lang/translations/translations.module";
 import { PrintModule } from "./print/print.module";
 
@@ -94,7 +98,13 @@ import { PrintModule } from "./print/print.module";
     TranslationsModule,
     PrintModule,
   ],
-  controllers: [AppController],
+  controllers: [
+    AppController,
+    AdminUserCompatController,
+    DecorateDiscreteCompatController,
+    MerchantApplyCompatController,
+    MerchantCompatController,
+  ],
   providers: [
     {
       provide: APP_INTERCEPTOR,
