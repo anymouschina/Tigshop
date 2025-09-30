@@ -27,6 +27,8 @@
 - [x] 物流公司列表兼容路由：GET /adminapi/setting/logisticsCompany/list（复用 LogisticsCompanyService，支持 paging=false 返回扁平数组）
   - 说明：服务层已使用 prisma.logistics_company（snake_case）访问模型，运行时报错问题已核对为模型名引用一致；如仍报错，请检查 PrismaService 注入与请求上下文。
 - [ ] 配置项分组与初始化覆盖度核验（补文档/示例）
+  - [x] 新增认证设置：GET /adminapi/setting/config/authSettings、POST /saveAuth（与 PHP 键集 {type,isIdentity,isEnquiry,smsNote,tips} 对齐）
+  - [x] 新增管理端基础设置：GET /adminapi/setting/config/getAdminBase（按 PHP 返回字段映射，支持 shopId/vendorId 作用域）
 
 ### 3) 素材库（Gallery）
 - [x] /adminapi/setting/gallery/*
@@ -389,6 +391,8 @@
 ## 变更记录（完成项之后在此追加）
  - 2025-09-30：会员 Member 管理端兼容完成：接通 /adminapi/user 下 user/feedback/userMessageLog/userPointsLog/userRank/userRankLog/userCompany 全部路由与子权限，统一返回驼峰包装；修正 user_message_log 与 user_points_log 等服务的字段映射与时间字段（send_time/add_time/change_time）以避免 Prisma 运行时错误。
  - 2025-09-30：会员等级别名补充：新增 GET /adminapi/user/userRank/listByPro 路由别名，复用 /list 返回结构，修复前端调用 404。
+ - 2025-09-30：配置认证设置兼容：新增 GET /adminapi/setting/config/authSettings 与 POST /saveAuth，读取/保存 {type,isIdentity,isEnquiry,smsNote,tips}，修复相关页面 404。
+ - 2025-09-30：配置管理端基础设置兼容：新增 GET /adminapi/setting/config/getAdminBase，返回 ico_defined_css/dollar_sign/storage_type/storage_url 等字段，修复页面 404。
  - 2025-09-30：财务模块待办清单：基于 PHP 路由（php/app/adminapi/route/finance.php）梳理 accountPanel/orderInvoice/payLog/refundApply/refundLog/userBalanceLog/userInvoice/userRechargeOrder/userWithdrawApply/statement 的全部接口与子权限，后续将新增 /adminapi 兼容控制器逐项落地并消除 404。
  - 2025-09-30：内容模块进度更新：确认已存在基础控制器（Article: /admin/content/article；ArticleCategory: /content/article_category），下一步补充 /adminapi 兼容映射与筛选/字段/批量行为对齐；在用户侧模块新增“用户账户 User”待办以修复 /api/user/user/logout 404。
  - 2025-09-30：内容模块待办清单：依据 PHP /adminapi/content 路由梳理出 Article 与 ArticleCategory 的 list/detail/create/update/del/updateField/batch/tree 等接口，标注权限与筛选项；后续将新增 /adminapi 兼容控制器以消除 404 并逐项对齐。

@@ -589,6 +589,11 @@ export class ConfigService {
     return configMap;
   }
 
+  // 设置配置（字符串值）
+  async setConfigByCode(bizCode: string, value: string): Promise<void> {
+    await this.upsertConfigValue(bizCode, String(value ?? ""));
+  }
+
   // 获取所有配置
   async getAllConfigs(): Promise<Record<string, any>> {
     const results = await this.prisma.config.findMany({

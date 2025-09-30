@@ -190,6 +190,45 @@ export class ConfigController {
     return { code: 0, message: "success", data };
   }
 
+  // 兼容 PHP: GET /adminapi/setting/config/authSettings
+  @Get("authSettings")
+  @ApiOperation({ summary: "获取会员认证配置（兼容）" })
+  @Authorities("userAuthenticationManage")
+  async authSettings() {
+    const keys = ["type", "isIdentity", "isEnquiry", "smsNote", "tips"];
+    const map = await this.configService.getConfigsByCodes(keys);
+    const toInt = (v: any, d = 0) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : d;
+    };
+    const data = {
+      type: toInt(map.type, 1),
+      isIdentity: toInt(map.isIdentity, 0),
+      isEnquiry: toInt(map.isEnquiry, 0),
+      smsNote: map.smsNote ?? "",
+      tips: map.tips ?? "",
+    };
+    return { code: 0, message: "success", data };
+  }
+
+  // 兼容 PHP: POST /adminapi/setting/config/saveAuth
+  @Post("saveAuth")
+  @ApiOperation({ summary: "保存会员认证配置（兼容）" })
+  @Authorities("saveAuthSettingsManage")
+  async saveAuth(@Body() body: any) {
+    const payload = body ?? {};
+    const stringify = (v: any) => (v === undefined || v === null ? "" : String(v));
+    const toNumStr = (v: any) => String(Number(v || 0));
+    await Promise.all([
+      this.configService.setConfigByCode("type", toNumStr(payload.type)),
+      this.configService.setConfigByCode("isIdentity", toNumStr(payload.isIdentity)),
+      this.configService.setConfigByCode("isEnquiry", toNumStr(payload.isEnquiry)),
+      this.configService.setConfigByCode("smsNote", stringify(payload.smsNote)),
+      this.configService.setConfigByCode("tips", stringify(payload.tips)),
+    ]);
+    return { code: 0, message: "success", data: true };
+  }
+
   @Get()
   @ApiOperation({ summary: "获取配置列表" })
   @ApiQuery({ name: "keyword", required: false, description: "关键词" })
@@ -388,6 +427,71 @@ export class ConfigController {
       message: "获取成功",
       data: result,
     };
+  }
+
+  // 兼容 PHP: GET /adminapi/setting/config/getAdminBase
+  @Get("getAdminBase")
+  @ApiOperation({ summary: "获取后台基础配置（兼容）" })
+  @Authorities("configAdminBaseView")
+  async getAdminBase(@Query("shopId") shopId?: string, @Query("vendorId") vendorId?: string) {
+    // 简化实现：读取所需键值，部分按 PHP 逻辑提供默认
+    const keys = [
+      "icoDefinedCss",
+      "dollarSign",
+      "storageType",
+      // storageUrl 需要拼接，后续可从存储配置推导，这里先读取通用 storageUrl
+      "storageUrl",
+      "pcDomain",
+      "h5Domain",
+      "uploadMaxSize",
+      "shopCompany",
+      "shopCompanyTxt",
+      "poweredBy",
+      "poweredByLogo",
+      "poweredByStatus",
+      "layout",
+      "navTheme",
+      "primaryColor",
+      "adminLightLogo",
+      "versionInfoHidden",
+      "defaultCopyright",
+      "defaultTechSupport",
+      "withdrawSettingVO",
+    ];
+    const map = await this.configService.getConfigsByCodes(keys);
+    const toInt = (v: any, d = 0) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : d;
+    };
+    const toBoolInt = (v: any) => (v === "1" || v === 1 || v === true ? 1 : 0);
+    const hasScope = Number(shopId || 0) > 0 || Number(vendorId || 0) > 0;
+    // PHP 在店铺/供应商作用域会强制 layout/navTheme 为特定常量，这里给出固定值
+    const SHOP_LAYOUT = "mix";
+    const SHOP_NAVTHEME = "light";
+    const data = {
+      ico_defined_css: map.icoDefinedCss ?? "",
+      dollar_sign: map.dollarSign ?? "¥",
+      storage_type: map.storageType ?? "local",
+      storage_url: map.storageUrl ?? "",
+      pc_domain: map.pcDomain ?? "",
+      h5_domain: map.h5Domain ?? "",
+      version_type: "professional", // 来自 env('VERSION_TYPE', config('app.version_type'))，这里给默认 professional
+      upload_max_size: map.uploadMaxSize ?? "20MB",
+      shop_company: map.shopCompany ?? "",
+      shop_company_txt: map.shopCompanyTxt ?? "",
+      powered_by: map.poweredBy ?? "Powered by Tigshop",
+      powered_by_logo: map.poweredByLogo ?? "/static/mini/images/common/powered_by.png",
+      powered_by_status: toBoolInt(map.poweredByStatus ?? 1),
+      layout: hasScope ? SHOP_LAYOUT : (map.layout ?? "mix"),
+      nav_theme: hasScope ? SHOP_NAVTHEME : (map.navTheme ?? "light"),
+      primary_color: map.primaryColor ?? "#1677ff",
+      admin_light_logo: map.adminLightLogo ?? "",
+      version_info_hidden: toBoolInt(map.versionInfoHidden ?? 0),
+      default_copyright: toBoolInt(map.defaultCopyright ?? 1),
+      default_tech_support: map.defaultTechSupport ?? "/static/mini/images/common/default_tech_support.png",
+      withdrawSettingVO: map.withdrawSettingVO ? JSON.parse(map.withdrawSettingVO) : {},
+    };
+    return { code: 0, message: "success", data };
   }
 
   @Public()
