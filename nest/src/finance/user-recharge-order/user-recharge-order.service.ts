@@ -45,15 +45,19 @@ export class UserRechargeOrderService {
     const where: any = {};
 
     if (keyword) {
-      where.OR = [
-        { order_sn: { contains: keyword } },
-        { postscript: { contains: keyword } },
-        { admin_remark: { contains: keyword } },
-      ];
+      // 当前表结构无 order_sn/admin_remark 字段；仅支持 postscript 模糊 + 数字关键词匹配ID类字段
+      const kwNum = Number(keyword);
+      const or: any[] = [{ postscript: { contains: keyword } }];
+      if (!Number.isNaN(kwNum) && kwNum > 0) {
+        or.push({ order_id: kwNum });
+        or.push({ user_id: kwNum });
+      }
+      where.OR = or;
     }
 
     if (status !== undefined) {
-      where.status = status;
+      // schema uses Boolean: 已支付 => true，其它 => false
+      where.status = Number(status) === (RechargeOrderStatus.PAID as number);
     }
 
     if (userId) {
@@ -80,31 +84,33 @@ export class UserRechargeOrderService {
     orderBy[sortField] = sortOrder;
 
     // 查询数据
-    const [records, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       this.prisma.user_recharge_order.findMany({
         where,
         skip,
         take: size,
         orderBy,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              username: true,
-              email: true,
-              mobile: true,
-            },
-          },
-          admin: {
-            select: {
-              admin_id: true,
-              username: true,
-            },
-          },
-        },
       }),
       this.prisma.user_recharge_order.count({ where }),
     ]);
+
+    // 手动补全用户信息
+    const userIds = Array.from(
+      new Set(rows.map((r) => r.user_id).filter((v) => !!v)),
+    );
+    const users = userIds.length
+      ? await this.prisma.user.findMany({
+          where: { user_id: { in: userIds } },
+          select: { user_id: true, username: true, email: true, mobile: true },
+        })
+      : [];
+    const userMap = new Map(users.map((u) => [u.user_id, u]));
+
+    const records = rows.map((r) => ({
+      ...r,
+      user: userMap.get(r.user_id) || null,
+      username: userMap.get(r.user_id)?.username || "",
+    }));
 
     return {
       records,
@@ -123,29 +129,17 @@ export class UserRechargeOrderService {
   async findById(id: number) {
     const order = await this.prisma.user_recharge_order.findUnique({
       where: { order_id: id },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
-        admin: {
-          select: {
-            admin_id: true,
-            username: true,
-          },
-        },
-      },
     });
 
     if (!order) {
       throw new NotFoundException("充值订单不存在");
     }
 
-    return order;
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: order.user_id },
+      select: { user_id: true, username: true, email: true, mobile: true },
+    });
+    return { ...order, user: user || null, username: user?.username || "" };
   }
 
   /**
@@ -158,39 +152,31 @@ export class UserRechargeOrderService {
       throw new BadRequestException("充值金额必须大于0");
     }
 
-    // 生成订单号
-    const orderSn = this.generateOrderSn();
+    // 现有表无 order_sn/payment_type/admin 字段；对齐现有 schema 字段
+    const now = Math.floor(Date.now() / 1000);
+    const isPaid =
+      createDto.status !== undefined
+        ? Number(createDto.status) === (RechargeOrderStatus.PAID as number)
+        : false;
 
-    const order = await this.prisma.user_recharge_order.create({
+    const created = await this.prisma.user_recharge_order.create({
       data: {
         user_id: createDto.userId,
-        order_sn: orderSn,
         amount: createDto.amount,
+        discount_money: 0,
+        add_time: now,
+        paid_time: isPaid ? now : 0,
         postscript: createDto.postscript || "",
-        status: createDto.status || RechargeOrderStatus.PENDING,
-        payment_type: createDto.paymentType,
-        admin_id: createDto.adminId,
-        add_time: Math.floor(Date.now() / 1000),
-      },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
-        admin: {
-          select: {
-            admin_id: true,
-            username: true,
-          },
-        },
+        status: isPaid ? true : false,
       },
     });
 
-    return order;
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: created.user_id },
+      select: { user_id: true, username: true, email: true, mobile: true },
+    });
+
+    return { ...created, user: user || null, username: user?.username || "" };
   }
 
   /**
@@ -211,17 +197,14 @@ export class UserRechargeOrderService {
     const updateData: any = {};
 
     if (updateDto.status !== undefined) {
-      updateData.status = updateDto.status;
+      const toPaid = Number(updateDto.status) === (RechargeOrderStatus.PAID as number);
+      const wasPaid = !!order.status;
+      updateData.status = toPaid ? true : false;
 
       // 如果状态变更为已支付，记录支付时间
-      if (
-        updateDto.status === RechargeOrderStatus.PAID &&
-        order.status !== RechargeOrderStatus.PAID
-      ) {
-        updateData.payment_time = Math.floor(Date.now() / 1000);
-
-        // 增加用户余额（这里需要事务处理）
-        // TODO: 实现余额增加逻辑
+      if (toPaid && !wasPaid) {
+        updateData.paid_time = Math.floor(Date.now() / 1000);
+        // TODO: 增加用户余额（需要事务）
       }
     }
 
@@ -229,46 +212,25 @@ export class UserRechargeOrderService {
       updateData.postscript = updateDto.postscript;
     }
 
-    if (updateDto.paymentType !== undefined) {
-      updateData.payment_type = updateDto.paymentType;
-    }
+    // 现有表结构无 paymentType/tradeNo/adminRemark 字段；忽略之
 
     if (updateDto.paymentTime !== undefined) {
-      updateData.payment_time = Math.floor(
+      updateData.paid_time = Math.floor(
         new Date(updateDto.paymentTime).getTime() / 1000,
       );
-    }
-
-    if (updateDto.tradeNo !== undefined) {
-      updateData.trade_no = updateDto.tradeNo;
-    }
-
-    if (updateDto.adminRemark !== undefined) {
-      updateData.admin_remark = updateDto.adminRemark;
     }
 
     const updatedOrder = await this.prisma.user_recharge_order.update({
       where: { order_id: id },
       data: updateData,
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
-        admin: {
-          select: {
-            admin_id: true,
-            username: true,
-          },
-        },
-      },
     });
 
-    return updatedOrder;
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: updatedOrder.user_id },
+      select: { user_id: true, username: true, email: true, mobile: true },
+    });
+
+    return { ...updatedOrder, user: user || null, username: user?.username || "" };
   }
 
   /**
@@ -284,8 +246,8 @@ export class UserRechargeOrderService {
       throw new NotFoundException("充值订单不存在");
     }
 
-    // 只有待支付和已取消的订单可以删除
-    if (order.status === RechargeOrderStatus.PAID) {
+    // 已支付订单不能删除（status=true 即已支付）
+    if (order.status === true) {
       throw new BadRequestException("已支付的订单不能删除");
     }
 
@@ -299,11 +261,11 @@ export class UserRechargeOrderService {
    * @param ids 订单ID数组
    */
   async batchDelete(ids: number[]) {
-    // 检查是否有已支付的订单
+    // 检查是否有已支付的订单（status=true）
     const paidOrders = await this.prisma.user_recharge_order.findMany({
       where: {
         order_id: { in: ids },
-        status: RechargeOrderStatus.PAID,
+        status: true,
       },
     });
 
@@ -351,7 +313,8 @@ export class UserRechargeOrderService {
 
     if (queryDto) {
       if (queryDto.status !== undefined) {
-        where.status = queryDto.status;
+        // schema 使用 Boolean 状态：已支付 => true，其他 => false
+        where.status = Number(queryDto.status) === (RechargeOrderStatus.PAID as number);
       }
       if (queryDto.userId) {
         where.user_id = queryDto.userId;
@@ -379,13 +342,13 @@ export class UserRechargeOrderService {
     });
 
     const successResult = await this.prisma.user_recharge_order.aggregate({
-      where: { ...where, status: RechargeOrderStatus.PAID },
+      where: { ...where, status: true },
       _sum: { amount: true },
       _count: true,
     });
 
     const pendingResult = await this.prisma.user_recharge_order.aggregate({
-      where: { ...where, status: RechargeOrderStatus.PENDING },
+      where: { ...where, status: false },
       _sum: { amount: true },
       _count: true,
     });
@@ -440,25 +403,8 @@ export class UserRechargeOrderService {
    * @returns 订单信息
    */
   async findByOrderSn(orderSn: string) {
-    const order = await this.prisma.user_recharge_order.findUnique({
-      where: { order_sn: orderSn },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-            email: true,
-            mobile: true,
-          },
-        },
-      },
-    });
-
-    if (!order) {
-      throw new NotFoundException("订单不存在");
-    }
-
-    return order;
+    // 兼容方法占位：当前表结构无 order_sn 字段
+    throw new NotFoundException("订单不存在");
   }
 
   /**
@@ -496,7 +442,8 @@ export class UserRechargeOrderService {
       throw new NotFoundException("订单不存在");
     }
 
-    if (order.status !== RechargeOrderStatus.PENDING) {
+    // 只有待支付的订单可以取消：status=false 才是待支付
+    if (order.status === true) {
       throw new BadRequestException("只有待支付的订单可以取消");
     }
 
@@ -506,7 +453,7 @@ export class UserRechargeOrderService {
 
     await this.prisma.user_recharge_order.update({
       where: { order_id: id },
-      data: { status: RechargeOrderStatus.CANCELLED },
+      data: { status: false },
     });
   }
 }

@@ -100,6 +100,62 @@ export class ConfigController {
     return { code: 0, message: "success", data: true };
   }
 
+  // 兼容 PHP: GET /adminapi/setting/config/profitSharingSettings
+  @Get("profitSharingSettings")
+  @ApiOperation({ summary: "获取分账配置（兼容）" })
+  @Authorities("configProfitSharingView")
+  async profitSharingSettings() {
+    const data = await this.configService.getJsonConfig(
+      "profitSharingSettings",
+    );
+    return { code: 0, message: "success", data };
+  }
+
+  // 兼容 PHP: GET /adminapi/setting/config/withdrawalSettings
+  @Get("withdrawalSettings")
+  @ApiOperation({ summary: "获取提现配置（兼容）" })
+  @Authorities("configWithdrawalView")
+  async withdrawalSettings() {
+    // 读取统一 JSON 配置；如无则返回默认
+    const data =
+      (await this.configService.getJsonConfig("withdrawalSettings")) ?? {};
+    const defaults = {
+      enabled: true,
+      minAmount: 1,
+      maxAmount: 50000,
+      feeRate: 0,
+      methods: ["alipay", "wechat", "bank"],
+      dailyLimit: 50000,
+    };
+    return { code: 0, message: "success", data: { ...defaults, ...data } };
+  }
+
+  // 兼容 PHP: POST /adminapi/setting/config/saveWithdrawal
+  @Post("saveWithdrawal")
+  @ApiOperation({ summary: "保存提现配置（兼容）" })
+  @Authorities("configWithdrawalUpdate")
+  async saveWithdrawal(@Body() body: any) {
+    // 简单校验与字段归一
+    const payload = body ?? {};
+    if (payload.minAmount !== undefined)
+      payload.minAmount = Number(payload.minAmount) || 0;
+    if (payload.maxAmount !== undefined)
+      payload.maxAmount = Number(payload.maxAmount) || 0;
+    if (payload.feeRate !== undefined)
+      payload.feeRate = Number(payload.feeRate) || 0;
+    if (payload.dailyLimit !== undefined)
+      payload.dailyLimit = Number(payload.dailyLimit) || 0;
+    if (payload.enabled !== undefined)
+      payload.enabled = !!(
+        payload.enabled === true || String(payload.enabled) === "1"
+      );
+    if (!Array.isArray(payload.methods)) {
+      payload.methods = ["alipay", "wechat", "bank"];
+    }
+    await this.configService.setJsonConfig("withdrawalSettings", payload);
+    return { code: 0, message: "success", data: true };
+  }
+
   // 兼容 PHP: GET /adminapi/setting/config/categoryDecorateSettings
   @Get("categoryDecorateSettings")
   @ApiOperation({ summary: "获取分类装修设置（兼容）" })

@@ -13,40 +13,54 @@ export class UserPointsLogService {
     const skip = (page - 1) * size;
     const orderBy = { [sort_field]: sort_order };
 
-    const where = keyword
-      ? {
-          OR: [
-            { user: { username: { contains: keyword } } },
-            { user: { mobile: { contains: keyword } } },
-            { user: { email: { contains: keyword } } },
-            { remark: { contains: keyword } },
-          ],
-        }
-      : {};
+    // 避免使用 Prisma 未声明关系的 where 语法；改为仅基于本表字段和数字匹配
+    const where: any = {};
+    if (keyword) {
+      const or: any[] = [{ change_desc: { contains: keyword } }];
+      const kwNum = Number(keyword);
+      if (!Number.isNaN(kwNum) && kwNum > 0) {
+        or.push({ log_id: kwNum });
+        or.push({ user_id: kwNum });
+        or.push({ points: kwNum });
+      }
+      where.OR = or;
+    }
 
-    const records = await (this.prisma as any).user_points_log.findMany({
+    const rows = await (this.prisma as any).user_points_log.findMany({
       where,
       skip,
       take: size,
       orderBy,
     });
 
+    // 手动补充用户名信息
+    const userIds = Array.from(new Set(rows.map((r: any) => r.user_id).filter(Boolean)));
+    const users = userIds.length
+      ? await (this.prisma as any).user.findMany({
+          where: { user_id: { in: userIds } },
+          select: { user_id: true, username: true },
+        })
+      : [];
+    const userMap = new Map(users.map((u: any) => [u.user_id, u.username]));
+
+    const records = rows.map((r: any) => ({ ...r, username: userMap.get(r.user_id) || "" }));
     return records;
   }
 
   async getFilterCount(filter: any): Promise<number> {
     const { page, size, sort_field, sort_order, keyword } = filter;
 
-    const where = keyword
-      ? {
-          OR: [
-            { user: { username: { contains: keyword } } },
-            { user: { mobile: { contains: keyword } } },
-            { user: { email: { contains: keyword } } },
-            { remark: { contains: keyword } },
-          ],
-        }
-      : {};
+    const where: any = {};
+    if (keyword) {
+      const or: any[] = [{ change_desc: { contains: keyword } }];
+      const kwNum = Number(keyword);
+      if (!Number.isNaN(kwNum) && kwNum > 0) {
+        or.push({ log_id: kwNum });
+        or.push({ user_id: kwNum });
+        or.push({ points: kwNum });
+      }
+      where.OR = or;
+    }
 
     return (this.prisma as any).user_points_log.count({ where });
   }

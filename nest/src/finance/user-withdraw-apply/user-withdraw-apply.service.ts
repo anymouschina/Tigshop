@@ -47,7 +47,8 @@ export class UserWithdrawApplyService {
     }
 
     if (status !== undefined) {
-      where.status = status;
+      // schema: Boolean status，按 PHP 语义仅“已完成”算 true，其它为 false
+      where.status = Number(status) === (WithdrawStatus.COMPLETED as number);
     }
 
     if (userId) {
@@ -55,7 +56,9 @@ export class UserWithdrawApplyService {
     }
 
     if (withdrawType) {
-      where.withdraw_type = withdrawType;
+      // schema 无 withdraw_type 列，存于 account_data(JSON 字符串) 中
+      // 使用 contains 进行简单匹配（注意潜在误匹配风险，足够兼容）
+      where.account_data = { contains: `"type":"${withdrawType}"` } as any;
     }
 
     if (startTime || endTime) {
@@ -135,10 +138,17 @@ export class UserWithdrawApplyService {
         user_id: createDto.userId,
         amount: createDto.amount,
         postscript: createDto.postscript || "",
-        withdraw_type: createDto.accountData.type,
-        account_name: createDto.accountData.name,
-        account_data: JSON.stringify(createDto.accountData),
-        status: createDto.status || WithdrawStatus.PENDING,
+        // schema 仅有 account_data 与 Boolean status；额外字段写入 JSON
+        account_data: JSON.stringify({
+          ...(createDto.accountData || {}),
+          name: createDto.accountData?.name,
+          account: createDto.accountData?.account,
+        }),
+        status:
+          Number(createDto.status ?? WithdrawStatus.PENDING) ===
+          (WithdrawStatus.COMPLETED as number)
+            ? true
+            : false,
         add_time: Math.floor(Date.now() / 1000),
       },
     });
@@ -165,20 +175,14 @@ export class UserWithdrawApplyService {
     const updateData: any = {};
 
     if (updateDto.status !== undefined) {
-      updateData.status = updateDto.status;
+      const toCompleted =
+        Number(updateDto.status) === (WithdrawStatus.COMPLETED as number);
+      const wasCompleted = !!apply.status;
+      updateData.status = toCompleted ? true : false;
 
-      if (
-        updateDto.status === WithdrawStatus.APPROVED &&
-        apply.status !== WithdrawStatus.APPROVED
-      ) {
-        updateData.process_time = Math.floor(Date.now() / 1000);
-      }
-
-      if (
-        updateDto.status === WithdrawStatus.COMPLETED &&
-        apply.status !== WithdrawStatus.COMPLETED
-      ) {
-        updateData.complete_time = Math.floor(Date.now() / 1000);
+      if (toCompleted && !wasCompleted) {
+        // schema 使用 finished_time 保存完成时间
+        updateData.finished_time = Math.floor(Date.now() / 1000);
       }
     }
 
@@ -186,29 +190,8 @@ export class UserWithdrawApplyService {
       updateData.postscript = updateDto.postscript;
     }
 
-    if (updateDto.applyReply !== undefined) {
-      updateData.apply_reply = updateDto.applyReply;
-    }
-
-    if (updateDto.adminRemark !== undefined) {
-      updateData.admin_remark = updateDto.adminRemark;
-    }
-
-    if (updateDto.processTime !== undefined) {
-      updateData.process_time = Math.floor(
-        new Date(updateDto.processTime).getTime() / 1000,
-      );
-    }
-
-    if (updateDto.completeTime !== undefined) {
-      updateData.complete_time = Math.floor(
-        new Date(updateDto.completeTime).getTime() / 1000,
-      );
-    }
-
-    if (updateDto.tradeNo !== undefined) {
-      updateData.trade_no = updateDto.tradeNo;
-    }
+    // schema 无 apply_reply/admin_remark/process_time/complete_time/trade_no 字段
+    // 保留兼容但不存库；如需持久化，需扩展表结构或另建日志表
 
     const updatedApply = await this.prisma.user_withdraw_apply.update({
       where: { id },

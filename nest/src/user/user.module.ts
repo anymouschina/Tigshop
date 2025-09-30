@@ -16,6 +16,7 @@ import { UserCouponModule } from "./coupon/coupon.module";
 import { UserHistoryModule } from "./history/history.module";
 import { UploadModule } from "../upload/upload.module";
 import { AuthDebugMiddleware } from "../auth/middlewares/auth-debug.middleware";
+import { AdminUserPointsLogCompatController } from "./admin-user-points-log-compat.controller";
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { AuthDebugMiddleware } from "../auth/middlewares/auth-debug.middleware";
     UserHistoryModule,
     UploadModule,
   ],
-  controllers: [UserController],
+  controllers: [UserController, AdminUserPointsLogCompatController],
   providers: [UserService, AuthDebugMiddleware],
   exports: [
     UserService,
