@@ -57,18 +57,10 @@ export class AdminSalesmanProductCompatController {
     }
 
     const [products, total] = await Promise.all([
+      // 返回完整字段，方便对齐 PHP 响应（拦截器会统一驼峰 + 时间格式）
       this.prisma.product.findMany({
         where,
         orderBy: { product_id: "desc" },
-        select: {
-          product_id: true,
-          product_name: true,
-          product_sn: true,
-          product_price: true,
-          pic_thumb: true,
-          pic_url: true,
-          pic_original: true,
-        },
         skip,
         take: size,
       }),
@@ -77,12 +69,13 @@ export class AdminSalesmanProductCompatController {
 
     const productIds = products.map((p) => p.product_id);
     const [spList, galleries] = await Promise.all([
-      this.prisma.salesman_product.findMany({ where: { product_id: { in: productIds } } }),
+      // 同店铺范围内的分销商品配置
+      this.prisma.salesman_product.findMany({ where: { product_id: { in: productIds }, shop_id: shopId } }),
       productIds.length
         ? this.prisma.product_gallery.findMany({
             where: { product_id: { in: productIds } },
             orderBy: { sort_order: "asc" },
-            select: { product_id: true, pic_url: true, pic_thumb: true, pic_original: true, pic_large: true, sort_order: true },
+            select: { pic_id: true, product_id: true, pic_url: true, pic_desc: true, pic_thumb: true, pic_original: true, pic_large: true, sort_order: true },
           })
         : Promise.resolve([]),
     ]);
@@ -92,7 +85,10 @@ export class AdminSalesmanProductCompatController {
     for (const g of galleries as any[]) {
       const arr = picsMap.get(g.product_id) || [];
       arr.push({
+        pic_id: g.pic_id || 0,
+        product_id: g.product_id || 0,
         pic_url: g.pic_url || "",
+        pic_desc: g.pic_desc || "",
         pic_thumb: g.pic_thumb || "",
         pic_original: g.pic_original || "",
         pic_large: g.pic_large || "",
@@ -108,35 +104,64 @@ export class AdminSalesmanProductCompatController {
         product_id: sp.product_id,
         is_join: sp.is_join ?? 0,
         commission_type: sp.commission_type ?? 1,
-        commission_data: sp.commission_data ?? "{}",
+        commission_data: typeof sp.commission_data === "string" ? sp.commission_data : JSON.stringify(sp.commission_data ?? {}),
         add_time: sp.add_time ?? 0,
         update_time: sp.update_time ?? 0,
         shop_id: sp.shop_id ?? shopId,
       };
+
+      // 生成带文案的佣金展示，兼容 PHP：
+      // productCommission: { productCommission: "普通分销员佣金:1%;银牌分销员佣金:2%;...", subCommission: "" }
       try {
-        const data = typeof sp.commission_data === "string" ? JSON.parse(sp.commission_data) : sp.commission_data || {};
-        const levels = [data.one ?? data.level1, data.two ?? data.level2, data.three ?? data.level3].filter((x) => x !== undefined);
-        if (Array.isArray(data) && !levels.length) {
-          for (const v of data) levels.push(v);
+        const parsed = this.parseMaybeJson(sp.commission_data) || {};
+        let levelArr: any[] = [];
+        if (Array.isArray(parsed)) {
+          // 形如 [{ levelArr: [...] }]
+          if (parsed.length && parsed[0]?.levelArr) levelArr = parsed[0].levelArr;
+          else levelArr = parsed;
+        } else if (parsed && typeof parsed === "object") {
+          if (Array.isArray((parsed as any).levelArr)) levelArr = (parsed as any).levelArr;
+          else {
+            const mapKeys = [
+              { key: "one", level: 1 },
+              { key: "two", level: 2 },
+              { key: "three", level: 3 },
+              { key: "four", level: 4 },
+              { key: "level1", level: 1 },
+              { key: "level2", level: 2 },
+              { key: "level3", level: 3 },
+              { key: "level4", level: 4 },
+            ];
+            for (const mk of mapKeys) {
+              if (parsed[mk.key] != null) levelArr.push({ level: mk.level, rate: parsed[mk.key] });
+            }
+          }
         }
-        if (levels.length) {
-          const unit = sp.commission_type === 1 ? "%" : "";
-          out.product_commission = levels.map((x: any) => `${this.toAmountStr(x, sp.commission_type === 1 ? 0 : 2)}${unit}`).join("/");
+
+        const levelText: Record<number, string> = { 1: "普通分销员", 2: "银牌分销员", 3: "金牌分销员", 4: "钻石分销员" };
+        const unit = out.commission_type === 1 ? "%" : "";
+        const parts: string[] = [];
+        for (const item of levelArr) {
+          if (!item) continue;
+          const lv = Number(item.level) || 0;
+          let rateVal = item.rate;
+          // 尽量保持原始小数展示；若为数字再补单位
+          if (rateVal == null) continue;
+          if (typeof rateVal === "number") rateVal = out.commission_type === 1 ? String(rateVal) : this.toAmountStr(rateVal, 2);
+          parts.push(`${levelText[lv] || `L${lv}`}佣金:${rateVal}${unit};`);
         }
+        out.product_commission = { product_commission: parts.join(""), sub_commission: "" };
       } catch {}
+
       return out;
     };
 
     const records = products.map((p) => {
       const sp = spMap.get(p.product_id) || null;
       return {
-        product_id: p.product_id,
-        product_name: p.product_name,
-        product_sn: p.product_sn,
+        // 直接展开产品，保留所有字段（Decimal -> JSON 序列化为字符串）
+        ...p,
         product_price: this.toAmountStr(p.product_price),
-        pic_thumb: p.pic_thumb || "",
-        pic_url: p.pic_url || "",
-        pic_original: p.pic_original || "",
         pics: picsMap.get(p.product_id) || [],
         // 兼容前端可能使用的别名 images
         images: picsMap.get(p.product_id) || [],
@@ -154,7 +179,8 @@ export class AdminSalesmanProductCompatController {
   async detail(@Query("id") id: number) {
     const productId = this.coerceNumber(id, 0);
     if (!productId) return { code: 0, message: "success", data: null };
-    const product = await this.prisma.product.findUnique({ where: { product_id: productId } });
+    // product 使用了复合主键，不能用 findUnique 单字段查询，改用 findFirst
+    const product = await this.prisma.product.findFirst({ where: { product_id: productId } });
     const sp = await this.prisma.salesman_product.findFirst({ where: { product_id: productId } });
     const item = {
       product_id: product?.product_id,
