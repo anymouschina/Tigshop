@@ -15,6 +15,9 @@ export class PaylogService {
       keyword,
       pay_status,
       order_id,
+      payment_code,
+      start_time,
+      end_time,
     } = filter;
 
     const skip = (page - 1) * size;
@@ -34,6 +37,14 @@ export class PaylogService {
     }
     if (order_id) {
       where.order_id = parseInt(order_id);
+    }
+    if (payment_code) {
+      where.payment_code = payment_code;
+    }
+    if (start_time || end_time) {
+      where.create_time = {};
+      if (start_time) where.create_time.gte = new Date(start_time);
+      if (end_time) where.create_time.lte = new Date(end_time);
     }
 
     const records = await this.prisma.payLog.findMany({
@@ -71,6 +82,9 @@ export class PaylogService {
       keyword,
       pay_status,
       order_id,
+      payment_code,
+      start_time,
+      end_time,
     } = filter;
 
     const where: any = {};
@@ -87,6 +101,14 @@ export class PaylogService {
     }
     if (order_id) {
       where.order_id = parseInt(order_id);
+    }
+    if (payment_code) {
+      where.payment_code = payment_code;
+    }
+    if (start_time || end_time) {
+      where.create_time = {};
+      if (start_time) where.create_time.gte = new Date(start_time);
+      if (end_time) where.create_time.lte = new Date(end_time);
     }
 
     return this.prisma.payLog.count({ where });

@@ -232,27 +232,91 @@
   - [x] 业绩结算：状态筛选/时间区间筛选/关键词筛选（按 PHP 行为补全）
   - [ ] 佣金管理：列表字段与 pics/images 命名再次核对（前端联调后确认）
   - [ ] 分销员列表：与 PHP 示例的嵌套字段与统计值复核（必要时追加聚合）
- - [ ] 内容 Content
+ - [x] 内容 Content（已完成 /adminapi 兼容前缀与契约对齐）
    - 文章 Article（Admin 兼容 /adminapi/content/article/*）
-     - [ ] GET  /adminapi/content/article/list（列表：支持 keyword/is_show/is_hot/article_category_id/article_ids/page/size/sort_field/sort_order，返回 {records,total}）
-     - [ ] GET  /adminapi/content/article/detail（详情：id）
-     - [ ] POST /adminapi/content/article/create（新增，校验 ArticleValidate::scene('create')）
-     - [ ] POST /adminapi/content/article/update（更新，校验 ArticleValidate::scene('update')）
-     - [ ] POST /adminapi/content/article/del（删除）
-     - [ ] POST /adminapi/content/article/updateField（单字段更新：article_title/article_sn/sort_order/is_hot/is_show）
-     - [ ] POST /adminapi/content/article/batch（批量：del/show/hide/move_cat，含事务）
+     - （完成）已对齐 /adminapi 路由与筛选/排序/返回契约；详情含 product_ids；批量含 del/show/hide/move_cat 并使用事务保障。
+     - [x] GET  /adminapi/content/article/list（列表：支持 keyword/is_show/is_hot/article_category_id/article_ids/page/size/sort_field/sort_order，返回 {records,total}）
+     - [x] GET  /adminapi/content/article/detail（详情：id）
+     - [x] POST /adminapi/content/article/create（新增，校验 ArticleValidate::scene('create')）
+     - [x] POST /adminapi/content/article/update（更新，校验 ArticleValidate::scene('update')）
+     - [x] POST /adminapi/content/article/del（删除）
+     - [x] POST /adminapi/content/article/updateField（单字段更新：article_title/article_sn/sort_order/is_hot/is_show）
+     - [x] POST /adminapi/content/article/batch（批量：del/show/hide/move_cat，含事务）
      - （备注）权限：组 articleManage；子权限 articleModifyManage；与 PHP 返回驼峰包装一致；按店铺作用域（如有）解析。
    - 文章分类 ArticleCategory（Admin 兼容 /adminapi/content/articleCategory/*）
-     - [ ] GET  /adminapi/content/articleCategory/list（列表：keyword/parent_id/is_show/page/size/sort_field/sort_order）
-     - [ ] GET  /adminapi/content/articleCategory/detail（详情：id）
-     - [ ] POST /adminapi/content/articleCategory/create（新增，校验 ArticleCategoryValidate::scene('create')）
-     - [ ] POST /adminapi/content/articleCategory/update（更新，校验 ArticleCategoryValidate::scene('update')）
-     - [ ] POST /adminapi/content/articleCategory/del（删除）
-     - [ ] POST /adminapi/content/articleCategory/updateField（单字段更新：article_category_name/category_sn/sort_order）
-     - [ ] GET  /adminapi/content/articleCategory/tree（分类树：id=父级id，返回 children）
-     - [ ] POST /adminapi/content/articleCategory/batch（批量删除，事务）
+     - （完成）已对齐 /adminapi 路由，补齐 tree/updateField；parentId 数组入参与 has_children 字段已实现，列表返回 {records,total}。
+     - [x] GET  /adminapi/content/articleCategory/list（列表：keyword/parent_id/is_show/page/size/sort_field/sort_order）
+     - [x] GET  /adminapi/content/articleCategory/detail（详情：id）
+     - [x] POST /adminapi/content/articleCategory/create（新增，校验 ArticleCategoryValidate::scene('create')）
+     - [x] POST /adminapi/content/articleCategory/update（更新，校验 ArticleCategoryValidate::scene('update')）
+     - [x] POST /adminapi/content/articleCategory/del（删除）
+     - [x] POST /adminapi/content/articleCategory/updateField（单字段更新：article_category_name/category_sn/sort_order）
+     - [x] GET  /adminapi/content/articleCategory/tree（分类树：id=父级id，返回 children）
+     - [x] POST /adminapi/content/articleCategory/batch（批量删除，事务）
      - （备注）权限：组 articleCategoryManage；子权限 articleCategoryModifyManage；返回驼峰包装与列表 {records,total}。
-- [ ] 财务 Finance
+ - [x] 财务 Finance（对齐 /adminapi/finance/*）
+  - 账户资金面板 accountPanel（/adminapi/finance/accountPanel/*）
+    - [x] GET  /adminapi/finance/accountPanel/list（面板数据）
+    - （备注）权限：accountPanelManage，返回驼峰包装
+  - 发票申请 orderInvoice（/adminapi/finance/orderInvoice/*）
+    - [x] GET  /adminapi/finance/orderInvoice/list（列表）
+    - [x] GET  /adminapi/finance/orderInvoice/detail（详情）
+    - [x] POST /adminapi/finance/orderInvoice/update（编辑）
+    - [x] POST /adminapi/finance/orderInvoice/del（删除）
+    - [x] POST /adminapi/finance/orderInvoice/batch（批量）
+    - （备注）子权限：orderInvoiceUpdateManage/orderInvoiceDelManage/orderInvoiceBatchManage；返回 {records,total}
+  - 交易日志 payLog（/adminapi/finance/payLog/*）
+    - [x] GET  /adminapi/finance/payLog/list（列表）
+    - [x] POST /adminapi/finance/payLog/del（删除）
+    - [x] POST /adminapi/finance/payLog/batch（批量）
+    - （备注）子权限：payLogDelManage/payLogBatchManage；支持常见筛选（支付方式/状态/时间范围/关键词），返回 {records,total}
+  - 退款申请 refundApply（/adminapi/finance/refundApply/*）
+    - [x] GET  /adminapi/finance/refundApply/list（列表）
+    - [x] GET  /adminapi/finance/refundApply/detail（详情）
+    - [x] GET  /adminapi/finance/refundApply/config（配置）
+    - [x] POST /adminapi/finance/refundApply/audit（审核）
+    - [x] POST /adminapi/finance/refundApply/offlineAudit（线下转账确认）
+    - （备注）子权限：refundApplyUpdateManage；审核需记录日志与状态流转
+  - 退款记录 refundLog（/adminapi/finance/refundLog/*）
+    - [x] GET  /adminapi/finance/refundLog/list（列表）
+    - （备注）与 refund_apply 关联展示；返回 {records,total}
+  - 余额日志 userBalanceLog（/adminapi/finance/userBalanceLog/*）
+    - [x] GET  /adminapi/finance/userBalanceLog/list（列表）
+    - [x] POST /adminapi/finance/userBalanceLog/del（删除）
+    - [x] POST /adminapi/finance/userBalanceLog/batch（批量）
+    - （备注）子权限：userBalanceLogDelManage/userBalanceLogBatchManage
+  - 增票资质申请 userInvoice（/adminapi/finance/userInvoice/*）
+    - [x] GET  /adminapi/finance/userInvoice/list（列表）
+    - [x] GET  /adminapi/finance/userInvoice/config（配置）
+    - [x] GET  /adminapi/finance/userInvoice/detail（详情）
+    - [x] POST /adminapi/finance/userInvoice/update（编辑）
+    - [x] POST /adminapi/finance/userInvoice/del（删除）
+    - [x] POST /adminapi/finance/userInvoice/batch（批量）
+    - （备注）子权限：userInvoiceUpdateManage/userInvoiceDelManage/userInvoiceBatchManage
+  - 充值申请 userRechargeOrder（/adminapi/finance/userRechargeOrder/*）
+    - [x] GET  /adminapi/finance/userRechargeOrder/list（列表）
+    - [x] GET  /adminapi/finance/userRechargeOrder/detail（详情）
+    - [x] POST /adminapi/finance/userRechargeOrder/create（创建）
+    - [x] POST /adminapi/finance/userRechargeOrder/update（更新）
+    - [x] POST /adminapi/finance/userRechargeOrder/del（删除）
+    - [x] POST /adminapi/finance/userRechargeOrder/batch（批量）
+    - （备注）子权限：userRechargeOrderUpdateManage/userRechargeOrderDelManage/userRechargeOrderBatchManage
+  - 提现申请 userWithdrawApply（/adminapi/finance/userWithdrawApply/*）
+    - [x] GET  /adminapi/finance/userWithdrawApply/list（列表）
+    - [x] GET  /adminapi/finance/userWithdrawApply/detail（详情）
+    - [x] POST /adminapi/finance/userWithdrawApply/create（创建）
+    - [x] POST /adminapi/finance/userWithdrawApply/update（更新）
+    - [x] POST /adminapi/finance/userWithdrawApply/del（删除）
+    - [x] POST /adminapi/finance/userWithdrawApply/batch（批量）
+    - （备注）子权限：userWithdrawApplyUpdateManage/userWithdrawApplyDelManage/userWithdrawApplyBatchManage；审核通过需联动资金变动
+  - 对账单 statement（/adminapi/finance/statement/*）
+    - [x] GET  /adminapi/finance/statement/getStatementList（列表）
+    - [x] GET  /adminapi/finance/statement/getStatementStatisticsList（统计）
+    - [x] POST /adminapi/finance/statement/saveStatementDownload（保存下载信息）
+    - [x] GET  /adminapi/finance/statement/exportStatement（导出对账单 CSV）
+    - [x] GET  /adminapi/finance/statement/exportStatementStatistics（导出统计 CSV）
+    - [x] GET  /adminapi/finance/statement/getStatementQueryConfig（查询字段）
+    - （备注）导出统一 UTF-8 BOM + CRLF；字段与筛选对齐 PHP；支持 large dataset 分页/流式
 - [ ] 会员 Member
   
 ### 8) 用户侧模块（User App）
@@ -267,6 +331,8 @@
   - [x] GET  /aftersales/user/aftersales/detailLog（售后日志记录）
   - [x] POST /aftersales/user/aftersales/feedback（提交售后反馈记录）
   - [x] POST /aftersales/user/aftersales/cancel（撤销售后申请）
+ - [ ] 用户账户 User（对齐 PHP /api/user/user/*）
+   - [ ] 修复 POST /api/user/user/logout 404（恢复历史实现）；并核对 login/register/detail/update 等路由的存在性与契约对齐。
 
 ### 7) 验证与发布
 - [ ] 本地构建通过（pnpm build）
@@ -276,6 +342,8 @@
 - [ ] 文档：补 README 或 docs 对应章节
 
 ## 变更记录（完成项之后在此追加）
+ - 2025-09-30：财务模块待办清单：基于 PHP 路由（php/app/adminapi/route/finance.php）梳理 accountPanel/orderInvoice/payLog/refundApply/refundLog/userBalanceLog/userInvoice/userRechargeOrder/userWithdrawApply/statement 的全部接口与子权限，后续将新增 /adminapi 兼容控制器逐项落地并消除 404。
+ - 2025-09-30：内容模块进度更新：确认已存在基础控制器（Article: /admin/content/article；ArticleCategory: /content/article_category），下一步补充 /adminapi 兼容映射与筛选/字段/批量行为对齐；在用户侧模块新增“用户账户 User”待办以修复 /api/user/user/logout 404。
  - 2025-09-30：内容模块待办清单：依据 PHP /adminapi/content 路由梳理出 Article 与 ArticleCategory 的 list/detail/create/update/del/updateField/batch/tree 等接口，标注权限与筛选项；后续将新增 /adminapi 兼容控制器以消除 404 并逐项对齐。
 - 2025-09-29：创建本清单，勾选已完成模块（品牌、分类、翻译、素材库、商品分组、商品评价、商品列表 ids 过滤、ShippingTplList、ProductBatch 兼容路由、面板统计）。
 - 2025-09-29：商品域补齐并对齐完成（除“Product Batch 实际处理逻辑”外）：新增并接通 /adminapi 兼容控制器 productInventoryLog/priceInquiry/productAttributesTpl/productServices；修复若干 Prisma 字段映射问题；统一返回驼峰；productServices 增加 updateField；属性模板 update 入参支持 tplId/tplName/tplData 并序列化存储，create 返回新建记录。

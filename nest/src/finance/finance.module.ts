@@ -12,6 +12,16 @@ import { RefundModule } from "./refund/refund.module";
 import { UserBalanceLogModule } from "./user-balance-log/user-balance-log.module";
 import { StatementModule } from "./statement/statement.module";
 import { BalanceModule } from "./balance/balance.module";
+import { AdminPayLogCompatController } from "./admin-paylog-compat.controller";
+import { AdminRefundApplyCompatController } from "./admin-refund-apply-compat.controller";
+import { AdminUserWithdrawApplyCompatController } from "./admin-user-withdraw-apply-compat.controller";
+import { AdminAccountPanelCompatController } from "./admin-account-panel-compat.controller";
+import { AdminOrderInvoiceCompatController } from "./admin-order-invoice-compat.controller";
+import { AdminUserBalanceLogCompatController } from "./admin-user-balance-log-compat.controller";
+import { AdminUserInvoiceCompatController } from "./admin-user-invoice-compat.controller";
+import { AdminUserRechargeOrderCompatController } from "./admin-user-recharge-order-compat.controller";
+import { AdminStatementCompatController } from "./admin-statement-compat.controller";
+import { AdminRefundLogCompatController } from "./admin-refund-log-compat.controller";
 
 @Module({
   imports: [
@@ -27,6 +37,18 @@ import { BalanceModule } from "./balance/balance.module";
     UserBalanceLogModule,
     StatementModule,
     BalanceModule,
+  ],
+  controllers: [
+    AdminPayLogCompatController,
+    AdminRefundApplyCompatController,
+    AdminRefundLogCompatController,
+    AdminUserWithdrawApplyCompatController,
+    AdminAccountPanelCompatController,
+    AdminOrderInvoiceCompatController,
+    AdminUserBalanceLogCompatController,
+    AdminUserInvoiceCompatController,
+    AdminUserRechargeOrderCompatController,
+    AdminStatementCompatController,
   ],
   exports: [
     AccountPanelModule,

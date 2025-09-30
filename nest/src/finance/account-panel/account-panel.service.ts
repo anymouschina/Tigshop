@@ -80,12 +80,12 @@ export class AccountPanelService {
 
     const trend = (await this.prisma.$queryRaw`
       SELECT
-        DATE_FORMAT(create_time, ${dateFormat}) as date_key,
-        SUM(CASE WHEN change_type > 0 THEN amount ELSE 0 END) as income,
-        SUM(CASE WHEN change_type < 0 THEN amount ELSE 0 END) as expense
+        DATE_FORMAT(FROM_UNIXTIME(change_time), ${dateFormat}) as date_key,
+        SUM(CASE WHEN balance > 0 THEN balance ELSE 0 END) as income,
+        SUM(CASE WHEN balance < 0 THEN balance ELSE 0 END) as expense
       FROM user_balance_log
-      WHERE create_time >= ${startDate} AND create_time <= ${endDate}
-      GROUP BY DATE_FORMAT(create_time, ${dateFormat})
+      WHERE change_time >= ${Math.floor(startDate.getTime() / 1000)} AND change_time <= ${Math.floor(endDate.getTime() / 1000)}
+      GROUP BY DATE_FORMAT(FROM_UNIXTIME(change_time), ${dateFormat})
       ORDER BY date_key
     `) as any[];
 
@@ -95,18 +95,18 @@ export class AccountPanelService {
   async getBalanceRank(limit: number) {
     const rank = await this.prisma.user.findMany({
       select: {
-        id: true,
+        user_id: true,
         username: true,
         mobile: true,
-        user_balance: true,
+        balance: true,
       },
       where: {
-        user_balance: {
+        balance: {
           gt: 0,
         },
       },
       orderBy: {
-        user_balance: "desc",
+        balance: "desc",
       },
       take: limit,
     });
@@ -119,9 +119,9 @@ export class AccountPanelService {
 
     const where: any = {};
     if (start_date && end_date) {
-      where.create_time = {
-        gte: new Date(start_date),
-        lte: new Date(end_date),
+      where.change_time = {
+        gte: Math.floor(new Date(start_date).getTime() / 1000),
+        lte: Math.floor(new Date(end_date).getTime() / 1000),
       };
     }
     if (type) {
@@ -131,22 +131,13 @@ export class AccountPanelService {
     const skip = (page - 1) * size;
 
     const [records, total] = await Promise.all([
-      this.prisma.userBalanceLog.findMany({
+      this.prisma.user_balance_log.findMany({
         where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              mobile: true,
-            },
-          },
-        },
         skip,
         take: size,
-        orderBy: { create_time: "desc" },
+        orderBy: { change_time: "desc" },
       }),
-      this.prisma.userBalanceLog.count({ where }),
+      this.prisma.user_balance_log.count({ where }),
     ]);
 
     return {
@@ -158,10 +149,10 @@ export class AccountPanelService {
   private async getTotalBalance(): Promise<number> {
     const result = await this.prisma.user.aggregate({
       _sum: {
-        user_balance: true,
+        balance: true,
       },
     });
-    return result._sum.user_balance || 0;
+    return Number(result._sum.balance || 0);
   }
 
   private async getTotalFrozen(): Promise<number> {
@@ -170,59 +161,59 @@ export class AccountPanelService {
         frozen_balance: true,
       },
     });
-    return result._sum.frozen_balance || 0;
+    return Number(result._sum.frozen_balance || 0);
   }
 
   private async getTotalIncome(
     startDate?: string,
     endDate?: string,
   ): Promise<number> {
-    const where: any = { change_type: { gt: 0 } };
+    const where: any = { balance: { gt: 0 } };
     if (startDate && endDate) {
-      where.create_time = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+      where.change_time = {
+        gte: Math.floor(new Date(startDate).getTime() / 1000),
+        lte: Math.floor(new Date(endDate).getTime() / 1000),
       };
     }
 
-    const result = await this.prisma.userBalanceLog.aggregate({
+    const result = await this.prisma.user_balance_log.aggregate({
       _sum: {
-        amount: true,
+        balance: true,
       },
       where,
     });
-    return result._sum.amount || 0;
+    return Number(result._sum.balance || 0);
   }
 
   private async getTotalExpense(
     startDate?: string,
     endDate?: string,
   ): Promise<number> {
-    const where: any = { change_type: { lt: 0 } };
+    const where: any = { balance: { lt: 0 } };
     if (startDate && endDate) {
-      where.create_time = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+      where.change_time = {
+        gte: Math.floor(new Date(startDate).getTime() / 1000),
+        lte: Math.floor(new Date(endDate).getTime() / 1000),
       };
     }
 
-    const result = await this.prisma.userBalanceLog.aggregate({
+    const result = await this.prisma.user_balance_log.aggregate({
       _sum: {
-        amount: true,
+        balance: true,
       },
       where,
     });
-    return Math.abs(result._sum.amount || 0);
+    return Math.abs(Number(result._sum.balance || 0));
   }
 
   private async getAccountDistribution() {
     const distribution = (await this.prisma.$queryRaw`
       SELECT
         CASE
-          WHEN user_balance = 0 THEN '0'
-          WHEN user_balance BETWEEN 1 AND 100 THEN '1-100'
-          WHEN user_balance BETWEEN 101 AND 1000 THEN '101-1000'
-          WHEN user_balance BETWEEN 1001 AND 10000 THEN '1001-10000'
+          WHEN balance = 0 THEN '0'
+          WHEN balance BETWEEN 1 AND 100 THEN '1-100'
+          WHEN balance BETWEEN 101 AND 1000 THEN '101-1000'
+          WHEN balance BETWEEN 1001 AND 10000 THEN '1001-10000'
           ELSE '10000+'
         END as range,
         COUNT(*) as count
@@ -235,30 +226,24 @@ export class AccountPanelService {
   }
 
   private async getRecentFlows() {
-    return this.prisma.userBalanceLog.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            mobile: true,
-          },
-        },
-      },
-      orderBy: { create_time: "desc" },
-      take: 10,
-    });
+    return (await this.prisma.$queryRaw`
+      SELECT l.*, u.user_id, u.username, u.mobile
+      FROM user_balance_log l
+      JOIN user u ON u.user_id = l.user_id
+      ORDER BY l.change_time DESC
+      LIMIT 10
+    `) as any[];
   }
 
   private async getPeriodStats(startDate: Date, endDate: Date) {
     const [income, expense, count] = await Promise.all([
       this.getTotalIncome(startDate.toISOString(), endDate.toISOString()),
       this.getTotalExpense(startDate.toISOString(), endDate.toISOString()),
-      this.prisma.userBalanceLog.count({
+      this.prisma.user_balance_log.count({
         where: {
-          create_time: {
-            gte: startDate,
-            lte: endDate,
+          change_time: {
+            gte: Math.floor(startDate.getTime() / 1000),
+            lte: Math.floor(endDate.getTime() / 1000),
           },
         },
       }),
