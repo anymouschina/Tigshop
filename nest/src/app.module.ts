@@ -64,6 +64,11 @@ import { AdminSalesmanOverviewCompatController } from "./salesman/admin-salesman
 import { AdminSalesmanProductCompatController } from "./salesman/admin-salesman-product-compat.controller";
 import { AdminSalesmanMaterialCategoryCompatController } from "./salesman/admin-salesman-material-category-compat.controller";
 import { AdminSalesmanMaterialCompatController } from "./salesman/admin-salesman-material-compat.controller";
+import { AdminSalesmanGroupCompatController } from "./salesman/admin-salesman-group-compat.controller";
+import { AdminSalesmanCompatController } from "./salesman/admin-salesman-compat.controller";
+import { AdminSalesmanContentCompatController } from "./salesman/admin-salesman-content-compat.controller";
+import { AdminSalesmanOrderCompatController } from "./salesman/admin-salesman-order-compat.controller";
+import { AdminSalesmanCustomerTransactionCompatController } from "./salesman/admin-salesman-customer-transaction-compat.controller";
 
 @Module({
   imports: [
@@ -130,6 +135,11 @@ import { AdminSalesmanMaterialCompatController } from "./salesman/admin-salesman
     AdminSalesmanProductCompatController,
     AdminSalesmanMaterialCategoryCompatController,
     AdminSalesmanMaterialCompatController,
+    AdminSalesmanGroupCompatController,
+    AdminSalesmanCompatController,
+    AdminSalesmanContentCompatController,
+    AdminSalesmanOrderCompatController,
+    AdminSalesmanCustomerTransactionCompatController,
   ],
   providers: [
     {
