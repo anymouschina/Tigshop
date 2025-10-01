@@ -211,6 +211,59 @@ export class ProductController {
   }
 
   /**
+   * 批量获取商品价格 - 对齐PHP版本 product/product/getPriceInBatches
+   */
+  @Post("getPriceInBatches")
+  @ApiOperation({ summary: "批量获取商品价格" })
+  async getPriceInBatches(
+    @Body()
+    body: {
+      products: { productId: number; skuId: number | string }[];
+    },
+  ) {
+    const items = Array.isArray(body?.products) ? body.products : [];
+    const results = await Promise.all(
+      items.map(async (item) => {
+        // 这里没有与PHP完全一致的 getProductSkuDetail 方法，尽量从 product_sku 与 product 获取数据
+        try {
+          const product = await this.productService.findById(Number(item.productId));
+          // 尝试从 sku 表读取价格与库存
+          let skuInfo: any = null;
+          try {
+            const skuIdNum = Number(item.skuId);
+            if (!Number.isNaN(skuIdNum)) {
+              skuInfo = await (this.productDetailService as any).prisma.product_sku.findFirst({
+                where: { product_id: Number(item.productId), sku_id: skuIdNum },
+              });
+            }
+          } catch (_) {}
+          const originPrice = Number(product.market_price || product.product_price || 0);
+          const price = Number((skuInfo?.sku_price ?? product.product_price) || 0);
+          const stock = Number((skuInfo?.sku_stock ?? product.product_stock) || 0);
+          return {
+            origin_price: originPrice,
+            price: price,
+            stock: stock,
+            promotion: null,
+            sku_id: item.skuId,
+            product_id: item.productId,
+          };
+        } catch (_) {
+          return {
+            origin_price: 0,
+            price: 0,
+            stock: 0,
+            promotion: null,
+            sku_id: item.skuId,
+            product_id: item.productId,
+          };
+        }
+      }),
+    );
+    return results;
+  }
+
+  /**
    * 获取商品优惠券 - 对齐PHP版本 product/product/getCoupon
    */
   @Get("getCoupon")

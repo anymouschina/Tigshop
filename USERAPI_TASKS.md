@@ -95,7 +95,7 @@
     - [x] GET  /api/product/product/getFeedbackList
     - [x] GET  /api/product/product/getProductAvailability
     - [x] GET  /api/product/product/getBatchProductAvailability
-    - [ ] POST /api/product/product/getPriceInBatches
+  - [x] POST /api/product/product/getPriceInBatches
     - [x] POST /api/product/product/getProductAmount
     - [x] GET  /api/product/product/list
     - [x] GET  /api/product/product/getCoupon
@@ -187,11 +187,11 @@
   - [x] POST /api/user/collectProduct/save（需登录）
   - [x] POST /api/user/collectProduct/cancel（需登录）
 - comment（评论晒单，需登录）
-  - [ ] GET  /api/user/comment/subNum（需登录）
-  - [ ] GET  /api/user/comment/showedList（需登录）
-  - [ ] GET  /api/user/comment/list（需登录）
-  - [ ] POST /api/user/comment/evaluate（需登录）
-  - [ ] GET  /api/user/comment/detail（需登录）
+  - [x] GET  /api/user/comment/subNum（需登录）
+  - [x] GET  /api/user/comment/showedList（需登录）
+  - [x] GET  /api/user/comment/list（需登录）
+  - [x] POST /api/user/comment/evaluate（需登录）
+  - [x] GET  /api/user/comment/detail（需登录）
 - coupon（优惠券）
   - [x] GET  /api/user/coupon/list（需登录）
   - [x] POST /api/user/coupon/del（需登录）
@@ -244,7 +244,7 @@
   - [x] POST /api/user/orderInvoice/create（需登录）
   - [x] POST /api/user/orderInvoice/update（需登录）
 - pointsLog（积分，需登录）
-  - [ ] GET  /api/user/pointsLog/list（需登录）
+  - [x] GET  /api/user/pointsLog/list（需登录）
 - rechargeOrder（充值，需登录）
   - [x] GET  /api/user/rechargeOrder/list（需登录）
   - [x] POST /api/user/rechargeOrder/update（需登录）
@@ -284,15 +284,15 @@
   - [ ] POST /api/user/user/close（需登录）
   - [ ] GET  /api/user/user/userOpenId（需登录）
 - withdrawApply（提现，需登录）
-  - [ ] GET  /api/user/withdrawApply/list（需登录）
-  - [ ] POST /api/user/withdrawApply/createAccount（需登录）
-  - [ ] POST /api/user/withdrawApply/updateAccount（需登录）
-  - [ ] GET  /api/user/withdrawApply/accountDetail（需登录）
-  - [ ] POST /api/user/withdrawApply/delAccount（需登录）
-  - [ ] POST /api/user/withdrawApply/apply（需登录）
+  - [x] GET  /api/user/withdrawApply/list（需登录）
+  - [x] POST /api/user/withdrawApply/createAccount（需登录）
+  - [x] POST /api/user/withdrawApply/updateAccount（需登录）
+  - [x] GET  /api/user/withdrawApply/accountDetail（需登录）
+  - [x] POST /api/user/withdrawApply/delAccount（需登录）
+  - [x] POST /api/user/withdrawApply/apply（需登录）
 - sign（签到，需登录）
-  - [ ] GET  /api/user/sign/index（需登录）
-  - [ ] GET  /api/user/sign/sign（需登录）
+  - [x] GET  /api/user/sign/index（需登录）
+  - [x] GET  /api/user/sign/sign（需登录）
 - company（企业认证，需登录）
   - [x] POST /api/user/company/apply（需登录）
   - [x] GET  /api/user/company/detail（需登录）

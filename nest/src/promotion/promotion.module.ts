@@ -34,6 +34,8 @@ import { AdminRechargeSettingCompatController } from "./admin-recharge-setting-c
 import { AdminWechatLiveCompatController } from "./admin-wechat-live-compat.controller";
 import { AdminSignInCompatController } from "./admin-sign-in-compat.controller";
 import { AdminSignInSettingCompatController } from "./admin-sign-in-setting-compat.controller";
+import { UserSignApiCompatController } from "./user-sign.api-compat.controller";
+import { UserPointsLogModule } from "../user/user-points-log/user-points-log.module";
 
 @Module({
   imports: [
@@ -42,6 +44,7 @@ import { AdminSignInSettingCompatController } from "./admin-sign-in-setting-comp
     RechargeSettingModule,
     TimeDiscountModule,
     WechatLiveModule,
+    UserPointsLogModule,
   ],
   controllers: [
     PromotionController,
@@ -63,6 +66,7 @@ import { AdminSignInSettingCompatController } from "./admin-sign-in-setting-comp
     AdminWechatLiveCompatController,
     AdminSignInCompatController,
     AdminSignInSettingCompatController,
+    UserSignApiCompatController,
   ],
   providers: [
     PromotionService,
