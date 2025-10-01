@@ -46,6 +46,8 @@
 - recommend（推荐位）
   - [x] GET /api/common/recommend/guessLike
   - [x] GET /api/common/recommend/getProductIds
+ - currency（货币）
+  - [x] GET /api/common/currency/getCurrency
   - [x] POST /api/common/verification/captcha
     - [ ] GET /api/common/config/base
     - [x] GET /api/common/config/initConfigSettings（同 base）
@@ -56,16 +58,11 @@
     - [x] GET /api/common/log
 
 ## article（文章）
-    - [ ] GET /api/common/recommend/guessLike
-    - [x] GET /api/common/recommend/getProductIds
-  - [ ] GET /api/article/article/list
-  - [ ] GET /api/article/article/newsInfo
-    - [x] POST /api/common/verification/captcha
-    - [x] POST /api/common/verification/check
-    - [ ] POST /api/common/verification/verification
-  - [ ] GET /api/article/category/indexBzzxList
-
-    - [x] GET /api/common/csrf/create
+  - [x] GET /api/article/article/list
+  - [x] GET /api/article/article/newsInfo
+  - [x] GET /api/article/article/issueInfo
+  - [x] GET /api/article/category/list
+  - [x] GET /api/article/category/indexBzzxList
 
 - cart
     - [x] GET  /api/cart/cart/list（需登录）
