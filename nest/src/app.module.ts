@@ -80,6 +80,8 @@ import { AdminLocalesCompatController } from "./lang/admin-locales-compat.contro
 import { AdminLocalesRelationCompatController } from "./lang/admin-locales-relation-compat.controller";
 import { AdminCurrencyCompatController } from "./lang/admin-currency-compat.controller";
 import { AdminAreaCodeCompatController } from "./setting/area-code/admin-area-code-compat.controller";
+import { SearchGuessController } from "./search/search-guess.controller";
+import { AppVersionController } from "./app-version/app-version.controller";
 
 @Module({
   imports: [
@@ -129,6 +131,9 @@ import { AdminAreaCodeCompatController } from "./setting/area-code/admin-area-co
   ],
   controllers: [
     AppController,
+    // Public user-side compat controllers
+    SearchGuessController,
+  AppVersionController,
     AdminUserCompatController,
     DecorateDiscreteCompatController,
     MerchantApplyCompatController,

@@ -7,10 +7,13 @@ import { RecommendModule } from "./recommend/recommend.module";
 import { ApiCsrfController } from "./api-csrf.controller";
 import { CommonCsrfService } from "./services/common-csrf.service";
 import { TipsManageModule } from "./tips-manage/tips-manage.module";
+import { CommonPcController } from "./pc/pc.controller";
+import { CommonUtilController } from "./util/util.controller";
+import { WechatModule } from "../wechat/wechat.module";
 
 @Module({
-  imports: [ConfigModule, RecommendModule, TipsManageModule],
-  controllers: [LogController, CommonConfigController, ApiCsrfController],
+  imports: [ConfigModule, RecommendModule, TipsManageModule, WechatModule],
+  controllers: [LogController, CommonConfigController, ApiCsrfController, CommonPcController, CommonUtilController],
   providers: [CommonConfigService, CommonCsrfService],
 })
 export class CommonModule {}

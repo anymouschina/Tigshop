@@ -30,29 +30,29 @@
 
 - config（配置）
   - [ ] GET /api/common/config/base
-  - [ ] GET /api/common/config/initConfigSettings（同 base）
-  - [ ] GET /api/common/config/themeSettings
-  - [ ] GET /api/common/config/mobileAreaCode
-  - [ ] GET /api/common/config/afterSalesService
+  - [x] GET /api/common/config/initConfigSettings（同 base）
+  - [x] GET /api/common/config/themeSettings
+  - [x] GET /api/common/config/mobileAreaCode
+  - [x] GET /api/common/config/afterSalesService
 - log
-  - [ ] GET /api/common/log
+  - [x] GET /api/common/log
 - pc（PC 站）
-  - [ ] GET /api/common/pc/getHeader
-  - [ ] GET /api/common/pc/getNav
-  - [ ] GET /api/common/pc/getCatFloor
+  - [x] GET /api/common/pc/getHeader
+  - [x] GET /api/common/pc/getNav
+  - [x] GET /api/common/pc/getCatFloor
 - util（工具）
-  - [ ] GET /api/common/util/qrCode
-  - [ ] GET /api/common/util/miniCode
+  - [x] GET /api/common/util/qrCode
+  - [x] GET /api/common/util/miniCode
 - recommend（推荐位）
-  - [ ] GET /api/common/recommend/guessLike
-  - [ ] GET /api/common/recommend/getProductIds
-  - [ ] POST /api/common/verification/captcha
+  - [x] GET /api/common/recommend/guessLike
+  - [x] GET /api/common/recommend/getProductIds
+  - [x] POST /api/common/verification/captcha
     - [ ] GET /api/common/config/base
     - [x] GET /api/common/config/initConfigSettings（同 base）
     - [x] GET /api/common/config/themeSettings
     - [x] GET /api/common/config/mobileAreaCode
     - [ ] GET /api/common/config/afterSalesService
-  - [ ] GET /api/common/csrf/create
+  - [x] GET /api/common/csrf/create
     - [x] GET /api/common/log
 
 ## article（文章）
@@ -88,8 +88,8 @@
     - [x] GET /api/category/category/relateArticle
     - [x] GET /api/category/category/relateLookAlso
     - [x] GET /api/category/category/hot
-  - [ ] GET /api/category/category/relateLookAlso
-  - [ ] GET /api/category/category/hot
+  - [x] GET /api/category/category/relateLookAlso
+  - [x] GET /api/category/category/hot
     - [x] GET /api/decorate/discrete/getOpenAdvertising
 ## decorate（装修离散）
 
@@ -117,7 +117,7 @@
 - check（结算，需登录）
   - [x] POST /api/order/check/index（需登录）
     - [x] GET /api/user/account/list（需登录）
-  - [ ] POST /api/order/check/updateCoupon（需登录）
+  - [x] POST /api/order/check/updateCoupon（需登录）
   - [x] POST /api/order/check/submit（需登录）
     - [x] GET  /api/user/address/list（需登录）
     - [x] GET  /api/user/address/detail（需登录）
@@ -140,24 +140,24 @@
     - [x] POST /api/user/order/confirmReceipt（需登录）
     - [x] GET  /api/user/order/shippingInfo（需登录）
     - [x] POST /api/user/order/buyAgain（需登录）
-  - [ ] GET  /api/product/product/getFeedbackList
-  - [ ] GET  /api/product/product/getProductAvailability
+  - [x] GET  /api/product/product/getFeedbackList
+  - [x] GET  /api/product/product/getProductAvailability
     - [x] POST /api/user/regist/registAct
     - [x] POST /api/user/regist/sendEmailCode
-  - [ ] POST /api/product/product/getProductAmount
-  - [ ] GET  /api/product/product/list
-  - [ ] GET  /api/product/product/getCoupon
-  - [ ] GET  /api/product/product/isCollect
-  - [ ] POST /api/product/product/promotion
-  - [ ] GET  /api/product/product/getRelated
+  - [x] POST /api/product/product/getProductAmount
+  - [x] GET  /api/product/product/list
+  - [x] GET  /api/product/product/getCoupon
+  - [x] GET  /api/product/product/isCollect
+  - [x] POST /api/product/product/promotion
+  - [x] GET  /api/product/product/getRelated
 
 ## search（搜索）
 
 - search
-  - [ ] GET /api/search/search/getFilter
-  - [ ] GET /api/search/search/getProduct
+  - [x] GET /api/search/search/getFilter
+  - [x] GET /api/search/search/getProduct
 - searchGuess（关键词）
-  - [ ] GET /api/search/searchGuess/index
+  - [x] GET /api/search/searchGuess/index
 
 ## sys（系统/地区）
 
@@ -169,14 +169,14 @@
 ## user（会员中心）
 
 - account（账户明细，需登录）
-  - [ ] GET /api/user/account/list（需登录）
+  - [x] GET /api/user/account/list（需登录）
 - address（收货地址，需登录）
-  - [ ] GET  /api/user/address/list（需登录）
-  - [ ] GET  /api/user/address/detail（需登录）
-  - [ ] POST /api/user/address/create（需登录）
-  - [ ] POST /api/user/address/update（需登录）
-  - [ ] POST /api/user/address/del（需登录）
-  - [ ] POST /api/user/address/setSelected（需登录）
+  - [x] GET  /api/user/address/list（需登录）
+  - [x] GET  /api/user/address/detail（需登录）
+  - [x] POST /api/user/address/create（需登录）
+  - [x] POST /api/user/address/update（需登录）
+  - [x] POST /api/user/address/del（需登录）
+  - [x] POST /api/user/address/setSelected（需登录）
 - aftersales（售后，需登录）
   - [ ] GET  /api/user/aftersales/list（需登录）
   - [ ] GET  /api/user/aftersales/config（需登录）
@@ -213,9 +213,9 @@
   - [ ] POST /api/user/invoice/update（需登录）
   - [ ] GET  /api/user/invoice/getStatus（需登录）
 - login（登录/验证码/微信授权等）
-  - [ ] GET  /api/user/login/getQuickLoginSetting
-  - [ ] POST /api/user/login/signin
-  - [ ] POST /api/user/login/sendMobileCode
+  - [x] GET  /api/user/login/getQuickLoginSetting
+  - [x] POST /api/user/login/signin
+  - [x] POST /api/user/login/sendMobileCode
   - [ ] POST /api/user/login/checkMobile
   - [ ] POST /api/user/login/checkEmail
   - [ ] POST /api/user/login/forgetPassword
@@ -237,14 +237,14 @@
   - [ ] POST /api/user/message/updateMessageRead（需登录）
   - [ ] POST /api/user/message/del（需登录）
 - order（订单，需登录）
-  - [ ] GET  /api/user/order/list（需登录）
-  - [ ] GET  /api/user/order/detail（需登录）
-  - [ ] GET  /api/user/order/orderNum（需登录）
-  - [ ] POST /api/user/order/cancelOrder（需登录）
-  - [ ] POST /api/user/order/delOrder（需登录）
-  - [ ] POST /api/user/order/confirmReceipt（需登录）
-  - [ ] GET  /api/user/order/shippingInfo（需登录）
-  - [ ] POST /api/user/order/buyAgain（需登录）
+  - [x] GET  /api/user/order/list（需登录）
+  - [x] GET  /api/user/order/detail（需登录）
+  - [x] GET  /api/user/order/orderNum（需登录）
+  - [x] POST /api/user/order/cancelOrder（需登录）
+  - [x] POST /api/user/order/delOrder（需登录）
+  - [x] POST /api/user/order/confirmReceipt（需登录）
+  - [x] GET  /api/user/order/shippingInfo（需登录）
+  - [x] POST /api/user/order/buyAgain（需登录）
 - orderInvoice（订单发票，需登录）
   - [ ] GET  /api/user/orderInvoice/detail（需登录）
   - [ ] POST /api/user/orderInvoice/create（需登录）
@@ -309,7 +309,7 @@
 
 ## appVersion（应用版本）
 
-- [ ] POST /api/appVersion/getAppUpdate
+- [x] POST /api/appVersion/getAppUpdate
 
 ---
 
@@ -334,7 +334,6 @@
 - 已存在（路径对齐 /api/...）：
   - common
     - GET /api/common/log（LogController）
-    - GET /api/common/csrf/create（ApiCsrfController）
     - GET /api/common/recommend/getProductIds（RecommendController）
     - common/config（CommonConfigController）：
       - GET /api/common/config/themeSettings
@@ -345,13 +344,16 @@
       - POST /api/common/verification/check（兼容前端验证接口）
   - decorate
     - GET /api/decorate/discrete/getOpenAdvertising（UserDecorateController）
-  - category（CategoryController）
     - GET /api/category/category/parentTree
     - GET /api/category/category/all
     - GET /api/category/category/list
-    - GET /api/category/category/relateInfo
+    - [x] GET /api/common/pc/getHeader
+    - [x] GET /api/common/pc/getNav
+    - [x] GET /api/common/pc/getCatFloor
     - GET /api/category/category/getRelateCategory
     - GET /api/category/category/getRelateBrand
+    - [x] GET /api/common/util/qrCode
+    - [x] GET /api/common/util/miniCode
     - GET /api/category/category/getRelateArticle
     - GET /api/category/category/getRelateRank
     - GET /api/category/category/getRelateLookAlso
@@ -399,16 +401,16 @@
 
 - 存在但路径不完全一致（需调整对齐）：
   - user/login 部分接口当前路径为 /api/user/user/login/...，应对齐为 /api/user/login/...（如 sendEmailCode、checkMobile、checkEmail、forgetPassword 等）
-  - user/collectProduct 在 CollectController 下为 /api/user/collect/collectProduct/list，期望为 /api/user/collectProduct/list
+  - user/collectProduct 兼容路径已补充：/api/user/collectProduct/*（list/save/cancel）
   - user/user 下的部分接口当前为 /api/user/...（少一层 user），例如 updateInformation、memberCenter、historyProduct、delHistoryProduct、logout、close、userOpenId 等；需决定是否增加别名以完全对齐 PHP 路径 /api/user/user/...
 
-- 尚未发现或缺失的模块（建议后续接通）：
-  - home（/api/home/home/*、/api/home/share/import）
-  - sys/region（/api/sys/region/*）
+-- 尚未发现或缺失的模块（建议后续接通）：
+  - home（/api/home/home/* 已实现；/api/home/share/import 待定）
+  - sys/region（/api/sys/region/* 已实现）
   - product/exchange（/api/product/exchange/*）
   - user 子模块：aftersales、comment、coupon、feedback、invoice、message、orderInvoice、pointsLog、rechargeOrder、withdrawApply、sign、company、oauth
   - common：pc（getHeader/getNav/getCatFloor）、util（qrCode/miniCode）、currency（getCurrency）
   - article：/api/article/article/*、/api/article/category/*
-  - order：/api/order/check/*、/api/order/pay/*
+  - order：/api/order/check/*、/api/order/pay/* 已对齐（updateCoupon 仍待验证）
 
 提示：为兼容历史前端，建议优先补齐 user/login 路由别名、user/user 路由别名，以及 /api/home 与 /api/sys/region 基础接口；其余模块按业务优先级逐步对齐。
