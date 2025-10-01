@@ -19,52 +19,40 @@ export class ShippingTplService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: ShippingTplQueryDto) {
-    const {
-      keyword,
-      page = 1,
-      size = 15,
-      status,
-      sortField = "tpl_id",
-      sortOrder = "desc",
-    } = queryDto;
+    const { keyword, page = 1, size = 15, sortField = "tpl_id", sortOrder = "desc" } = queryDto;
+    const offset = Math.max(0, (page - 1) * size);
 
-    const skip = (page - 1) * size;
+    // Prisma schema marks shipping_tpl as @@ignore (no delegate). Use raw SQL safely.
+    const allowedSortMap: Record<string, string> = {
+      tpl_id: "shipping_tpl_id",
+      id: "shipping_tpl_id",
+      name: "shipping_tpl_name",
+      shipping_tpl_name: "shipping_tpl_name",
+      is_default: "is_default",
+      pricing_type: "pricing_type",
+      is_free: "is_free",
+    };
+    const orderCol = allowedSortMap[String(sortField).toLowerCase()] || "shipping_tpl_id";
+    const orderDir = String(sortOrder).toLowerCase() === "asc" ? "ASC" : "DESC";
 
-    const where: any = {};
+    const whereSql = keyword ? "WHERE `shipping_tpl_name` LIKE ?" : "";
+    const whereParams: any[] = keyword ? [`%${keyword}%`] : [];
 
-    if (keyword) {
-      where.OR = [
-        { tpl_id: { contains: keyword } },
-        { name: { contains: keyword } },
-        { is_default: { contains: keyword } },
-        { status: { contains: keyword } },
-      ];
-    }
+    const listSql = `SELECT shipping_tpl_id, shipping_tpl_name, shipping_time, is_free, pricing_type, is_default, shop_id
+      FROM \`shipping_tpl\`
+      ${whereSql}
+      ORDER BY ${orderCol} ${orderDir}
+      LIMIT ? OFFSET ?`;
 
-    if (status !== undefined) {
-      where.status = status;
-    }
+    const countSql = `SELECT COUNT(*) as total FROM \`shipping_tpl\` ${whereSql}`;
 
-    const orderBy: any = {};
-    orderBy[sortField] = sortOrder;
-
-    const [records, total] = await Promise.all([
-      this.prisma.shipping_tpl.findMany({
-        where,
-        skip,
-        take: size,
-        orderBy,
-      }),
-      this.prisma.shipping_tpl.count({ where }),
+    const [records, countRows]: [any[], any[]] = await Promise.all([
+      this.prisma.$queryRawUnsafe(listSql, ...whereParams, Number(size), Number(offset)),
+      this.prisma.$queryRawUnsafe(countSql, ...whereParams),
     ]);
 
-    return {
-      records,
-      total,
-      page,
-      size,
-      totalPages: Math.ceil(total / size),
-    };
+    const total = Number((countRows?.[0]?.total) || 0);
+    return { records, total, page, size, totalPages: Math.ceil(total / size) };
   }
 
   // 兼容 admin 端简单列表调用

@@ -13,7 +13,7 @@ export class MailTemplateService {
 
     // 如果不需要分页，返回所有结果
     if (!filter.paging) {
-      const results = await this.prisma.mailTemplates.findMany({
+      const results = await this.prisma.mail_templates.findMany({
         where,
         orderBy,
       });
@@ -24,7 +24,7 @@ export class MailTemplateService {
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
 
-    const results = await this.prisma.mailTemplates.findMany({
+    const results = await this.prisma.mail_templates.findMany({
       where,
       orderBy,
       skip,
@@ -35,8 +35,8 @@ export class MailTemplateService {
   }
 
   async getFilterCount(filter: any): Promise<number> {
-    const where = this.buildWhereClause(filter);
-    return this.prisma.mailTemplates.count({ where });
+  const where = this.buildWhereClause(filter);
+  return this.prisma.mail_templates.count({ where });
   }
 
   private buildWhereClause(filter: any): any {
@@ -90,7 +90,7 @@ export class MailTemplateService {
   }
 
   async getDetail(templateId: number): Promise<any> {
-    const result = await this.prisma.mailTemplates.findUnique({
+    const result = await this.prisma.mail_templates.findUnique({
       where: { template_id: templateId },
     });
 
@@ -118,7 +118,7 @@ export class MailTemplateService {
     }
 
     // 检查模板代码是否已存在
-    const existingTemplate = await this.prisma.mailTemplates.findFirst({
+    const existingTemplate = await this.prisma.mail_templates.findFirst({
       where: {
         template_code: data.template_code,
       },
@@ -128,15 +128,15 @@ export class MailTemplateService {
       throw new Error("模板代码已存在");
     }
 
-    const result = await this.prisma.mailTemplates.create({
+    const result = await this.prisma.mail_templates.create({
       data: {
         template_code: data.template_code,
-        is_html: data.is_html,
+        is_html: data.is_html ? 1 : 0,
         template_subject: data.template_subject,
         template_content: data.template_content,
         type: data.type || MailTemplateType.TEMPLATE,
-        last_modify: new Date(),
-        last_send: null,
+        last_modify: Math.floor(Date.now() / 1000),
+        last_send: 0,
       },
     });
 
@@ -144,7 +144,7 @@ export class MailTemplateService {
   }
 
   async update(templateId: number, data: any): Promise<any> {
-    const mailTemplate = await this.prisma.mailTemplates.findUnique({
+    const mailTemplate = await this.prisma.mail_templates.findUnique({
       where: { template_id: templateId },
     });
 
@@ -181,7 +181,7 @@ export class MailTemplateService {
       data.template_code &&
       data.template_code !== mailTemplate.template_code
     ) {
-      const existingTemplate = await this.prisma.mailTemplates.findFirst({
+      const existingTemplate = await this.prisma.mail_templates.findFirst({
         where: {
           template_code: data.template_code,
           template_id: { not: templateId },
@@ -194,18 +194,18 @@ export class MailTemplateService {
     }
 
     const updateData: any = {
-      last_modify: new Date(),
+      last_modify: Math.floor(Date.now() / 1000),
     };
     if (data.template_code !== undefined)
       updateData.template_code = data.template_code;
-    if (data.is_html !== undefined) updateData.is_html = data.is_html;
+    if (data.is_html !== undefined) updateData.is_html = data.is_html ? 1 : 0;
     if (data.template_subject !== undefined)
       updateData.template_subject = data.template_subject;
     if (data.template_content !== undefined)
       updateData.template_content = data.template_content;
     if (data.type !== undefined) updateData.type = data.type;
 
-    const result = await this.prisma.mailTemplates.update({
+    const result = await this.prisma.mail_templates.update({
       where: { template_id: templateId },
       data: updateData,
     });
@@ -218,7 +218,7 @@ export class MailTemplateService {
     field: string,
     value: any,
   ): Promise<boolean> {
-    const mailTemplate = await this.prisma.mailTemplates.findUnique({
+    const mailTemplate = await this.prisma.mail_templates.findUnique({
       where: { template_id: templateId },
     });
 
@@ -240,7 +240,7 @@ export class MailTemplateService {
 
     // 如果更新模板代码，检查是否已存在
     if (field === "template_code" && value !== mailTemplate.template_code) {
-      const existingTemplate = await this.prisma.mailTemplates.findFirst({
+      const existingTemplate = await this.prisma.mail_templates.findFirst({
         where: {
           template_code: value,
           template_id: { not: templateId },
@@ -252,11 +252,13 @@ export class MailTemplateService {
       }
     }
 
-    const result = await this.prisma.mailTemplates.update({
+    const normalized: any =
+      field === "is_html" ? (value ? 1 : 0) : value;
+    const result = await this.prisma.mail_templates.update({
       where: { template_id: templateId },
       data: {
-        [field]: value,
-        last_modify: new Date(),
+        [field]: normalized,
+        last_modify: Math.floor(Date.now() / 1000),
       },
     });
 
@@ -264,7 +266,7 @@ export class MailTemplateService {
   }
 
   async delete(templateId: number): Promise<boolean> {
-    const mailTemplate = await this.prisma.mailTemplates.findUnique({
+    const mailTemplate = await this.prisma.mail_templates.findUnique({
       where: { template_id: templateId },
     });
 
@@ -272,7 +274,7 @@ export class MailTemplateService {
       throw new Error("邮件模板不存在");
     }
 
-    const result = await this.prisma.mailTemplates.delete({
+    const result = await this.prisma.mail_templates.delete({
       where: { template_id: templateId },
     });
 
@@ -280,7 +282,7 @@ export class MailTemplateService {
   }
 
   async batchDelete(templateIds: number[]): Promise<boolean> {
-    await this.prisma.mailTemplates.deleteMany({
+    await this.prisma.mail_templates.deleteMany({
       where: { template_id: { in: templateIds } },
     });
 
@@ -289,7 +291,7 @@ export class MailTemplateService {
 
   // 根据模板代码获取模板
   async getTemplateByCode(templateCode: string): Promise<any> {
-    const result = await this.prisma.mailTemplates.findFirst({
+    const result = await this.prisma.mail_templates.findFirst({
       where: {
         template_code: templateCode,
       },
@@ -300,7 +302,7 @@ export class MailTemplateService {
 
   // 获取所有邮件模板
   async getAllMailTemplates(): Promise<any[]> {
-    const results = await this.prisma.mailTemplates.findMany({
+    const results = await this.prisma.mail_templates.findMany({
       orderBy: {
         template_id: "desc",
       },
@@ -311,10 +313,10 @@ export class MailTemplateService {
 
   // 更新邮件发送时间
   async updateLastSendTime(templateId: number): Promise<void> {
-    await this.prisma.mailTemplates.update({
+    await this.prisma.mail_templates.update({
       where: { template_id: templateId },
       data: {
-        last_send: new Date(),
+        last_send: Math.floor(Date.now() / 1000),
       },
     });
   }
@@ -324,7 +326,7 @@ export class MailTemplateService {
     templateId: number,
     variables: any = {},
   ): Promise<string> {
-    const template = await this.prisma.mailTemplates.findUnique({
+    const template = await this.prisma.mail_templates.findUnique({
       where: { template_id: templateId },
     });
 

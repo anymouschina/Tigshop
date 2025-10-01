@@ -24,6 +24,7 @@ import { AdminShippingTplCompatController } from "./shipping-tpl/admin-shipping-
 import { AdminFriendLinksCompatController } from "./friend-links/admin-friendLinks-compat.controller";
 import { AdminAppVersionCompatController } from "./app-version/admin-appVersion-compat.controller";
 import { AdminMessageTypeCompatController } from "./message-type/admin-message-type-compat.controller";
+import { AdminMailTemplatesCompatController } from "./mail-templates/admin-mailTemplates-compat.controller";
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AdminMessageTypeCompatController } from "./message-type/admin-message-t
     AdminFriendLinksCompatController,
     AdminAppVersionCompatController,
   AdminMessageTypeCompatController,
+    AdminMailTemplatesCompatController,
     MessageTemplateController,
     MailTemplateController,
     MessageTypeController,

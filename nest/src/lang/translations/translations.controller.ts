@@ -63,6 +63,34 @@ export class TranslationsController {
     return { code: 0, message: "success", data: { translation: text } };
   }
 
+  // 列表：/adminapi/lang/translations/list?page=1&size=15&dataType=0&localeIds=1,2（GET）
+  @Get("list")
+  @ApiOperation({ summary: "翻译列表（兼容）" })
+  async list(@Query() query: any) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const size = Math.max(1, Number(query.size) || 15);
+    const dataType = query.dataType !== undefined && query.dataType !== null && query.dataType !== ""
+      ? Number(query.dataType)
+      : undefined;
+    const localeIds = (query.localeIds ?? "")
+      .toString()
+      .split(",")
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0)
+      .map((s: string) => Number(s))
+      .filter((n: number) => !Number.isNaN(n));
+
+    const filter = {
+      page,
+      size,
+      dataType,
+      localeIds: localeIds.length ? localeIds : undefined,
+    } as const;
+
+    const res = await this.translationsService.getList(filter);
+    return { code: 0, message: "success", data: res };
+  }
+
   // 兼容：获取最多 3 个启用的语言
   @Get("getLocalesLimit3")
   @ApiOperation({ summary: "获取最多3个可用语言（兼容）" })

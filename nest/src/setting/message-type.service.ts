@@ -12,13 +12,18 @@ export const MESSAGE_SEND_TYPE_NAMES = {
 export class MessageTypeService {
   constructor(private prisma: PrismaService) {}
 
+  private get model() {
+    // 通过动态键访问，避免类型推断导致的 undefined 读取
+    return (this.prisma as any)["message_type"];
+  }
+
   async getFilterResult(filter: any): Promise<any[]> {
     const where = this.buildWhereClause(filter);
     const orderBy = this.buildOrderBy(filter);
 
     // 如果不需要分页，返回所有结果
     if (!filter.paging) {
-      const results = await this.prisma.messageType.findMany({
+      const results = await this.model.findMany({
         where,
         orderBy,
       });
@@ -29,7 +34,7 @@ export class MessageTypeService {
     const skip = (filter.page - 1) * filter.size;
     const take = filter.size;
 
-    const results = await this.prisma.messageType.findMany({
+    const results = await this.model.findMany({
       where,
       orderBy,
       skip,
@@ -41,13 +46,11 @@ export class MessageTypeService {
 
   async getFilterCount(filter: any): Promise<number> {
     const where = this.buildWhereClause(filter);
-    return this.prisma.messageType.count({ where });
+    return this.model.count({ where });
   }
 
   private buildWhereClause(filter: any): any {
-    const where: any = {
-      is_deleted: false,
-    };
+    const where: any = {};
 
     // 关键词搜索
     if (filter.keyword) {
@@ -66,8 +69,12 @@ export class MessageTypeService {
     }
 
     // 发送类型筛选
-    if (filter.send_type) {
-      where.send_type = filter.send_type;
+    if (filter.send_type !== undefined && filter.send_type !== null && filter.send_type !== "") {
+      // schema 中 send_type 为 Boolean?，前端传 1/2（会员/商家）时做兼容，非 0 视为 true
+      const val = Number(filter.send_type);
+      if (!Number.isNaN(val)) {
+        where.send_type = !!val && val !== 0;
+      }
     }
 
     // 消息ID筛选
@@ -90,7 +97,7 @@ export class MessageTypeService {
   }
 
   async getDetail(messageId: number): Promise<any> {
-    const result = await this.prisma.messageType.findUnique({
+    const result = await this.model.findUnique({
       where: { message_id: messageId },
     });
 
@@ -123,7 +130,7 @@ export class MessageTypeService {
       throw new Error("至少需要启用一种消息渠道");
     }
 
-    const result = await this.prisma.messageType.create({
+    const result = await this.model.create({
       data: {
         name: data.name,
         describe: data.describe || "",
@@ -135,7 +142,6 @@ export class MessageTypeService {
         is_app: data.is_app || false,
         is_ding: data.is_ding || false,
         add_time: Math.floor(Date.now() / 1000),
-        is_deleted: false,
       },
     });
 
@@ -143,7 +149,7 @@ export class MessageTypeService {
   }
 
   async update(messageId: number, data: any): Promise<any> {
-    const messageType = await this.prisma.messageType.findUnique({
+    const messageType = await this.model.findUnique({
       where: { message_id: messageId },
     });
 
@@ -198,7 +204,7 @@ export class MessageTypeService {
       }
     }
 
-    const result = await this.prisma.messageType.update({
+    const result = await this.model.update({
       where: { message_id: messageId },
       data: updateData,
     });
@@ -211,7 +217,7 @@ export class MessageTypeService {
     field: string,
     value: any,
   ): Promise<boolean> {
-    const messageType = await this.prisma.messageType.findUnique({
+    const messageType = await this.model.findUnique({
       where: { message_id: messageId },
     });
 
@@ -254,7 +260,7 @@ export class MessageTypeService {
       }
     }
 
-    const result = await this.prisma.messageType.update({
+    const result = await this.model.update({
       where: { message_id: messageId },
       data: {
         [field]: value,
@@ -265,7 +271,7 @@ export class MessageTypeService {
   }
 
   async delete(messageId: number): Promise<boolean> {
-    const messageType = await this.prisma.messageType.findUnique({
+    const messageType = await this.model.findUnique({
       where: { message_id: messageId },
     });
 
@@ -274,9 +280,9 @@ export class MessageTypeService {
     }
 
     // 检查是否有关联的消息模板
-    const relatedTemplates = await this.prisma.messageTemplate.count({
+    const relatedTemplates = await (this.prisma as any)["message_template"].count({
       where: {
-        message_id: messageType.message_id.toString(),
+        message_id: messageType.message_id,
       },
     });
 
@@ -284,22 +290,19 @@ export class MessageTypeService {
       throw new Error("该消息类型下存在消息模板，无法删除");
     }
 
-    // 软删除
-    const result = await this.prisma.messageType.update({
+    // 硬删除（schema 未定义 is_deleted 字段）
+    await this.model.delete({
       where: { message_id: messageId },
-      data: {
-        is_deleted: true,
-      },
     });
 
-    return !!result;
+    return true;
   }
 
   async batchDelete(messageIds: number[]): Promise<boolean> {
     // 检查是否有关联的消息模板
-    const relatedTemplates = await this.prisma.messageTemplate.count({
+    const relatedTemplates = await (this.prisma as any)["message_template"].count({
       where: {
-        message_id: { in: messageIds.map((id) => id.toString()) },
+        message_id: { in: messageIds },
       },
     });
 
@@ -307,12 +310,9 @@ export class MessageTypeService {
       throw new Error("选中的消息类型下存在消息模板，无法删除");
     }
 
-    // 批量软删除
-    await this.prisma.messageType.updateMany({
+    // 批量硬删除（schema 未定义 is_deleted 字段）
+    await this.model.deleteMany({
       where: { message_id: { in: messageIds } },
-      data: {
-        is_deleted: true,
-      },
     });
 
     return true;
@@ -320,10 +320,7 @@ export class MessageTypeService {
 
   // 获取所有可用的消息类型
   async getAllAvailableMessageTypes(): Promise<any[]> {
-    const results = await this.prisma.messageType.findMany({
-      where: {
-        is_deleted: false,
-      },
+    const results = await this.model.findMany({
       orderBy: {
         message_id: "desc",
       },
@@ -334,10 +331,9 @@ export class MessageTypeService {
 
   // 根据发送类型获取消息类型
   async getMessageTypesBySendType(sendType: MessageSendType): Promise<any[]> {
-    const results = await this.prisma.messageType.findMany({
+    const results = await this.model.findMany({
       where: {
-        send_type,
-        is_deleted: false,
+        send_type: sendType,
       },
       orderBy: {
         message_id: "desc",
@@ -349,13 +345,7 @@ export class MessageTypeService {
 
   // 获取消息类型及其关联的模板
   async getMessageTypesWithTemplates(): Promise<any[]> {
-    const results = await this.prisma.messageType.findMany({
-      where: {
-        is_deleted: false,
-      },
-      include: {
-        message_templates: true,
-      },
+    const results = await this.model.findMany({
       orderBy: {
         message_id: "desc",
       },

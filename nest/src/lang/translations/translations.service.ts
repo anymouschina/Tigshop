@@ -142,4 +142,70 @@ export class TranslationsService {
 
     return true;
   }
+
+  // 列表查询：支持按 dataType、localeIds 过滤，分页返回
+  async getList(filter: {
+    page: number;
+    size: number;
+    dataType?: number;
+    localeIds?: number[];
+  }): Promise<{
+    records: any[];
+    total: number;
+    page: number;
+    size: number;
+    totalPages: number;
+  }> {
+    const page = Math.max(1, Number(filter.page) || 1);
+    const size = Math.max(1, Number(filter.size) || 15);
+
+    const whereData: any = {};
+    if (filter.dataType !== undefined) {
+      whereData.data_type = filter.dataType;
+    }
+    if (filter.localeIds && filter.localeIds.length) {
+      whereData.locale_id = { in: filter.localeIds };
+    }
+
+    const [total, rows] = await Promise.all([
+      this.prisma.translations_data.count({ where: whereData }),
+      this.prisma.translations_data.findMany({
+        where: whereData,
+        orderBy: { id: "desc" },
+        skip: (page - 1) * size,
+        take: size,
+      }),
+    ]);
+
+    // 可选：附带 locales 信息
+    // 这里轻量查询 locales 基础字段
+    const localeIds = Array.from(new Set(rows.map((r) => r.locale_id).filter(Boolean))) as number[];
+    const localesMap: Record<number, any> = {};
+    if (localeIds.length) {
+      const locales = await this.prisma.locales.findMany({
+        where: { id: { in: localeIds } },
+        select: { id: true, locale_code: true, language: true },
+      });
+      for (const l of locales) localesMap[l.id] = l;
+    }
+
+    const records = rows.map((r) => ({
+      id: r.id,
+      localeId: r.locale_id,
+      locale: r.locale_id ? localesMap[r.locale_id as number] : undefined,
+      translationName: r.translation_name,
+      translationKey: r.translation_key,
+      translationValue: r.translation_value,
+      dataType: r.data_type,
+      dataId: r.data_id,
+    }));
+
+    return {
+      records,
+      total,
+      page,
+      size,
+      totalPages: Math.ceil(total / size) || 1,
+    };
+  }
 }
