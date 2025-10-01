@@ -29,7 +29,7 @@
 ## common（公共）
 
 - config（配置）
-  - [ ] GET /api/common/config/base
+  - [x] GET /api/common/config/base
   - [x] GET /api/common/config/initConfigSettings（同 base）
   - [x] GET /api/common/config/themeSettings
   - [x] GET /api/common/config/mobileAreaCode
@@ -52,14 +52,7 @@
     - [x] POST /api/common/verification/captcha
     - [x] POST /api/common/verification/check
     - [x] POST /api/common/verification/verification
-  - [x] POST /api/common/verification/captcha
-    - [ ] GET /api/common/config/base
-    - [x] GET /api/common/config/initConfigSettings（同 base）
-    - [x] GET /api/common/config/themeSettings
-    - [x] GET /api/common/config/mobileAreaCode
-    - [ ] GET /api/common/config/afterSalesService
   - [x] GET /api/common/csrf/create
-    - [x] GET /api/common/log
 
 ## article（文章）
   - [x] GET /api/article/article/list
@@ -95,7 +88,7 @@
 ## decorate（装修离散）
 
 - discrete
-  - [ ] GET /api/decorate/discrete/getOpenAdvertising
+  - [x] GET /api/decorate/discrete/getOpenAdvertising
     - [x] GET  /api/product/product/detail
     - [x] GET  /api/product/product/getComment
     - [x] GET  /api/product/product/getCommentList
@@ -217,21 +210,21 @@
   - [x] GET  /api/user/login/getQuickLoginSetting
   - [x] POST /api/user/login/signin
   - [x] POST /api/user/login/sendMobileCode
-  - [ ] POST /api/user/login/checkMobile
-  - [ ] POST /api/user/login/checkEmail
-  - [ ] POST /api/user/login/forgetPassword
-  - [ ] GET  /api/user/login/getWxLoginUrl
-  - [ ] GET  /api/user/login/getWxLoginInfoByCode
-  - [ ] POST /api/user/login/bindMobile
-  - [ ] POST /api/user/login/bindWechat（需登录）
-  - [ ] GET  /api/user/login/unbindWechat（需登录）
-  - [ ] GET  /api/user/login/wechatServer
-  - [ ] POST /api/user/login/wechatServer
-  - [ ] POST /api/user/login/wechatEvent
-  - [ ] POST /api/user/login/getMobile
-  - [ ] POST /api/user/login/updateUserOpenId（需登录）
-  - [ ] POST /api/user/login/getJsSdkConfig（需登录）
-  - [ ] POST /api/user/login/sendEmailCode
+  - [x] POST /api/user/login/checkMobile
+  - [x] POST /api/user/login/checkEmail
+  - [x] POST /api/user/login/forgetPassword
+  - [x] GET  /api/user/login/getWxLoginUrl（兼容 getWechatLoginUrl）
+  - [x] GET  /api/user/login/getWxLoginInfoByCode（兼容 getWechatLoginInfoByCode）
+  - [x] POST /api/user/login/bindMobile
+  - [x] POST /api/user/login/bindWechat（需登录）
+  - [x] GET  /api/user/login/unbindWechat（需登录，兼容 GET，原实现为 POST）
+  - [x] GET  /api/user/login/wechatServer（兼容 GET wechatServerVerify）
+  - [x] POST /api/user/login/wechatServer（兼容 POST getWechatMessage）
+  - [x] POST /api/user/login/wechatEvent（兼容 GET wechatEvent）
+  - [x] POST /api/user/login/getMobile（兼容 getUserMobile）
+  - [x] POST /api/user/login/updateUserOpenId（需登录）
+  - [x] POST /api/user/login/getJsSdkConfig（需登录，兼容 POST；原实现亦提供 GET）
+  - [x] POST /api/user/login/sendEmailCode
 - message（站内信，需登录）
   - [x] GET  /api/user/message/list（需登录）
   - [x] POST /api/user/message/updateAllRead（需登录）

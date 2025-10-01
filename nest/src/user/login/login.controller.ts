@@ -9,10 +9,12 @@ import {
   HttpCode,
   HttpStatus,
   ValidationPipe,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { LoginService } from "./login.service";
 import { Public } from "../../auth/decorators/public.decorator";
+import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import {
   SendMobileCodeDto,
   SendEmailCodeDto,
@@ -147,6 +149,14 @@ export class LoginController {
     return this.loginService.getWechatLoginUrl(redirectUrl);
   }
 
+  // 兼容：GET /api/user/login/getWxLoginUrl
+  @Get("login/getWxLoginUrl")
+  @Public()
+  @ApiOperation({ summary: "获取微信登录URL（兼容）" })
+  async getWxLoginUrl(@Query("url") redirectUrl: string) {
+    return this.getWechatLoginUrl(redirectUrl);
+  }
+
   /**
    * 通过微信code获取用户信息 - 对齐PHP版本 user/Login/getWechatLoginInfoByCode
    */
@@ -158,11 +168,20 @@ export class LoginController {
     return this.loginService.getWechatLoginInfoByCode(body.code);
   }
 
+  // 兼容：GET /api/user/login/getWxLoginInfoByCode
+  @Get("login/getWxLoginInfoByCode")
+  @Public()
+  @ApiOperation({ summary: "通过微信code获取用户信息（兼容）" })
+  async getWxLoginInfoByCode(@Query("code") code: string) {
+    return this.loginService.getWechatLoginInfoByCode(code);
+  }
+
   /**
    * 绑定微信 - 对齐PHP版本 user/Login/bindWechat
    */
   // 兼容：/api/user/login/bindWechat
   @Post("login/bindWechat")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "绑定微信" })
   async bindWechat(@Request() req, @Body() body: { code: string }) {
@@ -174,10 +193,20 @@ export class LoginController {
    */
   // 兼容：/api/user/login/unbindWechat
   @Post("login/unbindWechat")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "解除绑定微信" })
   async unbindWechat(@Request() req) {
     return this.loginService.unbindWechat(req.user.userId);
+  }
+
+  // 兼容：GET /api/user/login/unbindWechat
+  @Get("login/unbindWechat")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "解除绑定微信（兼容）" })
+  async unbindWechatGet(@Request() req) {
+    return this.unbindWechat(req);
   }
 
   /**
@@ -211,6 +240,14 @@ export class LoginController {
     return this.loginService.wechatServerVerify(query);
   }
 
+  // 兼容：GET /api/user/login/wechatServer
+  @Get("login/wechatServer")
+  @Public()
+  @ApiOperation({ summary: "微信服务端验证（兼容）" })
+  async wechatServerVerifyAlias(@Query() query: any) {
+    return this.wechatServerVerify(query);
+  }
+
   /**
    * 处理微信消息 - 对齐PHP版本 user/Login/getWechatMessage
    */
@@ -220,6 +257,14 @@ export class LoginController {
   @ApiOperation({ summary: "处理微信消息" })
   async getWechatMessage(@Body() message: any) {
     return this.loginService.getWechatMessage(message);
+  }
+
+  // 兼容：POST /api/user/login/wechatServer
+  @Post("login/wechatServer")
+  @Public()
+  @ApiOperation({ summary: "处理微信消息（兼容）" })
+  async wechatServerPost(@Body() message: any) {
+    return this.getWechatMessage(message);
   }
 
   /**
@@ -233,6 +278,14 @@ export class LoginController {
     return this.loginService.wechatEvent(key);
   }
 
+  // 兼容：POST /api/user/login/wechatEvent
+  @Post("login/wechatEvent")
+  @Public()
+  @ApiOperation({ summary: "微信事件处理（兼容）" })
+  async wechatEventPost(@Body() body: { key: string }) {
+    return this.loginService.wechatEvent(body?.key);
+  }
+
   /**
    * 获取用户手机号 - 对齐PHP版本 user/Login/getUserMobile
    */
@@ -244,11 +297,20 @@ export class LoginController {
     return this.loginService.getUserMobile(body.code);
   }
 
+  // 兼容：POST /api/user/login/getMobile
+  @Post("login/getMobile")
+  @Public()
+  @ApiOperation({ summary: "获取用户手机号（兼容）" })
+  async getMobile(@Body() body: { code: string }) {
+    return this.getUserMobile(body);
+  }
+
   /**
    * 更新用户OpenId - 对齐PHP版本 user/Login/updateUserOpenId
    */
   // 兼容：/api/user/login/updateUserOpenId
   @Post("login/updateUserOpenId")
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "更新用户OpenId" })
   async updateUserOpenId(@Request() req, @Body() body: { code: string }) {
@@ -264,5 +326,14 @@ export class LoginController {
   @ApiOperation({ summary: "获取JSSDK配置" })
   async getJsSdkConfig(@Query("url") url: string) {
     return this.loginService.getJsSdkConfig(url);
+  }
+
+  // 兼容：POST /api/user/login/getJsSdkConfig（需登录）
+  @Post("login/getJsSdkConfig")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "获取JSSDK配置（兼容）" })
+  async getJsSdkConfigPost(@Body() body: { url: string }) {
+    return this.loginService.getJsSdkConfig(body?.url);
   }
 }

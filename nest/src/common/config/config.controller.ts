@@ -17,6 +17,14 @@ import { Public } from "../../auth/decorators/public.decorator";
 export class CommonConfigController {
   constructor(private readonly commonConfigService: CommonConfigService) {}
 
+  // 对齐 PHP：/api/common/config/base （与 initConfigSettings 等价）
+  @Get("base")
+  @Public()
+  @ApiOperation({ summary: "获取基础配置（别名：base）" })
+  async getBase() {
+    return this.commonConfigService.getInitConfigSettings();
+  }
+
   @Get("themeSettings")
   @ApiOperation({ summary: "获取主题设置" })
   @ApiResponse({ status: 200, description: "获取成功" })
