@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { CanActivate, ExecutionContext, Injectable, HttpException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 
 @Injectable()
 export class AuthorityGuard implements CanActivate {
@@ -11,8 +12,12 @@ export class AuthorityGuard implements CanActivate {
       "authorities",
       context.getHandler(),
     );
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
-    if (!requiredAuthorities || requiredAuthorities.length === 0) {
+    if (isPublic || !requiredAuthorities || requiredAuthorities.length === 0) {
       return true;
     }
 
@@ -20,13 +25,21 @@ export class AuthorityGuard implements CanActivate {
     const user = request.user;
 
     if (!user || !user.userId) {
-      return false;
+      const body = {
+        code: 401,
+        message: "请先登录",
+        data: null,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+      };
+      throw new HttpException(body, 200);
     }
 
     // 获取 prisma 实例（从 request 中获取，在 app.module.ts 中设置）
     const prisma = request.prisma;
     if (!prisma) {
-      return false;
+      // 没有 prisma 则跳过细粒度权限校验
+      return true;
     }
 
     // 获取管理员信息
@@ -41,7 +54,8 @@ export class AuthorityGuard implements CanActivate {
     });
 
     if (!adminUser) {
-      return false;
+      const body = { code: 401, message: "请先登录", data: null };
+      throw new HttpException(body, 200);
     }
 
     // 超级管理员拥有所有权限
@@ -84,8 +98,17 @@ export class AuthorityGuard implements CanActivate {
     }
 
     // 检查是否有所需权限
-    return requiredAuthorities.some((authority) =>
-      authList.includes(authority),
-    );
+    const pass = requiredAuthorities.some((authority) => authList.includes(authority));
+    if (!pass) {
+      const body = {
+        code: 403,
+        message: "无权限访问",
+        data: null,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+      };
+      throw new HttpException(body, 200);
+    }
+    return true;
   }
 }

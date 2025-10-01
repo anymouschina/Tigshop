@@ -55,10 +55,10 @@ const setupInterceptors = (instance: any) => {
                 const status = error.response.status;
                 if (status === 403 || status === 401) {
                     // 禁止访问、无效Token
-                    // message.error("登录已过期，请重新登录");
-                    // setTimeout(() => {
-                    //     store.logout();
-                    // }, 200);
+                    message.error("登录已过期，请重新登录");
+                    setTimeout(() => {
+                        store.logout();
+                    }, 200);
                 } else if (data.msg) {
                     if (!error.config.noErrorTip) {
                         message.error(data.msg);
@@ -91,9 +91,9 @@ export function request<T>(config: CustomAxiosRequestConfig): Promise<ApiRespons
         } else {
             if (apiResponse.code === 401) {
                 message.error("登录已过期，请重新登录");
-                setTimeout(() => {
-                    store.logout();
-                }, 200);
+                // setTimeout(() => {
+                //     store.logout();
+                // }, 200);
             } else if (apiResponse.code > 0 && apiResponse.code != 401) {
                 return Promise.reject(apiResponse);
             } else {

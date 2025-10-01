@@ -146,16 +146,22 @@ export class UserArticlePublicController {
   @ApiOperation({ summary: "帮助类文章详情" })
   @ApiQuery({ name: "id", required: false })
   @ApiQuery({ name: "article_sn", required: false })
-  async issueInfo(@Query("id") id?: number, @Query("article_sn") article_sn?: string) {
+  @ApiQuery({ name: "articleSn", required: false, description: "兼容前端驼峰参数名" })
+  async issueInfo(
+    @Query("id") id?: number,
+    @Query("article_sn") article_sn?: string,
+    @Query("articleSn") articleSn?: string,
+  ) {
     let item = null;
     if (id) {
       item = await this.prisma.article.findFirst({
         where: { article_id: Number(id), is_show: 1 },
       });
     }
-    if (!item && article_sn) {
+    const sn = article_sn || articleSn;
+    if (!item && sn) {
       item = await this.prisma.article.findFirst({
-        where: { article_sn: String(article_sn), is_show: 1 },
+        where: { article_sn: String(sn), is_show: 1 },
       });
     }
     if (!item) return { code: 0, message: "success", data: { item: null, next: null, prev: null } };
