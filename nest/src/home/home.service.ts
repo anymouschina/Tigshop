@@ -22,8 +22,9 @@ export class HomeService {
     let decorateId = Number(query.decorateId ?? query.decorate_id ?? 0) || 0;
 
     // 对齐 PHP: 支持 DEMO_DEFAULT_DECORATE_ID 覆盖预览
-    const demoPreview = Number(process.env.DEMO_DEFAULT_DECORATE_ID || 0);
-    if (demoPreview > 0) previewId = demoPreview;
+  const demoPreview = Number(process.env.DEMO_DEFAULT_DECORATE_ID || 0);
+  // 仅当未显式传入预览参数时使用 DEMO 覆盖，避免开发态干扰
+  if (previewId <= 0 && demoPreview > 0) previewId = demoPreview;
 
     if (previewId > 0) {
       const data = await this.getAppPreviewDecorate(previewId);
@@ -78,26 +79,29 @@ export class HomeService {
         };
       }
 
-      const dataToParse = decorate.draft_data || decorate.data;
-      if (!dataToParse) {
-        return {
-          decorateId: decorate.decorate_id,
-          moduleList: [],
-          pageModule: this.getMockPageModuleV2(),
-        };
+      // 预览规则：moduleList 来自 draft_data，pageModule 来自 data（对齐 PHP）
+      let draftParsed: any = null;
+      let pubParsed: any = null;
+      try { draftParsed = decorate.draft_data ? JSON.parse(decorate.draft_data) : null; } catch (e) {
+        this.logger.warn("draft_data 解析失败", e);
+      }
+      try { pubParsed = decorate.data ? JSON.parse(decorate.data) : null; } catch (e) {
+        this.logger.warn("data 解析失败", e);
       }
 
-      try {
-        const parsed = JSON.parse(dataToParse);
-        return this.normalizeDecorateData(parsed, decorate.decorate_id);
-      } catch (e) {
-        this.logger.warn("预览装修数据解析失败", e);
-        return {
-          decorateId: decorate.decorate_id,
-          moduleList: [],
-          pageModule: this.getMockPageModuleV2(),
-        };
-      }
+      // 兼容两种历史结构
+      const moduleList = draftParsed
+        ? (draftParsed.moduleList ?? draftParsed.module_list ?? [])
+        : [];
+      const pageModule = pubParsed
+        ? (pubParsed.pageModule ?? pubParsed.page_module ?? this.getMockPageModuleV2())
+        : this.getMockPageModuleV2();
+
+      return {
+        decorateId: decorate.decorate_id,
+        moduleList: moduleList || [],
+        pageModule: pageModule || this.getMockPageModuleV2(),
+      };
     } catch (error) {
       this.logger.error("获取预览装修失败", error);
       return {
