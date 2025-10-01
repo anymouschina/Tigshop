@@ -172,16 +172,16 @@
   - [x] POST /api/user/address/del（需登录）
   - [x] POST /api/user/address/setSelected（需登录）
 - aftersales（售后，需登录）
-  - [ ] GET  /api/user/aftersales/list（需登录）
-  - [ ] GET  /api/user/aftersales/config（需登录）
-  - [ ] GET  /api/user/aftersales/applyData（需登录）
-  - [ ] POST /api/user/aftersales/create（需登录）
-  - [ ] POST /api/user/aftersales/update（需登录）
-  - [ ] GET  /api/user/aftersales/getRecord（需登录）
-  - [ ] GET  /api/user/aftersales/detail（需登录）
-  - [ ] GET  /api/user/aftersales/detailLog（需登录）
-  - [ ] POST /api/user/aftersales/feedback（需登录）
-  - [ ] POST /api/user/aftersales/cancel（需登录）
+  - [x] GET  /api/user/aftersales/list（需登录）
+  - [x] GET  /api/user/aftersales/config（需登录）
+  - [x] GET  /api/user/aftersales/applyData（需登录，基础占位数据）
+  - [x] POST /api/user/aftersales/create（需登录）
+  - [x] POST /api/user/aftersales/update（需登录）
+  - [x] GET  /api/user/aftersales/getRecord（需登录）
+  - [x] GET  /api/user/aftersales/detail（需登录）
+  - [x] GET  /api/user/aftersales/detailLog（需登录，占位返回空列表）
+  - [x] POST /api/user/aftersales/feedback（需登录，占位返回成功）
+  - [x] POST /api/user/aftersales/cancel（需登录）
 - collectProduct（收藏，需登录）
   - [x] GET  /api/user/collectProduct/list（需登录）
   - [x] POST /api/user/collectProduct/save（需登录）
@@ -298,8 +298,8 @@
   - [x] GET  /api/user/company/detail（需登录）
   - [x] GET  /api/user/company/myApply（需登录）
 - oauth（第三方登录）
-  - [ ] GET  /api/user/oauth/render/:source
-  - [ ] POST /api/user/oauth/callback/:source
+  - [x] GET  /api/user/oauth/render/:source（当前支持 wechat）
+  - [x] POST /api/user/oauth/callback/:source（当前支持 wechat）
 
 ## appVersion（应用版本）
 

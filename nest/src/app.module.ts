@@ -9,6 +9,8 @@ import { UserCouponModule } from "./user/coupon/coupon.module";
 import { LoginModule } from "./user/login/login.module";
 import { AddressModule } from "./user/address/address.module";
 import { UserCompanyModule } from "./user/user-company/user-company.module";
+import { UserAftersalesModule } from "./user/aftersales/user-aftersales.module";
+import { UserAuthModule } from "./user/auth/auth.module";
 import { FeedbackModule } from "./user/feedback/feedback.module";
 import { AuthModule } from "./auth/auth.module";
 import { AdminModule } from "./admin/admin.module";
@@ -96,7 +98,9 @@ import { AppVersionController } from "./app-version/app-version.controller";
     LoginModule,
     AddressModule,
     UserCompanyModule,
+  UserAftersalesModule,
     FeedbackModule,
+  UserAuthModule,
     // ApiModule,
     AuthModule,
     AdminModule,
