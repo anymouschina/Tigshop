@@ -116,11 +116,7 @@ export class LicensedController {
     const realId = Number.isFinite(Number(id)) ? Number(id) : 1;
 
     const item = await this.licensedService.update(realId, data);
-    return {
-      code: 200,
-      msg: "更新成功",
-      data: item,
-    };
+    return { code: 0, message: "success" };
   }
 
   // 兼容老前端：使用 POST 调用 update
@@ -133,11 +129,7 @@ export class LicensedController {
     const realId = Number.isFinite(Number(id)) ? Number(id) : 1;
 
     const item = await this.licensedService.update(realId, data);
-    return {
-      code: 200,
-      msg: "更新成功",
-      data: item,
-    };
+    return { code: 0, message: "success" };
   }
 
   @Delete("del")
