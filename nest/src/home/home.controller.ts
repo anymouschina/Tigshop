@@ -20,7 +20,8 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取首页数据" })
   async index(@Query() query: { preview_id?: number; decorate_id?: number }) {
-    return this.homeService.getHomeData(query);
+    const data = await this.homeService.getHomeData(query);
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -30,7 +31,8 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取PC首页数据" })
   async pcIndex(@Query() query: { preview_id?: number; decorate_id?: number }) {
-    return this.homeService.getPcHomeData(query);
+    const data = await this.homeService.getPcHomeData(query);
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -48,7 +50,8 @@ export class HomeController {
       preview_id?: number;
     },
   ) {
-    return this.homeService.getRecommend(query);
+    const data = await this.homeService.getRecommend(query);
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -58,7 +61,8 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取首页秒杀商品" })
   async getSeckill(@Query() query: { page?: number; un_started?: number }) {
-    return this.homeService.getSeckill(query);
+    const data = await this.homeService.getSeckill(query);
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -68,7 +72,8 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取首页优惠券" })
   async getCoupon(@Query() query: { shop_id?: number }) {
-    return this.homeService.getCoupon(query);
+    const data = await this.homeService.getCoupon(query);
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -78,7 +83,8 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取移动端分类导航" })
   async mobileCatNav() {
-    return this.homeService.getMobileCatNav();
+    const data = await this.homeService.getMobileCatNav();
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -88,7 +94,8 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取移动端导航栏" })
   async mobileNav(@Query("decorate_sn") decorateSn: string = "mobileNav") {
-    return this.homeService.getMobileNav(decorateSn);
+    const data = await this.homeService.getMobileNav(decorateSn);
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -100,7 +107,8 @@ export class HomeController {
   async memberDecorate(
     @Query("decorate_sn") decorateSn: string = "memberDecorate",
   ) {
-    return this.homeService.getMemberDecorate(decorateSn);
+    const data = await this.homeService.getMemberDecorate(decorateSn);
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -110,7 +118,8 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取客服设置" })
   async customerServiceConfig() {
-    return this.homeService.getCustomerServiceConfig();
+    const data = await this.homeService.getCustomerServiceConfig();
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -120,7 +129,8 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取客服设置" })
   async getCustomerServiceConfig() {
-    return this.homeService.getCustomerServiceConfig();
+    const data = await this.homeService.getCustomerServiceConfig();
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -130,7 +140,8 @@ export class HomeController {
   @Public()
   @ApiOperation({ summary: "获取友情链接" })
   async friendLinks() {
-    return this.homeService.getFriendLinks();
+    const data = await this.homeService.getFriendLinks();
+    return { code: 0, message: "success", data };
   }
 
   /**
@@ -141,6 +152,7 @@ export class HomeController {
   @ApiOperation({ summary: "获取商品详情" })
   async getProductDetail(@Query() query: { id: number }) {
     const productId = Number(query.id);
-    return this.productDetailService.getProductDetail(productId);
+    const data = await this.productDetailService.getProductDetail(productId);
+    return { code: 0, message: "success", data };
   }
 }

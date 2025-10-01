@@ -4,423 +4,296 @@ import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class HomeService {
+  private readonly logger: Logger;
+
   constructor(private prisma: PrismaService) {
     this.logger = new Logger(HomeService.name);
   }
 
-  /**
-   * 获取首页数据
-   */
-  async getHomeData(query: { preview_id?: number; decorate_id?: number }) {
-    const { preview_id, decorate_id } = query;
+  // -------- 首页（H5） --------
+  async getHomeData(query: {
+    preview_id?: number;
+    decorate_id?: number;
+    previewId?: number;
+    decorateId?: number;
+  }) {
+    // 同时兼容驼峰和下划线参数名
+    let previewId = Number(query.previewId ?? query.preview_id ?? 0) || 0;
+    let decorateId = Number(query.decorateId ?? query.decorate_id ?? 0) || 0;
 
-    if (preview_id && preview_id > 0) {
-      // 预览模式
-      return this.getAppPreviewDecorate(preview_id);
-    } else if (decorate_id && decorate_id > 0) {
-      // 指定装修ID
-      return this.getDecorate(1, decorate_id); // TYPE_H5 = 1
-    } else {
-      // 获取默认首页
-      return this.getAppHomeDecorate();
+    // 对齐 PHP: 支持 DEMO_DEFAULT_DECORATE_ID 覆盖预览
+    const demoPreview = Number(process.env.DEMO_DEFAULT_DECORATE_ID || 0);
+    if (demoPreview > 0) previewId = demoPreview;
+
+    if (previewId > 0) {
+      const data = await this.getAppPreviewDecorate(previewId);
+      return data; // camelCase: { decorateId, moduleList, pageModule }
     }
+
+    if (decorateId > 0) {
+      const data = await this.getDecorate(1, decorateId);
+      return this.normalizeDecorateData(data, decorateId);
+    }
+
+    return this.getAppHomeDecorate();
   }
 
-  /**
-   * 获取PC首页数据
-   */
-  async getPcHomeData(query: { preview_id?: number; decorate_id?: number }) {
-    const { preview_id, decorate_id } = query;
+  // -------- PC 首页 --------
+  async getPcHomeData(query: {
+    preview_id?: number;
+    decorate_id?: number;
+    previewId?: number;
+    decorateId?: number;
+  }) {
+    let previewId = Number(query.previewId ?? query.preview_id ?? 0) || 0;
+    let decorateId = Number(query.decorateId ?? query.decorate_id ?? 0) || 0;
 
-    if (preview_id && preview_id > 0) {
-      // 预览模式
-      return this.getPcPreviewDecorate(preview_id);
-    } else if (decorate_id && decorate_id > 0) {
-      // 指定装修ID
-      return this.getDecorate(2, decorate_id); // TYPE_PC = 2
-    } else {
-      // 获取默认PC首页
-      return this.getPcHomeDecorate();
+    if (previewId > 0) {
+      const data = await this.getPcPreviewDecorate(previewId);
+      // 兼容输出：转 camelCase（PC 端不返回 pageModule）
+      return this.normalizeDecorateData(data, previewId);
     }
+
+    if (decorateId > 0) {
+      const data = await this.getDecorate(2, decorateId);
+      return this.normalizeDecorateData(data, decorateId);
+    }
+
+    const pcData = await this.getPcHomeDecorate();
+    return this.normalizeDecorateData(pcData, pcData?.decorate_id);
   }
 
-  /**
-   * 获取应用预览装修数据
-   */
+  // ========== 装修数据内部实现 ==========
   private async getAppPreviewDecorate(previewId: number) {
     try {
-      // 查找预览装修配置，优先使用草稿数据
       const decorate = await this.prisma.decorate.findFirst({
-        where: {
-          decorate_id: previewId,
-          decorate_type: 1, // TYPE_H5
-        },
+        where: { decorate_id: previewId, decorate_type: 1 },
       });
 
       if (!decorate) {
-        // 如果没有找到装修配置，返回默认配置
         return {
-          decorate_id: previewId,
-          module_list: this.getMockModuleList(),
-          page_module: this.getMockPageModule(),
-          backgroundImage: "",
+          decorateId: previewId,
+          moduleList: [],
+          pageModule: this.getMockPageModuleV2(),
         };
       }
 
-      // 解析装修数据，优先使用草稿数据
-      let moduleList = this.getMockModuleList();
-      const pageModule = this.getMockPageModule();
-      const backgroundImage = "";
-
-      try {
-        const dataToParse = decorate.draft_data || decorate.data;
-        if (dataToParse) {
-          const parsedData = JSON.parse(dataToParse);
-          return parsedData;
-        }
-      } catch (parseError) {
-        this.logger.debug("解析预览装修数据失败:", parseError);
-        moduleList = this.getMockModuleList();
+      const dataToParse = decorate.draft_data || decorate.data;
+      if (!dataToParse) {
+        return {
+          decorateId: decorate.decorate_id,
+          moduleList: [],
+          pageModule: this.getMockPageModuleV2(),
+        };
       }
 
-      return {
-        decorate_id: decorate.decorate_id,
-        decorate_title: decorate.decorate_title || "预览页面",
-        module_list: moduleList,
-        page_module: pageModule,
-        backgroundImage: backgroundImage,
-      };
+      try {
+        const parsed = JSON.parse(dataToParse);
+        return this.normalizeDecorateData(parsed, decorate.decorate_id);
+      } catch (e) {
+        this.logger.warn("预览装修数据解析失败", e);
+        return {
+          decorateId: decorate.decorate_id,
+          moduleList: [],
+          pageModule: this.getMockPageModuleV2(),
+        };
+      }
     } catch (error) {
-      this.logger.debug("获取预览装修数据失败:", error);
-      // 出错时返回默认配置
+      this.logger.error("获取预览装修失败", error);
       return {
-        decorate_id: previewId,
-        module_list: this.getMockModuleList(),
-        page_module: this.getMockPageModule(),
-        backgroundImage: "",
+        decorateId: previewId,
+        moduleList: [],
+        pageModule: this.getMockPageModuleV2(),
       };
     }
   }
 
-  /**
-   * 获取PC预览装修数据
-   */
   private async getPcPreviewDecorate(previewId: number) {
     try {
-      // 查找PC预览装修配置，优先使用草稿数据
       const decorate = await this.prisma.decorate.findFirst({
-        where: {
-          decorate_id: previewId,
-          decorate_type: 2, // TYPE_PC
-        },
+        where: { decorate_id: previewId, decorate_type: 2 },
       });
 
       if (!decorate) {
-        // 如果没有找到装修配置，返回默认配置
-        return {
-          decorate_id: previewId,
-          module_list: this.getMockModuleList(),
-          backgroundImage: "",
-        };
+        return { decorate_id: previewId, module_list: [], backgroundImage: "" };
       }
 
-      // 解析装修数据，优先使用草稿数据
-      let moduleList = this.getMockModuleList();
-      let backgroundImage = "";
+      const dataToParse = decorate.draft_data || decorate.data;
+      if (!dataToParse) {
+        return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
+      }
 
       try {
-        const dataToParse = decorate.draft_data || decorate.data;
-        if (dataToParse) {
-          const parsedData = JSON.parse(dataToParse);
-          moduleList = parsedData.module_list || this.getMockModuleList();
-          backgroundImage = parsedData.backgroundImage || "";
-        }
-      } catch (parseError) {
-        this.logger.debug("解析PC预览装修数据失败:", parseError);
-        moduleList = this.getMockModuleList();
+        const parsed = JSON.parse(dataToParse);
+        return parsed;
+      } catch (e) {
+        this.logger.warn("PC 预览装修数据解析失败", e);
+        return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
       }
-
-      return {
-        decorate_id: decorate.decorate_id,
-        decorate_title: decorate.decorate_title || "PC预览页面",
-        module_list: moduleList,
-        backgroundImage: backgroundImage,
-      };
     } catch (error) {
-      this.logger.debug("获取PC预览装修数据失败:", error);
-      // 出错时返回默认配置
-      return {
-        decorate_id: previewId,
-        module_list: this.getMockModuleList(),
-        backgroundImage: "",
-      };
+      this.logger.error("获取 PC 预览装修失败", error);
+      return { decorate_id: previewId, module_list: [], backgroundImage: "" };
     }
   }
 
-  /**
-   * 获取装修数据
-   */
   private async getDecorate(type: number, decorateId: number) {
     try {
-      // 查找指定的装修配置
       const decorate = await this.prisma.decorate.findFirst({
-        where: {
-          decorate_id: decorateId,
-          decorate_type: type,
-          status: true,
-        },
+        where: { decorate_id: decorateId, decorate_type: type, status: true },
       });
-
       if (!decorate) {
-        // 如果没有找到装修配置，返回默认配置
         return {
           decorate_id: decorateId,
-          module_list: this.getMockModuleList(),
+          module_list: [],
           page_module: type === 1 ? this.getMockPageModule() : null,
           backgroundImage: "",
         };
       }
 
-      // 解析装修数据
-      let moduleList = this.getMockModuleList();
-      const pageModule = type === 1 ? this.getMockPageModule() : null;
-      const backgroundImage = "";
-
-      try {
-        if (decorate.data) {
-          const parsedData = JSON.parse(decorate.data);
-          return parsedData;
-        }
-      } catch (parseError) {
-        this.logger.debug("解析装修数据失败:", parseError);
-        moduleList = this.getMockModuleList();
+      if (!decorate.data) {
+        return {
+          decorate_id: decorate.decorate_id,
+          module_list: [],
+          page_module: type === 1 ? this.getMockPageModule() : null,
+          backgroundImage: "",
+        };
       }
 
-      return {
-        decorate_id: decorate.decorate_id,
-        decorate_title: decorate.decorate_title || "装修页面",
-        module_list: moduleList,
-        page_module: pageModule,
-        backgroundImage: backgroundImage,
-      };
+      try {
+        const parsed = JSON.parse(decorate.data);
+        return parsed;
+      } catch (e) {
+        this.logger.warn("装修数据解析失败", e);
+        return {
+          decorate_id: decorate.decorate_id,
+          module_list: [],
+          page_module: type === 1 ? this.getMockPageModule() : null,
+          backgroundImage: "",
+        };
+      }
     } catch (error) {
-      this.logger.debug("获取装修数据失败:", error);
-      // 出错时返回默认配置
+      this.logger.error("获取装修失败", error);
       return {
         decorate_id: decorateId,
-        module_list: this.getMockModuleList(),
+        module_list: [],
         page_module: type === 1 ? this.getMockPageModule() : null,
         backgroundImage: "",
       };
     }
   }
 
-  /**
-   * 获取应用默认首页
-   */
   private async getAppHomeDecorate() {
     try {
-      // 查找启用的首页装修配置 (decorate_type = 1 for H5, is_home = 1 for homepage)
       const decorate = await this.prisma.decorate.findFirst({
-        where: {
-          decorate_type: 1, // TYPE_H5
-          is_home: 1, // 首页
-          status: true, // 启用状态
-          shop_id: 0, // 默认店铺
-        },
+        where: { decorate_type: 1, is_home: 1, status: true, shop_id: 0 },
         orderBy: [{ update_time: "desc" }, { decorate_id: "desc" }],
       });
 
       if (!decorate) {
-        // 如果没有找到装修配置，返回默认配置
-        return {
-          decorate_id: 1,
-          module_list: this.getMockModuleList(),
-          page_module: this.getMockPageModule(),
-          backgroundImage: "/images/default-background.jpg",
-        };
+        return { decorateId: 0, moduleList: [], pageModule: this.getMockPageModuleV2() };
       }
 
-      // 解析装修数据
-      let moduleList = [];
-      const pageModule = this.getMockPageModule();
-      const backgroundImage = "";
+      if (!decorate.data) {
+        return { decorateId: decorate.decorate_id, moduleList: [], pageModule: this.getMockPageModuleV2() };
+      }
 
       try {
-        if (decorate.data) {
-          this.logger.debug("Raw decorate.data:", decorate.data);
-          const parsedData = JSON.parse(decorate.data);
-          return parsedData;
-        }
-      } catch (parseError) {
-        this.logger.debug("解析装修数据失败:", parseError);
-        this.logger.debug("Raw data that failed to parse:", decorate.data);
-        moduleList = this.getMockModuleList();
+        const parsed = JSON.parse(decorate.data);
+        return this.normalizeDecorateData(parsed, decorate.decorate_id);
+      } catch (e) {
+        this.logger.warn("首页装修数据解析失败", e);
+        return { decorateId: decorate.decorate_id, moduleList: [], pageModule: this.getMockPageModuleV2() };
       }
-
-      return {
-        decorate_id: decorate.decorate_id,
-        decorate_title: decorate.decorate_title || "首页",
-        module_list: moduleList,
-        page_module: pageModule,
-        backgroundImage: backgroundImage || "/images/default-background.jpg",
-      };
     } catch (error) {
-      this.logger.debug("获取首页装修数据失败:", error);
-      // 出错时返回默认配置
-      return {
-        decorate_id: 1,
-        module_list: this.getMockModuleList(),
-        page_module: this.getMockPageModule(),
-        backgroundImage: "/images/default-background.jpg",
-      };
+      this.logger.error("获取默认首页失败", error);
+      return { decorateId: 0, moduleList: [], pageModule: this.getMockPageModuleV2() };
     }
   }
 
-  /**
-   * 获取PC默认首页
-   */
   private async getPcHomeDecorate() {
     try {
-      // 查找启用的PC首页装修配置 (decorate_type = 2 for PC, is_home = 1 for homepage)
       const decorate = await this.prisma.decorate.findFirst({
-        where: {
-          decorate_type: 2, // TYPE_PC
-          is_home: 1, // 首页
-          status: true, // 启用状态
-          shop_id: 0, // 默认店铺
-        },
+        where: { decorate_type: 2, is_home: 1, status: true, shop_id: 0 },
         orderBy: [{ update_time: "desc" }, { decorate_id: "desc" }],
       });
 
-      if (!decorate) {
-        // 如果没有找到装修配置，返回默认配置
-        return {
-          decorate_id: 2,
-          module_list: this.getMockModuleList(),
-          backgroundImage: "",
-        };
-      }
-
-      // 解析装修数据
-      let moduleList = this.getMockModuleList();
-      let backgroundImage = "";
+      if (!decorate) return { decorate_id: 0, module_list: [], backgroundImage: "" };
+      if (!decorate.data) return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
 
       try {
-        if (decorate.data) {
-          const parsedData = JSON.parse(decorate.data);
-          moduleList = parsedData.module_list || this.getMockModuleList();
-          backgroundImage = parsedData.backgroundImage || "";
-        }
-      } catch (parseError) {
-        this.logger.debug("解析PC装修数据失败:", parseError);
-        moduleList = this.getMockModuleList();
+        const parsed = JSON.parse(decorate.data);
+        return parsed;
+      } catch (e) {
+        this.logger.warn("PC 首页装修数据解析失败", e);
+        return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
       }
-
-      return {
-        decorate_id: decorate.decorate_id,
-        decorate_title: decorate.decorate_title || "PC首页",
-        module_list: moduleList,
-        backgroundImage: backgroundImage,
-      };
     } catch (error) {
-      this.logger.debug("获取PC首页装修数据失败:", error);
-      // 出错时返回默认配置
-      return {
-        decorate_id: 2,
-        module_list: this.getMockModuleList(),
-        backgroundImage: "",
-      };
+      this.logger.error("获取 PC 默认首页失败", error);
+      return { decorate_id: 0, module_list: [], backgroundImage: "" };
     }
   }
 
-  /**
-   * 获取首页推荐
-   */
+  // -------- 今日推荐（模块数据） --------
   async getRecommend(query: {
     decorate_id?: number;
     module_index?: string;
     page?: number;
     preview_id?: number;
+    decorateId?: number;
+    moduleIndex?: string;
+    previewId?: number;
   }) {
-    const { decorate_id = 0, module_index, page = 1, preview_id = 0 } = query;
+    const decorateId = Number(query.decorateId ?? query.decorate_id ?? 0) || 0;
+    const moduleIndex = String(query.moduleIndex ?? query.module_index ?? "");
+    const page = Number(query.page ?? 1) || 1;
+    const previewId = Number(query.previewId ?? query.preview_id ?? 0) || 0;
 
-    if (preview_id > 0) {
-      return this.getPreviewDecorateModuleData(decorate_id, module_index, {
-        page,
-        size: 10,
-      });
-    } else {
-      return this.getDecorateModuleData(decorate_id, module_index, {
-        page,
-        size: 10,
-      });
+    if (previewId > 0) {
+      return this.getPreviewDecorateModuleData(decorateId, moduleIndex, { page, size: 10 });
     }
+    return this.getDecorateModuleData(decorateId, moduleIndex, { page, size: 10 });
   }
 
-  /**
-   * 获取预览装修模块数据
-   */
   private async getPreviewDecorateModuleData(
     decorateId: number,
     moduleIndex: string,
     pagination: { page: number; size: number },
   ) {
-    // 模拟获取预览模块数据
+    // 这里没有装修模块引擎，返回模拟数据
     return {
       module_name: "推荐商品",
       module_type: "product",
       data: this.getMockProductList(pagination.page, pagination.size),
-      pagination: {
-        current: pagination.page,
-        size: pagination.size,
-        total: 100,
-      },
+      pagination: { current: pagination.page, size: pagination.size, total: 100 },
     };
   }
 
-  /**
-   * 获取装修模块数据
-   */
   private async getDecorateModuleData(
     decorateId: number,
     moduleIndex: string,
     pagination: { page: number; size: number },
   ) {
-    // 模拟获取模块数据
+    // 同上，返回模拟数据
     return {
       module_name: "推荐商品",
       module_type: "product",
       data: this.getMockProductList(pagination.page, pagination.size),
-      pagination: {
-        current: pagination.page,
-        size: pagination.size,
-        total: 100,
-      },
+      pagination: { current: pagination.page, size: pagination.size, total: 100 },
     };
   }
 
-  /**
-   * 获取首页秒杀
-   */
+  // -------- 秒杀 --------
   async getSeckill(query: { page?: number; un_started?: number }) {
-    const { page = 1, un_started = 0 } = query;
-
-    // 模拟获取秒杀商品
-    const seckillProducts = this.getMockSeckillList(page, 15);
-
-    return {
-      records: seckillProducts,
-      total: 50,
-    };
+    const page = Number(query.page ?? 1) || 1;
+    const size = 15;
+    const records = this.getMockSeckillList(page, size);
+    return { records, total: 200 };
   }
 
-  /**
-   * 获取首页优惠券
-   */
-  async getCoupon(query: { shop_id?: number }) {
-    const { shop_id = -1 } = query;
+  // -------- 优惠券 --------
+  async getCoupon(query: { shop_id?: number; shopId?: number }) {
     const now = Math.floor(Date.now() / 1000);
+    const shopId = query.shopId ?? query.shop_id;
 
     const where: any = {
       is_show: 1,
@@ -430,243 +303,94 @@ export class HomeService {
       use_start_date: { lte: now },
       use_end_date: { gte: now },
     };
+    if (typeof shopId === "number" && shopId > -1) where.shop_id = shopId;
 
-    if (shop_id > -1) {
-      where.shop_id = shop_id;
-    }
-
-    const coupons = await this.prisma.coupon.findMany({
-      where,
-      orderBy: [{ add_time: "desc" }],
-      take: 5,
-    });
-
-    // 格式化金额
-    return coupons.map((coupon) => ({
-      ...coupon,
-      coupon_money: this.formatAmount(Number(coupon.coupon_money || 0)),
-      coupon_discount: this.formatAmount(Number(coupon.coupon_discount || 0)),
+    const list = await this.prisma.coupon.findMany({ where, orderBy: [{ add_time: "desc" }], take: 5 });
+    return list.map((c) => ({
+      ...c,
+      coupon_money: this.formatAmount(Number(c.coupon_money || 0)),
+      coupon_discount: this.formatAmount(Number(c.coupon_discount || 0)),
     }));
   }
 
-  /**
-   * 获取移动端分类导航
-   */
+  // -------- 分类栏 --------
   async getMobileCatNav() {
-    const navItems = await this.prisma.mobile_cat_nav.findMany({
+    const list = await this.prisma.mobile_cat_nav.findMany({
       where: { is_show: 1 },
       orderBy: [{ mobile_cat_nav_id: "desc" }],
     });
-
-    return navItems;
+    return list;
   }
 
-  /**
-   * 获取移动端导航栏
-   */
+  // -------- 移动端导航 --------
   async getMobileNav(decorateSn: string) {
     try {
-      const item = await this.prisma.decorate_discrete.findFirst({
-        where: { decorate_sn: decorateSn },
-      });
-      if (item) {
-        const parsedData = JSON.parse(item.data || "[]");
-        return {
-          ...item,
-          data: parsedData,
-        };
-      }
+      const item = await this.prisma.decorate_discrete.findFirst({ where: { decorate_sn: decorateSn } });
+      if (!item) return null;
 
-      // 返回默认导航数据 - 使用PHP版本期望的字段结构
-      const defaultNavList = [
-        {
-          picId: 1,
-          picName: "首页",
-          picTitle: "首页",
-          picThumb: "/images/nav/home.png",
-          picActiveThumb: "/images/nav/home-active.png",
-          picLink: "/pages/index/index",
-          sort: 1,
-        },
-        {
-          picId: 2,
-          picName: "分类",
-          picTitle: "分类",
-          picThumb: "/images/nav/category.png",
-          picActiveThumb: "/images/nav/category-active.png",
-          picLink: "/pages/category/index",
-          sort: 2,
-        },
-        {
-          picId: 3,
-          picName: "购物车",
-          picTitle: "购物车",
-          picThumb: "/images/nav/cart.png",
-          picActiveThumb: "/images/nav/cart-active.png",
-          picLink: "/pages/cart/index",
-          sort: 3,
-        },
-        {
-          picId: 4,
-          picName: "我的",
-          picTitle: "我的",
-          picThumb: "/images/nav/user.png",
-          picActiveThumb: "/images/nav/user-active.png",
-          picLink: "/pages/user/index",
-          sort: 4,
-        },
-      ];
-
-      return {
-        id: 1,
-        decorate_sn: decorateSn,
-        decorate_name: "移动端导航",
-        data: {
-          data: {
-            navList: defaultNavList,
-          },
-        },
-        navList: defaultNavList,
-        shop_id: 0,
-      };
-    } catch (error) {
-      this.logger.debug("Error fetching mobile nav:", error);
-      // 返回默认导航数据 - 使用PHP版本期望的字段结构
-      const defaultNavList = [
-        {
-          picId: 1,
-          picName: "首页",
-          picTitle: "首页",
-          picThumb: "/images/nav/home.png",
-          picActiveThumb: "/images/nav/home-active.png",
-          picLink: "/pages/index/index",
-          sort: 1,
-        },
-        {
-          picId: 2,
-          picName: "分类",
-          picTitle: "分类",
-          picThumb: "/images/nav/category.png",
-          picActiveThumb: "/images/nav/category-active.png",
-          picLink: "/pages/category/index",
-          sort: 2,
-        },
-        {
-          picId: 3,
-          picName: "购物车",
-          picTitle: "购物车",
-          picThumb: "/images/nav/cart.png",
-          picActiveThumb: "/images/nav/cart-active.png",
-          picLink: "/pages/cart/index",
-          sort: 3,
-        },
-        {
-          picId: 4,
-          picName: "我的",
-          picTitle: "我的",
-          picThumb: "/images/nav/user.png",
-          picActiveThumb: "/images/nav/user-active.png",
-          picLink: "/pages/user/index",
-          sort: 4,
-        },
-      ];
-
-      return {
-        id: 1,
-        decorate_sn: decorateSn,
-        decorate_name: "移动端导航",
-        data: defaultNavList,
-        navList: defaultNavList,
-        shop_id: 0,
-      };
-    }
-  }
-
-  /**
-   * 获取个人中心装修数据
-   */
-  async getMemberDecorate(decorateSn: string) {
-    try {
-      const item = await this.prisma.decorate_discrete.findFirst({
-        where: { decorate_sn: decorateSn },
-      });
-
-      if (!item) {
-        return {};
-      }
-
-      // 如果data字段是字符串，解析为JSON对象
-      let parsedData = item.data;
-      if (typeof item.data === "string") {
+      let data = item.data as any;
+      if (typeof data === "string") {
         try {
-          parsedData = JSON.parse(item.data);
-        } catch (parseError) {
-          this.logger.warn(
-            `Failed to parse member decorate data for ${decorateSn}:`,
-            parseError,
-          );
-          parsedData = item.data;
+          data = JSON.parse(data);
+        } catch (e) {
+          this.logger.warn("移动端导航 data 解析失败", e);
         }
       }
 
-      return {
-        ...item,
-        data: parsedData,
-      };
-    } catch (error) {
-      this.logger.debug("Error fetching member decorate:", error);
-      // 返回默认个人中心数据
-      return {
-        id: 2,
-        decorate_sn: decorateSn,
-        decorate_name: "个人中心装修",
-        data: {
-          user_info: { nickname: "用户", avatar: "/images/default-avatar.png" },
-          menu_items: [
-            { name: "我的订单", icon: "order", url: "/user/orders" },
-            { name: "收货地址", icon: "address", url: "/user/address" },
-            { name: "优惠券", icon: "coupon", url: "/user/coupons" },
-            { name: "设置", icon: "settings", url: "/user/settings" },
-          ],
-        },
-        shop_id: 0,
-      };
+      return { ...item, data };
+    } catch (e) {
+      this.logger.error("获取移动端导航失败", e);
+      return null;
     }
   }
 
-  /**
-   * 获取客服设置
-   */
-  async getCustomerServiceConfig() {
-    // 模拟客服设置配置
-    const serviceType = 1; // 默认易客服
-    const openType = 1;
+  // -------- 个人中心 --------
+  async getMemberDecorate(decorateSn: string) {
+    try {
+      const item = await this.prisma.decorate_discrete.findFirst({ where: { decorate_sn: decorateSn } });
+      if (!item) return {};
 
+      let data = item.data as any;
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch (e) {
+          this.logger.warn("个人中心 data 解析失败", e);
+        }
+      }
+
+      return { ...item, data };
+    } catch (e) {
+      this.logger.error("获取个人中心装修失败", e);
+      return {};
+    }
+  }
+
+  // -------- 客服设置 --------
+  async getCustomerServiceConfig() {
+    // 简化实现：读取环境变量或使用默认
+    const serviceType = Number(process.env.KEFU_TYPE ?? 1);
+    let openType = Number(process.env.KEFU_YZF_TYPE ?? 1);
     let url = "";
-    let corpId = "";
+    let corpId = process.env.CORP_ID ?? "";
 
     switch (serviceType) {
-      case 0:
-        break;
       case 1:
-        url = `https://yzf.qq.com/xvYW0uAK1?sign=mock_sign`;
-        corpId = "mock_corp_id";
+        url = `${process.env.YZF_URL ?? "https://yzf.qq.com/"}${process.env.KEFU_YZF_SIGN ?? "mock_sign"}`;
         break;
       case 2:
-        url = `https://work.weixin.qq.com/kfid/mock_id`;
+        url = `${process.env.WORKWX_URL ?? "https://work.weixin.qq.com/kfid/"}${process.env.KEFU_WORKWX_ID ?? "mock"}`;
         openType = 0;
-        corpId = "mock_corp_id";
         break;
       case 3:
-        url = "mock_kefu_code";
+        url = process.env.KEFU_CODE ?? "";
         break;
-      case 4:
+      default:
         url = "";
-        break;
     }
 
     return {
-      h5_domain: "https://m.example.com",
+      h5_domain: process.env.H5_DOMAIN ?? "",
       corp_id: corpId,
       url,
       open_type: openType,
@@ -675,114 +399,84 @@ export class HomeService {
     };
   }
 
-  /**
-   * 获取友情链接
-   */
+  // -------- 友情链接 --------
   async getFriendLinks() {
-    const links = await this.prisma.friend_links.findMany({
-      orderBy: [{ sort_order: "desc" }],
-      take: 20,
-    });
-
-    return links;
+    return this.prisma.friend_links.findMany({ orderBy: [{ sort_order: "desc" }], take: 20 });
   }
 
-  /**
-   * 格式化金额
-   */
+  // ========== 工具 ==========
   private formatAmount(amount: number): string {
     return amount.toFixed(2);
   }
 
-  /**
-   * 获取模拟模块列表
-   */
   private getMockModuleList() {
-    return [
-      {
-        module_name: "轮播图",
-        module_type: "banner",
-        data: [
-          { image: "/images/banner1.jpg", url: "/product/1" },
-          { image: "/images/banner2.jpg", url: "/product/2" },
-        ],
-      },
-      {
-        module_name: "导航菜单",
-        module_type: "nav",
-        data: [
-          { name: "首页", icon: "home", url: "/" },
-          { name: "分类", icon: "category", url: "/category" },
-          { name: "购物车", icon: "cart", url: "/cart" },
-          { name: "我的", icon: "user", url: "/user" },
-        ],
-      },
-      {
-        module_name: "推荐商品",
-        module_type: "product",
-        data: this.getMockProductList(1, 8),
-      },
-    ];
+    return [];
   }
 
-  /**
-   * 获取模拟页面模块
-   */
   private getMockPageModule() {
+    return { title: "", keywords: "商城,购物,商品", description: "欢迎访问我们的商城" };
+  }
+
+  private getMockPageModuleV2() {
     return {
+      type: "page",
+      module: [],
+      backgroundRepeat: "",
+      backgroundSize: "",
+      style: 0,
       title: "",
-      keywords: "商城,购物,商品",
-      description: "欢迎访问我们的商城",
+      titleColor: "",
+      headerStyle: 1,
+      titleBackgroundColor: "",
+      backgroundImage: { picUrl: "", picThumb: "" },
+      backgroundColor: "",
     };
   }
 
-  /**
-   * 获取模拟商品列表
-   */
-  private getMockProductList(page: number, size: number) {
-    const start = (page - 1) * size;
-    const products = [];
-
-    for (let i = 0; i < size; i++) {
-      products.push({
-        product_id: start + i + 1,
-        product_name: `商品${start + i + 1}`,
-        product_image: `/images/product${start + i + 1}.jpg`,
-        product_price: (Math.random() * 1000 + 10).toFixed(2),
-        market_price: (Math.random() * 1200 + 20).toFixed(2),
-        sales_count: Math.floor(Math.random() * 1000),
-      });
+  private normalizeDecorateData(input: any, fallbackDecorateId?: number) {
+    if (!input || typeof input !== "object") {
+      return { decorateId: fallbackDecorateId ?? 0, moduleList: [], pageModule: this.getMockPageModuleV2() };
     }
-
-    return products;
+    const alreadyCamel = "decorateId" in input || "moduleList" in input;
+    if (alreadyCamel) {
+      return {
+        decorateId: input.decorateId ?? fallbackDecorateId ?? 0,
+        moduleList: input.moduleList ?? [],
+        pageModule: input.pageModule ?? this.getMockPageModuleV2(),
+      };
+    }
+    return {
+      decorateId: input.decorate_id ?? fallbackDecorateId ?? 0,
+      moduleList: input.module_list ?? [],
+      pageModule: input.page_module ?? this.getMockPageModuleV2(),
+    };
   }
 
-  /**
-   * 获取模拟秒杀列表
-   */
+  private getMockProductList(page: number, size: number) {
+    const start = (page - 1) * size;
+    return Array.from({ length: size }).map((_, i) => ({
+      product_id: start + i + 1,
+      product_name: `商品${start + i + 1}`,
+      product_image: `/images/product${start + i + 1}.jpg`,
+      product_price: (Math.random() * 1000 + 10).toFixed(2),
+      market_price: (Math.random() * 1200 + 20).toFixed(2),
+      sales_count: Math.floor(Math.random() * 1000),
+    }));
+  }
+
   private getMockSeckillList(page: number, size: number) {
     const start = (page - 1) * size;
-    const products = [];
-
-    for (let i = 0; i < size; i++) {
-      products.push({
-        seckill_id: start + i + 1,
-        product_id: start + i + 1,
-        product_name: `秒杀商品${start + i + 1}`,
-        product_image: `/images/seckill${start + i + 1}.jpg`,
-        seckill_price: (Math.random() * 100 + 1).toFixed(2),
-        original_price: (Math.random() * 200 + 50).toFixed(2),
-        start_time: new Date(
-          Date.now() + Math.random() * 86400000,
-        ).toISOString(),
-        end_time: new Date(
-          Date.now() + Math.random() * 86400000 + 86400000,
-        ).toISOString(),
-        stock_count: Math.floor(Math.random() * 100) + 1,
-        sold_count: Math.floor(Math.random() * 50),
-      });
-    }
-
-    return products;
+    return Array.from({ length: size }).map((_, i) => ({
+      seckill_id: start + i + 1,
+      product_id: start + i + 1,
+      product_name: `秒杀商品${start + i + 1}`,
+      product_image: `/images/seckill${start + i + 1}.jpg`,
+      seckill_price: (Math.random() * 100 + 1).toFixed(2),
+      original_price: (Math.random() * 200 + 50).toFixed(2),
+      start_time: new Date(Date.now() + Math.random() * 86400000).toISOString(),
+      end_time: new Date(Date.now() + Math.random() * 86400000 + 86400000).toISOString(),
+      stock_count: Math.floor(Math.random() * 100) + 1,
+      sold_count: Math.floor(Math.random() * 50),
+    }));
   }
 }

@@ -125,7 +125,7 @@ const getProductList = async () => {
 const getIndexData = async () => {
     loading.value = true;
     try {
-        const res = await getIndex();
+        const res = await getIndex(configStore.previewId);
         modulesData.value = res.moduleList;
         pageModulesData.value = res.pageModule;
         configStore.pageModules = res.pageModule;
