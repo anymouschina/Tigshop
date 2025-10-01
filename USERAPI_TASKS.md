@@ -240,19 +240,19 @@
   - [x] GET  /api/user/order/shippingInfo（需登录）
   - [x] POST /api/user/order/buyAgain（需登录）
 - orderInvoice（订单发票，需登录）
-  - [ ] GET  /api/user/orderInvoice/detail（需登录）
-  - [ ] POST /api/user/orderInvoice/create（需登录）
-  - [ ] POST /api/user/orderInvoice/update（需登录）
+  - [x] GET  /api/user/orderInvoice/detail（需登录）
+  - [x] POST /api/user/orderInvoice/create（需登录）
+  - [x] POST /api/user/orderInvoice/update（需登录）
 - pointsLog（积分，需登录）
   - [ ] GET  /api/user/pointsLog/list（需登录）
 - rechargeOrder（充值，需登录）
-  - [ ] GET  /api/user/rechargeOrder/list（需登录）
-  - [ ] POST /api/user/rechargeOrder/update（需登录）
-  - [ ] GET  /api/user/rechargeOrder/setting（需登录）
-  - [ ] GET  /api/user/rechargeOrder/paymentList（需登录）
-  - [ ] POST /api/user/rechargeOrder/pay（需登录）
-  - [ ] POST /api/user/rechargeOrder/create（需登录）
-  - [ ] GET  /api/user/rechargeOrder/checkStatus（需登录）
+  - [x] GET  /api/user/rechargeOrder/list（需登录）
+  - [x] POST /api/user/rechargeOrder/update（需登录）
+  - [x] GET  /api/user/rechargeOrder/setting（需登录）
+  - [x] GET  /api/user/rechargeOrder/paymentList（需登录）
+  - [x] POST /api/user/rechargeOrder/pay（需登录）
+  - [x] POST /api/user/rechargeOrder/create（需登录）
+  - [x] GET  /api/user/rechargeOrder/checkStatus（需登录）
 - regist（注册）
   - [ ] POST /api/user/regist/registAct
   - [ ] POST /api/user/regist/sendEmailCode

@@ -25,6 +25,7 @@ import { PanelModule } from "./panel/panel.module";
 import { MsgModule } from "./msg/msg.module";
 import { SettingModule } from "./setting/setting.module";
 import { FinanceModule } from "./finance/finance.module";
+import { UserOrderInvoiceModule } from "./finance/order-invoice/user-order-invoice.module";
 import { ContentModule } from "./content/content.module";
 import { UploadModule } from "./upload/upload.module";
 import { NotificationModule } from "./notification/notification.module";
@@ -115,6 +116,7 @@ import { AppVersionController } from "./app-version/app-version.controller";
     MsgModule,
     SettingModule,
     FinanceModule,
+  UserOrderInvoiceModule,
     ContentModule,
     UploadModule,
     NotificationModule,

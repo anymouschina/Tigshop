@@ -15,6 +15,7 @@ import {
   UserRechargeOrderConfigDto,
 } from "./dto/user-recharge-order.dto";
 import { PrismaService } from "src/prisma/prisma.service";
+import { Injectable as Inj } from "@nestjs/common";
 
 @Injectable()
 export class UserRechargeOrderService {
@@ -455,5 +456,86 @@ export class UserRechargeOrderService {
       where: { order_id: id },
       data: { status: false },
     });
+  }
+
+  /**
+   * 兼容 PHP：充值申请（根据设置或直接金额创建/更新）
+   * @param id 设置ID或已有订单ID（此处按“设置ID”理解：当 >0 时以该设置金额创建新订单）
+   * @param amount 金额（当 id=0 时，使用自定义金额）
+   * @param userId 当前用户
+   * @returns order_id
+   */
+  async rechargeOperation(id: number, amount: number, userId: number): Promise<number> {
+    let finalAmount = amount;
+    if (id && id > 0) {
+      // 查找充值设置
+      const setting = await this.prisma.recharge_setting.findUnique({ where: { recharge_id: id } });
+      if (!setting) {
+        throw new BadRequestException("充值设置不存在");
+      }
+      finalAmount = Number(setting.money || 0);
+    }
+    if (!finalAmount || finalAmount <= 0) {
+      throw new BadRequestException("充值金额必须大于0");
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const created = await this.prisma.user_recharge_order.create({
+      data: {
+        user_id: userId,
+        amount: finalAmount,
+        discount_money: 0,
+        add_time: now,
+        paid_time: 0,
+        postscript: "",
+        status: false,
+      },
+    });
+    return created.order_id;
+  }
+
+  /**
+   * 兼容 PHP：创建充值支付，返回模拟第三方支付参数
+   */
+  async createRechargePayment(params: { orderId: number; payType: string; userId: number; code?: string }) {
+    const { orderId, payType, userId } = params;
+    const order = await this.prisma.user_recharge_order.findUnique({ where: { order_id: orderId } });
+    if (!order || order.user_id !== userId) {
+      throw new NotFoundException("订单不存在");
+    }
+    if (order.status === true) {
+      return { error: true, message: "订单已支付" };
+    }
+    const unsupported = ["offline"];
+    if (unsupported.includes(payType)) {
+      return { error: true, message: "未选择支付方式" };
+    }
+    // 模拟创建支付日志
+    const payInfo = await this.mockThirdPay(payType, order.amount);
+    return {
+      order_id: orderId,
+      order_amount: order.amount,
+      pay_info: payInfo,
+    };
+  }
+
+  private async mockThirdPay(payType: string, amount: number) {
+    switch (payType) {
+      case "wechat":
+        return {
+          appId: "mock_app_id",
+          timeStamp: Math.floor(Date.now() / 1000),
+          nonceStr: Math.random().toString(36).slice(2),
+          package: `prepay_id=${Date.now()}`,
+          signType: "MD5",
+          paySign: "mock_sign",
+        };
+      case "alipay":
+        return { orderString: "mock_alipay_order_string" };
+      case "paypal":
+        return { approvalLink: "https://paypal.example/approve/mock" };
+      default:
+        throw new BadRequestException("不支持的支付方式");
+    }
   }
 }
