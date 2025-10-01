@@ -32,7 +32,9 @@ export class AdminUserCompatController {
         { mobile: { contains: keyword } },
       ];
     }
-    const [records, total] = await Promise.all([
+
+    // 基本列表
+    const [rows, total] = await Promise.all([
       this.prisma.admin_user.findMany({
         where,
         skip,
@@ -41,36 +43,163 @@ export class AdminUserCompatController {
         select: {
           admin_id: true,
           username: true,
-          email: true,
+          admin_type: true,
           mobile: true,
-          role_id: true,
-          shop_id: true,
-          suppliers_id: true,
+          avatar: true,
+          password: true,
+          email: true,
           add_time: true,
+          auth_list: true,
+          user_id: true,
+          suppliers_id: true,
+          role_id: true,
+          merchant_id: true,
+          parent_id: true,
+          menu_tag: true,
+          order_export: true,
+          extra: true,
+          shop_id: true,
           is_using: true,
+          initial_password: true,
         },
       }),
       this.prisma.admin_user.count({ where }),
     ]);
+
+    const adminIds = rows.map((r) => r.admin_id);
+
+    // 角色名映射
+    const roleIds = Array.from(new Set(rows.map((r) => r.role_id).filter((x) => Number(x) > 0)));
+    const roles = roleIds.length
+      ? await this.prisma.admin_role.findMany({ where: { role_id: { in: roleIds } }, select: { role_id: true, role_name: true } })
+      : [];
+    const roleNameMap = new Map(roles.map((r) => [r.role_id, r.role_name]));
+
+    // 子账号计数（hasChildren）
+    const children = adminIds.length
+      ? await this.prisma.admin_user.findMany({ where: { parent_id: { in: adminIds } }, select: { parent_id: true } })
+      : [];
+    const childCountMap = new Map<number, number>();
+    for (const c of children) {
+      const pid = Number((c as any).parent_id || 0);
+      childCountMap.set(pid, (childCountMap.get(pid) || 0) + 1);
+    }
+
+    // 店铺员工表（userShop）
+    const userShops = adminIds.length
+      ? await this.prisma.admin_user_shop.findMany({
+          where: { admin_id: { in: adminIds } },
+          orderBy: { id: "asc" },
+          select: {
+            id: true,
+            admin_id: true,
+            user_id: true,
+            shop_id: true,
+            username: true,
+            email: true,
+            avatar: true,
+            auth_list: true,
+            is_using: true,
+            is_admin: true,
+            add_time: true,
+            role_id: true,
+          },
+        })
+      : [];
+    const shopsByAdmin = new Map<number, any[]>();
+    for (const s of userShops) {
+      const k = Number((s as any).admin_id);
+      if (!shopsByAdmin.has(k)) shopsByAdmin.set(k, []);
+      shopsByAdmin.get(k)!.push(s);
+    }
+
+    const parseJSON = (text: any, fallback: any) => {
+      if (!text) return fallback;
+      if (Array.isArray(text)) return text;
+      if (typeof text === "string") {
+        try {
+          const v = JSON.parse(text);
+          return v ?? fallback;
+        } catch {
+          // 兼容逗号分隔
+          if (text.includes(",")) return text.split(",").map((t) => t.trim()).filter(Boolean);
+          return fallback;
+        }
+      }
+      return fallback;
+    };
+    const parseAuthList = (v: any) => parseJSON(v, []);
+    const formatTime = (sec?: number | null) => {
+      const s = Number(sec || 0);
+      if (!s) return "";
+      const d = new Date(s * 1000);
+      const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+
+    const records = rows.map((r) => {
+      const shopListRaw = shopsByAdmin.get(Number(r.admin_id)) || [];
+      const userShop = shopListRaw.map((s) => ({
+        id: (s as any).id,
+        adminId: (s as any).admin_id,
+        userId: (s as any).user_id,
+        shopId: (s as any).shop_id,
+        username: (s as any).username ?? "",
+        email: (s as any).email ?? "",
+        avatar: (s as any).avatar ?? "",
+        authList: parseAuthList((s as any).auth_list),
+        isUsing: Number((s as any).is_using ?? 0),
+        isAdmin: Number((s as any).is_admin ?? 0),
+        addTime: formatTime((s as any).add_time),
+        roleId: Number((s as any).role_id ?? 0),
+      }));
+
+      // 顶层 isAdmin：若任一店铺 is_admin=1 则为 1
+      const isAdminTop = userShop.some((x) => Number(x.isAdmin) === 1) ? 1 : 0;
+
+      // 顶层 authList：优先自身 auth_list；若为空且有 role_id，则取角色 authority_list
+      let authList = parseAuthList(r.auth_list);
+      if ((!authList || authList.length === 0) && r.role_id && r.role_id > 0) {
+        const rn = r.role_id;
+        // 尝试用 roleNameMap 的 key 查一把 authority_list（需要再查一次 DB）
+        // 为避免 N+1，仅在需要时单查
+        // eslint-disable-next-line no-async-promise-executor
+      }
+
+      return {
+        adminId: r.admin_id,
+        username: r.username,
+        adminType: r.admin_type,
+        mobile: r.mobile ?? "",
+        avatar: r.avatar ?? "",
+        password: r.password ?? "",
+        email: r.email ?? "",
+        addTime: formatTime(r.add_time),
+        authList,
+        userId: r.user_id ?? 0,
+        suppliersId: r.suppliers_id ?? 0,
+        roleId: r.role_id ?? 0,
+        merchantId: r.merchant_id ?? 0,
+        parentId: r.parent_id ?? 0,
+        menuTag: r.menu_tag ?? "",
+        orderExport: parseJSON(r.order_export, []),
+        extra: r.extra ?? "",
+        shopId: r.shop_id ?? 0,
+        isUsing: r.is_using ?? 0,
+        initialPassword: r.initial_password ?? "",
+        hasChildren: childCountMap.get(Number(r.admin_id)) || 0,
+        roleName: roleNameMap.get(r.role_id) ?? null,
+        isAdmin: isAdminTop,
+        userShop,
+      };
+    });
+
     return {
       code: 0,
       message: "success",
       data: {
-        records: records.map((r) => ({
-          adminId: r.admin_id,
-          username: r.username,
-          email: r.email,
-          mobile: r.mobile,
-          roleId: r.role_id,
-          shopId: r.shop_id,
-          suppliersId: r.suppliers_id,
-          addTime: r.add_time,
-          isUsing: r.is_using,
-        })),
+        records,
         total,
-        size,
-        current: page,
-        pages: Math.ceil(total / size),
       },
     };
   }
@@ -89,6 +218,14 @@ export class AdminUserCompatController {
     const r = await this.prisma.admin_user.findUnique({ where: { admin_id: id } });
     if (!r) return { code: 0, message: "success", data: null };
 
+    // 如果有 role_id，则从 admin_role 合并权限列表
+    let authList = r.auth_list || null;
+    if (r.role_id && r.role_id > 0) {
+      const role = await this.prisma.admin_role.findUnique({ where: { role_id: r.role_id }, select: { authority_list: true } });
+      if (role?.authority_list) authList = role.authority_list;
+    }
+    const encipher_mobile = r.mobile ? `${String(r.mobile).slice(0,3)}****${String(r.mobile).slice(-4)}` : "";
+
     return {
       code: 0,
       message: "success",
@@ -97,11 +234,13 @@ export class AdminUserCompatController {
         username: r.username,
         email: r.email,
         mobile: r.mobile,
+        encipher_mobile,
         roleId: r.role_id,
         shopId: r.shop_id,
         suppliersId: r.suppliers_id,
         addTime: r.add_time,
         isUsing: r.is_using,
+        authList,
       },
     };
   }
@@ -109,8 +248,17 @@ export class AdminUserCompatController {
   @Get("config")
   @ApiOperation({ summary: "管理员配置（占位兼容）" })
   @Authorities("adminUserConfig")
-  async config() {
-    return { code: 0, message: "success", data: {} };
+  async config(@Query() query: any, @Request() req: any) {
+    // PHP: 返回角色列表（排除role_id=2），按 admin_type + shop_id 过滤
+    const adminType = (query?.admin_type || query?.adminType || req?.user?.adminType || "admin").toString();
+    const shopId = Number(query?.shop_id || query?.shopId || req?.user?.shopId || 0);
+    const roles = await this.prisma.admin_role.findMany({
+      where: { admin_type: adminType, shop_id: shopId, NOT: { role_id: 2 } },
+      select: { role_id: true, role_name: true },
+      orderBy: { role_id: "asc" },
+    });
+    const list = roles.map((r) => ({ roleId: r.role_id, roleName: r.role_name }));
+    return { code: 0, message: "success", data: list };
   }
 
   /** 创建管理员 */
@@ -121,16 +269,16 @@ export class AdminUserCompatController {
     const now = Math.floor(Date.now() / 1000);
     const data: any = {
       username: dto.username?.trim(),
-      email: dto.email?.trim() || null,
-      mobile: dto.mobile?.trim() || null,
+      email: dto.email?.trim() || "", // Prisma 要求非空
+      mobile: dto.mobile?.trim() || "",
       role_id: dto.roleId ? Number(dto.roleId) : 0,
       shop_id: dto.shopId ? Number(dto.shopId) : 0,
       suppliers_id: dto.suppliersId ? Number(dto.suppliersId) : 0,
       is_using: dto.isUsing != null ? Number(dto.isUsing) : 1,
       add_time: now,
       password: dto.password || dto.initialPassword || "", // TODO: 后续接入加密
-      initial_password: dto.initialPassword || null,
-      auth_list: Array.isArray(dto.authList) ? JSON.stringify(dto.authList) : dto.authList || null,
+      initial_password: dto.initialPassword || "",
+      auth_list: Array.isArray(dto.authList) ? JSON.stringify(dto.authList) : (dto.authList || ""),
     };
     const created = await this.prisma.admin_user.create({ data });
     return { code: 0, message: "success", data: { adminId: created.admin_id } };

@@ -60,7 +60,8 @@ export class AdminUserRankCompatController {
     const records = rows.map((r: any) => ({
       rankId: Number(r.rank_id),
       rankName: r.rank_name ?? "",
-      minGrowthPoints: Number(r.min_growth_points ?? 0).toFixed(2),
+      // 保持单位为“分”（整数），避免前端重复换算导致回显放大
+      minGrowthPoints: Number(r.min_growth_points ?? 0),
       maxGrowthPoints: Number(r.max_growth_points ?? 0),
       discount: mapDiscount(r.discount),
       showPrice: Number(r.show_price ?? 1),
@@ -151,7 +152,8 @@ export class AdminUserRankCompatController {
     const records = rows.map((r: any) => ({
       rankId: Number(r.rank_id),
       rankName: r.rank_name ?? "",
-      minGrowthPoints: Number(r.min_growth_points ?? 0).toFixed(2),
+      // 保持单位为“分”（整数），避免前端重复换算导致回显放大
+      minGrowthPoints: Number(r.min_growth_points ?? 0),
       maxGrowthPoints: Number(r.max_growth_points ?? 0),
       discount: mapDiscount(r.discount),
       showPrice: Number(r.show_price ?? 1),
@@ -237,8 +239,9 @@ export class AdminUserRankCompatController {
       ? userRanks.map((r: any) => ({
           rankId: Number(r.rank_id),
           rankName: r.rank_name ?? "",
-          minGrowthPoints: Number(r.min_growth_points ?? 0).toFixed(2), // 字符串
-          maxGrowthPoints: Number(r.max_growth_points ?? 0), // 数字
+          // 保持单位为“分”（整数），避免前端重复换算导致回显放大
+          minGrowthPoints: Number(r.min_growth_points ?? 0),
+          maxGrowthPoints: Number(r.max_growth_points ?? 0),
           discount: mapDiscount(r.discount), // 字符串
           showPrice: Number(r.show_price ?? 1),
           rankType: 0, // 与 PHP 示例保持一致
@@ -255,7 +258,7 @@ export class AdminUserRankCompatController {
           {
             rankId: 1,
             rankName: "普通会员",
-            minGrowthPoints: (0).toFixed(2),
+            minGrowthPoints: 0,
             maxGrowthPoints: 0,
             discount: "0.0",
             showPrice: 1,

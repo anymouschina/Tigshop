@@ -14,9 +14,84 @@ export class AuthorityCompatController {
 
   @Get("getAllAuthority")
   @ApiOperation({ summary: "全部权限（兼容）" })
-  async getAllAuthority() {
-    const data = await this.prisma.authority.findMany({ orderBy: [{ parent_id: "asc" }, { sort_order: "asc" }, { authority_id: "asc" }] as any });
-    return { code: 0, message: "success", data };
+  async getAllAuthority(@Query() query?: any) {
+    const adminType = (query?.admin_type || query?.adminType || "admin").toString();
+    const type = Number(query?.type || 0); // 预留字段，暂不使用
+
+    const rows = await this.prisma.authority.findMany({
+      where: { admin_type: adminType },
+      orderBy: [
+        { parent_id: "asc" },
+        { sort_order: "asc" },
+        { authority_id: "asc" },
+      ] as any,
+    });
+
+    const parseChildAuth = (val: any): any[] => {
+      if (!val) return [];
+      let arr: any;
+      if (typeof val === "string") {
+        try {
+          arr = JSON.parse(val);
+        } catch {
+          return [];
+        }
+      } else if (Array.isArray(val)) {
+        arr = val;
+      } else {
+        return [];
+      }
+      if (!Array.isArray(arr)) return [];
+      return arr
+        .map((it) => {
+          if (it == null) return null;
+          const authName = it.authName ?? it.auth_name ?? it.name ?? "";
+          const authSn = it.authSn ?? it.auth_sn ?? it.sn ?? "";
+          return { authName, authSn };
+        })
+        .filter(Boolean);
+    };
+
+    // 映射为驼峰字段并准备构建树
+    const nodes = rows.map((r: any) => ({
+      authorityId: Number(r.authority_id),
+      authoritySn: r.authority_sn ?? "",
+      authorityName: r.authority_name ?? "",
+      parentId: Number(r.parent_id ?? 0),
+      sortOrder: Number(r.sort_order ?? 0),
+      isShow: Number(r.is_show ?? 1),
+      childAuth: parseChildAuth(r.child_auth),
+      routeLink: r.route_link ?? "",
+      authorityIco: r.authority_ico ?? "",
+      isSystem: Number(r.is_system ?? 0),
+      adminType: r.admin_type ?? "admin",
+      children: [] as any[],
+    }));
+
+    // 构建索引
+    const byId = new Map<number, any>();
+    nodes.forEach((n) => byId.set(n.authorityId, n));
+
+    // 组装树
+    const roots: any[] = [];
+    for (const n of nodes) {
+      if (n.parentId && byId.has(n.parentId)) {
+        byId.get(n.parentId).children.push(n);
+      } else {
+        roots.push(n);
+      }
+    }
+
+    // 递归按 sortOrder 排序
+    const sortTree = (list: any[]) => {
+      list.sort((a, b) => a.sortOrder - b.sortOrder || a.authorityId - b.authorityId);
+      for (const item of list) {
+        if (item.children && item.children.length) sortTree(item.children);
+      }
+    };
+    sortTree(roots);
+
+    return { code: 0, message: "success", data: roots };
   }
 
   @Get("list")
