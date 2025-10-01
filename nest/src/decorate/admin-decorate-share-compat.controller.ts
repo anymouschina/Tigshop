@@ -58,22 +58,48 @@ export class AdminDecorateShareCompatController {
       const decoded = decodeURIComponent(url);
       const resp = await axios.get(decoded, { timeout: 15000 });
       const body = resp?.data;
-      if (!body || body.code !== 0) {
+      // 放宽判断：有些平台 code 可能是字符串或不存在，优先解析数据
+      const codeOk = body == null || body.code == null || Number(body.code) === 0;
+      if (!codeOk) {
         return { code: 1, message: body?.message || "远程导入失败", data: null };
       }
-      const decorate = body.data?.decorate;
+
+      // 兼容多种返回结构
+      const dataRoot = body?.data ?? body; // 有的平台直接返回 data 即为装修对象
+      let decorate = dataRoot?.decorate
+        ?? dataRoot?.data?.decorate
+        ?? dataRoot?.decorateData
+        ?? dataRoot?.decorate_info
+        ?? dataRoot?.decorateInfo
+        ?? null;
+
+      // 若未找到 decorate，但 dataRoot 看起来就是装修对象
+      if (!decorate && dataRoot && typeof dataRoot === "object") {
+        const maybe = Array.isArray(dataRoot) ? dataRoot[0] : dataRoot;
+        const hasDecorateShape = maybe && (
+          "decorate_title" in maybe ||
+          "decorateTitle" in maybe ||
+          "data" in maybe ||
+          "draft_data" in maybe ||
+          "draftData" in maybe
+        );
+        if (hasDecorateShape) decorate = maybe;
+      }
+
       if (!decorate) {
-        return { code: 1, message: "远程未返回装修数据", data: null };
+        const keys = Object.keys(dataRoot || {});
+        return { code: 1, message: `远程未返回装修数据(可见键: ${keys.join(",")})`, data: null };
       }
 
       // 写入本地 decorate（新建一条，避免与远端 ID 冲突）
       const now = Math.floor(Date.now() / 1000);
       const created = await this.prisma.decorate.create({
         data: {
-          decorate_title: decorate.decorate_title || "导入装修",
+          // 兼容 camelCase/snake_case
+          decorate_title: decorate.decorate_title ?? decorate.decorateTitle ?? "导入装修",
           data: decorate.data ?? null,
-          draft_data: decorate.draft_data ?? null,
-          decorate_type: decorate.decorate_type ?? 1,
+          draft_data: decorate.draft_data ?? decorate.draftData ?? null,
+          decorate_type: decorate.decorate_type ?? decorate.decorateType ?? 1,
           is_home: 0,
           shop_id: 0,
           status: true,

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Query,
   UseGuards,

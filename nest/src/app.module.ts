@@ -84,6 +84,8 @@ import { AdminLocalesRelationCompatController } from "./lang/admin-locales-relat
 import { AdminCurrencyCompatController } from "./lang/admin-currency-compat.controller";
 import { AdminAreaCodeCompatController } from "./setting/area-code/admin-area-code-compat.controller";
 import { SearchGuessController } from "./search/search-guess.controller";
+import { SearchController } from "./search/search.controller";
+import { SearchService } from "./search/search.service";
 import { AppVersionController } from "./app-version/app-version.controller";
 
 @Module({
@@ -139,6 +141,8 @@ import { AppVersionController } from "./app-version/app-version.controller";
     AppController,
     // Public user-side compat controllers
     SearchGuessController,
+    // Search apis (getFilter/getProduct)
+    SearchController,
   AppVersionController,
     AdminUserCompatController,
     DecorateDiscreteCompatController,
@@ -183,6 +187,8 @@ import { AppVersionController } from "./app-version/app-version.controller";
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
     },
+    // Search service provider
+    SearchService,
     AdminRolesGuard,
     AuthorityGuard,
   ],
