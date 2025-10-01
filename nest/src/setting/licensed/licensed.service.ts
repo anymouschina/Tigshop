@@ -84,14 +84,16 @@ export class LicensedService {
   }
 
   async findById(id: number) {
-    // 模拟返回数据
+    // 从配置还原详情
+    const cfg = await this.getConfig();
     return {
       licensed_id: id,
-      domain: "localhost",
-      license_key: "demo-license-key",
-      status: 1,
+      domain: cfg.authorizedDomain,
+      license_key: cfg.license,
+      status: Number(cfg.isEnterprise) ? 1 : 0,
       expire_time: Math.floor(Date.now() / 1000) + 86400 * 365,
       add_time: Math.floor(Date.now() / 1000),
+      licensed_type_name: cfg.licensedTypeName,
     };
   }
 
@@ -136,6 +138,21 @@ export class LicensedService {
         license: licenseKey,
       } as Record<string, string>;
       await this.saveConfigMap(data, nowSec);
+      // 同步保存聚合数据（对齐 PHP saveConfig("auto_generate_licensed_data")）
+      const agg = {
+        orderId: "",
+        licensedType: data.licensedType,
+        licensedTypeName: data.licensedTypeName,
+        deCopyright: Number(data.deCopyright),
+        isEnterprise: Number(data.isEnterprise),
+        authorizedDomain: data.authorizedDomain,
+        license: data.license,
+        holder: "bypass",
+        releaseTime: nowSec,
+        licensedId: JSON.stringify({ via: "bypass" }),
+        expirationTime: nowSec + 86400 * 365,
+      } as any;
+      await this.saveConfigJSON("auto_generate_licensed_data", agg, nowSec);
       return {
         licensed_id: id,
         domain: data.authorizedDomain,
@@ -176,6 +193,21 @@ export class LicensedService {
         license: String(lic.license ?? licenseKey),
       } as Record<string, string>;
       await this.saveConfigMap(data, nowSec);
+      // 同步保存聚合数据（对齐 PHP saveConfig("auto_generate_licensed_data")）
+      const agg = {
+        orderId: lic.order_id ?? "",
+        licensedType: lic.licensedType,
+        licensedTypeName: lic.licensedTypeName,
+        deCopyright: lic.deCopyright,
+        isEnterprise: lic.isEnterprise,
+        authorizedDomain: lic.authorizedDomain ?? domain ?? "",
+        license: lic.license ?? licenseKey,
+        holder: lic.holder ?? "",
+        releaseTime: lic.releaseTime ?? 0,
+        licensedId: JSON.stringify(lic.licensedId ?? {}),
+        expirationTime: lic.expirationTime ?? 0,
+      } as any;
+      await this.saveConfigJSON("auto_generate_licensed_data", agg, nowSec);
 
       return {
         licensed_id: id,
@@ -243,5 +275,9 @@ export class LicensedService {
     for (const [k, v] of Object.entries(map)) {
       await this.upsertConfig(k, String(v ?? ""), nowSec);
     }
+  }
+
+  private async saveConfigJSON(biz_code: string, obj: any, nowSec: number) {
+    await this.upsertConfig(biz_code, JSON.stringify(obj ?? {}), nowSec);
   }
 }
