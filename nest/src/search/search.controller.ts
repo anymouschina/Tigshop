@@ -123,43 +123,50 @@ export class SearchController {
     // 调用搜索服务
     const searchResults = await this.searchService.search(searchOptions);
 
-    // 格式化产品数据
-    const products = searchResults.results.map((result) => ({
-      productId: result.id,
-      productName: result.title,
-      productImage: result.image,
-      productPrice: result.metadata?.price || 0,
-      originalPrice: result.metadata?.originalPrice || 0,
-      productStock: result.metadata?.stock || 0,
-      isOnSale: result.metadata?.isOnSale || false,
-      category: result.metadata?.category,
-      brand: result.metadata?.brand,
-      discount: result.metadata?.hasDiscount
-        ? Math.round(
-            ((result.metadata?.originalPrice - result.metadata?.price) /
-              result.metadata?.originalPrice) *
-              100,
-          )
-        : 0,
-      score: result.score,
-    }));
+    // 映射到对齐PHP的返回结构
+    const records = searchResults.results.map((result) => {
+      const m = result.metadata || {};
+      const priceStr = m.price != null ? String(m.price) : "0.00";
+      const marketPriceStr = m.originalPrice != null ? String(m.originalPrice) : "0.00";
+
+      return {
+        productId: result.id,
+        picThumb: m.picThumb || m.picUrl || result.image || "",
+        picUrl: m.picUrl || result.image || "",
+        productName: result.title,
+        virtualSales: m.virtualSales ?? 0,
+        checkStatus: m.checkStatus ?? 0,
+        shopId: m.shopId ?? 0,
+        suppliersId: m.suppliersId ?? null,
+        productType: m.productType ?? 1,
+        productSn: m.productSn || "",
+        productPrice: priceStr,
+        marketPrice: marketPriceStr,
+        productStatus: m.productStatus ?? 0,
+        isBest: m.isBest ?? 0,
+        isNew: m.isNew ?? 0,
+        isHot: m.isHot ?? 0,
+        productStock: m.stock ?? 0,
+        sortOrder: m.sortOrder ?? 100,
+        productBrief: m.productBrief || "",
+        skuPrice: null,
+        seckillPrice: null,
+        productSku: [],
+        shop: null,
+        price: priceStr,
+        isSeckill: 0,
+        seckillEndTime: "",
+        seckillStock: m.stock ?? 0,
+      };
+    });
 
     return {
-      products,
-      pagination: {
-        page: pageNum,
-        size: sizeNum,
+      code: 0,
+      message: "success",
+      data: {
+        records,
         total: searchResults.total,
-        totalPages: Math.ceil(searchResults.total / sizeNum),
-        hasMore: searchResults.hasMore,
       },
-      filters: {
-        category: catNum,
-        couponId: couponIdNum,
-        order,
-        pageType,
-      },
-      suggestions: searchResults.suggestions,
     };
   }
 
