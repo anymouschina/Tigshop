@@ -31,6 +31,134 @@
   - [x] 新增认证设置：GET /adminapi/setting/config/authSettings、POST /saveAuth（与 PHP 键集 {type,isIdentity,isEnquiry,smsNote,tips} 对齐）
   - [x] 新增管理端基础设置：GET /adminapi/setting/config/getAdminBase（按 PHP 返回字段映射，支持 shopId/vendorId 作用域）
 
+#### 路由前缀 /adminapi/setting 接口清单（已接通）
+
+- config（系统配置聚合）
+  - [x] GET  /adminapi/setting/config/basicSettings
+  - [x] GET  /adminapi/setting/config/productSettings
+  - [x] GET  /adminapi/setting/config/notifySettings
+  - [x] GET  /adminapi/setting/config/shoppingSettings
+  - [x] GET  /adminapi/setting/config/showSettings
+  - [x] GET  /adminapi/setting/config/kefuSettings
+  - [x] POST /adminapi/setting/config/saveKefu
+  - [x] POST /adminapi/setting/config/saveShopping
+  - [x] GET  /adminapi/setting/config/apiSettings
+  - [x] POST /adminapi/setting/config/saveApi
+  - [x] GET  /adminapi/setting/config/mailSettings
+  - [x] POST /adminapi/setting/config/saveMail
+  - [x] GET  /adminapi/setting/config/shippingSettings
+  - [x] POST /adminapi/setting/config/saveShipping
+  - [x] GET  /adminapi/setting/config/merchantSettings
+  - [x] POST /adminapi/setting/config/saveMerchant
+  - [x] GET  /adminapi/setting/config/shopSettings
+  - [x] POST /adminapi/setting/config/saveShop
+  - [x] GET  /adminapi/setting/config/vendorSettings
+  - [x] POST /adminapi/setting/config/saveVendor
+  - [x] GET  /adminapi/setting/config/globalSettings
+  - [x] POST /adminapi/setting/config/saveGlobal
+  - [x] GET  /adminapi/setting/config/orderSettings
+  - [x] POST /adminapi/setting/config/saveOrder
+  - [x] GET  /adminapi/setting/config/profitSharingSettings
+  - [x] GET  /adminapi/setting/config/withdrawalSettings
+  - [x] POST /adminapi/setting/config/saveWithdrawal
+  - [x] GET  /adminapi/setting/config/categoryDecorateSettings
+  - [x] POST /adminapi/setting/config/saveCategoryDecorate
+  - [x] GET  /adminapi/setting/config/themeStyleSettings
+  - [x] POST /adminapi/setting/config/saveThemeStyle
+  - [x] GET  /adminapi/setting/config/authSettings
+  - [x] POST /adminapi/setting/config/saveAuth
+  - [x] GET  /adminapi/setting/config/afterSalesSettings
+  - [x] POST /adminapi/setting/config/saveAfterSales
+  - [x] GET  /adminapi/setting/config/basicConfig
+  - [x] POST /adminapi/setting/config/saveBasic
+  - [x] GET  /adminapi/setting/config/layoutThemeSwitchSettings
+  - [x] GET  /adminapi/setting/config/loginSettings
+  - [x] POST /adminapi/setting/config/saveLogin
+  - [x] GET  /adminapi/setting/config/paySettings
+  - [x] POST /adminapi/setting/config/savePay
+  - [x] GET  /adminapi/setting/config/basicPaySettings
+  - [x] POST /adminapi/setting/config/saveBasicPay
+  - [x] GET  /adminapi/setting/config/wechatPaySettings
+  - [x] POST /adminapi/setting/config/saveWechatPay
+  - [x] GET  /adminapi/setting/config/aliPaySettings
+  - [x] POST /adminapi/setting/config/saveAliPay
+  - [x] GET  /adminapi/setting/config/yaBandPaySettings
+  - [x] POST /adminapi/setting/config/saveYaBandPay
+  - [x] GET  /adminapi/setting/config/offlinePaySettings
+  - [x] POST /adminapi/setting/config/saveOfflinePay
+  - [x] GET  /adminapi/setting/config/payPalSettings
+  - [x] POST /adminapi/setting/config/savePayPal
+  - [x] GET  /adminapi/setting/config/yunPaySettings
+  - [x] POST /adminapi/setting/config/saveYunPay
+  - [x] GET  /adminapi/setting/config/getIcon
+  - [x] POST /adminapi/setting/config/sendTestEmail
+  - [x] POST /adminapi/setting/config/uploadFile
+  - [x] POST /adminapi/setting/config/createPlatformCertificate
+  - [x] GET  /adminapi/setting/config/getAdminBase
+  - [x] GET  /adminapi/setting/config/getAdmin（Public）
+  - [x] GET  /adminapi/setting/config/getLoginProtocol（Public）
+  - [x] GET  /adminapi/setting/config/getLoginProtocolContent（Public）
+  - [x] POST /adminapi/setting/config/saveLoginProtocol
+  - 实用接口（同时挂载在 admin/config 与 adminapi/setting/config）
+    - [x] GET  /adminapi/setting/config/all
+    - [x] GET  /adminapi/setting/config/detail
+    - [x] GET  /adminapi/setting/config/by-code/:bizCode
+    - [x] GET  /adminapi/setting/config/by-codes
+    - [x] GET  /adminapi/setting/config/get-all-configs
+    - [x] GET  /adminapi/setting/config/by-group
+    - [x] GET  /adminapi/setting/config/json/:bizCode
+    - [x] POST /adminapi/setting/config/json/:bizCode
+    - [x] GET  /adminapi/setting/config/number/:bizCode
+    - [x] GET  /adminapi/setting/config/boolean/:bizCode
+    - [x] POST /adminapi/setting/config/init（Public）
+
+- gallery（素材库目录）
+  - [x] GET  /adminapi/setting/gallery/list
+  - [x] GET  /adminapi/setting/gallery/detail
+  - [x] POST /adminapi/setting/gallery/create
+  - [x] POST /adminapi/setting/gallery/update
+  - [x] POST /adminapi/setting/gallery/updateField
+  - [x] POST /adminapi/setting/gallery/del
+
+- galleryPic（素材库图片）
+  - [x] GET  /adminapi/setting/galleryPic/list
+  - [x] POST /adminapi/setting/galleryPic/updateField
+  - [x] POST /adminapi/setting/galleryPic/del
+  - [x] POST /adminapi/setting/galleryPic/uploadImg
+
+- logisticsCompany（物流公司）
+  - [x] GET  /adminapi/setting/logisticsCompany/list
+
+- region（地区）
+  - [x] GET  /adminapi/setting/region/getAllRegionTree
+  - [x] GET  /adminapi/setting/region/list（支持 parentId/page/size/keyword，返回 {records,total,page,size,totalPages}）
+
+- friendLinks（友情链接）
+  - [x] GET    /adminapi/setting/friendLinks/list
+  - [x] GET    /adminapi/setting/friendLinks/detail
+  - [x] GET    /adminapi/setting/friendLinks/config
+  - [x] POST   /adminapi/setting/friendLinks/create
+  - [x] PUT    /adminapi/setting/friendLinks/update
+  - [x] DELETE /adminapi/setting/friendLinks/del
+
+- appVersion（应用版本）
+  - [x] GET    /adminapi/setting/appVersion/list
+  - [x] GET    /adminapi/setting/appVersion/detail
+  - [x] GET    /adminapi/setting/appVersion/config
+  - [x] POST   /adminapi/setting/appVersion/create
+  - [x] PUT    /adminapi/setting/appVersion/update
+  - [x] DELETE /adminapi/setting/appVersion/del
+
+- licensed（授权管理）
+  - [x] GET    /adminapi/setting/licensed/index
+  - [x] GET    /adminapi/setting/licensed/list
+  - [x] GET    /adminapi/setting/licensed/config
+  - [x] GET    /adminapi/setting/licensed/detail
+  - [x] POST   /adminapi/setting/licensed/create
+  - [x] PUT    /adminapi/setting/licensed/update
+  - [x] DELETE /adminapi/setting/licensed/del
+  - [x] POST   /adminapi/setting/licensed/batch
+
 ### 3) 素材库（Gallery）
 - [x] /adminapi/setting/gallery/*
 - [x] /adminapi/setting/galleryPic/*
@@ -366,6 +494,7 @@
     - [x] POST /audit（status/audit_remark，权限 userCertificationManage）
     - [x] POST /del（权限 userCertificationManage）
   - 说明：以上均已接入 AdminJwtAuthGuard + AuthorityGuard 与 @Authorities，返回统一 { code, message, data }，列表返回 {records,total}。涉及 Prisma 表均按 snake_case 访问（feedback/user_message_log/user_points_log/user_rank/user_rank_log/user_company），去除无效 include，必要信息通过二次查询手动补齐。
+ - 设置 Setting 模块：详见上文“2) 设置 Setting / Config”章节（清单已全面更新并勾选）。
   
 ### 8) 用户侧模块（User App）
 - [ ] 用户售后 Aftersales（对齐 PHP user/Aftersales/*）
@@ -390,6 +519,7 @@
 - [ ] 文档：补 README 或 docs 对应章节
 
 ## 变更记录（完成项之后在此追加）
+ - 2025-10-01：设置模块清单同步更新：核对并勾选 /adminapi/setting 下 config/gallery/galleryPic/logisticsCompany/region/licensed 全部路由；补充支付配置套件与工具接口（basicPay/wechatPay/aliPay/yaBandPay/offlinePay/payPal/yunPay、sendTestEmail、getIcon、uploadFile、createPlatformCertificate），补登工具路由别名（all/detail/by-code/by-codes），标注公共路由（getAdmin/getLoginProtocol/getLoginProtocolContent/init），并移除重复占位项。
  - 2025-09-30：会员 Member 管理端兼容完成：接通 /adminapi/user 下 user/feedback/userMessageLog/userPointsLog/userRank/userRankLog/userCompany 全部路由与子权限，统一返回驼峰包装；修正 user_message_log 与 user_points_log 等服务的字段映射与时间字段（send_time/add_time/change_time）以避免 Prisma 运行时错误。
  - 2025-09-30：会员等级别名补充：新增 GET /adminapi/user/userRank/listByPro 路由别名，复用 /list 返回结构，修复前端调用 404。
  - 2025-09-30：配置认证设置兼容：新增 GET /adminapi/setting/config/authSettings 与 POST /saveAuth，读取/保存 {type,isIdentity,isEnquiry,smsNote,tips}，修复相关页面 404。

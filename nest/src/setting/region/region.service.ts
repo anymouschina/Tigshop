@@ -28,25 +28,55 @@ export class RegionService {
 
     return this.prisma.region.findMany({
       where,
-      orderBy: {
-        sort: "asc",
-        region_id: "asc",
-      },
+      orderBy: [{ region_id: "asc" }],
     });
   }
 
   async getRegionTree(): Promise<any[]> {
     const regions = await this.prisma.region.findMany({
-      where: {
-        is_using: 1,
-      },
-      orderBy: {
-        sort: "asc",
-        region_id: "asc",
-      },
+      orderBy: [{ region_id: "asc" }],
     });
 
     return this.buildTree(regions, 0);
+  }
+
+  // 兼容 Admin 列表接口：按父级、关键字、分页返回
+  async getRegionListCompat(params: {
+    parentId: number;
+    page: number;
+    size: number;
+    keyword?: string;
+  }) {
+    const { parentId, page, size, keyword } = params;
+    const where: any = { parent_id: parentId };
+    if (keyword && keyword.length > 0) {
+      where.region_name = { contains: keyword };
+    }
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.region.count({ where }),
+      this.prisma.region.findMany({
+        where,
+        orderBy: { region_id: "asc" },
+        skip: (page - 1) * size,
+        take: size,
+      }),
+    ]);
+
+    return {
+      records: items.map((it) => ({
+        regionId: it.region_id,
+        regionName: it.region_name,
+        level: it.level,
+        parentId: it.parent_id,
+        isHot: it.is_hot,
+        firstWord: it.first_word,
+      })),
+      total,
+      page,
+      size,
+      totalPages: Math.ceil(total / size) || 1,
+    };
   }
 
   private buildTree(regions: any[], parentId: number): any[] {
@@ -108,12 +138,8 @@ export class RegionService {
     return this.prisma.region.findMany({
       where: {
         parent_id: parentId,
-        is_using: 1,
       },
-      orderBy: {
-        sort: "asc",
-        region_id: "asc",
-      },
+      orderBy: [{ region_id: "asc" }],
     });
   }
 

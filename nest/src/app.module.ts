@@ -76,6 +76,10 @@ import { AdminArticleCategoryCompatController } from "./content/admin-article-ca
 import { AdminShopAccountCompatController } from "./merchant/admin-shop-account-compat.controller";
 import { AdminShopWithdrawCompatController } from "./merchant/admin-shop-withdraw-compat.controller";
 import { AdminVendorWithdrawCompatController } from "./vendor/admin-vendor-withdraw-compat.controller";
+import { AdminLocalesCompatController } from "./lang/admin-locales-compat.controller";
+import { AdminLocalesRelationCompatController } from "./lang/admin-locales-relation-compat.controller";
+import { AdminCurrencyCompatController } from "./lang/admin-currency-compat.controller";
+import { AdminAreaCodeCompatController } from "./setting/area-code/admin-area-code-compat.controller";
 
 @Module({
   imports: [
@@ -154,6 +158,10 @@ import { AdminVendorWithdrawCompatController } from "./vendor/admin-vendor-withd
     AdminShopAccountCompatController,
     AdminShopWithdrawCompatController,
     AdminVendorWithdrawCompatController,
+    AdminLocalesCompatController,
+    AdminLocalesRelationCompatController,
+    AdminCurrencyCompatController,
+    AdminAreaCodeCompatController,
   ],
   providers: [
     {

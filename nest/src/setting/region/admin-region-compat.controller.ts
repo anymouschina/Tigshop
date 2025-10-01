@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Get, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,6 +12,25 @@ import { RegionService } from "./region.service";
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class AdminRegionCompatController {
   constructor(private readonly regionService: RegionService) {}
+
+  // 兼容 PHP: GET /adminapi/setting/region/list
+  @Get("list")
+  @Authorities("setting")
+  @ApiOperation({ summary: "地区列表（兼容）" })
+  async list(
+    @Query("parentId") parentId?: string,
+    @Query("page") page?: string,
+    @Query("size") size?: string,
+    @Query("keyword") keyword?: string,
+  ) {
+    const data = await this.regionService.getRegionListCompat({
+      parentId: Number(parentId ?? 0),
+      page: Math.max(1, Number(page) || 1),
+      size: Math.max(1, Number(size) || 15),
+      keyword: (keyword || "").trim(),
+    });
+    return { code: 0, message: "success", data };
+  }
 
   // 兼容 PHP: GET /adminapi/setting/region/getAllRegionTree
   @Get("getAllRegionTree")

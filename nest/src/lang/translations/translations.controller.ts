@@ -3,13 +3,17 @@ import { Controller, Get, Post, Body, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { TranslationsService } from "./translations.service";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @ApiTags("Admin API - 多语言翻译(兼容路径)")
 @Controller("adminapi/lang/translations")
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard)
 export class TranslationsController {
-  constructor(private readonly translationsService: TranslationsService) {}
+  constructor(
+    private readonly translationsService: TranslationsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // 业务翻译数据：createTranslations（POST）
   @Post("createTranslations")
@@ -57,5 +61,20 @@ export class TranslationsController {
   async translation(@Body() body: any) {
     const text = String(body.text ?? "");
     return { code: 0, message: "success", data: { translation: text } };
+  }
+
+  // 兼容：获取最多 3 个启用的语言
+  @Get("getLocalesLimit3")
+  @ApiOperation({ summary: "获取最多3个可用语言（兼容）" })
+  async getLocalesLimit3() {
+    const rows = await this.prisma.locales.findMany({
+      where: { is_enabled: 1 },
+      orderBy: [
+        { sort: "asc" },
+        { id: "asc" },
+      ],
+      take: 3,
+    });
+    return { code: 0, message: "success", data: rows };
   }
 }
