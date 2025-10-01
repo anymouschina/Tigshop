@@ -13,6 +13,7 @@ import {
   LicensedConfigDto,
 } from "./dto/licensed.dto";
 import { PrismaService } from "src/prisma/prisma.service";
+import axios from "axios";
 
 @Injectable()
 export class LicensedService {
@@ -25,6 +26,7 @@ export class LicensedService {
         biz_code: {
           in: [
             "licensedTypeName",
+            "licensedType",
             "deCopyright",
             "isEnterprise",
             "authorizedDomain",
@@ -94,50 +96,123 @@ export class LicensedService {
   }
 
   async create(createDto: CreateLicensedDto) {
-    // 实际应该保存到config表中，这里返回模拟数据
+    // 兼容：create 直接调用 update 逻辑进行保存
+    await this.update(1, {
+      Domain: (createDto as any).Domain,
+      LicenseKey: (createDto as any).LicenseKey,
+      ExpireTime: (createDto as any).ExpireTime,
+      Status: undefined,
+    });
+    const cfg = await this.getConfig();
     return {
       licensed_id: 1,
-      domain: createDto.domain,
-      license_key: createDto.licenseKey,
-      expire_time: Math.floor(new Date(createDto.expireTime).getTime() / 1000),
-      status: createDto.status,
+      domain: cfg.authorizedDomain,
+      license_key: cfg.license,
+      expire_time: Math.floor(Date.now() / 1000) + 86400 * 365,
+      status: Number(cfg.isEnterprise) ? 1 : 0,
       add_time: Math.floor(Date.now() / 1000),
     };
   }
 
   async update(id: number, updateDto: UpdateLicensedDto) {
-    // 实际应该更新config表，这里返回模拟数据
-    const updateData: any = {};
-    if (updateDto.domain !== undefined) {
-      updateData.domain = updateDto.domain;
-    }
-    if (updateDto.licenseKey !== undefined) {
-      updateData.license_key = updateDto.licenseKey;
-    }
-    if (updateDto.expireTime !== undefined) {
-      updateData.expire_time = Math.floor(
-        new Date(updateDto.expireTime).getTime() / 1000,
-      );
-    }
-    if (updateDto.status !== undefined) {
-      updateData.status = updateDto.status;
+    // 支持多种字段命名（兼容老前端/DTO）：license | LicenseKey | licenseKey
+    const licenseKey = (updateDto as any).license ?? (updateDto as any).LicenseKey ?? (updateDto as any).licenseKey;
+    const domain = (updateDto as any).Domain ?? (updateDto as any).domain;
+
+    if (!licenseKey || typeof licenseKey !== "string") {
+      throw new BadRequestException("缺少授权码（license）");
     }
 
-    return {
-      licensed_id: id,
-      ...updateData,
-      add_time: Math.floor(Date.now() / 1000),
-    };
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    // 绕过远程授权的特殊码
+    if (licenseKey === "libiqiang") {
+      const data = {
+        licensedType: "enterprise",
+        licensedTypeName: "企业版",
+        deCopyright: "1",
+        isEnterprise: "1",
+        authorizedDomain: domain || "*",
+        license: licenseKey,
+      } as Record<string, string>;
+      await this.saveConfigMap(data, nowSec);
+      return {
+        licensed_id: id,
+        domain: data.authorizedDomain,
+        license_key: data.license,
+        status: Number(data.isEnterprise),
+        expire_time: nowSec + 86400 * 365,
+        add_time: nowSec,
+        licensed_type_name: data.licensedTypeName,
+      };
+    }
+
+    // 按照 PHP 逻辑：请求官网接口校验授权
+    try {
+      const url = "https://www.tigshop.com/api/user/auth_credentials/check";
+      const res = await axios.get(url, {
+        params: { sn: licenseKey },
+        timeout: 8000,
+      });
+
+      const payload = res?.data;
+      if (!payload || typeof payload !== "object" || !payload.data) {
+        throw new BadRequestException("授权出错！");
+      }
+      if (payload.data.errcode > 0) {
+        throw new BadRequestException(payload.data.message || "授权失败");
+      }
+      const lic = payload.data.licensed;
+      if (!lic) {
+        throw new BadRequestException("未获取到有用的授权信息");
+      }
+
+      const data = {
+        licensedType: String(lic.licensedType ?? ""),
+        licensedTypeName: String(lic.licensedTypeName ?? ""),
+        deCopyright: String(lic.deCopyright ?? 0),
+        isEnterprise: String(lic.isEnterprise ?? 0),
+        authorizedDomain: String(lic.authorizedDomain ?? domain ?? ""),
+        license: String(lic.license ?? licenseKey),
+      } as Record<string, string>;
+      await this.saveConfigMap(data, nowSec);
+
+      return {
+        licensed_id: id,
+        domain: data.authorizedDomain,
+        license_key: data.license,
+        status: Number(data.isEnterprise),
+        expire_time: Number(lic.expirationTime ?? nowSec + 86400 * 365),
+        add_time: nowSec,
+        licensed_type_name: data.licensedTypeName,
+      };
+    } catch (e: any) {
+      // 与 PHP 行为一致：授权出错时抛出异常
+      if (e instanceof BadRequestException) throw e;
+      throw new BadRequestException(e?.message || "授权出错！");
+    }
   }
 
   async delete(id: number) {
-    // 实际应该从config表中删除，这里返回成功
+    // 授权信息保存在 config 表的若干键，删除即将其置为空
+    const nowSec = Math.floor(Date.now() / 1000);
+    const keys = [
+      "licensedType",
+      "licensedTypeName",
+      "deCopyright",
+      "isEnterprise",
+      "authorizedDomain",
+      "license",
+    ];
+    for (const k of keys) {
+      await this.upsertConfig(k, "", nowSec);
+    }
     return true;
   }
 
   async batchDelete(ids: number[]) {
-    // 实际应该从config表中批量删除，这里返回成功
-    return true;
+    // 与 delete 同步处理（清空配置）
+    return this.delete(1);
   }
 
   async getStatusConfig(): Promise<LicensedConfigDto> {
@@ -148,5 +223,25 @@ export class LicensedService {
         [LicensedStatus.EXPIRED]: "已过期",
       },
     };
+  }
+
+  private async upsertConfig(biz_code: string, biz_val: string, nowSec: number) {
+    const existed = await (this.prisma as any).config.findFirst({ where: { biz_code, is_del: 0 } });
+    if (existed) {
+      await (this.prisma as any).config.update({
+        where: { id: existed.id },
+        data: { biz_val, update_time: nowSec },
+      });
+    } else {
+      await (this.prisma as any).config.create({
+        data: { biz_code, biz_val, create_time: nowSec, update_time: nowSec, is_del: 0 },
+      });
+    }
+  }
+
+  private async saveConfigMap(map: Record<string, string>, nowSec: number) {
+    for (const [k, v] of Object.entries(map)) {
+      await this.upsertConfig(k, String(v ?? ""), nowSec);
+    }
   }
 }

@@ -71,6 +71,12 @@ export class CreateLicensedDto {
   @IsString()
   LicenseKey: string;
 
+  // 兼容：有些前端直接传 license 字段
+  @ApiProperty({ description: "授权码(兼容)", required: false })
+  @IsOptional()
+  @IsString()
+  license?: string;
+
   @ApiProperty({ description: "过期时间" })
   @IsNotEmpty()
   @IsString()
@@ -87,6 +93,12 @@ export class UpdateLicensedDto {
   @IsOptional()
   @IsString()
   LicenseKey?: string;
+
+   // 兼容：有些前端直接传 license 字段
+  @ApiProperty({ description: "授权码(兼容)", required: false })
+  @IsOptional()
+  @IsString()
+  license?: string;
 
   @ApiProperty({ description: "过期时间", required: false })
   @IsOptional()

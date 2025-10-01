@@ -113,8 +113,26 @@ export class LicensedController {
   @ApiBody({ type: UpdateLicensedDto })
   async update(@Body() updateDto: UpdateLicensedDto & { id: number }) {
     const { id, ...data } = updateDto;
+    const realId = Number.isFinite(Number(id)) ? Number(id) : 1;
 
-    const item = await this.licensedService.update(id, data);
+    const item = await this.licensedService.update(realId, data);
+    return {
+      code: 200,
+      msg: "更新成功",
+      data: item,
+    };
+  }
+
+  // 兼容老前端：使用 POST 调用 update
+  @Post("update")
+  @Authorities("adminapi/setting/licensed/update")
+  @ApiOperation({ summary: "更新授权（兼容 POST）" })
+  @ApiBody({ type: UpdateLicensedDto })
+  async updateCompat(@Body() updateDto: UpdateLicensedDto & { id: number }) {
+    const { id, ...data } = updateDto;
+    const realId = Number.isFinite(Number(id)) ? Number(id) : 1;
+
+    const item = await this.licensedService.update(realId, data);
     return {
       code: 200,
       msg: "更新成功",
