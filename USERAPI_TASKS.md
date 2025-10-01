@@ -48,6 +48,10 @@
   - [x] GET /api/common/recommend/getProductIds
  - currency（货币）
   - [x] GET /api/common/currency/getCurrency
+  - verification（验证码）
+    - [x] POST /api/common/verification/captcha
+    - [x] POST /api/common/verification/check
+    - [x] POST /api/common/verification/verification
   - [x] POST /api/common/verification/captcha
     - [ ] GET /api/common/config/base
     - [x] GET /api/common/config/initConfigSettings（同 base）
@@ -107,7 +111,7 @@
     - [x] GET  /api/product/product/getRelated
   - [x] GET /api/home/home/friendLinks
 - share（装修模板导入）
-  - [ ] GET /api/home/share/import
+  - [x] GET /api/home/share/import
 
     - [x] GET /api/search/search/getFilter
     - [x] GET /api/search/search/getProduct
@@ -196,11 +200,11 @@
   - [ ] POST /api/user/comment/evaluate（需登录）
   - [ ] GET  /api/user/comment/detail（需登录）
 - coupon（优惠券）
-  - [ ] GET  /api/user/coupon/list（需登录）
-  - [ ] POST /api/user/coupon/del（需登录）
-  - [ ] GET  /api/user/coupon/getList
-  - [ ] POST /api/user/coupon/claim（需登录）
-  - [ ] GET  /api/user/coupon/detail（需登录）
+  - [x] GET  /api/user/coupon/list（需登录）
+  - [x] POST /api/user/coupon/del（需登录）
+  - [x] GET  /api/user/coupon/getList
+  - [x] POST /api/user/coupon/claim（需登录）
+  - [x] GET  /api/user/coupon/detail（需登录）
 - feedback（留言咨询，需登录）
   - [ ] GET  /api/user/feedback/list（需登录）
   - [ ] POST /api/user/feedback/submit（需登录）
@@ -229,10 +233,10 @@
   - [ ] POST /api/user/login/getJsSdkConfig（需登录）
   - [ ] POST /api/user/login/sendEmailCode
 - message（站内信，需登录）
-  - [ ] GET  /api/user/message/list（需登录）
-  - [ ] POST /api/user/message/updateAllRead（需登录）
-  - [ ] POST /api/user/message/updateMessageRead（需登录）
-  - [ ] POST /api/user/message/del（需登录）
+  - [x] GET  /api/user/message/list（需登录）
+  - [x] POST /api/user/message/updateAllRead（需登录）
+  - [x] POST /api/user/message/updateMessageRead（需登录）
+  - [x] POST /api/user/message/del（需登录）
 - order（订单，需登录）
   - [x] GET  /api/user/order/list（需登录）
   - [x] GET  /api/user/order/detail（需登录）

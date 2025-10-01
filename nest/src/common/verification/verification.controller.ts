@@ -388,6 +388,36 @@ export class PublicVerificationController {
     }
   }
 
+  // 兼容PHP二次验证接口：/api/common/verification/verification
+  // 行为：与一次验证一致，成功返回空对象，失败返回错误信息（由拦截器包装）
+  @ApiOperation({ summary: "二次验证（兼容PHP）" })
+  @Post("verification")
+  async secondaryVerification(
+    @Body() body: { captchaType?: string; pointJson?: string; token?: string },
+  ) {
+    const { captchaType = "blockPuzzle", pointJson, token } = body;
+
+    if (!pointJson || !token) {
+      return {
+        code: 400,
+        message: "验证参数不完整",
+        data: { captchaType, pointJson: pointJson || null, token: token || null },
+        path: "/api/common/verification/verification",
+      };
+    }
+
+    const isValid = await this.captchaService.verifyPointJson(token, pointJson);
+    if (!isValid) {
+      return {
+        message: "验证失败",
+        data: { captchaType, token },
+      };
+    }
+
+    // 与PHP返回 success([]) 对齐：返回空对象作为data
+    return {};
+  }
+
   /**
    * 生成更真实的拖拽轨迹
    */
