@@ -90,6 +90,15 @@ export class UserController {
     return this.userService.updateInformation(req.user.user_id, updateData);
   }
 
+  // 兼容 PHP: /api/user/user/updateInformation
+  @Post("user/updateInformation")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "更新用户信息（兼容路径）" })
+  async updateInformationAlias(@Request() req, @Body() updateData: any) {
+    return this.updateInformation(req, updateData);
+  }
+
   /**
    * 修改密码 - 对齐PHP版本 modifyPassword
    */
@@ -106,6 +115,18 @@ export class UserController {
       passwordData.oldPassword,
       passwordData.newPassword,
     );
+  }
+
+  // 兼容 PHP: /api/user/user/modifyPassword
+  @Post("user/modifyPassword")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "修改密码（兼容路径）" })
+  async modifyPasswordAlias(
+    @Request() req,
+    @Body() passwordData: { oldPassword: string; newPassword: string },
+  ) {
+    return this.modifyPassword(req, passwordData);
   }
 
   /**
@@ -126,6 +147,18 @@ export class UserController {
     );
   }
 
+  // 兼容 PHP: /api/user/user/modifyMobile
+  @Post("user/modifyMobile")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "修改手机号（兼容路径）" })
+  async modifyMobileAlias(
+    @Request() req,
+    @Body() mobileData: { mobile: string; code: string },
+  ) {
+    return this.modifyMobile(req, mobileData);
+  }
+
   /**
    * 修改邮箱 - 对齐PHP版本 modifyEmail
    */
@@ -144,6 +177,18 @@ export class UserController {
     );
   }
 
+  // 兼容 PHP: /api/user/user/modifyEmail
+  @Post("user/modifyEmail")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "修改邮箱（兼容路径）" })
+  async modifyEmailAlias(
+    @Request() req,
+    @Body() emailData: { email: string; code: string },
+  ) {
+    return this.modifyEmail(req, emailData);
+  }
+
   /**
    * 获取用户中心数据 - 对齐PHP版本 memberCenter
    */
@@ -153,6 +198,15 @@ export class UserController {
   @ApiOperation({ summary: "获取用户中心数据" })
   async getMemberCenter(@Request() req) {
     return this.userService.getMemberCenter(req.user.user_id);
+  }
+
+  // 兼容 PHP: /api/user/user/memberCenter
+  @Get("user/memberCenter")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "获取用户中心数据（兼容路径）" })
+  async getMemberCenterAlias(@Request() req) {
+    return this.getMemberCenter(req);
   }
 
   /**
@@ -168,6 +222,19 @@ export class UserController {
     @Query("limit") limit: number = 10,
   ) {
     return this.userService.getHistoryProduct(req.user.user_id, page, limit);
+  }
+
+  // 兼容 PHP: /api/user/user/historyProduct
+  @Get("user/historyProduct")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "获取用户浏览历史（兼容路径）" })
+  async getHistoryProductAlias(
+    @Request() req,
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ) {
+    return this.getHistoryProduct(req, page, limit);
   }
 
   /**
@@ -187,6 +254,18 @@ export class UserController {
     );
   }
 
+  // 兼容 PHP: /api/user/user/delHistoryProduct
+  @Post("user/delHistoryProduct")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "删除浏览历史（兼容路径）" })
+  async deleteHistoryProductAlias(
+    @Request() req,
+    @Body() body: { productIds: number[] },
+  ) {
+    return this.deleteHistoryProduct(req, body);
+  }
+
   /**
    * 上传用户头像 - 对齐PHP版本 uploadImg
    */
@@ -201,6 +280,20 @@ export class UserController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.userService.uploadAvatar(req.user.user_id, file);
+  }
+
+  // 兼容 PHP: /api/user/user/uploadImg
+  @Post("user/uploadImg")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "上传用户头像（兼容路径）" })
+  @UseInterceptors(FileInterceptor("file"))
+  @ApiConsumes("multipart/form-data")
+  async uploadAvatarAlias(
+    @Request() req,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.uploadAvatar(req, file);
   }
 
   /**
@@ -230,6 +323,15 @@ export class UserController {
     return this.userService.logout(req.user.user_id);
   }
 
+  // 兼容 PHP: /api/user/user/logout
+  @Post("user/logout")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "用户退出登录（兼容路径）" })
+  async logoutAlias(@Request() req) {
+    return this.logout(req);
+  }
+
   /**
    * 发送修改密码验证码 - 对齐PHP版本 sendMobileCodeByModifyPassword
    */
@@ -245,6 +347,18 @@ export class UserController {
       req.user.user_id,
       body.mobile,
     );
+  }
+
+  // 兼容 PHP: /api/user/user/sendMobileCodeByModifyPassword
+  @Post("user/sendMobileCodeByModifyPassword")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "发送修改密码验证码（兼容路径）" })
+  async sendPasswordChangeCodeAlias(
+    @Request() req,
+    @Body() body: { mobile: string },
+  ) {
+    return this.sendPasswordChangeCode(req, body);
   }
 
   /**
@@ -263,6 +377,18 @@ export class UserController {
       body.mobile,
       body.code,
     );
+  }
+
+  // 兼容 PHP: /api/user/user/checkModifyPasswordMobileCode
+  @Post("user/checkModifyPasswordMobileCode")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "验证修改密码验证码（兼容路径）" })
+  async checkPasswordChangeCodeAlias(
+    @Request() req,
+    @Body() body: { mobile: string; code: string },
+  ) {
+    return this.checkPasswordChangeCode(req, body);
   }
 
   /**
@@ -295,6 +421,14 @@ export class UserController {
     return this.userService.getLevelList();
   }
 
+  // 兼容 PHP: /api/user/user/levelList
+  @Get("user/levelList")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "获取用户等级列表（兼容路径）" })
+  async getLevelListAlias() {
+    return this.getLevelList();
+  }
+
   /**
    * 获取用户等级信息 - 对齐PHP版本 levelInfo
    */
@@ -304,6 +438,15 @@ export class UserController {
   @ApiOperation({ summary: "获取用户等级信息" })
   async getLevelInfo(@Query("rank_id") rankId: number) {
     return this.userService.getLevelInfo(rankId);
+  }
+
+  // 兼容 PHP: /api/user/user/levelInfo
+  @Get("user/levelInfo")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "获取用户等级信息（兼容路径）" })
+  async getLevelInfoAlias(@Query("rank_id") rankId: number) {
+    return this.getLevelInfo(rankId);
   }
 
   /**
@@ -317,6 +460,15 @@ export class UserController {
     return this.userService.closeAccount(req.user.user_id);
   }
 
+  // 兼容 PHP: /api/user/user/close
+  @Post("user/close")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "注销账户（兼容路径）" })
+  async closeAccountAlias(@Request() req) {
+    return this.closeAccount(req);
+  }
+
   /**
    * 获取用户OpenId - 对齐PHP版本 userOpenId
    */
@@ -326,5 +478,14 @@ export class UserController {
   @ApiOperation({ summary: "获取用户OpenId" })
   async getUserOpenId(@Request() req) {
     return this.userService.getUserOpenId(req.user.user_id);
+  }
+
+  // 兼容 PHP: /api/user/user/userOpenId
+  @Get("user/userOpenId")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "获取用户OpenId（兼容路径）" })
+  async getUserOpenIdAlias(@Request() req) {
+    return this.getUserOpenId(req);
   }
 }

@@ -15,7 +15,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Order Payment")
-@Controller("pay")
+@Controller("api")
 export class PayController {
   constructor(private readonly payService: PayService) {}
 
@@ -24,6 +24,7 @@ export class PayController {
    */
   @Get("order/pay/index")
   @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "订单支付" })
   async index(@Request() req, @Query() query: { id: number }) {
     const userId = req.user.userId;
@@ -41,6 +42,7 @@ export class PayController {
    */
   @Get("order/pay/getPayLog")
   @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "检测订单支付状态" })
   async getPayLog(@Query() query: { id: number }) {
     const orderId = query.id;
@@ -58,6 +60,7 @@ export class PayController {
    */
   @Get("order/pay/checkStatus")
   @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "检测订单支付状态" })
   async checkStatus(@Query() query: { id?: number; paylog_id?: number }) {
     const { id, paylog_id } = query;
@@ -79,21 +82,19 @@ export class PayController {
   /**
    * 订单支付 - 对齐PHP版本 order/Pay/create
    */
-  @Post("order/pay/create")
+  @Get("order/pay/create")
   @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "创建支付" })
-  async create(
-    @Request() req,
-    @Body() body: { id: number; type: string; code?: string },
-  ) {
+  async create(@Request() req, @Query() query: { id: number; type: string; code?: string }) {
     const userId = req.user.userId;
-    const { id, type, code } = body;
+    const { id, type, code } = query;
 
     if (!id || !type) {
       throw new HttpException("未选择支付方式", HttpStatus.BAD_REQUEST);
     }
 
-    return this.payService.createPayment(userId, id, type, code);
+    return this.payService.createPayment(userId, Number(id), String(type), code);
   }
 
   /**

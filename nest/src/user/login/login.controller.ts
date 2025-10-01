@@ -81,7 +81,8 @@ export class LoginController {
   /**
    * 发送邮箱验证码 - 对齐PHP版本 user/Login/sendEmailCode
    */
-  @Post("user/login/sendEmailCode")
+  // 兼容：/api/user/login/sendEmailCode 与 /api/user/user/login/sendEmailCode
+  @Post("login/sendEmailCode")
   @Public()
   @ApiOperation({ summary: "发送邮箱验证码" })
   async sendEmailCode(
@@ -105,7 +106,8 @@ export class LoginController {
   /**
    * 验证手机号 - 对齐PHP版本 user/Login/checkMobile
    */
-  @Post("user/login/checkMobile")
+  // 兼容：/api/user/login/checkMobile
+  @Post("login/checkMobile")
   @Public()
   @ApiOperation({ summary: "验证手机号" })
   async checkMobile(@Body() body: { mobile: string; code: string }) {
@@ -115,7 +117,8 @@ export class LoginController {
   /**
    * 验证邮箱 - 对齐PHP版本 user/Login/checkEmail
    */
-  @Post("user/login/checkEmail")
+  // 兼容：/api/user/login/checkEmail
+  @Post("login/checkEmail")
   @Public()
   @ApiOperation({ summary: "验证邮箱" })
   async checkEmail(@Body() body: { email: string; code: string }) {
@@ -125,7 +128,8 @@ export class LoginController {
   /**
    * 忘记密码 - 对齐PHP版本 user/Login/forgetPassword
    */
-  @Post("user/login/forgetPassword")
+  // 兼容：/api/user/login/forgetPassword
+  @Post("login/forgetPassword")
   @Public()
   @ApiOperation({ summary: "忘记密码" })
   async forgetPassword(@Body() body: { mobile_key: string; password: string }) {
@@ -135,7 +139,8 @@ export class LoginController {
   /**
    * 获取微信登录URL - 对齐PHP版本 user/Login/getWechatLoginUrl
    */
-  @Get("user/login/getWechatLoginUrl")
+  // 兼容：/api/user/login/getWechatLoginUrl
+  @Get("login/getWechatLoginUrl")
   @Public()
   @ApiOperation({ summary: "获取微信登录URL" })
   async getWechatLoginUrl(@Query("url") redirectUrl: string) {
@@ -145,7 +150,8 @@ export class LoginController {
   /**
    * 通过微信code获取用户信息 - 对齐PHP版本 user/Login/getWechatLoginInfoByCode
    */
-  @Post("user/login/getWechatLoginInfoByCode")
+  // 兼容：/api/user/login/getWechatLoginInfoByCode
+  @Post("login/getWechatLoginInfoByCode")
   @Public()
   @ApiOperation({ summary: "通过微信code获取用户信息" })
   async getWechatLoginInfoByCode(@Body() body: { code: string }) {
@@ -155,7 +161,8 @@ export class LoginController {
   /**
    * 绑定微信 - 对齐PHP版本 user/Login/bindWechat
    */
-  @Post("user/login/bindWechat")
+  // 兼容：/api/user/login/bindWechat
+  @Post("login/bindWechat")
   @ApiBearerAuth()
   @ApiOperation({ summary: "绑定微信" })
   async bindWechat(@Request() req, @Body() body: { code: string }) {
@@ -165,7 +172,8 @@ export class LoginController {
   /**
    * 解除绑定微信 - 对齐PHP版本 user/Login/unbindWechat
    */
-  @Post("user/login/unbindWechat")
+  // 兼容：/api/user/login/unbindWechat
+  @Post("login/unbindWechat")
   @ApiBearerAuth()
   @ApiOperation({ summary: "解除绑定微信" })
   async unbindWechat(@Request() req) {
@@ -175,7 +183,8 @@ export class LoginController {
   /**
    * 绑定手机号 - 对齐PHP版本 user/Login/bindMobile
    */
-  @Post("user/login/bindMobile")
+  // 兼容：/api/user/login/bindMobile
+  @Post("login/bindMobile")
   @Public()
   @ApiOperation({ summary: "绑定手机号" })
   async bindMobile(
@@ -194,7 +203,8 @@ export class LoginController {
   /**
    * 微信服务端验证 - 对齐PHP版本 user/Login/wechatServerVerify
    */
-  @Get("user/login/wechatServerVerify")
+  // 兼容：/api/user/login/wechatServerVerify
+  @Get("login/wechatServerVerify")
   @Public()
   @ApiOperation({ summary: "微信服务端验证" })
   async wechatServerVerify(@Query() query: any) {
@@ -204,7 +214,8 @@ export class LoginController {
   /**
    * 处理微信消息 - 对齐PHP版本 user/Login/getWechatMessage
    */
-  @Post("user/login/getWechatMessage")
+  // 兼容：/api/user/login/getWechatMessage
+  @Post("login/getWechatMessage")
   @Public()
   @ApiOperation({ summary: "处理微信消息" })
   async getWechatMessage(@Body() message: any) {
@@ -214,7 +225,8 @@ export class LoginController {
   /**
    * 微信事件处理 - 对齐PHP版本 user/Login/wechatEvent
    */
-  @Get("user/login/wechatEvent")
+  // 兼容：/api/user/login/wechatEvent
+  @Get("login/wechatEvent")
   @Public()
   @ApiOperation({ summary: "微信事件处理" })
   async wechatEvent(@Query("key") key: string) {
@@ -224,7 +236,8 @@ export class LoginController {
   /**
    * 获取用户手机号 - 对齐PHP版本 user/Login/getUserMobile
    */
-  @Post("user/login/getUserMobile")
+  // 兼容：/api/user/login/getUserMobile
+  @Post("login/getUserMobile")
   @Public()
   @ApiOperation({ summary: "获取用户手机号" })
   async getUserMobile(@Body() body: { code: string }) {
@@ -234,7 +247,8 @@ export class LoginController {
   /**
    * 更新用户OpenId - 对齐PHP版本 user/Login/updateUserOpenId
    */
-  @Post("user/login/updateUserOpenId")
+  // 兼容：/api/user/login/updateUserOpenId
+  @Post("login/updateUserOpenId")
   @ApiBearerAuth()
   @ApiOperation({ summary: "更新用户OpenId" })
   async updateUserOpenId(@Request() req, @Body() body: { code: string }) {
@@ -244,7 +258,8 @@ export class LoginController {
   /**
    * 获取JSSDK配置 - 对齐PHP版本 user/Login/getJsSdkConfig
    */
-  @Get("user/login/getJsSdkConfig")
+  // 兼容：/api/user/login/getJsSdkConfig
+  @Get("login/getJsSdkConfig")
   @Public()
   @ApiOperation({ summary: "获取JSSDK配置" })
   async getJsSdkConfig(@Query("url") url: string) {

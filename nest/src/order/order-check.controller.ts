@@ -15,7 +15,7 @@ import { OrderCheckService } from "./order-check.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @ApiTags("Order Checkout")
-@Controller("order")
+@Controller("api/order")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class OrderCheckController {
