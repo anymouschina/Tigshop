@@ -52,6 +52,107 @@ export class SearchService {
     private redisService: RedisService,
   ) {}
 
+  // 获取筛选器数据（分类、品牌、最高价、总数）
+  async getFilterData(params: {
+    keyword?: string;
+    cat?: number;
+    brand?: number;
+    couponId?: number;
+    pageType?: string;
+    shopCategory?: number | null;
+    attrs?: any[];
+  }): Promise<{
+    filter: {
+      category: Array<{
+        categoryId: number;
+        categoryName: string;
+        parentId: number;
+        isShow: number;
+      }>;
+      brand: Array<{
+        brandId: number;
+        brandName: string;
+        brandLogo: string | null;
+        firstWord: string | null;
+        isShow: number;
+      }>;
+      shopCategory: any[];
+      maxPrice: number;
+    };
+    total: number;
+  }> {
+    const keyword = params.keyword?.trim() || "";
+    const catId = params.cat && Number.isFinite(params.cat) ? Number(params.cat) : undefined;
+    const brandId = params.brand && Number.isFinite(params.brand) ? Number(params.brand) : undefined;
+
+    // 分类：显示的全部分类（对齐PHP：不强制仅叶子，保持 is_show=1）
+    const categories = await this.prisma.category.findMany({
+      where: { is_show: 1 },
+      select: {
+        category_id: true,
+        category_name: true,
+        parent_id: true,
+        is_show: true,
+      },
+      orderBy: [
+        { sort_order: "asc" },
+        { category_id: "asc" },
+      ],
+    });
+
+    // 品牌：显示的全部品牌（is_show=1）
+    const brands = await this.prisma.brand.findMany({
+      where: { is_show: 1 },
+      select: {
+        brand_id: true,
+        brand_name: true,
+        brand_logo: true,
+        first_word: true,
+        is_show: true,
+      },
+      orderBy: [
+        { sort_order: "asc" },
+        { brand_id: "asc" },
+      ],
+    });
+
+    // 最高价（仅统计上架有效商品）
+    const productWhere = this.buildProductWhereClause({
+      query: keyword,
+      filters: {
+        category: catId ? [catId] : [],
+        brand: brandId ? [brandId] : [],
+      },
+    });
+
+    const agg = await this.prisma.product.aggregate({
+      _max: { product_price: true },
+      where: productWhere,
+    });
+
+    const total = await this.prisma.product.count({ where: productWhere });
+
+    const filter = {
+      category: categories.map((c) => ({
+        categoryId: c.category_id,
+        categoryName: c.category_name,
+        parentId: c.parent_id,
+        isShow: Number(c.is_show) || 0,
+      })),
+      brand: brands.map((b) => ({
+        brandId: b.brand_id,
+        brandName: b.brand_name,
+        brandLogo: b.brand_logo ?? "",
+        firstWord: b.first_word ?? "",
+        isShow: Number(b.is_show) || 0,
+      })),
+      shopCategory: [],
+      maxPrice: agg._max.product_price ? Number(agg._max.product_price) : 0,
+    };
+
+    return { filter, total };
+  }
+
   // 全文搜索
   async search(options: SearchOptions): Promise<{
     results: SearchResult[];
@@ -142,9 +243,20 @@ export class SearchService {
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        include: {
-          category: true,
-          brand: true,
+        select: {
+          product_id: true,
+          product_name: true,
+          product_desc: true,
+          product_brief: true,
+          product_price: true,
+          market_price: true,
+          product_stock: true,
+          pic_thumb: true,
+          pic_url: true,
+          is_promote: true,
+          is_promote_activity: true,
+          category_id: true,
+          brand_id: true,
         },
         skip: offset,
         take: limit,
@@ -152,27 +264,33 @@ export class SearchService {
       this.prisma.product.count({ where }),
     ]);
 
-    const results: SearchResult[] = products.map((product) => ({
-      id: product.product_id,
-      type: "product" as const,
-      title: product.product_name,
-      description: product.description,
-      image: product.image,
-      url: `/products/${product.product_id}`,
-      score: this.calculateRelevanceScore(
-        options.query,
-        product.product_name,
-        product.description,
-      ),
-      metadata: {
-        price: product.price,
-        originalPrice: product.original_price,
-        stock: product.stock,
-        isOnSale: product.is_on_sale,
-        category: product.category?.category_name,
-        brand: product.brand?.brand_name,
-      },
-    }));
+    const results: SearchResult[] = products.map((product) => {
+      const image = product.pic_thumb || product.pic_url || undefined;
+      const isOnSale = (product.is_promote ?? 0) === 1 || !!product.is_promote_activity;
+      const desc = product.product_desc || product.product_brief || "";
+
+      return {
+        id: product.product_id,
+        type: "product" as const,
+        title: product.product_name,
+        description: desc,
+        image,
+        url: `/products/${product.product_id}`,
+        score: this.calculateRelevanceScore(
+          options.query,
+          product.product_name,
+          desc,
+        ),
+        metadata: {
+          price: product.product_price,
+          originalPrice: product.market_price,
+          stock: product.product_stock,
+          isOnSale,
+          categoryId: product.category_id,
+          brandId: product.brand_id,
+        },
+      };
+    });
 
     return { results, total };
   }
@@ -238,8 +356,8 @@ export class SearchService {
   }> {
     const where = {
       category_name: { contains: options.query },
-      is_enabled: true,
-    };
+      // schema 中无 is_enabled 字段
+    } as any;
 
     const [categories, total] = await Promise.all([
       this.prisma.category.findMany({
@@ -254,13 +372,13 @@ export class SearchService {
       id: category.category_id,
       type: "category" as const,
       title: category.category_name,
-      description: category.description,
-      image: category.image,
+      description: category.category_desc,
+      image: undefined,
       url: `/categories/${category.category_id}`,
       score: this.calculateRelevanceScore(
         options.query,
         category.category_name,
-        category.description,
+        category.category_desc,
       ),
     }));
 
@@ -278,8 +396,8 @@ export class SearchService {
   }> {
     const where = {
       brand_name: { contains: options.query },
-      is_enabled: true,
-    };
+      // schema 中无 is_enabled 字段
+    } as any;
 
     const [brands, total] = await Promise.all([
       this.prisma.brand.findMany({
@@ -295,7 +413,7 @@ export class SearchService {
       type: "brand" as const,
       title: brand.brand_name,
       description: brand.description,
-      image: brand.logo,
+      image: brand.brand_logo,
       url: `/brands/${brand.brand_id}`,
       score: this.calculateRelevanceScore(
         options.query,
@@ -314,11 +432,14 @@ export class SearchService {
         {
           OR: [
             { product_name: { contains: options.query } },
-            { description: { contains: options.query } },
+            { product_brief: { contains: options.query } },
+            { product_desc: { contains: options.query } },
             { keywords: { contains: options.query } },
           ],
         },
-        { is_enabled: true },
+        { product_status: 1 },
+        { is_delete: 0 },
+        { check_status: 1 },
       ],
     };
 
@@ -333,9 +454,14 @@ export class SearchService {
       }
 
       if (options.filters.category && options.filters.category.length > 0) {
-        where.AND.push({
-          category_id: { in: options.filters.category },
-        });
+        const catIds = options.filters.category
+          .map((c) => Number(c))
+          .filter((n) => Number.isFinite(n));
+        if (catIds.length > 0) {
+          where.AND.push({
+            category_id: { in: catIds },
+          });
+        }
       }
 
       if (options.filters.brand && options.filters.brand.length > 0) {
@@ -346,19 +472,33 @@ export class SearchService {
 
       if (options.filters.inStock !== undefined) {
         where.AND.push({
-          stock: options.filters.inStock ? { gt: 0 } : { lte: 0 },
+          product_stock: options.filters.inStock ? { gt: 0 } : { lte: 0 },
         });
       }
 
       if (options.filters.hasDiscount !== undefined) {
-        where.AND.push({
-          is_on_sale: options.filters.hasDiscount,
-        });
+        if (options.filters.hasDiscount) {
+          where.AND.push({
+            OR: [
+              { is_promote: 1 },
+              { is_promote_activity: true },
+              { promote_price: { gt: 0 } },
+            ],
+          });
+        } else {
+          where.AND.push({
+            AND: [
+              { is_promote: 0 },
+              { is_promote_activity: false },
+              { promote_price: { lte: 0 } },
+            ],
+          });
+        }
       }
 
       if (options.filters.dateRange) {
         where.AND.push({
-          created_at: {
+          add_time: {
             gte: options.filters.dateRange.start,
             lte: options.filters.dateRange.end,
           },
@@ -471,7 +611,9 @@ export class SearchService {
               { product_name: { contains: query } },
               { keywords: { contains: query } },
             ],
-            is_enabled: true,
+            product_status: 1,
+            is_delete: 0,
+            check_status: 1,
           },
           select: { product_name: true },
           take: 10,
@@ -485,7 +627,6 @@ export class SearchService {
         const categories = await this.prisma.category.findMany({
           where: {
             category_name: { contains: query },
-            is_enabled: true,
           },
           select: { category_name: true },
           take: 5,
@@ -499,7 +640,6 @@ export class SearchService {
         const brands = await this.prisma.brand.findMany({
           where: {
             brand_name: { contains: query },
-            is_enabled: true,
           },
           select: { brand_name: true },
           take: 5,

@@ -34,107 +34,41 @@ export class SearchController {
       size?: number;
       order?: string;
       cat?: number;
+      brand?: number;
       couponId?: number;
       pageType?: string;
+      keyword?: string;
     },
   ) {
-    const {
-      page = 1,
-      size = 10,
-      order = "asc",
-      cat,
-      couponId = 0,
-      pageType = "search",
-    } = query;
+    const catNum = query.cat !== undefined && query.cat !== null ? Number(query.cat) : undefined;
+    const brandNum = query.brand !== undefined && query.brand !== null ? Number(query.brand) : undefined;
 
-    // 构建过滤器选项
-    const filters = {
-      // 分类过滤器
-      categories: cat
-        ? [
-            {
-              id: cat,
-              name: `分类 ${cat}`,
-              selected: true,
-            },
-          ]
-        : [
-            { id: 1, name: "电子产品", selected: false },
-            { id: 2, name: "服装", selected: false },
-            { id: 3, name: "家居", selected: false },
-            { id: 36, name: "测试分类", selected: false },
-          ],
+    const { filter, total } = await this.searchService.getFilterData({
+      keyword: query.keyword || "",
+      cat: catNum,
+      brand: brandNum,
+      couponId: query.couponId ? Number(query.couponId) : 0,
+      pageType: query.pageType || "search",
+      shopCategory: null,
+      attrs: [],
+    });
 
-      // 价格区间过滤器
-      priceRanges: [
-        { min: 0, max: 100, label: "0-100元", selected: false },
-        { min: 100, max: 500, label: "100-500元", selected: false },
-        { min: 500, max: 1000, label: "500-1000元", selected: false },
-        { min: 1000, max: 999999, label: "1000元以上", selected: false },
-      ],
-
-      // 品牌过滤器
-      brands: [
-        { id: 1, name: "苹果", selected: false },
-        { id: 2, name: "三星", selected: false },
-        { id: 3, name: "华为", selected: false },
-      ],
-
-      // 排序选项
-      sortOptions: [
-        {
-          value: "relevance",
-          label: "相关性",
-          selected: order === "relevance",
-        },
-        { value: "date", label: "发布时间", selected: order === "date" },
-        { value: "price", label: "价格", selected: order === "price" },
-        {
-          value: "popularity",
-          label: "人气",
-          selected: order === "popularity",
-        },
-      ],
-
-      // 优惠券过滤器
-      coupons:
-        couponId > 0
-          ? [
-              {
-                id: couponId,
-                name: `优惠券 ${couponId}`,
-                selected: true,
-              },
-            ]
-          : [
-              { id: 1, name: "新用户优惠券", selected: false },
-              { id: 2, name: "满减券", selected: false },
-            ],
-
-      // 库存状态
-      stockOptions: [
-        { value: "all", label: "全部", selected: true },
-        { value: "inStock", label: "仅显示有货", selected: false },
-        { value: "discount", label: "仅显示特惠", selected: false },
-      ],
-
-      // 评分过滤器
-      ratingOptions: [
-        { value: 4, label: "4星及以上", selected: false },
-        { value: 3, label: "3星及以上", selected: false },
-      ],
-
-      // 页面类型
-      pageType,
+    const filterSelected = {
+      category: catNum ?? "",
+      brand: brandNum ?? "",
+      keyword: query.keyword || "",
+      intro: "",
+      shopCategory: null,
+      attrs: [],
     };
 
     return {
-      filters,
-      pagination: {
-        page,
-        size,
-        total: 100, // 模拟总数
-        totalPages: Math.ceil(100 / size),
+      code: 0,
+      message: "success",
+      data: {
+        filter,
+        filterSelected,
+        total,
       },
     };
   }
@@ -167,17 +101,22 @@ export class SearchController {
       keyword = "",
     } = query;
 
+    const pageNum = Number(page) || 1;
+    const sizeNum = Number(size) || 10;
+    const catNum = cat !== undefined && cat !== null ? Number(cat) : undefined;
+    const couponIdNum = Number(couponId) || 0;
+
     // 构建搜索选项
     const searchOptions = {
       query: keyword,
       type: "product",
-      page,
-      limit: size,
+      page: pageNum,
+      limit: sizeNum,
       sortBy: order === "asc" ? "price" : "popularity",
       sortOrder: order,
       filters: {
-        category: cat ? [cat] : [],
-        hasDiscount: couponId > 0,
+        category: catNum ? [catNum] : [],
+        hasDiscount: couponIdNum > 0,
       },
     };
 
@@ -208,15 +147,15 @@ export class SearchController {
     return {
       products,
       pagination: {
-        page,
-        size,
+        page: pageNum,
+        size: sizeNum,
         total: searchResults.total,
-        totalPages: Math.ceil(searchResults.total / size),
+        totalPages: Math.ceil(searchResults.total / sizeNum),
         hasMore: searchResults.hasMore,
       },
       filters: {
-        category: cat,
-        couponId,
+        category: catNum,
+        couponId: couponIdNum,
         order,
         pageType,
       },
