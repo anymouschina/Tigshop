@@ -2,9 +2,10 @@
 import { Module } from "@nestjs/common";
 import { UserCompanyService } from "./user-company.service";
 import { UserCompanyController } from "./user-company.controller";
+import { UserCompanyApiCompatController } from "./user-company.api-compat.controller";
 
 @Module({
-  controllers: [UserCompanyController],
+  controllers: [UserCompanyController, UserCompanyApiCompatController],
   providers: [UserCompanyService],
   exports: [UserCompanyService],
 })

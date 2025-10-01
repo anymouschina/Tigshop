@@ -199,13 +199,13 @@
   - [x] POST /api/user/coupon/claim（需登录）
   - [x] GET  /api/user/coupon/detail（需登录）
 - feedback（留言咨询，需登录）
-  - [ ] GET  /api/user/feedback/list（需登录）
-  - [ ] POST /api/user/feedback/submit（需登录）
+  - [x] GET  /api/user/feedback/list（需登录）
+  - [x] POST /api/user/feedback/submit（需登录）
 - invoice（增票资质，需登录）
-  - [ ] GET  /api/user/invoice/detail（需登录）
-  - [ ] POST /api/user/invoice/create（需登录）
-  - [ ] POST /api/user/invoice/update（需登录）
-  - [ ] GET  /api/user/invoice/getStatus（需登录）
+  - [x] GET  /api/user/invoice/detail（需登录）
+  - [x] POST /api/user/invoice/create（需登录）
+  - [x] POST /api/user/invoice/update（需登录）
+  - [x] GET  /api/user/invoice/getStatus（需登录）
 - login（登录/验证码/微信授权等）
   - [x] GET  /api/user/login/getQuickLoginSetting
   - [x] POST /api/user/login/signin
@@ -294,9 +294,9 @@
   - [ ] GET  /api/user/sign/index（需登录）
   - [ ] GET  /api/user/sign/sign（需登录）
 - company（企业认证，需登录）
-  - [ ] POST /api/user/company/apply（需登录）
-  - [ ] GET  /api/user/company/detail（需登录）
-  - [ ] GET  /api/user/company/myApply（需登录）
+  - [x] POST /api/user/company/apply（需登录）
+  - [x] GET  /api/user/company/detail（需登录）
+  - [x] GET  /api/user/company/myApply（需登录）
 - oauth（第三方登录）
   - [ ] GET  /api/user/oauth/render/:source
   - [ ] POST /api/user/oauth/callback/:source
