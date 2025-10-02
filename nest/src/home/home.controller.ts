@@ -6,7 +6,7 @@ import { Public } from "../auth/decorators/public.decorator";
 import { ProductDetailService } from "../product/product-detail.service";
 
 @ApiTags("Home Page")
-@Controller("api")
+@Controller("api2")
 export class HomeController {
   constructor(
     private readonly homeService: HomeService,
@@ -141,18 +141,6 @@ export class HomeController {
   @ApiOperation({ summary: "获取友情链接" })
   async friendLinks() {
     const data = await this.homeService.getFriendLinks();
-    return { code: 0, message: "success", data };
-  }
-
-  /**
-   * 商品详情 - 对齐PHP版本 product/product/detail (public版本)
-   */
-  @Get("product/product/detail")
-  @Public()
-  @ApiOperation({ summary: "获取商品详情" })
-  async getProductDetail(@Query() query: { id: number }) {
-    const productId = Number(query.id);
-    const data = await this.productDetailService.getProductDetail(productId);
     return { code: 0, message: "success", data };
   }
 }

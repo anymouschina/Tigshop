@@ -76,6 +76,7 @@ export class ProductDetailService {
         promoteEndDate: this.toDateTime(product.promote_end_date),
         seckillMaxNum: product.seckill_max_num ?? 0,
         productBrief: product.product_brief ?? "",
+        shippingTplId: product.shipping_tpl_id ?? 0,
         picUrl: product.pic_url ?? "",
         picThumb: product.pic_thumb ?? "",
         picOriginal: product.pic_original ?? "",
@@ -111,8 +112,14 @@ export class ProductDetailService {
         fixedShippingFee: this.toMoneyString(product.fixed_shipping_fee ?? 0),
         vendorProductId: product.vendor_product_id ?? null,
         vendorId: product.vendor_id ?? null,
-        // 兼容前端使用的 isBuy（表中无此字段，按0返回）
-        isBuy: 0,
+        // 兼容前端使用的扩展字段
+        isBuy: 1,
+        isSeckill: 0,
+        shopPickupTplId: null,
+        isShopPickup: 0,
+        isLogistics: 1,
+        isShopDelivery: 0,
+        eCardGroup: null,
       },
       // 商品描述数组 - 对齐PHP的descArr字段
       descArr,
@@ -274,7 +281,8 @@ export class ProductDetailService {
         picUrl: gallery.pic_url,
         picDesc: gallery.pic_desc,
         picThumb: gallery.pic_thumb,
-        picLarge: gallery.pic_original, // 修正字段名
+        // 与期望保持一致：返回 800x800 的大图地址
+        picLarge: gallery.pic_large || gallery.pic_original,
         sortOrder: gallery.sort_order,
       }));
     } catch (error) {
@@ -339,7 +347,8 @@ export class ProductDetailService {
           attrType: attr.attr_type,
           attrName: attr.attr_name,
           attrValue: attr.attr_value,
-          attrPrice: attr.attr_price,
+          // 按两位小数的字符串返回
+          attrPrice: this.toMoneyString(attr.attr_price ?? 0),
           attrColor: attr.attr_color,
           attrPic: attr.attr_pic,
           attrPicThumb: attr.attr_pic_thumb,
