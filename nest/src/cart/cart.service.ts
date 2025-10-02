@@ -421,6 +421,6 @@ export class CartService {
       where: { user_id: userId },
     });
 
-    return { count };
+    return count;
   }
 }
