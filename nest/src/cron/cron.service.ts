@@ -3,7 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { PrismaService } from "src/prisma/prisma.service";
 import { RedisService } from "../redis/redis.service";
-import { StatisticService } from "../statistic/statistic.service";
+import { StatisticsFacadeService } from "../statistics/statistics-facade.service";
 import { LogService } from "../log/log.service";
 import { NotificationService } from "../notification/notification.service";
 
@@ -14,7 +14,7 @@ export class CronService {
   constructor(
     private prisma: PrismaService,
     private redisService: RedisService,
-    private statisticService: StatisticService,
+  private statisticsFacade: StatisticsFacadeService,
     private logService: LogService,
     private notificationService: NotificationService,
   ) {}
@@ -37,10 +37,10 @@ export class CronService {
       // 获取统计数据
       const [dashboardStats, userStats, productStats, orderStats] =
         await Promise.all([
-          this.statisticService.getDashboardStats(timeRange),
-          this.statisticService.getUserStats(timeRange),
-          this.statisticService.getProductStats(),
-          this.statisticService.getOrderStats(timeRange),
+          this.statisticsFacade.getDashboardStats(timeRange),
+          this.statisticsFacade.getUserStats(timeRange),
+          this.statisticsFacade.getProductStats(),
+          this.statisticsFacade.getOrderStats(timeRange),
         ]);
 
       // 保存统计数据到数据库
@@ -68,7 +68,7 @@ export class CronService {
       });
 
       // 清除相关缓存
-      await this.statisticService.clearCache();
+  await this.statisticsFacade.clearCache();
 
       this.logger.debug("Daily statistics job completed successfully");
     } catch (error) {

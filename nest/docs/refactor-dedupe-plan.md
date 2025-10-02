@@ -46,12 +46,26 @@
 
 验收标准：
 - 价格/库存接口代码行数减少、重复逻辑集中；单元测试覆盖核心路径（至少 1 个 happy path + 1 个边界）。
+- 本轮执行说明：跳过单测执行，仅提交落地代码；单测运行推迟到下一轮统一验证。
 
 ### 阶段3（目录与命名规范）
-- [ ] 合并 statistic → statistics（或反向，以功能更全者为准），迁移并修正 import。
+- [x] 合并 statistic → statistics（或反向，以功能更全者为准），迁移并修正 import。
+  - [x] 引用清点：发现仅 `src/cron/cron.service.ts` 直接依赖 `src/statistic/statistic.service.ts`（legacy）。
+  - [x] 方案评估：
+    - A. 在 `statistics` 新增 Facade（兼容层）以复用现有服务，暴露与 `StatisticService` 兼容的方法（getDashboardStats/getUserStats/getProductStats/getOrderStats/clearCache）。
+    - B. 改造 `CronService` 直接注入并调用 `StatisticsModule` 内的新服务，删除 legacy `statistic` 目录。
+  - [x] 决策与落地：采用 Facade 思路（已在 `statistics` 下新增 `StatisticsFacadeService`）+ 改造 `CronService` 依赖 Facade，随后移除 legacy 目录。
+  - [ ] 回归冒烟：执行每日任务路径的最小集成验证（构建 -> 启动 -> 触发/模拟任务）。
 - [ ] 清理 static/static/ 冗余层级；如需，改为 static/assets。
-- [ ] 修正文件名 app.contronller.ts → app.controller.ts，并更新引用。
+  - [ ] 清点 static/static/ 下资源与真实引用（后端 ServeStatic 配置、前端静态链接、截图/文档等）。
+  - [ ] 方案 A：重命名/下沉为 static/assets，并保留 `/static/**` 兼容路由（重写/软链接）。
+  - [ ] 方案 B：仅删除冗余内容，保留必要文件；新增 README 说明用途与引用方。
+  - [ ] 一次性迁移并冒烟验证（页面资源 404 与控制台错误为 0）。
+- [x] 修正文件名 app.contronller.ts → app.controller.ts，并更新引用。
 - [ ] 统一电子卡券领域命名（Service/Module 导出保持 ecard 一致；Prisma 模型名保持表名即可）。
+  - [ ] 统一代码层导出命名为 ecard（服务/模块/控制器导出名称）。
+  - [ ] 清点 `product/ecard*` 与 `product/ecard-group` 的导出命名与引用一致性。
+  - [ ] 执行更名与引用修正，完成最小冒烟。
 
 验收标准：
 - 目录结构清晰，无重名冲突；运行与文档链接均正常。
@@ -82,13 +96,19 @@
 - 价格库存能力收敛
   - [x] 新建 ProductPricingService
   - [x] 控制器四个接口切换至新服务
-  - [ ] 覆盖基础单测
-  - [ ] 在 Home 模块路径中验证 ProductModule 的导出是否满足使用方（如有多 HomeModule，保持仅引入 src/home/home.module.ts）
+  - [x] 添加基础单测（getAvailability/getAmount/getBatchAvailability/getPriceInBatches）
+  - [ ] 执行并确保单测通过（green）（本轮按要求跳过执行）
+  - [x] 在 Home 模块路径中验证 ProductModule 的导出是否满足使用方（Home 前台模块已导入 ProductModule，注入无误）
 - 目录/命名清理
-  - [ ] statistic/ 与 statistics/ 合并
+  - [x] statistic/ 与 statistics/ 合并
+    - [x] 清点引用（仅 CronService 直接依赖 legacy StatisticService）
+    - [x] 改造 CronService 使用 StatisticsModule 的 Facade（StatisticsFacadeService）
+    - [x] 移除 legacy `src/statistic` 目录
+    - [ ] 冒烟验证 Cron 路径（本轮跳过单测与运行，待下一轮统一验证）
   - [ ] static/static/ 清理
   - [x] app.contronller.ts 更名（已改为 app.controller.ts 并更新引用）
   - [ ] ecard 命名统一
+  - [ ] Home 模块说明：`src/home`（前台）与 `src/content/home`（内容管理）为不同域的模块，非重复；保持分域明确并避免交叉依赖。
 - Mock 下线/真实接入
   - [ ] promotion
   - [ ] getCoupon
@@ -101,6 +121,8 @@
 - 对公共工具的抽取会改变 import；一经发现异常，可回滚到上一提交。
 - 目录变更需一次性完成并通过构建与端到端冒烟。
  - DI 修复涉及 CommentModule 依赖 PrismaModule：如出现回归，可临时回滚到未引入 CommentService 的 ProductDetailService 版本，或在 AppModule 中短期引入 user.comment 模块以旁路依赖。
+ - 统计合并回滚：如 Facade 路径出现异常，可临时恢复 `CronService` 对 legacy `StatisticService` 的依赖（从版本库恢复该文件），并回退 Facade 注入；优先修复 Facade 以减少重复实现。
+  - 临时保留 legacy 文件路径备份说明：`src/statistic/statistic.service.ts` 将在完成冒烟后删除；当前若仍存在于工作区，仅做回滚备用，不再被模块引用。
 
 ## 五、参考与约定
 
@@ -114,8 +136,8 @@
   - [ ] 执行构建，确认无 DI 错误（已补充 PrismaModule 引入）。
   - [ ] 本地启动，调用商品详情、价格库存四接口做最小冒烟。
 - 单测补齐 ProductPricingService
-  - [ ] getAvailability: 基本路径与 skuId 缺省路径
-  - [ ] getAmount: 合法 sku 与非法 sku 混合
+  - [ ] getAvailability: 基本路径与 skuId 缺省路径（本轮跳过执行）
+  - [ ] getAmount: 合法 sku 与非法 sku 混合（本轮跳过执行）
 - 目录/命名清理（小步）
   - [ ] 校验是否存在重复 HomeModule（src/home 与 src/content/home）；仅使用前台 Home 版本，避免命名冲突。
-  - [ ] 评估 app.contronller.ts 更名影响范围，准备一次性改名提交。
+  - [ ] static/static 清理方案设计与引用清点，输出迁移补丁草案。

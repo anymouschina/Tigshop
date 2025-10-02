@@ -94,4 +94,59 @@ describe("ProductPricingService", () => {
       expect(prisma.product_sku.findFirst).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe("getBatchAvailability", () => {
+    it("returns map of skuId to price/stock for provided ids", async () => {
+      prisma.product_sku.findMany.mockResolvedValue([
+        { sku_id: 1, sku_price: 9.5, sku_stock: 8 },
+        { sku_id: 2, sku_price: 19, sku_stock: 0 },
+      ]);
+
+      const res = await service.getBatchAvailability([1, 2]);
+      expect(res).toEqual({
+        "1": { price: "9.50", stock: 8 },
+        "2": { price: "19.00", stock: 0 },
+      });
+      expect(prisma.product_sku.findMany).toHaveBeenCalledWith({
+        where: { sku_id: { in: [1, 2] } },
+        select: { sku_id: true, sku_price: true, sku_stock: true },
+      });
+    });
+  });
+
+  describe("getPriceInBatches", () => {
+    it("returns combined origin price, sku price and stock per item", async () => {
+      prisma.product.findFirst
+        .mockResolvedValueOnce({ market_price: 50, product_price: 40, product_stock: 100 })
+        .mockResolvedValueOnce({ market_price: 30, product_price: 25, product_stock: 10 });
+
+      prisma.product_sku.findFirst
+        .mockResolvedValueOnce({ sku_price: 35, sku_stock: 5 }) // for first item
+        .mockResolvedValueOnce(null); // for second item, fallback to product
+
+      const res = await service.getPriceInBatches([
+        { productId: 101, skuId: 1001 },
+        { productId: 202, skuId: 2002 },
+      ]);
+
+      expect(res).toEqual([
+        {
+          origin_price: 50,
+          price: 35,
+          stock: 5,
+          promotion: null,
+          sku_id: 1001,
+          product_id: 101,
+        },
+        {
+          origin_price: 30,
+          price: 25,
+          stock: 10,
+          promotion: null,
+          sku_id: 2002,
+          product_id: 202,
+        },
+      ]);
+    });
+  });
 });

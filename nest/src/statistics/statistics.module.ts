@@ -5,14 +5,16 @@ import { AccessStatisticsController } from "./access-statistics.controller";
 import { GeneralStatisticsController } from "./general-statistics.controller";
 import { SalesStatisticsService } from "./sales-statistics.service";
 import { PrismaModule } from "../prisma/prisma.module";
+import { RedisModule } from "../redis/redis.module";
 import { PanelService } from "../panel/panel.service";
 import { UserStatisticsController } from "./user-statistics.controller";
 import { UserStatisticsService } from "./user-statistics.service";
 import { AccessStatisticsService } from "./access-statistics.service";
 import { GeneralStatisticsService } from "./general-statistics.service";
+import { StatisticsFacadeService } from "./statistics-facade.service";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, RedisModule],
   controllers: [
     SalesStatisticsController,
     AccessStatisticsController,
@@ -24,8 +26,15 @@ import { GeneralStatisticsService } from "./general-statistics.service";
     UserStatisticsService,
     AccessStatisticsService,
     GeneralStatisticsService,
+    StatisticsFacadeService,
     PanelService,
   ],
-  exports: [SalesStatisticsService, UserStatisticsService, AccessStatisticsService, GeneralStatisticsService],
+  exports: [
+    SalesStatisticsService,
+    UserStatisticsService,
+    AccessStatisticsService,
+    GeneralStatisticsService,
+    StatisticsFacadeService,
+  ],
 })
 export class StatisticsModule {}
