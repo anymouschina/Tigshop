@@ -24,11 +24,11 @@ export class SearchController {
   /**
    * 获取搜索过滤器 - 对齐PHP版本 search/search/getFilter
    */
-  @Get("getFilter")
+  @Post("getFilter")
   @Public()
   @ApiOperation({ summary: "获取搜索过滤器" })
   async getSearchFilter(
-    @Query()
+    @Body()
     query: {
       page?: number;
       size?: number;
@@ -53,8 +53,18 @@ export class SearchController {
       attrs: [],
     });
 
+    // 将已选分类展示为分类名称（字符串），对齐目标返回
+    let selectedCategoryName = "" as string;
+    if (catNum) {
+      const cat = await this.searchService["prisma"].category.findFirst({
+        where: { category_id: catNum },
+        select: { category_name: true },
+      });
+      selectedCategoryName = cat?.category_name || "";
+    }
+
     const filterSelected = {
-      category: catNum ?? "",
+      category: selectedCategoryName,
       brand: brandNum ?? "",
       keyword: query.keyword || "",
       intro: "",

@@ -17,7 +17,20 @@ export class CategoryController {
   @ApiOperation({ summary: "获取当前分类的父级分类" })
   async parentTree(@Query("id") id: string) {
     const categoryId = Number(id) || 0;
-    return this.categoryService.getParentCategoryTree(categoryId);
+    const data = await this.categoryService.getParentCategoryTree(categoryId);
+    const mapped = (data || []).map((item: any) => ({
+      categoryId: item.category_id,
+      parentId: item.parent_id,
+      categoryName: item.category_name,
+      catList: Array.isArray(item.cat_list)
+        ? item.cat_list.map((c: any) => ({
+            categoryId: c.category_id,
+            parentId: c.parent_id,
+            categoryName: c.category_name,
+          }))
+        : [],
+    }));
+    return { code: 0, message: "success", data: mapped };
   }
 
   /**
@@ -175,7 +188,24 @@ export class CategoryController {
   @Public()
   @ApiOperation({ summary: "获取热门分类" })
   async hot() {
-    return this.categoryService.getHotCategories();
+    const data = await this.categoryService.getHotCategories();
+    // 返回完整驼峰字段结构
+    return (data || []).map((c) => ({
+      categoryId: c.category_id,
+      categoryName: c.category_name,
+      keywords: c.keywords ?? "",
+      categoryDesc: c.category_desc ?? "",
+      parentId: c.parent_id,
+      sortOrder: c.sort_order,
+      measureUnit: c.measure_unit ?? "",
+      isShow: c.is_show,
+      seoTitle: c.seo_title ?? "",
+      shortName: c.short_name ?? "",
+      categoryPic: c.category_pic ?? "",
+      categoryIco: c.category_ico ?? "",
+      isHot: c.is_hot,
+      searchKeywords: c.search_keywords ?? "",
+    }));
   }
 
   private normalizeRelateQuery(query: {

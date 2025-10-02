@@ -271,9 +271,18 @@ export class CategoryService {
       select: {
         category_id: true,
         category_name: true,
+        keywords: true,
+        category_desc: true,
         parent_id: true,
-        category_pic: true,
         sort_order: true,
+        measure_unit: true,
+        is_show: true,
+        seo_title: true,
+        short_name: true,
+        category_pic: true,
+        category_ico: true,
+        is_hot: true,
+        search_keywords: true,
       },
     });
 

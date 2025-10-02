@@ -91,8 +91,7 @@ export class SearchService {
       select: {
         category_id: true,
         category_name: true,
-        parent_id: true,
-        is_show: true,
+        category_pic: true,
       },
       orderBy: [
         { sort_order: "asc" },
@@ -136,8 +135,7 @@ export class SearchService {
       category: categories.map((c) => ({
         categoryId: c.category_id,
         categoryName: c.category_name,
-        parentId: c.parent_id,
-        isShow: Number(c.is_show) || 0,
+        categoryPic: c.category_pic || "",
       })),
       brand: brands.map((b) => ({
         brandId: b.brand_id,

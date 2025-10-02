@@ -6,7 +6,7 @@ export const getCategoryTree = (id?: number) => {
     return request<SearchFilterResult>({
         url: "category/category/parentTree",
         method: "get",
-        data: { id }
+        params: { id }
     });
 };
 
@@ -14,8 +14,8 @@ export const getCategoryTree = (id?: number) => {
 export const getCategoryProductFilter = (params: ProductFilterParams) => {
     return request<ProductFilterResult>({
         url: "search/search/getFilter",
-        method: "get",
-        params
+        method: "post",
+        data:params
     });
 };
 
