@@ -27,20 +27,20 @@
 ## 二、分阶段落地
 
 ### 阶段1（Quick Wins）
-- [ ] 在 Swagger 中将 public-detail 标记为 deprecated，并计划将其作为 detail 的别名保留 1-2 个版本。
-- [ ] 抽出通用格式化工具 common/utils/format.ts：toMoneyString/toWeightString/toDateTime，并替换两处重复实现（product-detail.service.ts、admin-product.controller.ts）。
-- [ ] 在 ProductDetailService 内实现：
-  - [ ] getServiceList(productId)：解析 product_service_ids 并查询 product_services。
-  - [ ] eCardGroup(cardGroupId)：查询 e_card_group（必要时包含可用库存统计）。
-- [ ] ProductDetailService 评论统计统一来自 commentService.getCommentStats()，仅做字段映射。
+- [x] 在 Swagger 中将 public-detail 标记为 deprecated，并计划将其作为 detail 的别名保留 1-2 个版本。
+- [x] 抽出通用格式化工具 common/utils/format.ts：toMoneyString/toWeightString/toDateTime，并替换两处重复实现（product-detail.service.ts、admin-product.controller.ts）。
+- [x] 在 ProductDetailService 内实现：
+  - [x] getServiceList(productId)：解析 product_service_ids 并查询 product_services。
+  - [x] eCardGroup(cardGroupId)：查询 e_card_group（必要时包含可用库存统计）。
+- [x] ProductDetailService 评论统计统一来自 commentService.getCommentStats()，仅做字段映射。
 
 验收标准：
 - 编译通过、lint 通过；商品详情接口响应不变；public-detail 在文档中显示 Deprecated。
 
 ### 阶段2（逻辑收敛）
-- [ ] 新建 ProductPricingService：统一封装价格/库存/批量与合计逻辑；Controller 仅调用 Service。
-- [ ] Controller 禁止直接使用 prisma，全部改为注入的服务方法。
-- [ ] 为价格/库存/商品详情输出建立 DTO（types 或 product/dto）。
+- [x] 新建 ProductPricingService：统一封装价格/库存/批量与合计逻辑；Controller 仅调用 Service。
+- [x] Controller 禁止直接使用 prisma，全部改为注入的服务方法。（已在 product.controller.ts 四个相关接口完成）
+- [x] 为价格/库存/商品详情输出建立 DTO（types 或 product/dto）。
 
 验收标准：
 - 价格/库存接口代码行数减少、重复逻辑集中；单元测试覆盖核心路径（至少 1 个 happy path + 1 个边界）。
@@ -66,20 +66,20 @@
 ## 三、任务看板（可打勾跟踪）
 
 - 路由去重
-  - [ ] 标记 public-detail 为 Deprecated（已开始）
+  - [x] 标记 public-detail 为 Deprecated（已开始）
   - [ ] 在 release note 中提示迁移到 /detail
   - [ ] 统计访问量，确认前端切换后移除 public-detail
 - 工具与格式化
-  - [ ] 新增 common/utils/format.ts
-  - [ ] 替换 product-detail.service.ts 中的本地函数
-  - [ ] 替换 admin-product.controller.ts 中的本地函数
+  - [x] 新增 common/utils/format.ts
+  - [x] 替换 product-detail.service.ts 中的本地函数
+  - [x] 替换 admin-product.controller.ts 中的本地函数
 - 商品详情能力补齐
-  - [ ] serviceList 按 product_service_ids 返回详情
-  - [ ] eCardGroup 根据 card_group_id 返回组信息
-  - [ ] 评论统计复用 commentService，移除重复计算
+  - [x] serviceList 按 product_service_ids 返回详情
+  - [x] eCardGroup 根据 card_group_id 返回组信息
+  - [x] 评论统计复用 commentService，移除重复计算
 - 价格库存能力收敛
-  - [ ] 新建 ProductPricingService
-  - [ ] 控制器四个接口切换至新服务
+  - [x] 新建 ProductPricingService
+  - [x] 控制器四个接口切换至新服务
   - [ ] 覆盖基础单测
 - 目录/命名清理
   - [ ] statistic/ 与 statistics/ 合并

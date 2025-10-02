@@ -1,11 +1,15 @@
 // @ts-nocheck
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { toMoneyString, toWeightString, toDateTime } from "src/common/utils/format";
+import { CommentService } from "./comment/comment.service";
 
 @Injectable()
 export class ProductDetailService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => CommentService)) private readonly commentService: CommentService,
+  ) {}
 
   /**
    * 获取商品完整详情
@@ -353,35 +357,16 @@ export class ProductDetailService {
    */
   async getProductCommentRankDetail(productId: number): Promise<any> {
     try {
-      const comments = await this.prisma.comment.findMany({
-        where: {
-          product_id: productId,
-          status: 1, // 已审核
-        },
-      });
-
-      const total = comments.length;
-      let totalRank = 0;
-      let goodCount = 0;
-
-      for (const comment of comments) {
-        totalRank += comment.comment_rank;
-        if (comment.comment_rank >= 4) {
-          goodCount++;
-        }
-      }
-
-      return {
-        total,
-        averageRank: total > 0 ? (totalRank / total).toFixed(1) : 0,
-        goodPercent: total > 0 ? Math.round((goodCount / total) * 100) : 0,
-      };
-    } catch (error) {
-      return {
-        total: 0,
-        averageRank: 0,
-        goodPercent: 0,
-      };
+      const stats = await this.commentService.getCommentStats(Number(productId));
+      const total = stats?.totalComments ?? 0;
+      const goodCount = Array.isArray(stats?.ratingDistribution)
+        ? (stats.ratingDistribution.find((r: any) => r.rating === 5)?.count || 0)
+        : 0;
+      const averageRank = stats?.averageRating ?? 0;
+      const goodPercent = total > 0 ? Math.round((goodCount / total) * 100) : 0;
+      return { total, averageRank, goodPercent };
+    } catch (_) {
+      return { total: 0, averageRank: 0, goodPercent: 0 };
     }
   }
 

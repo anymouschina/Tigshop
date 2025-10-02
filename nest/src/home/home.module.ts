@@ -2,13 +2,13 @@
 import { Module } from "@nestjs/common";
 import { HomeController } from "./home.controller";
 import { HomeService } from "./home.service";
-import { ProductDetailService } from "../product/product-detail.service";
 import { HomeSharePublicController } from "./home-share-public.controller";
+import { ProductModule } from "src/product/product.module";
 
 @Module({
-  imports: [],
+  imports: [ProductModule],
   controllers: [HomeController, HomeSharePublicController],
-  providers: [HomeService, ProductDetailService],
+  providers: [HomeService],
   exports: [HomeService],
 })
 export class HomeModule {}

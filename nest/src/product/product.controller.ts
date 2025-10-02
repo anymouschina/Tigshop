@@ -18,6 +18,12 @@ import { CommentService } from "./comment/comment.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { Public } from "../auth/decorators/public.decorator";
 import { CommentStatus } from "./comment/dto/comment.dto";
+import {
+  GetAvailabilityQueryDto,
+  GetBatchAvailabilityQueryDto,
+  GetPriceInBatchesBodyDto,
+  GetProductAmountBodyDto,
+} from "./dto/pricing.dto";
 
 @ApiTags("Product Management")
 @Controller("api/product/product")
@@ -134,12 +140,7 @@ export class ProductController {
   @Public()
   @ApiOperation({ summary: "获取SKU库存信息" })
   async getProductAvailability(
-    @Query()
-    query: {
-      id: number | string; // productId
-      skuId?: number | string | null;
-      extraAttrIds?: string;
-    },
+    @Query() query: GetAvailabilityQueryDto,
   ) {
     const productId = Number(query.id);
     const skuIdNum = query.skuId ? Number(query.skuId) : null;
@@ -177,13 +178,7 @@ export class ProductController {
   @Post("getProductAmount")
   @Public()
   @ApiOperation({ summary: "获取商品价格" })
-  async getProductAmount(
-    @Body()
-    body: {
-      id: number; // productId
-      skuItem: { skuId: number | string; num: number }[];
-    },
-  ) {
+  async getProductAmount(@Body() body: GetProductAmountBodyDto) {
     const items = Array.isArray(body?.skuItem) ? body.skuItem : [];
     const { count, totalStr } = await this.productPricingService.getAmount(Number(body.id), items.map(i => ({ skuId: Number(i.skuId), num: Number(i.num) })));
     return { count, total: totalStr };
@@ -195,7 +190,7 @@ export class ProductController {
   @Get("getBatchProductAvailability")
   @Public()
   @ApiOperation({ summary: "批量获取库存" })
-  async getBatchProductAvailability(@Query() query: { skuIds: string }) {
+  async getBatchProductAvailability(@Query() query: GetBatchAvailabilityQueryDto) {
     // 前端传入 skuIds (逗号分隔)，需要返回形如 { [skuId]: { price, stock } }
     const skuIds = (query.skuIds || "")
       .split(",")
@@ -215,12 +210,7 @@ export class ProductController {
    */
   @Post("getPriceInBatches")
   @ApiOperation({ summary: "批量获取商品价格" })
-  async getPriceInBatches(
-    @Body()
-    body: {
-      products: { productId: number; skuId: number | string }[];
-    },
-  ) {
+  async getPriceInBatches(@Body() body: GetPriceInBatchesBodyDto) {
     const items = Array.isArray(body?.products) ? body.products : [];
     const normalized = items
       .map(i => ({ productId: Number(i.productId), skuId: Number(i.skuId) }))
