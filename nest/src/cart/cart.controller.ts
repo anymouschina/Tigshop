@@ -138,25 +138,86 @@ export class CartController {
    */
   @Post("updateCheck")
   @ApiOperation({ summary: "更新购物车商品选中状态" })
-  async updateCheck(
-    @Request() req,
-    @Body() data: { cartIds: number[]; selected: boolean },
-  ) {
-    if (data.cartIds && data.cartIds.length > 0) {
-      // 批量更新选中状态
-  const userId = resolveRequestUserId(req);
-      for (const cartId of data.cartIds) {
-        await this.cartService.updateSelected(
-          userId,
-          cartId,
-          data.selected ? 1 : 0,
-        );
+  async updateCheck(@Request() req, @Body() body: Record<string, any>) {
+    const userId = resolveRequestUserId(req);
+
+    const extractArray = (value: any): any[] => {
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object") return [value];
+      return [];
+    };
+
+    const rawItems = extractArray(body?.data ?? body?.list ?? body?.items ?? body);
+
+    const deduped = new Map<number, 0 | 1>();
+
+    for (const item of rawItems) {
+      const cartId = Number(
+        item?.cartId ?? item?.cart_id ?? item?.id ?? item?.cartID,
+      );
+      if (!Number.isInteger(cartId) || cartId <= 0) {
+        continue;
       }
+      const flagSource =
+        item?.isChecked ??
+        item?.is_checked ??
+        item?.checked ??
+        item?.selected ??
+        body?.selected ??
+        body?.isChecked ??
+        body?.is_checked;
+      const isChecked =
+        flagSource === true ||
+        flagSource === "true" ||
+        flagSource === 1 ||
+        flagSource === "1"
+          ? 1
+          : 0;
+      deduped.set(cartId, isChecked as 0 | 1);
+    }
+
+    const selectedRawFallback =
+      body?.selected ?? body?.isChecked ?? body?.is_checked ?? body?.checked;
+
+    if (Array.isArray(body?.cartIds)) {
+      const fallbackFlag =
+        selectedRawFallback === true ||
+        selectedRawFallback === "true" ||
+        selectedRawFallback === 1 ||
+        selectedRawFallback === "1"
+          ? 1
+          : 0;
+      for (const cartIdValue of body.cartIds) {
+        const cartId = Number(cartIdValue);
+        if (!Number.isInteger(cartId) || cartId <= 0) {
+          continue;
+        }
+        deduped.set(cartId, fallbackFlag);
+      }
+    }
+
+    if (deduped.size > 0) {
+      await this.cartService.updateCheckStatus(
+        userId,
+        Array.from(deduped.entries()).map(([cartId, isChecked]) => ({
+          cartId,
+          isChecked,
+        })),
+      );
+      return this.cartService.getCart(userId);
+    }
+
+    if (selectedRawFallback === undefined) {
       return { success: true };
     }
-    // 全选/取消全选
-  const userId = resolveRequestUserId(req);
-    return this.cartService.updateAllSelected(userId, data.selected ? 1 : 0);
+
+    const isChecked =
+      selectedRawFallback === true ||
+      selectedRawFallback === "true" ||
+      selectedRawFallback === 1 ||
+      selectedRawFallback === "1";
+
+    return this.cartService.updateAllSelected(userId, isChecked ? 1 : 0);
   }
 
   /**

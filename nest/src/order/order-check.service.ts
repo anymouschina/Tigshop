@@ -179,10 +179,16 @@ export class OrderCheckService {
   async getUserBalance(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { user_id: userId },
-      select: { user_money: true },
+      select: { balance: true },
     });
 
-    return user?.user_money || 0;
+    if (!user) {
+      return 0;
+    }
+
+    const numericBalance = Number(user.balance ?? 0);
+
+    return Number.isFinite(numericBalance) ? numericBalance : 0;
   }
 
   /**

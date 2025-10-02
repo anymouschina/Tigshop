@@ -831,6 +831,65 @@ export class CartService {
     return this.getCart(userId);
   }
 
+  async updateCheckStatus(
+    userId: number,
+    items: Array<{ cartId: number; isChecked: 0 | 1 }>,
+  ) {
+    if (!Array.isArray(items) || items.length === 0) {
+      return;
+    }
+
+    const deduped = new Map<number, 0 | 1>();
+    for (const entry of items) {
+      const cartId = Number(entry?.cartId ?? 0);
+      if (!Number.isInteger(cartId) || cartId <= 0) {
+        continue;
+      }
+      const normalizedChecked = entry?.isChecked === 1 ? 1 : 0;
+      deduped.set(cartId, normalizedChecked);
+    }
+
+    if (deduped.size === 0) {
+      return;
+    }
+
+    const cartIds = Array.from(deduped.keys());
+
+    const ownedCartItems = await this.prisma.cart.findMany({
+      where: {
+        user_id: userId,
+        cart_id: {
+          in: cartIds,
+        },
+      },
+      select: { cart_id: true },
+    });
+
+    if (ownedCartItems.length === 0) {
+      return;
+    }
+
+    const allowedIds = new Set(ownedCartItems.map((row) => row.cart_id));
+
+    const operations = Array.from(deduped.entries())
+      .filter(([cartId]) => allowedIds.has(cartId))
+      .map(([cartId, isChecked]) =>
+        this.prisma.cart.update({
+          where: { cart_id: cartId },
+          data: {
+            is_checked: isChecked,
+            update_time: Math.floor(Date.now() / 1000),
+          },
+        }),
+      );
+
+    if (operations.length === 0) {
+      return;
+    }
+
+    await this.prisma.$transaction(operations);
+  }
+
   /**
    * 全选/取消全选购物车商品
    * @param userId 用户ID

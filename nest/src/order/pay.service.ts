@@ -333,7 +333,10 @@ export class PayService {
       where: { user_id: params.user_id },
     });
 
-    if (!user || Number(user.user_money) < params.unpaid_amount) {
+    const currentBalance = Number(user?.balance ?? 0);
+    const unpaidAmount = Number(params.unpaid_amount ?? 0);
+
+    if (!user || !Number.isFinite(currentBalance) || currentBalance < unpaidAmount) {
       throw new HttpException("余额不足", HttpStatus.BAD_REQUEST);
     }
 
@@ -341,7 +344,7 @@ export class PayService {
     await this.prisma.user.update({
       where: { user_id: params.user_id },
       data: {
-        user_money: Number(user.user_money) - params.unpaid_amount,
+        balance: currentBalance - unpaidAmount,
       },
     });
 
