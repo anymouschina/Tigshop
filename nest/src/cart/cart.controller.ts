@@ -36,11 +36,39 @@ export class CartController {
   @ApiOperation({ summary: "添加商品到购物车" })
   async addToCart(
     @Request() req,
-    @Query() params: { productId: number; quantity?: number; skuId?: number },
+    @Body() body: Record<string, any>,
+    @Query() query: Record<string, any>,
   ) {
-    const pid = Number(params.productId);
-    const qty = params.quantity !== undefined ? Number(params.quantity) : 1;
-    const sid = params.skuId !== undefined ? Number(params.skuId) : 0;
+    // 兼容旧版 Query 传参与新版 JSON Body 传参，后者优先
+    const payload = {
+      ...query,
+      ...body,
+    };
+
+    const rawProductId =
+      payload.productId ??
+      payload.id ??
+      payload.product_id ??
+      payload.goodsId ??
+      payload.goods_id;
+    const rawQuantity =
+      payload.quantity ??
+      payload.number ??
+      payload.num ??
+      payload.qty ??
+      1;
+    const rawSkuId =
+      payload.skuId ??
+      payload.sku_id ??
+      payload.specId ??
+      payload.spec_id ??
+      payload.productSkuId ??
+      0;
+
+    const pid = Number(rawProductId);
+    const qty = Number(rawQuantity ?? 1);
+    const sid = Number(rawSkuId ?? 0);
+
     return this.cartService.addItem(req.user.userId, pid, qty, sid);
   }
 

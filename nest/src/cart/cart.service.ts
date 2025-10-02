@@ -5,33 +5,279 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { Decimal } from "@prisma/client/runtime/library";
 
-export interface CartItem {
+const DEFAULT_CART_TYPE = 1;
+
+interface CartSkuDataEntry {
+  name: string;
+  value: string;
+}
+
+interface CartSku {
+  skuId: number;
+  productId: number;
+  skuValue: string;
+  skuData: CartSkuDataEntry[];
+  skuSn: string;
+  skuStock: number;
+  skuTsn: string;
+  skuPrice: string;
+  marketPrice: string;
+  costPrice: string | null;
+  vendorProductSkuId: number | null;
+}
+
+interface ShopInfo {
+  statusText: string;
+  shopId: number;
+  shopTitle: string;
+  shopLogo: string;
+}
+
+interface ExtraSkuAttrEntry {
+  attributesId: number;
+  productId: number;
+  attrType: number;
+  attrName: string;
+  attrValue: string;
+  attrPrice: string;
+  attrColor: string;
+  attrPic: string;
+  attrPicThumb: string;
+}
+
+interface ExtraSkuGroup {
+  attrName: string;
+  attrList: ExtraSkuAttrEntry[];
+}
+
+interface ExtraSkuAllData {
+  normal: ExtraSkuAttrEntry[];
+  spe: ExtraSkuAttrEntry[];
+  extra: ExtraSkuGroup[];
+}
+
+export interface CartItemDetail {
   cartId: number;
+  userId: number;
   productId: number;
   productSn: string;
   picThumb: string;
-  marketPrice: number;
-  originalPrice: number;
+  marketPrice: string;
+  originalPrice: string;
   quantity: number;
   skuId: number;
-  skuData?: string;
+  skuData: CartSkuDataEntry[];
   productType: number;
-  isChecked: number;
+  isChecked: boolean;
   shopId: number;
   type: number;
+  updateTime: number;
   salesmanId: number;
-  extraSkuData?: string;
+  extraSkuData: any[];
+  productWeight: string;
+  shippingTplId: number;
+  freeShipping: number;
+  productStatus: number;
+  productName: string;
+  productPrice: string;
+  categoryId: number;
+  brandId: number;
+  productStock: number;
+  cardGroupId: number;
+  virtualSample: string;
+  suppliersId: number | null;
+  shop: ShopInfo;
+  sku: CartSku | null;
+  fixedShippingType: number;
+  fixedShippingFee: string;
+  vendorId: number;
+  vendorProductId: number;
+  vendorProductSkuId: number | null;
+  price: number;
+  stock: number;
+  hasSku: boolean;
+  subtotal: string;
+  originPrice: number;
+  isDisabled: boolean;
+  activityInfo: any[];
+  serviceFee: string;
+  extraSkuAllData: ExtraSkuAllData;
+}
+
+export interface CartShopGroup {
+  noShipping: number;
+  hasFixedShipping: number;
+  fixedShippingFee: number;
+  shopId: number;
+  shopTitle: string;
+  carts: CartItemDetail[];
+  usedPromotions: any[];
+  enableUsePromotion: any[];
+  gift: any[];
+  total: {
+    discountCouponAmount: number;
+    discountSeckillAmount: number;
+    discountTimeDiscountAmount: number;
+    discountProductPromotionAmount: number;
+    discountDiscountAmount: number;
+    discounts: number;
+    couponIds: any[];
+  };
 }
 
 export interface CartData {
-  items: CartItem[];
-  totalPrice: number;
-  totalQuantity: number;
-  selectedTotalPrice: number;
-  selectedTotalQuantity: number;
+  cartList: CartShopGroup[];
+  total: {
+    productAmount: number;
+    checkedCount: number;
+    discounts: number;
+    discountAfter: number;
+    totalCount: number;
+    discountCouponAmount: number;
+    discountDiscountAmount: number;
+    discountSeckillAmount: number;
+    discountProductPromotionAmount: number;
+    discountTimeDiscountAmount: number;
+    serviceFee: string;
+  };
 }
+
+const createEmptyAttrGroup = () => ({ normal: [], spe: [], extra: [] });
+
+const formatDecimal = (value: any, digits = 2) => {
+  if (value === null || value === undefined) {
+    return digits === 3 ? "0.000" : digits === 2 ? "0.00" : "0";
+  }
+  if (typeof value === "object" && value !== null) {
+    if (typeof value.toNumber === "function") {
+      return formatDecimal(value.toNumber(), digits);
+    }
+    if (value instanceof Date) {
+      return formatDecimal(value.getTime(), digits);
+    }
+  }
+  const num = Number(value);
+  if (Number.isNaN(num) || !Number.isFinite(num)) {
+    return digits === 3 ? "0.000" : digits === 2 ? "0.00" : "0";
+  }
+  return num.toFixed(digits);
+};
+
+const toPlainNumber = (value: any, fallback = 0) => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "number") return Number.isFinite(value) ? value : fallback;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "string" && value.trim() !== "") {
+    const num = Number(value);
+    return Number.isNaN(num) ? fallback : num;
+  }
+  if (typeof value === "object" && value !== null && typeof value.toNumber === "function") {
+    const num = value.toNumber();
+    return Number.isNaN(num) ? fallback : num;
+  }
+  const num = Number(value);
+  return Number.isNaN(num) ? fallback : num;
+};
+
+const parseJsonSafely = (value: any) => {
+  if (value === null || value === undefined) return null;
+  if (Array.isArray(value) || typeof value === "object") return value;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch (error) {
+    return null;
+  }
+};
+
+const normalizeSkuData = (value: any, fallback: any[] = []) => {
+  const parsed = parseJsonSafely(value);
+  if (Array.isArray(parsed)) {
+    return parsed
+      .map((entry) => {
+        if (entry && typeof entry === "object") {
+          if ("name" in entry && "value" in entry) {
+            return {
+              name: String(entry.name ?? ""),
+              value: String(entry.value ?? ""),
+            };
+          }
+          const [firstKey] = Object.keys(entry);
+          if (firstKey) {
+            return {
+              name: String(firstKey),
+              value: String((entry as any)[firstKey] ?? ""),
+            };
+          }
+        }
+        return {
+          name: "",
+          value: String(entry ?? ""),
+        };
+      })
+      .filter((it) => it.name !== "" || it.value !== "");
+  }
+  if (parsed && typeof parsed === "object") {
+    return Object.entries(parsed).map(([key, val]) => ({
+      name: String(key ?? ""),
+      value: Array.isArray(val) ? val.map((v) => String(v ?? "")).join(" ") : String(val ?? ""),
+    }));
+  }
+  return Array.isArray(fallback) ? fallback : [];
+};
+
+const normalizeExtraSkuData = (value: any) => {
+  const parsed = parseJsonSafely(value);
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === "object") return parsed;
+  return [];
+};
+
+const buildAttributeMap = (records: any[]) => {
+  const map = new Map<number, any>();
+  for (const attr of records ?? []) {
+    const productId = attr.product_id;
+    if (!map.has(productId)) {
+      map.set(productId, {
+        normal: [],
+        spe: [],
+        extra: [],
+      });
+    }
+    const bucket = map.get(productId);
+    const attrPayload = {
+      attributesId: attr.attributes_id,
+      productId: attr.product_id,
+      attrType: attr.attr_type,
+      attrName: attr.attr_name ?? "",
+      attrValue: attr.attr_value ?? "",
+      attrPrice: formatDecimal(attr.attr_price ?? 0),
+      attrColor: attr.attr_color ?? "",
+      attrPic: attr.attr_pic ?? "",
+      attrPicThumb: attr.attr_pic_thumb ?? "",
+    };
+
+    if (attr.attr_type === 2) {
+      let group = bucket.extra.find((entry) => entry.attrName === attrPayload.attrName);
+      if (!group) {
+        group = {
+          attrName: attrPayload.attrName,
+          attrList: [],
+        };
+        bucket.extra.push(group);
+      }
+      group.attrList.push(attrPayload);
+    } else if (attr.attr_type === 1) {
+      bucket.spe.push(attrPayload);
+    } else {
+      bucket.normal.push(attrPayload);
+    }
+  }
+  return map;
+};
 
 @Injectable()
 export class CartService {
@@ -69,7 +315,6 @@ export class CartService {
     // 验证商品是否存在且启用
     const product = await this.prisma.product.findFirst({
       where: { product_id: pid },
-      include: { brand: true, category: true },
     });
 
     if (!product) {
@@ -172,7 +417,7 @@ export class CartService {
           product_type: 1,
           is_checked: 1,
           shop_id: productData.shop_id || 0,
-          type: 1,
+          type: DEFAULT_CART_TYPE,
           update_time: Math.floor(Date.now() / 1000),
         },
       });
@@ -279,57 +524,279 @@ export class CartService {
    * @returns 购物车数据
    */
   async getCart(userId: number): Promise<CartData> {
-    const cartItems = await this.prisma.cart.findMany({
+    const cartRows = await this.prisma.cart.findMany({
       where: { user_id: userId },
-      include: {
-        product: {
-          include: {
-            brand: true,
-            category: true,
-          },
-        },
-      },
-      orderBy: {
-        update_time: "desc",
-      },
+      orderBy: { update_time: "desc" },
     });
 
-    const items = cartItems.map((item) => ({
-      cartId: item.cart_id,
-      productId: item.product_id,
-      productSn: item.product_sn,
-      picThumb: item.pic_thumb,
-      marketPrice: Number(item.market_price),
-      originalPrice: Number(item.original_price),
-      quantity: item.quantity,
-      skuId: item.sku_id,
-      skuData: item.sku_data ?? undefined,
-      productType: item.product_type,
-      isChecked: item.is_checked,
-      shopId: item.shop_id,
-      type: item.type,
-      salesmanId: item.salesman_id,
-      extraSkuData: item.extra_sku_data ?? undefined,
+    if (cartRows.length === 0) {
+      return {
+        cartList: [],
+        total: {
+          productAmount: 0,
+          checkedCount: 0,
+          discounts: 0,
+          discountAfter: 0,
+          totalCount: 0,
+          discountCouponAmount: 0,
+          discountDiscountAmount: 0,
+          discountSeckillAmount: 0,
+          discountProductPromotionAmount: 0,
+          discountTimeDiscountAmount: 0,
+          serviceFee: "0",
+        },
+      };
+    }
+
+    const productIdSet = [...new Set(cartRows.map((row) => row.product_id))];
+    const productMap = new Map<number, any>();
+
+    if (productIdSet.length > 0) {
+      const products = await this.prisma.product.findMany({
+        where: { product_id: { in: productIdSet } },
+        select: {
+          product_id: true,
+          product_name: true,
+          product_sn: true,
+          product_stock: true,
+          product_price: true,
+          market_price: true,
+          product_weight: true,
+          shipping_tpl_id: true,
+          free_shipping: true,
+          product_status: true,
+          category_id: true,
+          brand_id: true,
+          shop_id: true,
+          card_group_id: true,
+          virtual_sample: true,
+          suppliers_id: true,
+          no_shipping: true,
+          fixed_shipping_type: true,
+          fixed_shipping_fee: true,
+          vendor_id: true,
+          vendor_product_id: true,
+        },
+      });
+      for (const product of products) {
+        productMap.set(product.product_id, product);
+      }
+    }
+
+    const shopIdSet = [...new Set(cartRows.map((row) => row.shop_id))];
+    const shopMap = new Map<number, any>();
+
+    if (shopIdSet.length > 0) {
+      const shops = await this.prisma.shop.findMany({
+        where: { shop_id: { in: shopIdSet } },
+        select: {
+          shop_id: true,
+          shop_title: true,
+          shop_logo: true,
+          status: true,
+        },
+      });
+      for (const shop of shops) {
+        shopMap.set(shop.shop_id, shop);
+      }
+    }
+
+    const skuIdSet = [...new Set(cartRows.map((row) => row.sku_id).filter(Boolean))];
+    const skuMap = new Map<number, any>();
+    if (skuIdSet.length > 0) {
+      const skus = await this.prisma.product_sku.findMany({
+        where: { sku_id: { in: skuIdSet as number[] } },
+      });
+      for (const sku of skus) {
+        skuMap.set(sku.sku_id, sku);
+      }
+    }
+
+    const attrRecords = await this.prisma.product_attributes.findMany({
+      where: { product_id: { in: productIdSet } },
+    });
+    const attrMap = buildAttributeMap(attrRecords);
+
+    const groupedByShop = new Map<number, CartShopGroup>();
+    const totalAccumulator = {
+      productAmount: 0,
+      checkedCount: 0,
+      discounts: 0,
+      discountAfter: 0,
+      totalCount: 0,
+      discountCouponAmount: 0,
+      discountDiscountAmount: 0,
+      discountSeckillAmount: 0,
+      discountProductPromotionAmount: 0,
+      discountTimeDiscountAmount: 0,
+      serviceFee: 0,
+    };
+
+    for (const row of cartRows) {
+      const product = productMap.get(row.product_id) ?? {};
+      const shop = shopMap.get(row.shop_id) ?? {};
+      const sku = row.sku_id ? skuMap.get(row.sku_id) ?? null : null;
+      const attrGrouping = attrMap.get(row.product_id) ?? createEmptyAttrGroup();
+
+      let shopBucket = groupedByShop.get(row.shop_id);
+      if (!shopBucket) {
+        const shopTitle = shop?.shop_title ?? "";
+        const hasFixedShipping = product?.fixed_shipping_type === 1 ? 1 : 0;
+        const fixedFee = hasFixedShipping
+          ? toPlainNumber(product?.fixed_shipping_fee ?? 0)
+          : 0;
+        shopBucket = {
+          noShipping: product?.no_shipping ?? 0,
+          hasFixedShipping,
+          fixedShippingFee: fixedFee,
+          shopId: row.shop_id,
+          shopTitle,
+          carts: [],
+          usedPromotions: [],
+          enableUsePromotion: [],
+          gift: [],
+          total: {
+            discountCouponAmount: 0,
+            discountSeckillAmount: 0,
+            discountTimeDiscountAmount: 0,
+            discountProductPromotionAmount: 0,
+            discountDiscountAmount: 0,
+            discounts: 0,
+            couponIds: [],
+          },
+        };
+        groupedByShop.set(row.shop_id, shopBucket);
+      }
+
+      if (product?.fixed_shipping_type === 1) {
+        shopBucket.hasFixedShipping = 1;
+        shopBucket.fixedShippingFee += toPlainNumber(
+          product?.fixed_shipping_fee ?? 0,
+        );
+      }
+      if (product?.no_shipping === 0) {
+        shopBucket.noShipping = 0;
+      }
+
+      const skuDataList = normalizeSkuData(row.sku_data ?? sku?.sku_data ?? []);
+      const extraSkuData = normalizeExtraSkuData(row.extra_sku_data);
+      const checked = row.is_checked === 1;
+      const price = sku?.sku_price ?? row.original_price ?? product?.product_price ?? 0;
+      const priceNumber = toPlainNumber(price, 0);
+      const subtotal = priceNumber * row.quantity;
+
+      const cartItem: CartItemDetail = {
+        cartId: row.cart_id,
+        userId: row.user_id,
+        productId: row.product_id,
+        productSn: row.product_sn,
+        picThumb: row.pic_thumb ?? "",
+        marketPrice: formatDecimal(product?.market_price ?? row.market_price ?? 0),
+        originalPrice: formatDecimal(row.original_price ?? priceNumber ?? 0),
+        quantity: row.quantity,
+        skuId: row.sku_id ?? 0,
+        skuData: skuDataList,
+        productType: row.product_type,
+        isChecked: checked,
+        shopId: row.shop_id,
+        type: row.type,
+        updateTime: row.update_time,
+        salesmanId: row.salesman_id,
+        extraSkuData: Array.isArray(extraSkuData) ? extraSkuData : [],
+        productWeight: formatDecimal(product?.product_weight ?? 0, 3),
+        shippingTplId: product?.shipping_tpl_id ?? 0,
+        freeShipping: product?.free_shipping ?? 0,
+        productStatus: product?.product_status ?? 0,
+        productName: product?.product_name ?? "",
+        productPrice: formatDecimal(product?.product_price ?? 0),
+        categoryId: product?.category_id ?? 0,
+        brandId: product?.brand_id ?? 0,
+        productStock: product?.product_stock ?? 0,
+        cardGroupId: product?.card_group_id ?? 0,
+        virtualSample: product?.virtual_sample ?? "",
+        suppliersId: product?.suppliers_id ?? null,
+        shop: {
+          statusText: "",
+          shopId: row.shop_id,
+          shopTitle: shop?.shop_title ?? "",
+          shopLogo: shop?.shop_logo ?? "",
+        },
+        sku: sku
+          ? {
+              skuId: sku.sku_id,
+              productId: sku.product_id,
+              skuValue: sku.sku_value ?? "",
+              skuData: normalizeSkuData(sku.sku_data ?? []),
+              skuSn: sku.sku_sn ?? "",
+              skuStock: sku.sku_stock ?? 0,
+              skuTsn: sku.sku_tsn ?? "",
+              skuPrice: formatDecimal(sku.sku_price ?? priceNumber ?? 0),
+              marketPrice: formatDecimal(product?.market_price ?? row.market_price ?? 0),
+              costPrice: null,
+              vendorProductSkuId: sku.vendor_product_sku_id ?? null,
+            }
+          : null,
+        fixedShippingType: product?.fixed_shipping_type ?? 2,
+        fixedShippingFee: formatDecimal(product?.fixed_shipping_fee ?? 0),
+        vendorId: product?.vendor_id ?? 0,
+        vendorProductId: product?.vendor_product_id ?? 0,
+    vendorProductSkuId: sku?.vendor_product_sku_id ?? null,
+    price: priceNumber,
+    stock: product?.product_stock ?? 0,
+    hasSku: false,
+    subtotal: formatDecimal(subtotal),
+    originPrice: priceNumber,
+    isDisabled: false,
+        activityInfo: [],
+        serviceFee: formatDecimal(0),
+        extraSkuAllData: attrGrouping ?? createEmptyAttrGroup(),
+      };
+
+    cartItem.hasSku = !!sku;
+      cartItem.stock = sku?.sku_stock ?? product?.product_stock ?? 0;
+      cartItem.isDisabled = cartItem.stock === 0 || cartItem.productStatus === 0;
+      cartItem.extraSkuAllData = attrGrouping;
+
+      if (cartItem.isDisabled && cartItem.isChecked) {
+        cartItem.isChecked = false;
+      }
+
+      shopBucket.carts.push(cartItem);
+
+      totalAccumulator.totalCount += row.quantity;
+      if (cartItem.isChecked) {
+        totalAccumulator.checkedCount += row.quantity;
+        totalAccumulator.productAmount += subtotal;
+      }
+    }
+
+    const cartList = Array.from(groupedByShop.values()).map((group) => ({
+      ...group,
+      fixedShippingFee: Number(group.fixedShippingFee),
+      carts: group.carts.map((item) => ({
+        ...item,
+        subtotal: formatDecimal(item.originPrice * item.quantity),
+        isDisabled: item.isDisabled,
+      })),
     }));
 
-    const totalPrice = items.reduce(
-      (sum, item) => sum + item.originalPrice * item.quantity,
-      0,
-    );
-    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-    const selectedTotalPrice = items
-      .filter((item) => item.isChecked === 1)
-      .reduce((sum, item) => sum + item.originalPrice * item.quantity, 0);
-    const selectedTotalQuantity = items
-      .filter((item) => item.isChecked === 1)
-      .reduce((sum, item) => sum + item.quantity, 0);
+    const total = {
+      productAmount: totalAccumulator.productAmount,
+      checkedCount: totalAccumulator.checkedCount,
+      discounts: totalAccumulator.discounts,
+      discountAfter: totalAccumulator.productAmount - totalAccumulator.discounts,
+      totalCount: totalAccumulator.totalCount,
+      discountCouponAmount: totalAccumulator.discountCouponAmount,
+      discountDiscountAmount: totalAccumulator.discountDiscountAmount,
+      discountSeckillAmount: totalAccumulator.discountSeckillAmount,
+      discountProductPromotionAmount: totalAccumulator.discountProductPromotionAmount,
+      discountTimeDiscountAmount: totalAccumulator.discountTimeDiscountAmount,
+      serviceFee: formatDecimal(totalAccumulator.serviceFee),
+    };
 
     return {
-      items,
-      totalPrice,
-      totalQuantity,
-      selectedTotalPrice,
-      selectedTotalQuantity,
+      cartList,
+      total,
     };
   }
 
@@ -392,8 +859,8 @@ export class CartService {
     // 验证所有购物车项都属于该用户
     const cartItems = await this.prisma.cart.findMany({
       where: {
-        cartId: { in: cartIds },
-        userId,
+        cart_id: { in: cartIds },
+        user_id: userId,
       },
     });
 
@@ -403,8 +870,8 @@ export class CartService {
 
     await this.prisma.cart.deleteMany({
       where: {
-        cartId: { in: cartIds },
-        userId,
+        cart_id: { in: cartIds },
+        user_id: userId,
       },
     });
 
