@@ -42,7 +42,7 @@ export class ProductDetailService {
     ] = await Promise.all([
       this.getProductDescArr(product.product_desc),
       this.getSkuList(productId),
-      this.getProductGalleryList(productId),
+  this.getProductGalleryList(productId),
       this.getVideoList(productId),
       this.getAttrList(productId),
       this.getProductCommentRankDetail(productId),
@@ -184,8 +184,8 @@ export class ProductDetailService {
       if (imgMatch) {
         descArr.push({
           type: "pic",
-          html: part,
           pic: imgMatch[1],
+          html: part,
         });
       } else {
         descArr.push({
@@ -306,10 +306,11 @@ export class ProductDetailService {
           attrMap.set(attrName, []);
         }
 
+        const attrType = Number(attr.attr_type ?? 0);
         attrMap.get(attrName)?.push({
           attributesId: attr.attributes_id,
           productId: attr.product_id,
-          attrType: attr.attr_type,
+          attrType,
           attrName: attr.attr_name,
           attrValue: attr.attr_value,
           // 按两位小数的字符串返回
@@ -334,9 +335,10 @@ export class ProductDetailService {
         };
 
         // 根据属性类型分组
-        if (attrList[0]?.attr_type === 0) {
+        const resolvedType = Number(attrList[0]?.attrType ?? 0);
+        if (resolvedType === 0) {
           result.normal.push(group);
-        } else if (attrList[0]?.attr_type === 1) {
+        } else if (resolvedType === 1) {
           result.spe.push(group);
         } else {
           result.extra.push(group);

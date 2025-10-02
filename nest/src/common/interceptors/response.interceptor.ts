@@ -98,10 +98,11 @@ export class ResponseInterceptor<T>
 
         // 未包装的返回
         const finalData = isAdminApi && data && typeof data === "object" ? camelCase(this.transformAdminTimeFields(data), false) : data;
+        // 保持键顺序为 code, message, data 以对齐部分前端严格比较
         return {
           code: 0,
-          data: finalData,
           message: "success",
+          data: finalData,
         } as any;
       }),
     );

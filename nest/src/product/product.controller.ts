@@ -61,13 +61,13 @@ export class ProductController {
   /**
    * 获取商品详情 - Public版本（不需要登录）
    */
-  @Get("public-detail")
-  @Public()
-  @ApiOperation({ summary: "获取商品详情（公开）", deprecated: true, description: "Deprecated: 请迁移到 GET /api/product/product/detail（本路由短期内作为别名保留）" })
-  async getProductDetailPublic(@Query() query: { id: number }) {
-    const productId = Number(query.id);
-    return this.productDetailService.getProductDetail(productId);
-  }
+  // @Get("public-detail")
+  // @Public()
+  // @ApiOperation({ summary: "获取商品详情（公开）", deprecated: true, description: "Deprecated: 请迁移到 GET /api/product/product/detail（本路由短期内作为别名保留）" })
+  // async getProductDetailPublic(@Query() query: { id: number }) {
+  //   const productId = Number(query.id);
+  //   return this.productDetailService.getProductDetail(productId);
+  // }
 
   /**
    * 获取商品评论 - 对齐PHP版本 product/product/getComment
