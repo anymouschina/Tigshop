@@ -9,6 +9,8 @@ import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { ProductQueryDto } from "./dto/product-query.dto";
 import { Decimal } from "@prisma/client/runtime/library";
+import { camelCase } from "src/common/utils/camel-case.util";
+import { toMoneyString } from "src/common/utils/format";
 
 @Injectable()
 export class ProductService {
@@ -204,11 +206,14 @@ export class ProductService {
     const records = await this.buildProductListResponse(products, normalizedIds);
     const waitingCheckedCount = await this.getWaitingCheckedCount(queryDto);
 
-    return {
-      records,
-      total,
-      waiting_checked_count: waitingCheckedCount,
-    };
+    return camelCase(
+      {
+        records,
+        total,
+        waiting_checked_count: waitingCheckedCount,
+      },
+      false,
+    );
   }
 
   /**
@@ -457,9 +462,15 @@ export class ProductService {
         skuMap.set(pid, []);
       }
       skuMap.get(pid)?.push({
-        ...sku,
-        sku_price: sku.sku_price instanceof Decimal ? Number(sku.sku_price.toString()) : Number(sku.sku_price ?? 0),
+        sku_id: sku.sku_id,
+        product_id: sku.product_id,
+        sku_value: sku.sku_value,
+        sku_data: sku.sku_data,
+        sku_sn: sku.sku_sn,
         sku_stock: Number(sku.sku_stock ?? 0),
+        sku_tsn: sku.sku_tsn,
+        sku_price: this.toMoney(sku.sku_price),
+        vendor_product_sku_id: sku.vendor_product_sku_id,
       });
     }
 
@@ -499,8 +510,8 @@ export class ProductService {
       }
 
       const productId = Number(product.product_id);
-      const basePrice = this.toNumber(product.product_price);
-      const baseMarketPrice = this.toNumber(product.market_price);
+  const basePrice = this.toNumber(product.product_price);
+  const baseMarketPrice = this.toNumber(product.market_price);
       let price = basePrice;
       let marketPrice = baseMarketPrice;
       let isSeckill = 0;
@@ -512,18 +523,23 @@ export class ProductService {
         price = seckill.price;
         marketPrice = basePrice;
         isSeckill = 1;
-        seckillEnd = seckill.endTime ? Number(seckill.endTime) || seckill.endTime : "";
+        seckillEnd = seckill.endTime || "";
       } else {
         const sku = firstSkuMap.get(productId);
-        const skuPrice = sku ? Number(sku.sku_price ?? 0) : 0;
+        const skuPrice = sku ? this.toNumber(sku.sku_price) : 0;
         if (skuPrice > 0) {
           price = skuPrice;
         }
       }
 
-      plain.price = price;
-      plain.product_price = price;
-      plain.market_price = marketPrice;
+      const formattedPrice = this.toMoney(price);
+      const formattedMarketPrice = this.toMoney(marketPrice);
+      plain.price = formattedPrice;
+      plain.product_price = formattedPrice;
+      plain.market_price = formattedMarketPrice;
+      if (plain.org_product_price !== undefined) {
+        plain.org_product_price = this.toMoney(plain.org_product_price);
+      }
       plain.is_seckill = isSeckill;
       plain.seckill_end_time = seckillEnd || "";
       plain.product_sku = skuMap.get(productId) ?? [];
@@ -567,6 +583,10 @@ export class ProductService {
       return val;
     }
     return Number(val) || 0;
+  }
+
+  private toMoney(val: any): string {
+    return toMoneyString(this.toNumber(val));
   }
 
 }
