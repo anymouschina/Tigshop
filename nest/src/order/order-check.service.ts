@@ -79,7 +79,7 @@ export class OrderCheckService {
    * 根据优惠券ID获取用户优惠券ID
    */
   async getUserCouponIdByCouponId(userId: number, couponId: number) {
-    const userCoupon = await this.prisma.userCoupon.findFirst({
+    const userCoupon = await (this.prisma as any).user_coupon.findFirst({
       where: {
         user_id: userId,
         coupon_id: couponId,
@@ -87,7 +87,7 @@ export class OrderCheckService {
       },
     });
 
-    return userCoupon?.user_coupon_id || 0;
+    return userCoupon?.id || 0;
   }
 
   /**
@@ -101,10 +101,16 @@ export class OrderCheckService {
    * 获取用户地址列表
    */
   async getAddressList(userId: number) {
-    return this.prisma.userAddress.findMany({
+    const records = await (this.prisma as any).user_address.findMany({
       where: { user_id: userId },
-      orderBy: [{ is_default: "desc" }, { address_id: "desc" }],
+      orderBy: [
+        { is_selected: "desc" },
+        { is_default: "desc" },
+        { address_id: "desc" },
+      ],
     });
+
+    return records.map((record: any) => this.transformAddress(record));
   }
 
   /**
@@ -296,5 +302,43 @@ export class OrderCheckService {
    */
   getUsePoint() {
     return this.checkoutParams.use_point || 0;
+  }
+
+  private transformAddress(address: any) {
+    if (!address) {
+      return address;
+    }
+
+    const regionIds = address.region_ids
+      ? String(address.region_ids)
+          .split(",")
+          .map((part: string) => Number(part))
+          .filter((num: number) => Number.isFinite(num))
+      : [];
+    const regionNames = address.region_names
+      ? String(address.region_names).split(",")
+      : [];
+
+    const isDefault = Number(address.is_default ?? 0) === 1 ? 1 : 0;
+    const isSelected = Number(address.is_selected ?? 0) === 1 ? 1 : 0;
+
+    return {
+      id: address.address_id,
+      consignee: address.consignee,
+      mobile: address.mobile,
+      telephone: address.telephone,
+      regionIds,
+      regionNames,
+      region_names: regionNames,
+      address: address.address,
+      postcode: address.postcode,
+      email: address.email,
+      addressTag: address.address_tag,
+      address_tag: address.address_tag,
+      isDefault,
+      is_default: isDefault,
+      isSelected,
+      is_selected: isSelected,
+    };
   }
 }

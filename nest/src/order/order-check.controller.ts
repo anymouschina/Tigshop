@@ -13,6 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { OrderCheckService } from "./order-check.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { resolveRequestUserId } from "src/common/utils/request-user.util";
 
 @ApiTags("Order Checkout")
 @Controller("api/order")
@@ -41,7 +42,7 @@ export class OrderCheckController {
       product_extra?: any;
     },
   ) {
-    const userId = req.user.userId;
+    const userId = resolveRequestUserId(req);
     const flowType = body.flow_type || 1;
 
     // B2B模式下，判断用户是否实名
@@ -93,6 +94,7 @@ export class OrderCheckController {
       use_coupon_ids: useCouponIds,
       select_user_coupon_ids: selectUserCouponIds,
       product_extra: body.product_extra || [],
+      user_id: userId,
     };
 
     await this.orderCheckService.initSet(params);
@@ -141,7 +143,7 @@ export class OrderCheckController {
       product_extra?: any;
     },
   ) {
-    const userId = req.user.userId;
+  const userId = resolveRequestUserId(req);
     const params = {
       address_id: body.address_id || 0,
       shipping_type: body.shipping_type || [],
@@ -151,6 +153,7 @@ export class OrderCheckController {
       flow_type: body.flow_type || 1,
       use_coupon_ids: body.use_coupon_ids || [],
       product_extra: body.product_extra || [],
+      user_id: userId,
     };
 
     await this.orderCheckService.initSet(params);
@@ -257,7 +260,7 @@ export class OrderCheckController {
       use_default_coupon_ids?: number;
     },
   ) {
-    const userId = req.user.userId;
+    const userId = resolveRequestUserId(req);
     const params = {
       address_id: body.address_id || 0,
       shipping_type: body.shipping_type || [],
@@ -267,6 +270,7 @@ export class OrderCheckController {
       flow_type: body.flow_type || 1,
       use_coupon_ids: body.use_coupon_ids || [],
       select_user_coupon_ids: body.select_user_coupon_ids || [],
+      user_id: userId,
     };
 
     let useDefaultCoupon = 0;
@@ -357,7 +361,7 @@ export class OrderCheckController {
       flow_type?: number;
     },
   ) {
-    const userId = req.user.userId;
+    const userId = resolveRequestUserId(req);
 
     // 检查是否关闭下单
     const closeOrder = await this.orderCheckService.getCloseOrderStatus();
@@ -378,6 +382,7 @@ export class OrderCheckController {
       buyer_note: body.buyer_note || "",
       invoice_data: body.invoice_data || [],
       flow_type: body.flow_type || 1,
+      user_id: userId,
     };
 
     await this.orderCheckService.initSet(params);
@@ -402,7 +407,7 @@ export class OrderCheckController {
       title_type?: number;
     },
   ) {
-    const userId = req.user.userId;
+    const userId = resolveRequestUserId(req);
     const params = {
       invoice_type: query.invoice_type || 0,
       title_type: query.title_type || 0,

@@ -36,7 +36,7 @@ export class AddressService {
         where: { user_id: userId },
         skip,
         take: size,
-        orderBy: { is_default: "desc" },
+        orderBy: [{ is_selected: "desc" }, { is_default: "desc" }],
       }),
       (this.databaseService as any).user_address.count({
         where: { user_id: userId },
@@ -103,7 +103,7 @@ export class AddressService {
     if (isDefault === 1) {
       await (this.databaseService as any).user_address.updateMany({
         where: { user_id: userId },
-        data: { is_default: 0 },
+        data: { is_default: 0, is_selected: 0 },
       });
     }
 
@@ -121,6 +121,7 @@ export class AddressService {
         email,
         address_tag: addressTag,
         is_default: isDefault,
+        is_selected: isDefault,
       },
     });
 
@@ -174,7 +175,7 @@ export class AddressService {
     if (isDefault === 1 && existingAddress.is_default !== 1) {
       await (this.databaseService as any).user_address.updateMany({
         where: { user_id: userId },
-        data: { is_default: 0 },
+        data: { is_default: 0, is_selected: 0 },
       });
     }
 
@@ -194,6 +195,7 @@ export class AddressService {
         email,
         address_tag: addressTag,
         is_default: isDefault,
+        is_selected: isDefault ? 1 : existingAddress.is_selected,
       },
     });
 
@@ -258,7 +260,7 @@ export class AddressService {
     }
 
     // 如果已经是默认地址，直接返回
-    if (existingAddress.is_default === 1) {
+    if (existingAddress.is_selected === 1) {
       return {
         message: "设置成功",
       };
@@ -267,13 +269,13 @@ export class AddressService {
     // 先将其他地址设为非默认
     await (this.databaseService as any).user_address.updateMany({
       where: { user_id: userId },
-      data: { is_default: 0 },
+      data: { is_selected: 0 },
     });
 
-    // 设置指定地址为默认
+    // 设置指定地址为默认并选中
     await (this.databaseService as any).user_address.update({
       where: { address_id: id },
-      data: { is_default: 1 },
+      data: { is_selected: 1 },
     });
 
     return {
@@ -285,6 +287,19 @@ export class AddressService {
    * 获取用户默认地址
    */
   async getDefaultAddress(userId: number): Promise<AddressResponse | null> {
+    const selectedAddress = await (
+      this.databaseService as any
+    ).user_address.findFirst({
+      where: {
+        user_id: userId,
+        is_selected: 1,
+      },
+    });
+
+    if (selectedAddress) {
+      return { address: this.formatAddressResponse(selectedAddress) };
+    }
+
     const defaultAddress = await (
       this.databaseService as any
     ).user_address.findFirst({
@@ -294,25 +309,20 @@ export class AddressService {
       },
     });
 
-    if (!defaultAddress) {
-      // 如果没有默认地址，返回第一个地址
-      const firstAddress = await (
-        this.databaseService as any
-      ).user_address.findFirst({
-        where: { user_id: userId },
-        orderBy: { address_id: "asc" },
-      });
-
-      return firstAddress
-        ? {
-            address: this.formatAddressResponse(firstAddress),
-          }
-        : null;
+    if (defaultAddress) {
+      return { address: this.formatAddressResponse(defaultAddress) };
     }
 
-    return {
-      address: this.formatAddressResponse(defaultAddress),
-    };
+    const firstAddress = await (this.databaseService as any).user_address.findFirst({
+      where: { user_id: userId },
+      orderBy: { address_id: "asc" },
+    });
+
+    return firstAddress
+      ? {
+          address: this.formatAddressResponse(firstAddress),
+        }
+      : null;
   }
 
   /**
@@ -373,6 +383,7 @@ export class AddressService {
       : [];
 
     const isDefault = Number(address.is_default ?? 0) === 1 ? 1 : 0;
+    const isSelected = Number(address.is_selected ?? 0) === 1 ? 1 : 0;
 
     return {
       id: address.address_id,
@@ -390,6 +401,8 @@ export class AddressService {
       address_tag: address.address_tag,
       isDefault,
       is_default: isDefault,
+      isSelected,
+      is_selected: isSelected,
     };
   }
 }

@@ -11,6 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { AddressService } from "./address.service";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
+import { resolveRequestUserId } from "src/common/utils/request-user.util";
 import {
   CreateAddressDto,
   UpdateAddressDto,
@@ -39,10 +40,8 @@ export class AddressController {
     @Request() req,
     @Query() addressListDto: AddressListDto,
   ): Promise<AddressListResponse> {
-    return this.addressService.getUserAddressList(
-      req.user.userId,
-      addressListDto,
-    );
+    const userId = resolveRequestUserId(req);
+    return this.addressService.getUserAddressList(userId, addressListDto);
   }
 
   /**
@@ -54,10 +53,8 @@ export class AddressController {
     @Request() req,
     @Query() addressDetailDto: AddressDetailDto,
   ): Promise<AddressResponse> {
-    return this.addressService.getAddressDetail(
-      req.user.userId,
-      addressDetailDto,
-    );
+    const userId = resolveRequestUserId(req);
+    return this.addressService.getAddressDetail(userId, addressDetailDto);
   }
 
   /**
@@ -69,7 +66,8 @@ export class AddressController {
     @Request() req,
     @Body() createAddressDto: CreateAddressDto,
   ): Promise<SuccessResponse> {
-    return this.addressService.createAddress(req.user.userId, createAddressDto);
+    const userId = resolveRequestUserId(req);
+    return this.addressService.createAddress(userId, createAddressDto);
   }
 
   /**
@@ -81,7 +79,8 @@ export class AddressController {
     @Request() req,
     @Body() updateAddressDto: UpdateAddressDto,
   ): Promise<SuccessResponse> {
-    return this.addressService.updateAddress(req.user.userId, updateAddressDto);
+    const userId = resolveRequestUserId(req);
+    return this.addressService.updateAddress(userId, updateAddressDto);
   }
 
   /**
@@ -93,7 +92,8 @@ export class AddressController {
     @Request() req,
     @Body() deleteAddressDto: DeleteAddressDto,
   ): Promise<SuccessResponse> {
-    return this.addressService.deleteAddress(req.user.userId, deleteAddressDto);
+    const userId = resolveRequestUserId(req);
+    return this.addressService.deleteAddress(userId, deleteAddressDto);
   }
 
   /**
@@ -105,10 +105,8 @@ export class AddressController {
     @Request() req,
     @Body() setDefaultAddressDto: SetDefaultAddressDto,
   ): Promise<SuccessResponse> {
-    return this.addressService.setDefaultAddress(
-      req.user.userId,
-      setDefaultAddressDto,
-    );
+    const userId = resolveRequestUserId(req);
+    return this.addressService.setDefaultAddress(userId, setDefaultAddressDto);
   }
 
   /**
@@ -117,7 +115,8 @@ export class AddressController {
   @Get("getDefault")
   @ApiOperation({ summary: "获取默认地址" })
   async getDefaultAddress(@Request() req): Promise<AddressResponse | null> {
-    return this.addressService.getDefaultAddress(req.user.userId);
+    const userId = resolveRequestUserId(req);
+    return this.addressService.getDefaultAddress(userId);
   }
 
   /**
@@ -129,10 +128,8 @@ export class AddressController {
     @Request() req,
     @Body() body: { addressIds: number[] },
   ): Promise<SuccessResponse> {
-    return this.addressService.batchDeleteAddresses(
-      req.user.userId,
-      body.addressIds,
-    );
+    const userId = resolveRequestUserId(req);
+    return this.addressService.batchDeleteAddresses(userId, body.addressIds);
   }
 
   /**
@@ -141,7 +138,8 @@ export class AddressController {
   @Get("count")
   @ApiOperation({ summary: "获取地址数量" })
   async getAddressCount(@Request() req): Promise<{ count: number }> {
-    const count = await this.addressService.getAddressCount(req.user.userId);
+    const userId = resolveRequestUserId(req);
+    const count = await this.addressService.getAddressCount(userId);
     return { count };
   }
 }
