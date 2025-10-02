@@ -77,11 +77,13 @@ export class AddressListDto {
   @ApiProperty({ description: "页码", required: false, default: 1 })
   @IsOptional()
   @IsInt({ message: "页码必须为整数" })
+  @Type(() => Number)
   page?: number = 1;
 
   @ApiProperty({ description: "每页数量", required: false, default: 15 })
   @IsOptional()
   @IsInt({ message: "每页数量必须为整数" })
+  @Type(() => Number)
   size?: number = 15;
 }
 
@@ -89,6 +91,7 @@ export class AddressDetailDto {
   @ApiProperty({ description: "地址ID" })
   @IsNotEmpty({ message: "地址ID不能为空" })
   @IsInt({ message: "地址ID必须为整数" })
+  @Type(() => Number)
   id: number;
 }
 
@@ -96,6 +99,7 @@ export class SetDefaultAddressDto {
   @ApiProperty({ description: "地址ID" })
   @IsNotEmpty({ message: "地址ID不能为空" })
   @IsInt({ message: "地址ID必须为整数" })
+  @Type(() => Number)
   id: number;
 }
 
@@ -103,6 +107,7 @@ export class DeleteAddressDto {
   @ApiProperty({ description: "地址ID" })
   @IsNotEmpty({ message: "地址ID不能为空" })
   @IsInt({ message: "地址ID必须为整数" })
+  @Type(() => Number)
   id: number;
 }
 
