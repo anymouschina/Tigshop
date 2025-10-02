@@ -56,6 +56,22 @@ export class RegionApiController {
     if (parentIds.length === 0) parentIds = [0];
 
     const lists: any[][] = [];
+
+    // 若传入的 parentIds 都不是 0，则先返回顶级（parent_id=0）作为第一个数组
+    if (!parentIds.includes(0)) {
+      const topRows = await this.regionService["prisma"].region.findMany({
+        where: { parent_id: 0 },
+        orderBy: { region_id: "asc" },
+        select: { region_id: true, region_name: true, level: true },
+      });
+      const topMapped = topRows.map((r) => ({
+        regionId: r.region_id,
+        regionName: r.region_name,
+        level: Number(r.level ?? 0),
+      }));
+      lists.push(topMapped);
+    }
+
     for (const pid of parentIds) {
       const rows = await this.regionService["prisma"].region.findMany({
         where: { parent_id: pid },

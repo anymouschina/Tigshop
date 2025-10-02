@@ -4,6 +4,7 @@
             <view class="popup-title">{{ $t("选择地区") }}</view>
             <view class="content">
                 <view class="region-menu">
+                    {{ regionNames.length }}
                     <view
                         v-for="(item, index) in regionNames"
                         :key="index"
@@ -71,8 +72,8 @@ const getRegions = async () => {
             ids = props.modelValue.join(",");
         }
         const result = await getRegionByIds(ids);
+        regionList.value.splice(0)
         Object.assign(regionList.value, result);
-
         if (regionList.value.length > 1) {
             if (regionList.value[regionList.value.length - 1].length > 0) {
                 showIndex.value = regionList.value.length - 1;
@@ -104,10 +105,12 @@ const regionSelected = (regionId: any) => {
 };
 
 const onSelect = async (index: number, regionId: any) => {
+    console.log(index >= 0 && index <= props.modelValue.length,index,props.modelValue.length,'index >= 0 && index <= props.modelValue.length')
     if (index >= 0 && index <= props.modelValue.length) {
         props.modelValue[index] = regionId; // 更新对应索引的值
         props.modelValue.splice(index + 1); // 截取至指定索引，包含修改过的值
     }
+    console.log(props.modelValue,'props.modelValue')
     await getRegions();
     if (regionList.value.length == index + 1 || regionList.value[index + 1].length == 0) {
         emit("update:modelValue", props.modelValue);
