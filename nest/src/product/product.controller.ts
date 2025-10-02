@@ -161,15 +161,8 @@ export class ProductController {
    */
   @Post("promotion")
   @ApiOperation({ summary: "获取商品促销信息" })
-  async getPromotion(@Body() data: { productId: number }) {
-    // 简化实现，返回促销信息
-    return {
-      promotionType: "discount",
-      discountRate: 0.8,
-      startTime: "2024-01-01 00:00:00",
-      endTime: "2024-01-31 23:59:59",
-      description: "新年特惠，8折优惠",
-    };
+  async getPromotion(@Body() data: any) {
+    return this.productService.getProductsPromotion(data);
   }
 
   /**
