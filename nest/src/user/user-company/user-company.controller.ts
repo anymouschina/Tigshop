@@ -22,7 +22,7 @@ import { AdminAuthGuard } from "../../../common/guards/admin-auth.guard";
 import { ResponseUtil } from "../../../common/utils/response.util";
 
 @ApiTags("企业管理")
-@Controller("admin/user/company")
+@Controller("adminapi/user/company")
 @UseGuards(AdminAuthGuard)
 export class UserCompanyController {
   constructor(private readonly userCompanyService: UserCompanyService) {}

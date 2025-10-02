@@ -23,7 +23,7 @@ import {
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("Favorite Management")
-@Controller("user/favorite")
+@Controller("api/user/favorite")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class FavoriteController {

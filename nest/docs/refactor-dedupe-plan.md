@@ -2,25 +2,25 @@
 
 > 目的：收敛重复逻辑与分散职责，统一目录与命名规范，保证对前端协议无破坏的前提下，让项目结构更清晰、可维护。
 
-更新时间：2025-10-02
+更新时间：2025-10-02（本轮仅推进文档与清点，按要求跳过构建与单测执行）
 
 ## 一、已识别的重复/冗余点
 
 - 路由/接口层
   - 规则：/api 与 /adminapi 前缀下的同名接口不视为重复，它们属于不同作用域（前台与后台），仅在职责越界或实现分散时需要收敛共享的 Service/DTO。
   - [ ] detail 与 public-detail 重复（同为公开接口，返回相同数据）。
-  - [ ] 价格/库存能力在多个接口里重复实现和格式化（getProductAvailability / getProductAmount / getBatchProductAvailability / getPriceInBatches）。
+  - [x] 价格/库存能力在多个接口里重复实现和格式化（getProductAvailability / getProductAmount / getBatchProductAvailability / getPriceInBatches）。已收敛至 ProductPricingService 并切换相关控制器。
   - [ ] 控制器中直接访问数据库（(service as any).prisma）违背分层，导致重复查询与难以复用。
   - [ ] promotion/getCoupon/isCollect/afterSalesService 等接口返回 Mock 数据，与对应模块职责重复/冲突。
 - 业务逻辑层
-  - [ ] 金额/重量/时间格式化多处重复（product-detail.service.ts、admin-product.controller.ts 等）。
-  - [ ] 评论统计重复（detail service 手工统计 vs commentService.getCommentStats）。
-  - [ ] 服务说明与电子卡券组逻辑分散（admin 已实现，前台 detail 未复用）。
+  - [x] 金额/重量/时间格式化多处重复（product-detail.service.ts、admin-product.controller.ts 等）。已抽取 common/utils/format.ts 并替换两处实现。
+  - [x] 评论统计重复（detail service 手工统计 vs commentService.getCommentStats）。已统一复用 CommentService.getCommentStats。
+  - [x] 服务说明与电子卡券组逻辑分散（admin 已实现，前台 detail 未复用）。前台 detail 已补齐 eCardGroup 并复用。
   - [x] 依赖注入拆分后遗漏 PrismaModule 导致 CommentService 注入失败（已在 product/user 两处 CommentModule 补充 PrismaModule）。
 - 目录/命名层
-  - [ ] statistic/ 与 statistics/ 并存（职能相近）。
+  - [x] statistic/ 与 statistics/ 并存（职能相近）。已合并至 statistics，并通过 Facade 兼容改造 CronService。
   - [ ] static/static/ 嵌套命名冗余。
-  - [ ] src/app.contronller.ts 文件名拼写错误。
+  - [x] src/app.contronller.ts 文件名拼写错误（已更名为 app.controller.ts 并更新引用）。
   - [ ] ecard/e_card 命名风格不一（风险：混用）。
 - DTO/类型与返回结构
   - [ ] 多处重复定义返回结构，缺少集中 DTO（例如价格/库存、商品详情返回等）。
@@ -55,7 +55,7 @@
     - A. 在 `statistics` 新增 Facade（兼容层）以复用现有服务，暴露与 `StatisticService` 兼容的方法（getDashboardStats/getUserStats/getProductStats/getOrderStats/clearCache）。
     - B. 改造 `CronService` 直接注入并调用 `StatisticsModule` 内的新服务，删除 legacy `statistic` 目录。
   - [x] 决策与落地：采用 Facade 思路（已在 `statistics` 下新增 `StatisticsFacadeService`）+ 改造 `CronService` 依赖 Facade，随后移除 legacy 目录。
-  - [ ] 回归冒烟：执行每日任务路径的最小集成验证（构建 -> 启动 -> 触发/模拟任务）。
+  - [ ] 回归冒烟：执行每日任务路径的最小集成验证（构建 -> 启动 -> 触发/模拟任务）。备注：本轮按要求跳过运行，推迟到下一轮。
 - [ ] 清理 static/static/ 冗余层级；如需，改为 static/assets。
   - [ ] 清点 static/static/ 下资源与真实引用（后端 ServeStatic 配置、前端静态链接、截图/文档等）。
   - [ ] 方案 A：重命名/下沉为 static/assets，并保留 `/static/**` 兼容路由（重写/软链接）。
@@ -64,7 +64,7 @@
 - [x] 修正文件名 app.contronller.ts → app.controller.ts，并更新引用。
 - [ ] 统一电子卡券领域命名（Service/Module 导出保持 ecard 一致；Prisma 模型名保持表名即可）。
   - [ ] 统一代码层导出命名为 ecard（服务/模块/控制器导出名称）。
-  - [ ] 清点 `product/ecard*` 与 `product/ecard-group` 的导出命名与引用一致性。
+  - [ ] 清点 `product/ecard*` 与 `product/ecard-group` 的导出命名与引用一致性。（初步清点：存在 ECard Service/Module 与 e_card_group 表并存；命名需统一为 ecard 导出，保留 Prisma 表名不变）
   - [ ] 执行更名与引用修正，完成最小冒烟。
 
 验收标准：
@@ -108,7 +108,7 @@
   - [ ] static/static/ 清理
   - [x] app.contronller.ts 更名（已改为 app.controller.ts 并更新引用）
   - [ ] ecard 命名统一
-  - [ ] Home 模块说明：`src/home`（前台）与 `src/content/home`（内容管理）为不同域的模块，非重复；保持分域明确并避免交叉依赖。
+  - [x] Home 模块说明：`src/home`（前台）与 `src/content/home`（内容管理）为不同域的模块，非重复；保持分域明确并避免交叉依赖。（已确认并记录）
 - Mock 下线/真实接入
   - [ ] promotion
   - [ ] getCoupon
@@ -133,11 +133,29 @@
 ## 六、下一步增量（本轮执行项）
 
 - 构建与快速冒烟
-  - [ ] 执行构建，确认无 DI 错误（已补充 PrismaModule 引入）。
-  - [ ] 本地启动，调用商品详情、价格库存四接口做最小冒烟。
+  - [ ] 执行构建，确认无 DI 错误（已补充 PrismaModule 引入）。备注：本轮按要求跳过执行。
+  - [ ] 本地启动，调用商品详情、价格库存四接口做最小冒烟。备注：本轮按要求跳过执行。
 - 单测补齐 ProductPricingService
   - [ ] getAvailability: 基本路径与 skuId 缺省路径（本轮跳过执行）
   - [ ] getAmount: 合法 sku 与非法 sku 混合（本轮跳过执行）
 - 目录/命名清理（小步）
-  - [ ] 校验是否存在重复 HomeModule（src/home 与 src/content/home）；仅使用前台 Home 版本，避免命名冲突。
-  - [ ] static/static 清理方案设计与引用清点，输出迁移补丁草案。
+  - [x] 校验是否存在重复 HomeModule（src/home 与 src/content/home）；仅使用前台 Home 版本，避免命名冲突。（已确认非重复域，保持边界）
+  - [ ] static/static 清理方案设计与引用清点，输出迁移补丁草案。（已开始清点：ServeStatic 以项目 static 为根挂载到 `/`，需保留 `/static/**` 兼容路径；代码与前端存在多处 `/static/mini/**` 与 admin/mobile 资产引用）
+
+## 七、质量闸口与状态（本轮）
+
+- Build：未执行（按用户要求跳过）；预计使用 `npm run build`。
+- Lint：未执行；预计使用 `npm run lint`。
+- Unit Tests：未执行（按用户要求跳过）。
+- Smoke：未执行（推迟到下一轮）。
+
+影响评估：本轮仅做文档与任务项更新，不涉及运行期变更。
+
+下一步（下轮首要）：
+- 先执行构建与最小冒烟，验证 Cron Facade 路径与商品详情/价格库存接口（见 docs/cron-smoke-checklist.md）。
+- 输出 static/static 清理迁移草案与 ecard 导出命名统一补丁（见 docs/static-assets-migration.md 与 docs/ecard-naming-unification.md）。
+
+附：本轮新增支持文档
+- docs/static-assets-migration.md：静态资源目录精简与兼容迁移（草案）
+- docs/ecard-naming-unification.md：电子卡券领域命名统一（草案）
+- docs/cron-smoke-checklist.md：Cron 最小冒烟清单
