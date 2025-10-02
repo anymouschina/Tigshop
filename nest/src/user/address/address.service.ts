@@ -85,22 +85,22 @@ export class AddressService {
       consignee,
       mobile,
       telephone,
-      region_ids,
-      region_names,
+      regionIds,
+      regionNames,
       address,
       postcode,
       email,
-      address_tag,
-      is_default = 0,
+      addressTag,
+      isDefault = 0,
     } = createAddressDto;
 
     // 验证地区ID和名称数量是否匹配
-    if (region_ids.length !== region_names.length) {
+    if (regionIds.length !== regionNames.length) {
       throw new BadRequestException("地区ID和名称数量不匹配");
     }
 
     // 如果设置为默认地址，先将其他地址设为非默认
-    if (is_default === 1) {
+    if (isDefault === 1) {
       await (this.databaseService as any).user_address.updateMany({
         where: { user_id: userId },
         data: { is_default: 0 },
@@ -114,13 +114,13 @@ export class AddressService {
         consignee,
         mobile,
         telephone,
-        region_ids: region_ids.join(","),
-        region_names: region_names.join(","),
+        region_ids: regionIds.join(","),
+        region_names: regionNames.join(","),
         address,
         postcode,
         email,
-        address_tag,
-        is_default: is_default,
+        address_tag: addressTag,
+        is_default: isDefault,
       },
     });
 
@@ -142,13 +142,13 @@ export class AddressService {
       consignee,
       mobile,
       telephone,
-      region_ids,
-      region_names,
+      regionIds,
+      regionNames,
       address,
       postcode,
       email,
-      address_tag,
-      is_default = 0,
+      addressTag,
+      isDefault = 0,
     } = updateAddressDto;
 
     // 验证地址是否存在
@@ -166,12 +166,12 @@ export class AddressService {
     }
 
     // 验证地区ID和名称数量是否匹配
-    if (region_ids.length !== region_names.length) {
+    if (regionIds.length !== regionNames.length) {
       throw new BadRequestException("地区ID和名称数量不匹配");
     }
 
     // 如果设置为默认地址，先将其他地址设为非默认
-    if (is_default === 1 && existingAddress.is_default !== 1) {
+    if (isDefault === 1 && existingAddress.is_default !== 1) {
       await (this.databaseService as any).user_address.updateMany({
         where: { user_id: userId },
         data: { is_default: 0 },
@@ -187,13 +187,13 @@ export class AddressService {
         consignee,
         mobile,
         telephone,
-        region_ids: region_ids.join(","),
-        region_names: region_names.join(","),
+        region_ids: regionIds.join(","),
+        region_names: regionNames.join(","),
         address,
         postcode,
         email,
-        address_tag,
-        is_default: is_default,
+        address_tag: addressTag,
+        is_default: isDefault,
       },
     });
 
@@ -246,10 +246,10 @@ export class AddressService {
     const { id } = setDefaultAddressDto;
 
     // 验证地址是否存在
-    const existingAddress = await this.databaseService.userAddress.findFirst({
+    const existingAddress = await (this.databaseService as any).user_address.findFirst({
       where: {
-        id,
-        userId,
+        address_id: id,
+        user_id: userId,
       },
     });
 
@@ -258,7 +258,7 @@ export class AddressService {
     }
 
     // 如果已经是默认地址，直接返回
-    if (existingAddress.isDefault === 1) {
+    if (existingAddress.is_default === 1) {
       return {
         message: "设置成功",
       };
@@ -362,20 +362,34 @@ export class AddressService {
    * 格式化地址响应
    */
   private formatAddressResponse(address: any) {
+    const regionIds = address.region_ids
+      ? String(address.region_ids)
+          .split(",")
+          .map((id: string) => parseInt(id))
+          .filter((n: number) => Number.isFinite(n))
+      : [];
+    const regionNames = address.region_names
+      ? String(address.region_names).split(",")
+      : [];
+
+    const isDefault = Number(address.is_default ?? 0) === 1 ? 1 : 0;
+
     return {
       id: address.address_id,
       consignee: address.consignee,
       mobile: address.mobile,
       telephone: address.telephone,
-      region_ids: address.region_ids
-        ? address.region_ids.split(",").map((id: string) => parseInt(id))
-        : [],
-      region_names: address.region_names ? address.region_names.split(",") : [],
+      regionIds,
+      regionNames,
+      // 兼容老字段
+      region_names: regionNames,
       address: address.address,
       postcode: address.postcode,
       email: address.email,
+      addressTag: address.address_tag,
       address_tag: address.address_tag,
-      is_default: address.is_default === 1,
+      isDefault,
+      is_default: isDefault,
     };
   }
 }

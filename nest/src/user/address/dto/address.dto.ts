@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   IsNotEmpty,
   IsString,
@@ -7,10 +6,25 @@ import {
   IsEnum,
   IsEmail,
   IsArray,
-  ValidateNested,
 } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { Type, Transform } from "class-transformer";
+
+const normalizeArray = (input: unknown): unknown[] => {
+  if (Array.isArray(input)) {
+    return input;
+  }
+  if (typeof input === "string") {
+    return input
+      .split(/[\s,，,]+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  if (input == null) {
+    return [];
+  }
+  return [input];
+};
 
 export class CreateAddressDto {
   @ApiProperty({ description: "收件人姓名" })
@@ -28,17 +42,34 @@ export class CreateAddressDto {
   @IsString({ message: "固定电话格式不正确" })
   telephone?: string;
 
-  @ApiProperty({ description: "地区ID数组" })
+  @ApiProperty({ description: "地区ID数组（驼峰）" })
   @IsNotEmpty({ message: "地区ID不能为空" })
   @IsArray({ message: "地区ID必须为数组" })
   @IsInt({ each: true, message: "地区ID必须为整数" })
-  region_ids: number[];
+  @Transform(({ value, obj }) => {
+    const candidate =
+      value ?? obj?.regionIds ?? obj?.region_ids ?? obj?.ids ?? obj?.regionIdList;
+    return normalizeArray(candidate)
+      .map((item) => Number(String(item).trim()))
+      .filter((n) => Number.isInteger(n));
+  })
+  regionIds: number[];
 
-  @ApiProperty({ description: "地区名称数组" })
+  @ApiProperty({ description: "地区名称数组（驼峰）" })
   @IsNotEmpty({ message: "地区名称不能为空" })
   @IsArray({ message: "地区名称必须为数组" })
   @IsString({ each: true, message: "地区名称必须为字符串" })
-  region_names: string[];
+  @Transform(({ value, obj }) => {
+    const candidate =
+      value ??
+      obj?.regionNames ??
+      obj?.region_names ??
+      obj?.regionFullName ??
+      obj?.regionName ??
+      obj?.regionNameList;
+    return normalizeArray(candidate).map((item) => String(item));
+  })
+  regionNames: string[];
 
   @ApiProperty({ description: "详细地址" })
   @IsNotEmpty({ message: "详细地址不能为空" })
@@ -58,18 +89,31 @@ export class CreateAddressDto {
   @ApiProperty({ description: "地址标签", required: false })
   @IsOptional()
   @IsString({ message: "地址标签格式不正确" })
-  address_tag?: string;
+  @Transform(({ value, obj }) => {
+    const candidate = value ?? obj?.addressTag ?? obj?.address_tag ?? obj?.tag;
+    return candidate != null ? String(candidate) : undefined;
+  })
+  addressTag?: string;
 
-  @ApiProperty({ description: "是否为默认地址", required: false, default: 0 })
+  @ApiProperty({ description: "是否为默认地址（驼峰）", required: false, default: 0 })
   @IsOptional()
   @IsEnum({ 0: 0, 1: 1 }, { message: "是否为默认地址格式不正确" })
-  is_default?: 0 | 1 = 0;
+  @Transform(({ value, obj }) => {
+    const candidate = value ?? obj?.isDefault ?? obj?.is_default;
+    if (candidate === true) return 1;
+    if (candidate === false) return 0;
+    if (candidate === 0 || candidate === 1) return candidate as 0 | 1;
+    if (candidate === "0" || candidate === "1") return Number(candidate) as 0 | 1;
+    return 0;
+  })
+  isDefault?: 0 | 1 = 0;
 }
 
 export class UpdateAddressDto extends CreateAddressDto {
   @ApiProperty({ description: "地址ID" })
   @IsNotEmpty({ message: "地址ID不能为空" })
   @IsInt({ message: "地址ID必须为整数" })
+  @Type(() => Number)
   id: number;
 }
 

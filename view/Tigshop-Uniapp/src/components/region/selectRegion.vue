@@ -4,7 +4,6 @@
             <view class="popup-title">{{ $t("选择地区") }}</view>
             <view class="content">
                 <view class="region-menu">
-                    {{ regionNames.length }}
                     <view
                         v-for="(item, index) in regionNames"
                         :key="index"
