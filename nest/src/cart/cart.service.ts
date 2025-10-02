@@ -617,6 +617,28 @@ export class CartService {
     });
     const attrMap = buildAttributeMap(attrRecords);
 
+    const nowTimestamp = Math.floor(Date.now() / 1000);
+    const seckillItems = productIdSet.length
+      ? await this.prisma.seckill_item.findMany({
+          where: {
+            product_id: { in: productIdSet },
+            seckill_start_time: { lte: nowTimestamp },
+            seckill_end_time: { gte: nowTimestamp },
+          },
+          select: {
+            product_id: true,
+            sku_id: true,
+            seckill_stock: true,
+          },
+        })
+      : [];
+
+    const seckillStockMap = new Map<string, number>();
+    for (const item of seckillItems) {
+      const key = `${item.product_id ?? 0}:${item.sku_id ?? 0}`;
+      seckillStockMap.set(key, toPlainNumber(item.seckill_stock ?? 0));
+    }
+
     const groupedByShop = new Map<number, CartShopGroup>();
     const totalAccumulator = {
       productAmount: 0,
@@ -752,10 +774,35 @@ export class CartService {
         extraSkuAllData: attrGrouping ?? createEmptyAttrGroup(),
       };
 
-    cartItem.hasSku = !!sku;
-      cartItem.stock = sku?.sku_stock ?? product?.product_stock ?? 0;
-      cartItem.isDisabled = cartItem.stock === 0 || cartItem.productStatus === 0;
+      cartItem.hasSku = !!sku;
+
+      const seckillKeyExact = `${row.product_id}:${row.sku_id ?? 0}`;
+      const seckillKeyFallback = `${row.product_id}:0`;
+      const shouldConsiderSeckill = row.type === DEFAULT_CART_TYPE;
+      let effectiveStock: number | undefined;
+
+      if (shouldConsiderSeckill) {
+        const seckillStock =
+          seckillStockMap.get(seckillKeyExact) ?? seckillStockMap.get(seckillKeyFallback);
+        if (typeof seckillStock === "number") {
+          effectiveStock = seckillStock;
+        }
+      }
+
+      if (effectiveStock === undefined) {
+        effectiveStock = toPlainNumber(
+          cartItem.hasSku ? sku?.sku_stock ?? product?.product_stock ?? 0 : product?.product_stock ?? 0,
+        );
+      }
+
+      cartItem.stock = effectiveStock;
       cartItem.extraSkuAllData = attrGrouping;
+
+      if (cartItem.hasSku && !cartItem.skuId) {
+        cartItem.stock = 0;
+      }
+
+      cartItem.isDisabled = cartItem.stock <= 0 || cartItem.productStatus === 0;
 
       if (cartItem.isDisabled && cartItem.isChecked) {
         cartItem.isChecked = false;

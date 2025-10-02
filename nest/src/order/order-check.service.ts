@@ -117,11 +117,35 @@ export class OrderCheckService {
    * 获取可用支付方式
    */
   async getAvailablePaymentType() {
+    const offlineConfig = await this.prisma.config.findFirst({
+      where: {
+        biz_code: "useOffline",
+        OR: [{ is_del: 0 }, { is_del: null }],
+      },
+      select: {
+        biz_val: true,
+      },
+    });
+
+    const useOffline = offlineConfig
+      ? Number(offlineConfig.biz_val ?? 0) === 1
+      : true;
+
     return [
-      { id: "wechat", name: "微信支付", status: 1 },
-      { id: "alipay", name: "支付宝", status: 1 },
-      { id: "balance", name: "余额支付", status: 1 },
-      { id: "offline", name: "线下支付", status: 0 },
+      {
+        typeId: 1,
+        typeName: "在线支付",
+        disabled: false,
+        disabledDesc: "",
+        isShow: true,
+      },
+      {
+        typeId: 3,
+        typeName: "线下支付",
+        disabled: false,
+        disabledDesc: "",
+        isShow: useOffline,
+      },
     ];
   }
 
@@ -129,20 +153,71 @@ export class OrderCheckService {
    * 获取店铺配送方式
    */
   async getStoreShippingType(flowType?: number) {
-    return [
+    const shippingTypeParam = Array.isArray(this.checkoutParams?.shipping_type)
+      ? this.checkoutParams.shipping_type
+      : [];
+
+    const grouped = new Map<number, { shippingTypeId: number; shippingTypeName: string }>();
+
+    for (const entry of shippingTypeParam) {
+      const shopId = Number(
+        entry?.shopId ?? entry?.shop_id ?? entry?.storeId ?? entry?.store_id ?? 0,
+      );
+
+      const shippingTypeId = Number(
+        entry?.shippingTypeId ??
+          entry?.shipping_type_id ??
+          entry?.shipping_type ??
+          entry?.id ??
+          1,
+      );
+
+      const shippingTypeName =
+        entry?.shippingTypeName ??
+        entry?.shipping_type_name ??
+        entry?.name ??
+        "普通快递";
+
+      if (!Number.isFinite(shopId)) {
+        continue;
+      }
+
+      grouped.set(shopId, {
+        shippingTypeId: Number.isFinite(shippingTypeId) ? shippingTypeId : 1,
+        shippingTypeName,
+      });
+    }
+
+    if (grouped.size === 0) {
+      grouped.set(0, { shippingTypeId: 1, shippingTypeName: "普通快递" });
+
+      const hintedShopId = Number(
+        this.checkoutParams?.shopId ??
+          this.checkoutParams?.shop_id ??
+          this.checkoutParams?.storeId ??
+          this.checkoutParams?.store_id ??
+          1,
+      );
+
+      if (Number.isFinite(hintedShopId) && !grouped.has(hintedShopId)) {
+        grouped.set(hintedShopId, {
+          shippingTypeId: 1,
+          shippingTypeName: "普通快递",
+        });
+      }
+    }
+
+    const sorted = Array.from(grouped.entries()).sort(
+      ([a], [b]) => Number(a) - Number(b),
+    );
+
+    return sorted.map(([shopId, info]) => [
       {
-        shop_id: 1,
-        shipping_list: [
-          {
-            id: "express",
-            name: "快递配送",
-            price: 10,
-            description: "全国配送",
-          },
-          { id: "pickup", name: "到店自提", price: 0, description: "到店自提" },
-        ],
+        shippingTypeId: info.shippingTypeId,
+        shopId,
+        shippingTypeName: info.shippingTypeName,
       },
-    ];
+    ]);
   }
 
   /**
@@ -322,29 +397,30 @@ export class OrderCheckService {
           .filter((num: number) => Number.isFinite(num))
       : [];
     const regionNames = address.region_names
-      ? String(address.region_names).split(",")
+      ? String(address.region_names)
+          .split(",")
+          .map((part: string) => part.trim())
+          .filter((part: string) => part.length > 0)
       : [];
 
     const isDefault = Number(address.is_default ?? 0) === 1 ? 1 : 0;
     const isSelected = Number(address.is_selected ?? 0) === 1 ? 1 : 0;
 
     return {
-      id: address.address_id,
+      regionName: regionNames.filter((name) => !!name).join(" ").trim(),
+      addressId: address.address_id,
+      userId: address.user_id,
       consignee: address.consignee,
-      mobile: address.mobile,
-      telephone: address.telephone,
-      regionIds,
+      email: address.email ?? "",
       regionNames,
-      region_names: regionNames,
+      regionIds,
       address: address.address,
-      postcode: address.postcode,
-      email: address.email,
-      addressTag: address.address_tag,
-      address_tag: address.address_tag,
-      isDefault,
-      is_default: isDefault,
+      telephone: address.telephone ?? "",
+      mobile: address.mobile,
       isSelected,
-      is_selected: isSelected,
+      isDefault,
+      addressTag: address.address_tag ?? "",
+      postcode: address.postcode ?? "",
     };
   }
 }

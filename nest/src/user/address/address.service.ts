@@ -69,9 +69,7 @@ export class AddressService {
       throw new NotFoundException("地址不存在");
     }
 
-    return {
-      address: this.formatAddressResponse(address),
-    };
+    return this.formatAddressResponse(address)
   }
 
   /**
@@ -385,24 +383,23 @@ export class AddressService {
     const isDefault = Number(address.is_default ?? 0) === 1 ? 1 : 0;
     const isSelected = Number(address.is_selected ?? 0) === 1 ? 1 : 0;
 
+    const regionName = regionNames.filter((name) => !!name).join(" ").trim();
+
     return {
-      id: address.address_id,
+      regionName,
+      addressId: address.address_id,
+      userId: address.user_id,
       consignee: address.consignee,
       mobile: address.mobile,
-      telephone: address.telephone,
+      telephone: address.telephone ?? "",
       regionIds,
       regionNames,
-      // 兼容老字段
-      region_names: regionNames,
       address: address.address,
-      postcode: address.postcode,
-      email: address.email,
-      addressTag: address.address_tag,
-      address_tag: address.address_tag,
+      postcode: address.postcode ?? "",
+      email: address.email ?? "",
+      addressTag: address.address_tag ?? "",
       isDefault,
-      is_default: isDefault,
       isSelected,
-      is_selected: isSelected,
     };
   }
 }
