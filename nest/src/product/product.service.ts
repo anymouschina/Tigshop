@@ -8,7 +8,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { ProductQueryDto } from "./dto/product-query.dto";
-import { camelCase } from "src/common/utils/camel-case.util";
+import { Decimal } from "@prisma/client/runtime/library";
 
 @Injectable()
 export class ProductService {
@@ -101,6 +101,14 @@ export class ProductService {
       is_delete: 0,
     };
 
+    if (queryDto.productId) {
+      where.product_id = Number(queryDto.productId);
+    }
+
+    if (queryDto.shopId !== undefined && queryDto.shopId > -1) {
+      where.shop_id = Number(queryDto.shopId);
+    }
+
     if (keyword) {
       where.OR = [
         { product_name: { contains: keyword } },
@@ -123,19 +131,32 @@ export class ProductService {
     }
 
     if (isBest !== undefined) {
-      where.isBest = isBest;
+      where.is_best = isBest ? 1 : 0;
     }
 
     if (isNew !== undefined) {
-      where.isNew = isNew;
+      where.is_new = isNew ? 1 : 0;
     }
 
     if (isHot !== undefined) {
-      where.isHot = isHot;
+      where.is_hot = isHot ? 1 : 0;
     }
 
     if (isRecommend !== undefined) {
-      where.isRecommend = isRecommend;
+      where.is_recommend = isRecommend ? 1 : 0;
+    }
+
+    if (introType) {
+      const introMap: Record<string, string> = {
+        best: "is_best",
+        new: "is_new",
+        hot: "is_hot",
+        recommend: "is_recommend",
+      };
+      const targetKey = introMap[introType];
+      if (targetKey) {
+        where[targetKey] = 1;
+      }
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
@@ -148,51 +169,9 @@ export class ProductService {
       }
     }
 
-    // 处理ids参数 - 与PHP版本保持一致
-    const orderBy: any = { [sortField]: sortOrder };
-    if (ids !== undefined && ids !== null && ids !== "") {
-      // 统一归一成数字ID数组
-      const toNumberArray = (val: any): number[] => {
-        if (val == null) return [];
-        if (Array.isArray(val)) {
-          return val
-            .map((x) => Number(String(x).trim()))
-            .filter((n) => !Number.isNaN(n));
-        }
-        if (typeof val === "number") return Number.isNaN(val) ? [] : [val];
-        if (typeof val === "string") {
-          // 直接以逗号分隔
-          return val
-            .split(",")
-            .map((x) => Number(x.trim()))
-            .filter((n) => !Number.isNaN(n));
-        }
-        if (typeof val === "object") {
-          // 兼容 { data: "1,2,3" }
-          if (val.data) return toNumberArray(val.data);
-          // 兼容纯数组对象
-          if (Array.isArray(val)) return toNumberArray(val);
-        }
-        return [];
-      };
-
-      let productIdArray: number[] = [];
-      // 先尝试JSON解析字符串
-      if (typeof ids === "string") {
-        try {
-          const parsed = JSON.parse(ids);
-          productIdArray = toNumberArray(parsed);
-        } catch (_) {
-          productIdArray = toNumberArray(ids);
-        }
-      } else {
-        productIdArray = toNumberArray(ids);
-      }
-
-      if (productIdArray.length > 0) {
-        where.product_id = { in: productIdArray };
-        // 提示：如果需要按传入顺序排序，需在取回后手动排序。
-      }
+    const normalizedIds = this.normalizeIds(ids);
+    if (normalizedIds.length > 0) {
+      where.product_id = { in: normalizedIds };
     }
 
     // 确保排序字段使用正确的数据库字段名
@@ -222,11 +201,14 @@ export class ProductService {
       this.prisma.product.count({ where }),
     ]);
 
-    return camelCase({
-      records: products,
+    const records = await this.buildProductListResponse(products, normalizedIds);
+    const waitingCheckedCount = await this.getWaitingCheckedCount(queryDto);
+
+    return {
+      records,
       total,
-      waitingCheckedCount: 0,
-    });
+      waiting_checked_count: waitingCheckedCount,
+    };
   }
 
   /**
@@ -396,4 +378,195 @@ export class ProductService {
       inactive,
     };
   }
+
+  private normalizeIds(val: any): number[] {
+    const toNumberArray = (input: any): number[] => {
+      if (input == null) return [];
+      if (Array.isArray(input)) {
+        return input
+          .map((x) => Number(String(x).trim()))
+          .filter((n) => Number.isFinite(n));
+      }
+      if (typeof input === "number") {
+        return Number.isFinite(input) ? [input] : [];
+      }
+      if (typeof input === "string") {
+        if (!input) return [];
+        return input
+          .split(",")
+          .map((x) => Number(x.trim()))
+          .filter((n) => Number.isFinite(n));
+      }
+      if (typeof input === "object") {
+        if (input.data !== undefined) return toNumberArray(input.data);
+        if (Array.isArray(input)) return toNumberArray(input);
+      }
+      return [];
+    };
+
+    if (typeof val === "string") {
+      try {
+        const parsed = JSON.parse(val);
+        return toNumberArray(parsed);
+      } catch (_) {
+        return toNumberArray(val);
+      }
+    }
+    return toNumberArray(val);
+  }
+
+  private async buildProductListResponse(products: any[], normalizedIds: number[]) {
+    if (!products || products.length === 0) {
+      return [];
+    }
+
+    const productIds = products.map((item) => item.product_id);
+    const shopIds = Array.from(
+      new Set(
+        products
+          .map((item) => Number(item.shop_id ?? 0))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    );
+    const now = Math.floor(Date.now() / 1000);
+
+    const [skuRows, seckillRows, shops] = await Promise.all([
+      this.prisma.product_sku.findMany({
+        where: { product_id: { in: productIds } },
+        orderBy: { sku_id: "asc" },
+      }),
+      this.prisma.seckill_item.findMany({
+        where: {
+          product_id: { in: productIds },
+          seckill_start_time: { lte: now },
+          seckill_end_time: { gte: now },
+        },
+      }),
+      shopIds.length > 0
+        ? this.prisma.shop.findMany({
+            where: { shop_id: { in: shopIds } },
+            select: { shop_id: true, shop_title: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const skuMap = new Map<number, any[]>();
+    for (const sku of skuRows) {
+      const pid = sku.product_id;
+      if (!skuMap.has(pid)) {
+        skuMap.set(pid, []);
+      }
+      skuMap.get(pid)?.push({
+        ...sku,
+        sku_price: sku.sku_price instanceof Decimal ? Number(sku.sku_price.toString()) : Number(sku.sku_price ?? 0),
+        sku_stock: Number(sku.sku_stock ?? 0),
+      });
+    }
+
+    const firstSkuMap = new Map<number, any>();
+    for (const [pid, list] of skuMap.entries()) {
+      if (list.length > 0) {
+        firstSkuMap.set(pid, list[0]);
+      }
+    }
+
+    const seckillMap = new Map<number, { price: number; endTime: number | string }>();
+    for (const row of seckillRows) {
+      const pid = Number(row.product_id ?? 0);
+      if (!pid) continue;
+      const price = row.seckill_price instanceof Decimal ? Number(row.seckill_price.toString()) : Number(row.seckill_price ?? 0);
+      const endTime = row.seckill_end_time ?? "";
+      if (!seckillMap.has(pid) || price < seckillMap.get(pid)!.price) {
+        seckillMap.set(pid, { price, endTime });
+      }
+    }
+
+    const shopMap = new Map<number, { shop_id: number; shop_title: string | null }>();
+    for (const shop of shops as any[]) {
+      shopMap.set(Number(shop.shop_id), {
+        shop_id: Number(shop.shop_id),
+        shop_title: shop.shop_title ?? "",
+      });
+    }
+
+    const records = products.map((product) => {
+      const plain: any = { ...product };
+      if (plain.product_type !== null && plain.product_type !== undefined) {
+        plain.product_type = plain.product_type ? 1 : 0;
+      }
+      if (plain.is_promote_activity !== null && plain.is_promote_activity !== undefined) {
+        plain.is_promote_activity = plain.is_promote_activity ? 1 : 0;
+      }
+
+      const productId = Number(product.product_id);
+      const basePrice = this.toNumber(product.product_price);
+      const baseMarketPrice = this.toNumber(product.market_price);
+      let price = basePrice;
+      let marketPrice = baseMarketPrice;
+      let isSeckill = 0;
+      let seckillEnd = "";
+
+      const seckill = seckillMap.get(productId);
+      if (seckill && seckill.price > 0) {
+        plain.org_product_price = basePrice;
+        price = seckill.price;
+        marketPrice = basePrice;
+        isSeckill = 1;
+        seckillEnd = seckill.endTime ? Number(seckill.endTime) || seckill.endTime : "";
+      } else {
+        const sku = firstSkuMap.get(productId);
+        const skuPrice = sku ? Number(sku.sku_price ?? 0) : 0;
+        if (skuPrice > 0) {
+          price = skuPrice;
+        }
+      }
+
+      plain.price = price;
+      plain.product_price = price;
+      plain.market_price = marketPrice;
+      plain.is_seckill = isSeckill;
+      plain.seckill_end_time = seckillEnd || "";
+      plain.product_sku = skuMap.get(productId) ?? [];
+      plain.shop = shopMap.get(Number(product.shop_id ?? 0)) ?? null;
+
+      return plain;
+    });
+
+    if (normalizedIds.length > 0) {
+      const recordMap = new Map(records.map((item) => [Number(item.product_id), item]));
+      const idSet = new Set(normalizedIds);
+      const ordered: any[] = [];
+      for (const id of normalizedIds) {
+        const record = recordMap.get(id);
+        if (record) {
+          ordered.push(record);
+        }
+      }
+      for (const record of records) {
+        const pid = Number(record.product_id);
+        if (!idSet.has(pid)) {
+          ordered.push(record);
+        }
+      }
+      return ordered;
+    }
+
+    return records;
+  }
+
+  private toNumber(val: any): number {
+    if (val == null) return 0;
+    if (val instanceof Decimal) {
+      return Number(val.toString());
+    }
+    if (typeof val === "string") {
+      const num = Number(val);
+      return Number.isFinite(num) ? num : 0;
+    }
+    if (typeof val === "number") {
+      return val;
+    }
+    return Number(val) || 0;
+  }
+
 }
