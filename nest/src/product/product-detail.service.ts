@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
+import { toMoneyString, toWeightString, toDateTime } from "src/common/utils/format";
 
 @Injectable()
 export class ProductDetailService {
@@ -33,6 +34,7 @@ export class ProductDetailService {
       serviceList,
       checkedValue,
       consultationTotal,
+      eCardGroup,
     ] = await Promise.all([
       this.getProductDescArr(product.product_desc),
       this.getSkuList(productId),
@@ -44,6 +46,7 @@ export class ProductDetailService {
       this.getServiceList(productId),
       this.getSelectValue(null),
       this.getConsultationCount(productId),
+      this.getECardGroup(product.card_group_id ?? 0),
     ]);
 
     // 对齐PHP版本与前端期望的响应数据结构（item 使用 camelCase）
@@ -55,8 +58,8 @@ export class ProductDetailService {
         productSn: product.product_sn,
         productTsn: product.product_tsn ?? "0",
         productDesc: product.product_desc ?? "",
-        productPrice: this.toMoneyString(product.product_price),
-        marketPrice: this.toMoneyString(product.market_price),
+  productPrice: toMoneyString(product.product_price),
+  marketPrice: toMoneyString(product.market_price),
         productStock: product.product_stock ?? 0,
         productStatus: product.product_status ?? 1,
         productType: this.toNumberFlag(product.product_type, 1),
@@ -68,12 +71,12 @@ export class ProductDetailService {
         checkStatus: product.check_status ?? 1,
         checkReason: product.check_reason ?? "",
         clickCount: product.click_count ?? 0,
-        productWeight: this.toWeightString(product.product_weight),
+  productWeight: toWeightString(product.product_weight),
         isPromote: product.is_promote ?? 0,
         isPromoteActivity: product.is_promote_activity ? 1 : 0,
-        promotePrice: this.toMoneyString(product.promote_price),
-        promoteStartDate: this.toDateTime(product.promote_start_date),
-        promoteEndDate: this.toDateTime(product.promote_end_date),
+  promotePrice: toMoneyString(product.promote_price),
+  promoteStartDate: toDateTime(product.promote_start_date),
+  promoteEndDate: toDateTime(product.promote_end_date),
         seckillMaxNum: product.seckill_max_num ?? 0,
         productBrief: product.product_brief ?? "",
         shippingTplId: product.shipping_tpl_id ?? 0,
@@ -103,23 +106,24 @@ export class ProductDetailService {
         isSupportReturn: product.is_support_return ?? 0,
         isSupportCod: product.is_support_cod ?? 1,
         productVideo: product.product_video ?? "",
-        prepayPrice: this.toMoneyString(product.prepay_price ?? 0),
+  prepayPrice: toMoneyString(product.prepay_price ?? 0),
         cardGroupId: product.card_group_id ?? 0,
         virtualSample: product.virtual_sample ?? "",
         paidContent: product.paid_content ?? "",
         noShipping: product.no_shipping ?? 0,
         fixedShippingType: product.fixed_shipping_type ?? 2,
-        fixedShippingFee: this.toMoneyString(product.fixed_shipping_fee ?? 0),
+  fixedShippingFee: toMoneyString(product.fixed_shipping_fee ?? 0),
         vendorProductId: product.vendor_product_id ?? null,
         vendorId: product.vendor_id ?? null,
         // 兼容前端使用的扩展字段
         isBuy: 1,
-        isSeckill: 0,
+        // 按秒杀详情的状态设置：有进行中(status=1)的活动则为 1
+        isSeckill: Array.isArray(seckillDetail) && seckillDetail.some((s:any) => s?.status === 1) ? 1 : 0,
         shopPickupTplId: null,
         isShopPickup: 0,
         isLogistics: 1,
         isShopDelivery: 0,
-        eCardGroup: null,
+        eCardGroup: eCardGroup,
       },
       // 商品描述数组 - 对齐PHP的descArr字段
       descArr,
@@ -144,55 +148,12 @@ export class ProductDetailService {
     };
   }
 
-  // 将 Decimal/number 转换为金额字符串，保留两位小数
-  private toMoneyString(value: any): string {
-    try {
-      if (value === null || value === undefined) return "0.00";
-      const num = typeof value === "string" ? Number(value) : Number(value?.toString?.() ?? value);
-      if (Number.isNaN(num)) return "0.00";
-      return num.toFixed(2);
-    } catch {
-      return "0.00";
-    }
-  }
-
-  // 将 Decimal/number 转换为重量字符串，保留三位小数
-  private toWeightString(value: any): string {
-    try {
-      if (value === null || value === undefined) return "0.000";
-      const num = typeof value === "string" ? Number(value) : Number(value?.toString?.() ?? value);
-      if (Number.isNaN(num)) return "0.000";
-      return num.toFixed(3);
-    } catch {
-      return "0.000";
-    }
-  }
-
   // 将布尔/可选字段转为数值标记，默认 defaultVal
   private toNumberFlag(val: any, defaultVal = 0): number {
     if (val === null || val === undefined) return defaultVal;
     if (typeof val === "boolean") return val ? 1 : 0;
     const n = Number(val);
     return Number.isNaN(n) ? defaultVal : n;
-  }
-
-  // 将Unix秒时间戳转为 "YYYY-MM-DD HH:mm:ss" 字符串
-  private toDateTime(ts: any): string {
-    try {
-      const n = Number(ts);
-      if (!n) return "";
-      const d = new Date(n * 1000);
-      const pad = (x: number) => (x < 10 ? `0${x}` : `${x}`);
-      const yyyy = d.getFullYear();
-      const MM = pad(d.getMonth() + 1);
-      const dd = pad(d.getDate());
-      const hh = pad(d.getHours());
-      const mm = pad(d.getMinutes());
-      const ss = pad(d.getSeconds());
-      return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
-    } catch {
-      return "";
-    }
   }
 
   /**
@@ -348,7 +309,7 @@ export class ProductDetailService {
           attrName: attr.attr_name,
           attrValue: attr.attr_value,
           // 按两位小数的字符串返回
-          attrPrice: this.toMoneyString(attr.attr_price ?? 0),
+          attrPrice: toMoneyString(attr.attr_price ?? 0),
           attrColor: attr.attr_color,
           attrPic: attr.attr_pic,
           attrPicThumb: attr.attr_pic_thumb,
@@ -515,8 +476,43 @@ export class ProductDetailService {
    * @returns 服务列表
    */
   async getServiceList(productId: number): Promise<any[]> {
-    // 暂时返回空数组，后续可以实现服务功能
-    return [];
+    try {
+      // 读取商品的服务ID串
+      const product = await this.prisma.product.findFirst({
+        where: { product_id: productId },
+        select: { product_service_ids: true },
+      });
+      const idsStr = (product?.product_service_ids || "").trim();
+      if (!idsStr) return [];
+      const ids = idsStr
+        .split(/[ ,]+/)
+        .map((s) => Number(s))
+        .filter((n) => Number.isFinite(n) && n > 0);
+      if (ids.length === 0) return [];
+
+      const rows = await this.prisma.product_services.findMany({
+        where: { product_service_id: { in: ids } },
+        select: {
+          product_service_id: true,
+          product_service_name: true,
+          product_service_desc: true,
+          ico_img: true,
+          sort_order: true,
+        },
+        orderBy: { sort_order: "asc" },
+      });
+
+      // 返回与 admin 端一致的结构字段，便于前后端复用
+      return rows.map((r: any) => ({
+        productServiceId: r.product_service_id,
+        productServiceName: r.product_service_name,
+        productServiceDesc: r.product_service_desc,
+        icoImg: r.ico_img || "",
+        sortOrder: r.sort_order ?? 0,
+      }));
+    } catch (e) {
+      return [];
+    }
   }
 
   /**
@@ -537,5 +533,28 @@ export class ProductDetailService {
   async getConsultationCount(productId: number): Promise<number> {
     // 暂时返回0，后续可以实现咨询功能
     return 0;
+  }
+
+  /**
+   * 获取电子卡券组信息
+   * @param cardGroupId 组ID
+   */
+  private async getECardGroup(cardGroupId: number): Promise<any | null> {
+    try {
+      const id = Number(cardGroupId);
+      if (!Number.isFinite(id) || id <= 0) return null;
+      const g = await this.prisma.e_card_group.findFirst({
+        where: { group_id: id },
+        select: { group_id: true, group_name: true, is_use: true },
+      });
+      if (!g) return null;
+      return {
+        groupId: g.group_id,
+        groupName: g.group_name,
+        isUse: g.is_use,
+      };
+    } catch (_) {
+      return null;
+    }
   }
 }

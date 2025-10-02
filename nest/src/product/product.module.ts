@@ -30,6 +30,7 @@ import { ProductAttributesTplModule } from "./product-attributes-tpl/product-att
 import { PanelModule } from "src/panel/panel.module";
 import { AdminProductBatchCompatService } from "./admin-product-batch-compat.service";
 import { ProductServicesModule } from "./product-services/product-services.module";
+import { ProductPricingService } from "./pricing/product-pricing.service";
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { ProductServicesModule } from "./product-services/product-services.modul
   providers: [
     ProductService,
     ProductDetailService,
+    ProductPricingService,
     CategoryService,
     BrandService,
     ProductGroupCompatService,
@@ -72,6 +74,7 @@ import { ProductServicesModule } from "./product-services/product-services.modul
   exports: [
     ProductService,
     ProductDetailService,
+    ProductPricingService,
     CategoryService,
     BrandService,
   ],

@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { ProductService } from "./product.service";
 import { PrismaService } from "src/prisma/prisma.service";
+import { toMoneyString } from "src/common/utils/format";
 
 @ApiTags("Admin API - 商品管理")
 @Controller("adminapi/product/product")
@@ -21,17 +22,8 @@ export class AdminApiProductController {
   async getList(@Query() query: any) {
     const result = await this.productService.findAll(query);
 
-    // 金额转两位小数字符串
-    const toMoney = (val: any): string => {
-      if (val == null) return "0.00";
-      try {
-        const str = typeof val === "object" && typeof val.toString === "function" ? val.toString() : String(val);
-        const n = Number(str);
-        return Number.isFinite(n) ? n.toFixed(2) : (str.includes(".") ? str : `${str}.00`);
-      } catch {
-        return "0.00";
-      }
-    };
+    // 金额格式化使用统一工具
+    const toMoney = toMoneyString;
 
     const baseRecords = Array.isArray(result.records) ? result.records : [];
     const productIds: number[] = baseRecords.map((r: any) => Number(r.productId || r.product_id)).filter((n) => Number.isFinite(n));
@@ -72,7 +64,7 @@ export class AdminApiProductController {
         skuSn: (row as any).sku_sn || "",
         skuStock: Number((row as any).sku_stock ?? 0),
         skuTsn: (row as any).sku_tsn || "",
-        skuPrice: toMoney((row as any).sku_price ?? 0),
+  skuPrice: toMoney((row as any).sku_price ?? 0),
         marketPrice: "0.00",
         costPrice: "0.00",
         vendorProductSkuId: (row as any).vendor_product_sku_id ?? null,
@@ -136,7 +128,7 @@ export class AdminApiProductController {
         categoryId: rec.categoryId ?? rec.category_id ?? p?.category_id ?? 0,
         brandId: rec.brandId ?? rec.brand_id ?? p?.brand_id ?? 0,
         productTsn: rec.productTsn ?? rec.product_tsn ?? p?.product_tsn ?? null,
-        marketPrice: toMoney(p?.market_price ?? rec.marketPrice ?? rec.market_price ?? 0),
+  marketPrice: toMoney(p?.market_price ?? rec.marketPrice ?? rec.market_price ?? 0),
         virtualSales: rec.virtualSales ?? rec.virtual_sales ?? 0,
         shippingTplId: p?.shipping_tpl_id ?? rec.shippingTplId ?? rec.shipping_tpl_id ?? 0,
         freeShipping: p?.free_shipping ?? rec.freeShipping ?? rec.free_shipping ?? 0,
@@ -150,14 +142,14 @@ export class AdminApiProductController {
         suppliersId: rec.suppliersId ?? rec.suppliers_id ?? p?.suppliers_id ?? null,
         productType: (rec.productType ?? rec.product_type ?? p?.product_type) ? 1 : 0,
         productSn: rec.productSn ?? rec.product_sn ?? p?.product_sn ?? "",
-        productPrice: toMoney(p?.product_price ?? rec.productPrice ?? rec.product_price ?? 0),
+  productPrice: toMoney(p?.product_price ?? rec.productPrice ?? rec.product_price ?? 0),
         productStatus: rec.productStatus ?? rec.product_status ?? p?.product_status ?? 1,
         isBest: rec.isBest ?? rec.is_best ?? p?.is_best ?? 0,
         isNew: rec.isNew ?? rec.is_new ?? p?.is_new ?? 0,
         isHot: rec.isHot ?? rec.is_hot ?? p?.is_hot ?? 0,
         productStock: rec.productStock ?? rec.product_stock ?? p?.product_stock ?? 0,
         sortOrder: rec.sortOrder ?? rec.sort_order ?? p?.sort_order ?? 100,
-        price: toMoney(p?.product_price ?? rec.productPrice ?? rec.product_price ?? 0),
+  price: toMoney(p?.product_price ?? rec.productPrice ?? rec.product_price ?? 0),
         isSeckill: 0,
         seckillEndTime: "",
         productSku: skuByPid.get(productId) || [],
