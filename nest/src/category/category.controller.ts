@@ -5,7 +5,7 @@ import { CategoryService, CategoryTreeNode } from "./category.service";
 import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Product Category")
-@Controller("api/category")
+@Controller("api")
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
@@ -38,7 +38,18 @@ export class CategoryController {
   @Public()
   @ApiOperation({ summary: "获取所有分类" })
   async all(): Promise<CategoryTreeNode[]> {
-    return this.categoryService.getAllCategories();
+    const data = await this.categoryService.getAllCategories();
+    const toCamel = (nodes: CategoryTreeNode[]): any[] =>
+      (nodes || []).map((n) => ({
+        categoryId: n.category_id,
+        categoryName: n.category_name,
+        parentId: n.parent_id,
+        categoryPic: n.category_pic || "",
+        ...(n.children && n.children.length
+          ? { children: toCamel(n.children) }
+          : {}),
+      }));
+    return toCamel(data);
   }
 
   /**

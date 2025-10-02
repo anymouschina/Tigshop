@@ -43,6 +43,7 @@ export class ProductController {
    * 获取商品详情 - 对齐PHP版本 product/product/detail
    */
   @Get("detail")
+  @Public()
   @ApiOperation({ summary: "获取商品详情" })
   async getProductDetail(@Query() query: { id: number }) {
     const productId = Number(query.id);
@@ -128,18 +129,56 @@ export class ProductController {
    * 获取SKU库存信息 - 对齐PHP版本 product/product/getProductAvailability
    */
   @Get("getProductAvailability")
+  @Public()
   @ApiOperation({ summary: "获取SKU库存信息" })
   async getProductAvailability(
-    @Query() query: { productId: number; skuId?: string },
+    @Query()
+    query: {
+      id: number | string; // productId
+      skuId?: number | string | null;
+      extraAttrIds?: string;
+    },
   ) {
-    // 简化实现，返回库存信息
+    const productId = Number(query.id);
+    const skuIdNum = query.skuId ? Number(query.skuId) : null;
+    // 默认返回结构
+    let stock = 0;
+    let price = 0;
+    let originPrice = 0;
+    try {
+      const prisma = (this.productDetailService as any).prisma;
+      const product = await prisma.product.findFirst({
+        where: { product_id: productId },
+        select: {
+          product_price: true,
+          market_price: true,
+          product_stock: true,
+        },
+      });
+      if (skuIdNum) {
+        const sku = await prisma.product_sku.findFirst({
+          where: { product_id: productId, sku_id: skuIdNum },
+          select: { sku_stock: true, sku_price: true },
+        });
+        stock = Number(sku?.sku_stock ?? 0);
+        price = Number((sku?.sku_price ?? 0).toString());
+      } else {
+        stock = Number(product?.product_stock ?? 0);
+        price = Number((product?.product_price ?? 0).toString());
+      }
+      originPrice = Number((product?.market_price ?? 0).toString());
+    } catch (_) {}
+
     return {
-      productId: query.productId,
-      skuId: query.skuId,
-      stock: 100,
-      price: 99.99,
-      originalPrice: 129.99,
-      isAvailable: true,
+      productId,
+      skuId: skuIdNum,
+      stock,
+      price: Number.isFinite(price) ? price.toFixed(2) : "0.00",
+      originPrice: Number.isFinite(originPrice)
+        ? originPrice.toFixed(2)
+        : "0.00",
+      isAvailable: stock > 0,
+      promotion: [],
     };
   }
 
@@ -163,20 +202,36 @@ export class ProductController {
    * 获取商品价格 - 对齐PHP版本 product/product/getProductAmount
    */
   @Post("getProductAmount")
+  @Public()
   @ApiOperation({ summary: "获取商品价格" })
   async getProductAmount(
-    @Body() data: { productId: number; quantity?: number; skuId?: string },
+    @Body()
+    body: {
+      id: number; // productId
+      skuItem: { skuId: number | string; num: number }[];
+    },
   ) {
-    const product = await this.productService.findById(data.productId);
-    const quantity = data.quantity || 1;
-
+    const prisma = (this.productDetailService as any).prisma;
+    const items = Array.isArray(body?.skuItem) ? body.skuItem : [];
+    let count = 0;
+    let total = 0;
+    for (const it of items) {
+      const skuId = Number(it.skuId);
+      const num = Number(it.num) || 0;
+      count += num;
+      if (!Number.isFinite(skuId) || skuId <= 0 || num <= 0) continue;
+      try {
+        const sku = await prisma.product_sku.findFirst({
+          where: { product_id: Number(body.id), sku_id: skuId },
+          select: { sku_price: true },
+        });
+        const price = Number((sku?.sku_price ?? 0).toString());
+        total += price * num;
+      } catch (_) {}
+    }
     return {
-      productId: data.productId,
-      quantity,
-      unitPrice: product.productPrice,
-      totalPrice: Number(product.productPrice) * quantity,
-      discountAmount: 0,
-      finalPrice: Number(product.productPrice) * quantity,
+      count,
+      total: Number.isFinite(total) ? total.toFixed(2) : "0.00",
     };
   }
 
@@ -184,30 +239,33 @@ export class ProductController {
    * 批量获取库存 - 对齐PHP版本 product/product/getBatchProductAvailability
    */
   @Get("getBatchProductAvailability")
+  @Public()
   @ApiOperation({ summary: "批量获取库存" })
-  async getBatchProductAvailability(@Query() query: { productIds: string }) {
-    const productIds = query.productIds.split(",").map((id) => parseInt(id));
-    const results = await Promise.all(
-      productIds.map(async (id) => {
-        try {
-          const product = await this.productService.findById(id);
-          return {
-            productId: id,
-            stock: product.productStock || 0,
-            isAvailable:
-              product.productStatus === 1 && (product.productStock || 0) > 0,
-          };
-        } catch {
-          return {
-            productId: id,
-            stock: 0,
-            isAvailable: false,
-          };
-        }
-      }),
-    );
-
-    return { results };
+  async getBatchProductAvailability(@Query() query: { skuIds: string }) {
+    // 前端传入 skuIds (逗号分隔)，需要返回形如 { [skuId]: { price, stock } }
+    const prisma = (this.productDetailService as any).prisma;
+    const skuIds = (query.skuIds || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const result: Record<string, { price: string; stock: number }> = {};
+    if (skuIds.length === 0) return result;
+    const idsNum = skuIds
+      .map((s) => Number(s))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    if (idsNum.length === 0) return result;
+    const skus = await prisma.product_sku.findMany({
+      where: { sku_id: { in: idsNum } },
+      select: { sku_id: true, sku_price: true, sku_stock: true },
+    });
+    for (const sku of skus) {
+      const key = String(sku.sku_id);
+      result[key] = {
+        price: Number(sku.sku_price?.toString?.() ?? sku.sku_price ?? 0).toFixed(2),
+        stock: Number(sku.sku_stock ?? 0),
+      };
+    }
+    return result;
   }
 
   /**

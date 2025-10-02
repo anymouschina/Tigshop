@@ -87,6 +87,7 @@ import { SearchGuessController } from "./search/search-guess.controller";
 import { SearchController } from "./search/search.controller";
 import { SearchService } from "./search/search.service";
 import { AppVersionController } from "./app-version/app-version.controller";
+import { CategoryModule } from "./category/category.module";
 
 @Module({
   imports: [
@@ -136,6 +137,7 @@ import { AppVersionController } from "./app-version/app-version.controller";
     StatisticsModule,
     TranslationsModule,
     PrintModule,
+    CategoryModule,
   ],
   controllers: [
     AppController,

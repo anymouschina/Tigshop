@@ -46,30 +46,73 @@ export class ProductDetailService {
       this.getConsultationCount(productId),
     ]);
 
-    // 对齐PHP版本的响应数据结构
+    // 对齐PHP版本与前端期望的响应数据结构（item 使用 camelCase）
     return {
-      // 商品基本信息 - 对齐PHP的item字段
+      // 商品基本信息 - 对齐PHP的item字段（camelCase + 类型对齐）
       item: {
-        product_id: product.product_id,
-        product_name: product.product_name,
-        product_sn: product.product_sn,
-        product_desc: product.product_desc,
-        product_price: Number(product.product_price),
-        market_price: Number(product.market_price),
-        product_stock: product.product_stock,
-        product_status: product.product_status,
-        pic_url: product.pic_url,
-        pic_thumb: product.pic_thumb,
-        pic_original: product.pic_original,
-        product_video: product.product_video,
-        virtual_sales: product.virtual_sales,
-        actual_sales: product.actual_sales,
-        product_keywords: product.product_keywords,
-        shop_id: product.shop_id,
-        category_id: product.category_id,
-        brand_id: product.brand_id,
-        add_time: product.add_time,
-        update_time: product.update_time,
+        productId: product.product_id,
+        productName: product.product_name,
+        productSn: product.product_sn,
+        productTsn: product.product_tsn ?? "0",
+        productDesc: product.product_desc ?? "",
+        productPrice: this.toMoneyString(product.product_price),
+        marketPrice: this.toMoneyString(product.market_price),
+        productStock: product.product_stock ?? 0,
+        productStatus: product.product_status ?? 1,
+        productType: this.toNumberFlag(product.product_type, 1),
+        categoryId: product.category_id ?? 0,
+        brandId: product.brand_id ?? 0,
+        shopId: product.shop_id ?? 0,
+        keywords: product.keywords ?? "",
+        shopCategoryId: product.shop_category_id ?? 0,
+        checkStatus: product.check_status ?? 1,
+        checkReason: product.check_reason ?? "",
+        clickCount: product.click_count ?? 0,
+        productWeight: this.toWeightString(product.product_weight),
+        isPromote: product.is_promote ?? 0,
+        isPromoteActivity: product.is_promote_activity ? 1 : 0,
+        promotePrice: this.toMoneyString(product.promote_price),
+        promoteStartDate: this.toDateTime(product.promote_start_date),
+        promoteEndDate: this.toDateTime(product.promote_end_date),
+        seckillMaxNum: product.seckill_max_num ?? 0,
+        productBrief: product.product_brief ?? "",
+        picUrl: product.pic_url ?? "",
+        picThumb: product.pic_thumb ?? "",
+        picOriginal: product.pic_original ?? "",
+        commentTag: product.comment_tag ?? "",
+        freeShipping: product.free_shipping ?? 0,
+        integral: product.integral ?? 0,
+        addTime: product.add_time ?? 0,
+        sortOrder: product.sort_order ?? 100,
+        storeSortOrder: product.store_sort_order ?? 100,
+        isDelete: product.is_delete ?? 0,
+        isBest: product.is_best ?? 0,
+        isNew: product.is_new ?? 0,
+        isHot: product.is_hot ?? 0,
+        lastUpdate: product.last_update ?? 0,
+        remark: product.remark ?? "",
+        giveIntegral: product.give_integral ?? -1,
+        rankIntegral: product.rank_integral ?? -1,
+        suppliersId: product.suppliers_id ?? 0,
+        virtualSales: product.virtual_sales ?? 0,
+        limitNumber: product.limit_number ?? 0,
+        productCare: product.product_care ?? "",
+        productRelated: product.product_related ?? null,
+        productServiceIds: product.product_service_ids ?? "",
+        isSupportReturn: product.is_support_return ?? 0,
+        isSupportCod: product.is_support_cod ?? 1,
+        productVideo: product.product_video ?? "",
+        prepayPrice: this.toMoneyString(product.prepay_price ?? 0),
+        cardGroupId: product.card_group_id ?? 0,
+        virtualSample: product.virtual_sample ?? "",
+        paidContent: product.paid_content ?? "",
+        noShipping: product.no_shipping ?? 0,
+        fixedShippingType: product.fixed_shipping_type ?? 2,
+        fixedShippingFee: this.toMoneyString(product.fixed_shipping_fee ?? 0),
+        vendorProductId: product.vendor_product_id ?? null,
+        vendorId: product.vendor_id ?? null,
+        // 兼容前端使用的 isBuy（表中无此字段，按0返回）
+        isBuy: 0,
       },
       // 商品描述数组 - 对齐PHP的descArr字段
       descArr,
@@ -92,6 +135,57 @@ export class ProductDetailService {
       // 咨询总数 - 对齐PHP的consultationTotal字段
       consultationTotal,
     };
+  }
+
+  // 将 Decimal/number 转换为金额字符串，保留两位小数
+  private toMoneyString(value: any): string {
+    try {
+      if (value === null || value === undefined) return "0.00";
+      const num = typeof value === "string" ? Number(value) : Number(value?.toString?.() ?? value);
+      if (Number.isNaN(num)) return "0.00";
+      return num.toFixed(2);
+    } catch {
+      return "0.00";
+    }
+  }
+
+  // 将 Decimal/number 转换为重量字符串，保留三位小数
+  private toWeightString(value: any): string {
+    try {
+      if (value === null || value === undefined) return "0.000";
+      const num = typeof value === "string" ? Number(value) : Number(value?.toString?.() ?? value);
+      if (Number.isNaN(num)) return "0.000";
+      return num.toFixed(3);
+    } catch {
+      return "0.000";
+    }
+  }
+
+  // 将布尔/可选字段转为数值标记，默认 defaultVal
+  private toNumberFlag(val: any, defaultVal = 0): number {
+    if (val === null || val === undefined) return defaultVal;
+    if (typeof val === "boolean") return val ? 1 : 0;
+    const n = Number(val);
+    return Number.isNaN(n) ? defaultVal : n;
+  }
+
+  // 将Unix秒时间戳转为 "YYYY-MM-DD HH:mm:ss" 字符串
+  private toDateTime(ts: any): string {
+    try {
+      const n = Number(ts);
+      if (!n) return "";
+      const d = new Date(n * 1000);
+      const pad = (x: number) => (x < 10 ? `0${x}` : `${x}`);
+      const yyyy = d.getFullYear();
+      const MM = pad(d.getMonth() + 1);
+      const dd = pad(d.getDate());
+      const hh = pad(d.getHours());
+      const mm = pad(d.getMinutes());
+      const ss = pad(d.getSeconds());
+      return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
+    } catch {
+      return "";
+    }
   }
 
   /**
