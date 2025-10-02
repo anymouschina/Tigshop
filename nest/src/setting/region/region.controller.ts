@@ -17,7 +17,7 @@ import { AdminAuthGuard } from "../../../common/guards/admin-auth.guard";
 import { ResponseUtil } from "../../../common/utils/response.util";
 
 @ApiTags("地区管理")
-@Controller("admin/setting/region")
+@Controller("adminapi/setting/region")
 @UseGuards(AdminAuthGuard)
 export class RegionController {
   constructor(private readonly regionService: RegionService) {}

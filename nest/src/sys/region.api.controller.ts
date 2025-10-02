@@ -18,7 +18,7 @@ export class RegionApiController {
   @ApiOperation({ summary: "获取地区（按ID列表）" })
   async getRegion(@Query() query: any) {
     const rawCandidates: any[] = [];
-    // 支持多种参数名：region_ids、regionIds、ids、id、region_ids[]
+    // 支持多种参数名：region_ids、regionIds、ids、id、region_ids[]，表示父级ID集合
     if (query?.region_ids !== undefined) rawCandidates.push(query.region_ids);
     if (query?.regionIds !== undefined) rawCandidates.push(query.regionIds);
     if (query?.ids !== undefined) rawCandidates.push(query.ids);
@@ -43,24 +43,34 @@ export class RegionApiController {
       return s.split(",");
     };
 
-    const ids = Array.from(
+    let parentIds = Array.from(
       new Set(
         rawCandidates
           .flatMap((v) => toArray(v))
           .map((v) => Number(String(v).trim()))
-          .filter((n) => Number.isFinite(n) && n > 0),
+          .filter((n) => Number.isFinite(n) && n >= 0),
       ),
     );
 
-    if (ids.length === 0) {
-      return { code: 0, message: "success", data: [] };
+    // 如果未传任何ID，默认查询 parent_id=0 的子地区（顶级）
+    if (parentIds.length === 0) parentIds = [0];
+
+    const lists: any[][] = [];
+    for (const pid of parentIds) {
+      const rows = await this.regionService["prisma"].region.findMany({
+        where: { parent_id: pid },
+        orderBy: { region_id: "asc" },
+        select: { region_id: true, region_name: true, level: true },
+      });
+      const mapped = rows.map((r) => ({
+        regionId: r.region_id,
+        regionName: r.region_name,
+        level: Number(r.level ?? 0),
+      }));
+      lists.push(mapped);
     }
 
-    const all = await this.regionService["prisma"].region.findMany({
-      where: { region_id: { in: ids } },
-      orderBy: { region_id: "asc" },
-    });
-    return { code: 0, message: "success", data: all };
+    return { code: 0, message: "success", data: lists };
   }
 
   /**
