@@ -47,7 +47,7 @@ import { CsrfModule } from "./common/csrf/csrf.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
 import { StatisticsModule } from "./statistics/statistics.module";
-import { AppController } from "./app.contronller";
+import { AppController } from "./app.controller";
 import { AdminUserCompatController } from "./admin/authority/admin-user-compat.controller";
 import { DecorateDiscreteCompatController } from "./decorate/decorate-discrete-compat.controller";
 import { MerchantApplyCompatController } from "./merchant/merchant-apply-compat.controller";

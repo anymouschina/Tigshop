@@ -16,6 +16,7 @@
   - [ ] 金额/重量/时间格式化多处重复（product-detail.service.ts、admin-product.controller.ts 等）。
   - [ ] 评论统计重复（detail service 手工统计 vs commentService.getCommentStats）。
   - [ ] 服务说明与电子卡券组逻辑分散（admin 已实现，前台 detail 未复用）。
+  - [x] 依赖注入拆分后遗漏 PrismaModule 导致 CommentService 注入失败（已在 product/user 两处 CommentModule 补充 PrismaModule）。
 - 目录/命名层
   - [ ] statistic/ 与 statistics/ 并存（职能相近）。
   - [ ] static/static/ 嵌套命名冗余。
@@ -36,6 +37,7 @@
 
 验收标准：
 - 编译通过、lint 通过；商品详情接口响应不变；public-detail 在文档中显示 Deprecated。
+ - 修复 DI：ProductDetailService 注入 CommentService 可解析（CommentModule 显式导入 PrismaModule）。
 
 ### 阶段2（逻辑收敛）
 - [x] 新建 ProductPricingService：统一封装价格/库存/批量与合计逻辑；Controller 仅调用 Service。
@@ -81,10 +83,11 @@
   - [x] 新建 ProductPricingService
   - [x] 控制器四个接口切换至新服务
   - [ ] 覆盖基础单测
+  - [ ] 在 Home 模块路径中验证 ProductModule 的导出是否满足使用方（如有多 HomeModule，保持仅引入 src/home/home.module.ts）
 - 目录/命名清理
   - [ ] statistic/ 与 statistics/ 合并
   - [ ] static/static/ 清理
-  - [ ] app.contronller.ts 更名
+  - [x] app.contronller.ts 更名（已改为 app.controller.ts 并更新引用）
   - [ ] ecard 命名统一
 - Mock 下线/真实接入
   - [ ] promotion
@@ -97,9 +100,22 @@
 - 所有对外接口保持兼容；public-detail 仅标记弃用，短期仍可访问。
 - 对公共工具的抽取会改变 import；一经发现异常，可回滚到上一提交。
 - 目录变更需一次性完成并通过构建与端到端冒烟。
+ - DI 修复涉及 CommentModule 依赖 PrismaModule：如出现回归，可临时回滚到未引入 CommentService 的 ProductDetailService 版本，或在 AppModule 中短期引入 user.comment 模块以旁路依赖。
 
 ## 五、参考与约定
 
 - 统一响应壳：{ code, message, data, timestamp }（拦截器已处理）。
 - DB 访问仅通过 PrismaService 注入的 Service 层进行，不在 Controller 直连。
 - DTO 放在各模块 dto/ 或 types/ 下，保持语义清晰与复用。
+
+## 六、下一步增量（本轮执行项）
+
+- 构建与快速冒烟
+  - [ ] 执行构建，确认无 DI 错误（已补充 PrismaModule 引入）。
+  - [ ] 本地启动，调用商品详情、价格库存四接口做最小冒烟。
+- 单测补齐 ProductPricingService
+  - [ ] getAvailability: 基本路径与 skuId 缺省路径
+  - [ ] getAmount: 合法 sku 与非法 sku 混合
+- 目录/命名清理（小步）
+  - [ ] 校验是否存在重复 HomeModule（src/home 与 src/content/home）；仅使用前台 Home 版本，避免命名冲突。
+  - [ ] 评估 app.contronller.ts 更名影响范围，准备一次性改名提交。
