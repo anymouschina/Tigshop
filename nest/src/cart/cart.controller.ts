@@ -38,12 +38,10 @@ export class CartController {
     @Request() req,
     @Query() params: { productId: number; quantity?: number; skuId?: number },
   ) {
-    return this.cartService.addItem(
-      req.user.userId,
-      Number(params.productId),
-      Number(params.quantity) || 1,
-      Number(params.skuId) || 0,
-    );
+    const pid = Number(params.productId);
+    const qty = params.quantity !== undefined ? Number(params.quantity) : 1;
+    const sid = params.skuId !== undefined ? Number(params.skuId) : 0;
+    return this.cartService.addItem(req.user.userId, pid, qty, sid);
   }
 
   /**
@@ -58,14 +56,14 @@ export class CartController {
     if (data.quantity !== undefined) {
       return this.cartService.updateQuantity(
         req.user.userId,
-        data.cartId,
-        data.quantity,
+        Number(data.cartId),
+        Number(data.quantity),
       );
     }
     if (data.selected !== undefined) {
       return this.cartService.updateSelected(
         req.user.userId,
-        data.cartId,
+        Number(data.cartId),
         data.selected ? 1 : 0,
       );
     }
@@ -105,7 +103,7 @@ export class CartController {
   @Post("removeItem")
   @ApiOperation({ summary: "删除购物车商品" })
   async removeItem(@Request() req, @Body() data: { cartId: number }) {
-    return this.cartService.removeItem(req.user.userId, data.cartId);
+    return this.cartService.removeItem(req.user.userId, Number(data.cartId));
   }
 
   /**

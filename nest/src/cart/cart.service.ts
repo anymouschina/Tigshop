@@ -51,9 +51,24 @@ export class CartService {
     quantity: number = 1,
     skuId: number = 0,
   ) {
+    // 入参兜底校验，避免 NaN/无效值导致 Prisma where 报错
+    const pid = Number(productId);
+    const qty = Number(quantity);
+    const sid = Number(skuId);
+
+    if (!Number.isInteger(pid) || pid <= 0) {
+      throw new BadRequestException("商品ID无效");
+    }
+    if (!Number.isInteger(qty) || qty <= 0) {
+      throw new BadRequestException("数量必须为正整数");
+    }
+    if (!Number.isInteger(sid) || sid < 0) {
+      throw new BadRequestException("SKU参数无效");
+    }
+
     // 验证商品是否存在且启用
-    const product = await this.prisma.product.findUnique({
-      where: { productId },
+    const product = await this.prisma.product.findFirst({
+      where: { product_id: pid },
       include: { brand: true, category: true },
     });
 
@@ -61,32 +76,32 @@ export class CartService {
       throw new NotFoundException("商品不存在");
     }
 
-    if (product.isDelete !== 0) {
+    if (product.is_delete !== 0) {
       throw new BadRequestException("商品已下架");
     }
 
     // 检查库存
-    let stock = product.productStock;
-    if (skuId > 0) {
-      const sku = await this.prisma.productSku.findUnique({
-        where: { skuId },
+    let stock = product.product_stock;
+    if (sid > 0) {
+      const sku = await this.prisma.product_sku.findUnique({
+        where: { sku_id: sid },
       });
       if (!sku) {
         throw new NotFoundException("SKU不存在");
       }
-      stock = sku.skuStock;
+      stock = sku.sku_stock ?? 0;
     }
 
-    if (stock < quantity) {
+    if (stock < qty) {
       throw new BadRequestException("库存不足");
     }
 
     // 检查购物车中是否已有该商品（相同SKU）
     const existingItem = await this.prisma.cart.findFirst({
       where: {
-        userId,
-        productId,
-        skuId,
+        user_id: userId,
+        product_id: pid,
+        sku_id: sid,
       },
     });
 
@@ -94,26 +109,28 @@ export class CartService {
 
     if (existingItem) {
       // 更新数量
-      const newQuantity = existingItem.quantity + quantity;
+      const newQuantity = existingItem.quantity + qty;
       if (newQuantity > stock) {
         throw new BadRequestException("库存不足");
       }
 
       cartItem = await this.prisma.cart.update({
-        where: { cartId: existingItem.cartId },
+        where: { cart_id: existingItem.cart_id },
         data: {
           quantity: newQuantity,
-          updateTime: new Date(),
+          update_time: Math.floor(Date.now() / 1000),
         },
       });
     } else {
       // 添加新商品到购物车
-      const productData = await this.prisma.product.findUnique({
-        where: { productId },
+      const productData = await this.prisma.product.findFirst({
+        where: { product_id: pid },
         select: {
-          productSn: true,
-          picThumb: true,
-          shopId: true,
+          product_sn: true,
+          pic_thumb: true,
+          shop_id: true,
+          market_price: true,
+          product_price: true,
         },
       });
 
@@ -121,41 +138,42 @@ export class CartService {
         throw new NotFoundException("商品信息不完整");
       }
 
-      let skuData = null;
+      let skuData = null as string | null;
       let marketPrice = 0;
       let originalPrice = 0;
 
-      if (skuId > 0) {
-        const sku = await this.prisma.productSku.findUnique({
-          where: { skuId },
+      if (sid > 0) {
+        const sku = await this.prisma.product_sku.findUnique({
+          where: { sku_id: sid },
         });
         if (sku) {
-          skuData = sku.skuData;
-          marketPrice = Number(sku.skuMarketPrice);
-          originalPrice = Number(sku.skuPrice);
+          skuData = sku.sku_data ?? null;
+          // 使用商品的市场价作为市场价，SKU价格作为原价
+          marketPrice = Number(productData?.market_price ?? 0);
+          originalPrice = Number(sku.sku_price ?? 0);
         }
       } else {
         // Use product price if no SKU
-        marketPrice = Number(product.productPrice);
-        originalPrice = Number(product.productPrice);
+        marketPrice = Number(product.market_price ?? 0);
+        originalPrice = Number(product.product_price ?? 0);
       }
 
       cartItem = await this.prisma.cart.create({
         data: {
-          userId,
-          productId,
-          productSn: productData.productSn,
-          picThumb: productData.picThumb || "",
-          marketPrice: marketPrice,
-          originalPrice: originalPrice,
-          quantity,
-          skuId,
-          skuData,
-          productType: 1,
-          isChecked: 1,
-          shopId: productData.shopId || 0,
+          user_id: userId,
+          product_id: pid,
+          product_sn: productData.product_sn,
+          pic_thumb: productData.pic_thumb || "",
+          market_price: marketPrice,
+          original_price: originalPrice,
+          quantity: qty,
+          sku_id: sid,
+          sku_data: skuData ?? undefined,
+          product_type: 1,
+          is_checked: 1,
+          shop_id: productData.shop_id || 0,
           type: 1,
-          updateTime: new Date(),
+          update_time: Math.floor(Date.now() / 1000),
         },
       });
     }
@@ -172,14 +190,14 @@ export class CartService {
    */
   async updateQuantity(userId: number, cartId: number, quantity: number) {
     const cartItem = await this.prisma.cart.findUnique({
-      where: { cartId },
+      where: { cart_id: cartId },
     });
 
     if (!cartItem) {
       throw new NotFoundException("购物车商品不存在");
     }
 
-    if (cartItem.userId !== userId) {
+    if (cartItem.user_id !== userId) {
       throw new BadRequestException("无权操作此购物车商品");
     }
 
@@ -189,16 +207,16 @@ export class CartService {
 
     // 检查库存
     let stock = 0;
-    if (cartItem.skuId > 0) {
-      const sku = await this.prisma.productSku.findUnique({
-        where: { skuId: cartItem.skuId },
+    if ((cartItem.sku_id ?? 0) > 0) {
+      const sku = await this.prisma.product_sku.findUnique({
+        where: { sku_id: cartItem.sku_id },
       });
-      stock = sku?.skuStock || 0;
+      stock = sku?.sku_stock || 0;
     } else {
-      const product = await this.prisma.product.findUnique({
-        where: { productId: cartItem.productId },
+      const product = await this.prisma.product.findFirst({
+        where: { product_id: cartItem.product_id },
       });
-      stock = product?.productStock || 0;
+      stock = product?.product_stock || 0;
     }
 
     if (quantity > stock) {
@@ -206,10 +224,10 @@ export class CartService {
     }
 
     await this.prisma.cart.update({
-      where: { cartId },
+      where: { cart_id: cartId },
       data: {
         quantity,
-        updateTime: new Date(),
+        update_time: Math.floor(Date.now() / 1000),
       },
     });
 
@@ -224,19 +242,19 @@ export class CartService {
    */
   async removeItem(userId: number, cartId: number) {
     const cartItem = await this.prisma.cart.findUnique({
-      where: { cartId },
+      where: { cart_id: cartId },
     });
 
     if (!cartItem) {
       throw new NotFoundException("购物车商品不存在");
     }
 
-    if (cartItem.userId !== userId) {
+    if (cartItem.user_id !== userId) {
       throw new BadRequestException("无权操作此购物车商品");
     }
 
     await this.prisma.cart.delete({
-      where: { cartId },
+      where: { cart_id: cartId },
     });
 
     return this.getCart(userId);
@@ -249,7 +267,7 @@ export class CartService {
    */
   async clearCart(userId: number) {
     await this.prisma.cart.deleteMany({
-      where: { userId },
+      where: { user_id: userId },
     });
 
     return this.getCart(userId);
@@ -262,7 +280,7 @@ export class CartService {
    */
   async getCart(userId: number): Promise<CartData> {
     const cartItems = await this.prisma.cart.findMany({
-      where: { userId },
+      where: { user_id: userId },
       include: {
         product: {
           include: {
@@ -272,26 +290,26 @@ export class CartService {
         },
       },
       orderBy: {
-        updateTime: "desc",
+        update_time: "desc",
       },
     });
 
     const items = cartItems.map((item) => ({
-      cartId: item.cartId,
-      productId: item.productId,
-      productSn: item.productSn,
-      picThumb: item.picThumb,
-      marketPrice: Number(item.marketPrice),
-      originalPrice: Number(item.originalPrice),
+      cartId: item.cart_id,
+      productId: item.product_id,
+      productSn: item.product_sn,
+      picThumb: item.pic_thumb,
+      marketPrice: Number(item.market_price),
+      originalPrice: Number(item.original_price),
       quantity: item.quantity,
-      skuId: item.skuId,
-      skuData: item.skuData,
-      productType: item.productType,
-      isChecked: item.isChecked,
-      shopId: item.shopId,
+      skuId: item.sku_id,
+      skuData: item.sku_data ?? undefined,
+      productType: item.product_type,
+      isChecked: item.is_checked,
+      shopId: item.shop_id,
       type: item.type,
-      salesmanId: item.salesmanId,
-      extraSkuData: item.extraSkuData,
+      salesmanId: item.salesman_id,
+      extraSkuData: item.extra_sku_data ?? undefined,
     }));
 
     const totalPrice = items.reduce(
@@ -324,22 +342,22 @@ export class CartService {
    */
   async updateSelected(userId: number, cartId: number, isChecked: number) {
     const cartItem = await this.prisma.cart.findUnique({
-      where: { cartId },
+      where: { cart_id: cartId },
     });
 
     if (!cartItem) {
       throw new NotFoundException("购物车商品不存在");
     }
 
-    if (cartItem.userId !== userId) {
+    if (cartItem.user_id !== userId) {
       throw new BadRequestException("无权操作此购物车商品");
     }
 
     await this.prisma.cart.update({
-      where: { cartId },
+      where: { cart_id: cartId },
       data: {
-        isChecked,
-        updateTime: new Date(),
+        is_checked: isChecked,
+        update_time: Math.floor(Date.now() / 1000),
       },
     });
 
@@ -354,10 +372,10 @@ export class CartService {
    */
   async updateAllSelected(userId: number, isChecked: number) {
     await this.prisma.cart.updateMany({
-      where: { userId },
+      where: { user_id: userId },
       data: {
-        isChecked,
-        updateTime: new Date(),
+        is_checked: isChecked,
+        update_time: Math.floor(Date.now() / 1000),
       },
     });
 
@@ -400,7 +418,7 @@ export class CartService {
    */
   async getCartCount(userId: number) {
     const count = await this.prisma.cart.count({
-      where: { userId },
+      where: { user_id: userId },
     });
 
     return { count };
