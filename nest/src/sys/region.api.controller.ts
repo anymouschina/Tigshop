@@ -16,20 +16,51 @@ export class RegionApiController {
   @Get("getRegion")
   @Public()
   @ApiOperation({ summary: "获取地区（按ID列表）" })
-  async getRegion(@Query("region_ids") regionIds: string = "") {
-    const ids = (regionIds || "")
-      .split(",")
-      .map((s) => Number(s.trim()))
-      .filter((n) => !isNaN(n) && n > 0);
-    if (ids.length === 0) return [];
+  async getRegion(@Query() query: any) {
+    const rawCandidates: any[] = [];
+    // 支持多种参数名：region_ids、regionIds、ids、id、region_ids[]
+    if (query?.region_ids !== undefined) rawCandidates.push(query.region_ids);
+    if (query?.regionIds !== undefined) rawCandidates.push(query.regionIds);
+    if (query?.ids !== undefined) rawCandidates.push(query.ids);
+    if (query?.id !== undefined) rawCandidates.push(query.id);
+    if (query?.["region_ids[]"] !== undefined)
+      rawCandidates.push(query["region_ids[]"]);
 
-    const rows = await this.regionService.getChildren(0); // 预加载可选
-    // 简化：直接批量取 ids 对应记录
+    const toArray = (val: any): any[] => {
+      if (val == null) return [];
+      if (Array.isArray(val)) return val;
+      const s = String(val).trim();
+      if (!s) return [];
+      // 兼容 JSON 数组或逗号分隔
+      if ((s.startsWith("[") && s.endsWith("]")) || s.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(s);
+          return Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          // fallthrough to comma split
+        }
+      }
+      return s.split(",");
+    };
+
+    const ids = Array.from(
+      new Set(
+        rawCandidates
+          .flatMap((v) => toArray(v))
+          .map((v) => Number(String(v).trim()))
+          .filter((n) => Number.isFinite(n) && n > 0),
+      ),
+    );
+
+    if (ids.length === 0) {
+      return { code: 0, message: "success", data: [] };
+    }
+
     const all = await this.regionService["prisma"].region.findMany({
       where: { region_id: { in: ids } },
       orderBy: { region_id: "asc" },
     });
-    return all;
+    return { code: 0, message: "success", data: all };
   }
 
   /**
