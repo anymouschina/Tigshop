@@ -7,6 +7,7 @@ import {
   Query,
   UseGuards,
   Request,
+  BadRequestException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { CartService } from "./cart.service";
@@ -19,13 +20,35 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
+  private extractUserId(req: any): number {
+    const source = req?.user ?? {};
+    const userIdCandidate =
+      source.userId ??
+      source.user_id ??
+      source.id ??
+      source.uid ??
+      (typeof source === "number" ? source : undefined);
+
+    if (userIdCandidate === undefined || userIdCandidate === null) {
+      throw new BadRequestException("用户未登录或Token无效");
+    }
+
+    const userId = Number(userIdCandidate);
+    if (!Number.isInteger(userId) || userId <= 0) {
+      throw new BadRequestException("用户信息异常，请重新登录");
+    }
+
+    return userId;
+  }
+
   /**
    * 获取购物车列表 - 对齐PHP版本 cart/cart/list
    */
   @Get("list")
   @ApiOperation({ summary: "获取购物车列表" })
   async getCartList(@Request() req) {
-    return this.cartService.getCart(req.user.userId);
+    const userId = this.extractUserId(req);
+    return this.cartService.getCart(userId);
   }
 
   /**
@@ -69,7 +92,8 @@ export class CartController {
     const qty = Number(rawQuantity ?? 1);
     const sid = Number(rawSkuId ?? 0);
 
-    return this.cartService.addItem(req.user.userId, pid, qty, sid);
+    const userId = this.extractUserId(req);
+    return this.cartService.addItem(userId, pid, qty, sid);
   }
 
   /**
@@ -77,24 +101,56 @@ export class CartController {
    */
   @Post("updateItem")
   @ApiOperation({ summary: "更新购物车商品" })
-  async updateItem(
-    @Request() req,
-    @Body() data: { cartId: number; quantity?: number; selected?: boolean },
-  ) {
-    if (data.quantity !== undefined) {
-      return this.cartService.updateQuantity(
-        req.user.userId,
-        Number(data.cartId),
-        Number(data.quantity),
-      );
+  async updateItem(@Request() req, @Body() body: Record<string, any>) {
+    const mergedPayload =
+      body && typeof body === "object" && body.data && typeof body.data === "object"
+        ? { ...body, ...body.data }
+        : body || {};
+
+    const cartIdRaw =
+      mergedPayload.cartId ??
+      mergedPayload.cart_id ??
+      body?.cartId ??
+      body?.cart_id;
+
+    const quantityRaw =
+      mergedPayload.quantity ??
+      mergedPayload.number ??
+      mergedPayload.num ??
+      mergedPayload.qty ??
+      mergedPayload.qtyNum;
+
+    const selectedRaw =
+      mergedPayload.selected ??
+      mergedPayload.isChecked ??
+      mergedPayload.is_checked ??
+      mergedPayload.checked;
+
+    const cartId = Number(cartIdRaw);
+    if (!Number.isInteger(cartId) || cartId <= 0) {
+      throw new BadRequestException("购物车ID无效");
     }
-    if (data.selected !== undefined) {
-      return this.cartService.updateSelected(
-        req.user.userId,
-        Number(data.cartId),
-        data.selected ? 1 : 0,
-      );
+
+    const hasQuantity = quantityRaw !== undefined;
+    if (hasQuantity) {
+      const quantity = Number(quantityRaw);
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        throw new BadRequestException("数量必须为正整数");
+      }
+      const userId = this.extractUserId(req);
+      return this.cartService.updateQuantity(userId, cartId, quantity);
     }
+
+    if (selectedRaw !== undefined) {
+      const selected = Boolean(
+        typeof selectedRaw === "string"
+          ? selectedRaw === "1" || selectedRaw.toLowerCase() === "true"
+          : selectedRaw,
+      );
+      const userId = this.extractUserId(req);
+      return this.cartService.updateSelected(userId, cartId, selected ? 1 : 0);
+    }
+
     return { success: true };
   }
 
@@ -109,9 +165,10 @@ export class CartController {
   ) {
     if (data.cartIds && data.cartIds.length > 0) {
       // 批量更新选中状态
+      const userId = this.extractUserId(req);
       for (const cartId of data.cartIds) {
         await this.cartService.updateSelected(
-          req.user.userId,
+          userId,
           cartId,
           data.selected ? 1 : 0,
         );
@@ -119,10 +176,8 @@ export class CartController {
       return { success: true };
     }
     // 全选/取消全选
-    return this.cartService.updateAllSelected(
-      req.user.userId,
-      data.selected ? 1 : 0,
-    );
+    const userId = this.extractUserId(req);
+    return this.cartService.updateAllSelected(userId, data.selected ? 1 : 0);
   }
 
   /**
@@ -131,7 +186,8 @@ export class CartController {
   @Post("removeItem")
   @ApiOperation({ summary: "删除购物车商品" })
   async removeItem(@Request() req, @Body() data: { cartId: number }) {
-    return this.cartService.removeItem(req.user.userId, Number(data.cartId));
+    const userId = this.extractUserId(req);
+    return this.cartService.removeItem(userId, Number(data.cartId));
   }
 
   /**
@@ -140,7 +196,8 @@ export class CartController {
   @Post("clear")
   @ApiOperation({ summary: "清空购物车" })
   async clearCart(@Request() req) {
-    return this.cartService.clearCart(req.user.userId);
+    const userId = this.extractUserId(req);
+    return this.cartService.clearCart(userId);
   }
 
   /**
@@ -149,7 +206,8 @@ export class CartController {
   @Get("getCount")
   @ApiOperation({ summary: "获取购物车商品数量" })
   async getCartCount(@Request() req) {
-    return this.cartService.getCartCount(req.user.userId);
+    const userId = this.extractUserId(req);
+    return this.cartService.getCartCount(userId);
   }
 
   /**
