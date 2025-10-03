@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { UserRechargeOrderService } from "./user-recharge-order.service";
 import { RechargeSettingService } from "src/promotion/recharge-setting/rechargeSetting.service";
+import { ConfigService as SettingConfigService } from "src/setting/config.service";
 
 @ApiTags("User API - 充值订单 兼容")
 @Controller("api/user/rechargeOrder")
@@ -21,6 +22,7 @@ export class UserRechargeOrderApiCompatController {
   constructor(
     private readonly service: UserRechargeOrderService,
     private readonly rechargeSettingService: RechargeSettingService,
+    private readonly settingConfig: SettingConfigService,
   ) {}
 
   // GET /api/user/rechargeOrder/list
@@ -73,13 +75,31 @@ export class UserRechargeOrderApiCompatController {
   @Get("paymentList")
   @ApiOperation({ summary: "充值支付方式列表（兼容）" })
   async paymentList() {
-    // 按 PHP 充值支付常见方式输出，过滤线下
-    const paymentList = [
+    // 基础列表，后续根据配置开关过滤
+    let paymentList = [
       "wechat",
       "alipay",
       "paypal",
-      // 预留第三方："yabanpay_wechat","yabanpay_alipay","yunpay_wechat","yunpay_alipay","yunpay_yunshanfu"
     ];
+    // 读取支付宝、线下支付的开关
+    try {
+      const [aliCfg, offlineCfg] = await Promise.all([
+        this.settingConfig.getJsonConfig("aliPaySettings"),
+        this.settingConfig.getJsonConfig("offlinePaySettings"),
+      ]);
+      const ali = aliCfg || {};
+      const useAlipay = ali.useAlipay;
+      const aliEnabled = useAlipay === 1 || useAlipay === true || useAlipay === "1";
+      if (!aliEnabled) {
+        paymentList = paymentList.filter((p) => p !== "alipay");
+      }
+      const off = offlineCfg || {};
+      const flag = off?.isOpen ?? off?.open ?? off?.enabled ?? off?.enable ?? off?.status ?? off?.useOffline ?? off?.useOfflinePay;
+      const offlineEnabled = flag === 1 || flag === true || flag === "1";
+      if (!offlineEnabled) {
+        paymentList = paymentList.filter((p) => p !== "offline");
+      }
+    } catch {}
     return { code: 0, message: "success", data: paymentList };
   }
 
@@ -92,7 +112,15 @@ export class UserRechargeOrderApiCompatController {
     if (order.status === true) {
       return { code: 1, message: "订单已支付", data: null };
     }
-    const paymentList = ["wechat", "alipay", "paypal"]; // 过滤线下
+    let paymentList = ["wechat", "alipay", "paypal"]; // 过滤线下
+    try {
+      const aliCfg = await this.settingConfig.getJsonConfig("aliPaySettings");
+      const useAlipay = (aliCfg || {}).useAlipay;
+      const aliEnabled = useAlipay === 1 || useAlipay === true || useAlipay === "1";
+      if (!aliEnabled) {
+        paymentList = paymentList.filter((p) => p !== "alipay");
+      }
+    } catch {}
     return { code: 0, message: "success", data: { order, payment_list: paymentList } };
   }
 

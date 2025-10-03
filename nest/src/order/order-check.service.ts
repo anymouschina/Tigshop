@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { ConfigService as SettingConfigService } from "src/setting/config.service";
 import { CartService, CartItemDetail } from "../cart/cart.service";
 import {
   round as lodashRound,
@@ -95,6 +96,7 @@ export class OrderCheckService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cartService: CartService,
+    private readonly settingConfig: SettingConfigService,
   ) {}
 
   /**
@@ -355,19 +357,34 @@ export class OrderCheckService {
    * 获取可用支付方式
    */
   async getAvailablePaymentType() {
-    const offlineConfig = await this.prisma.config.findFirst({
-      where: {
-        biz_code: "useOffline",
-        OR: [{ is_del: 0 }, { is_del: null }],
-      },
-      select: {
-        biz_val: true,
-      },
-    });
-
-    const useOffline = offlineConfig
-      ? Number(offlineConfig.biz_val ?? 0) === 1
-      : true;
+    // 对齐 PHP：is_show 取决于配置开关（优先 offlinePaySettings，其次 useOffline 标量），默认关闭
+    const off = (await this.settingConfig.getJsonConfig(
+      "offlinePaySettings",
+    )) as any | null;
+    const rawFlag =
+      off?.isOpen ??
+      off?.open ??
+      off?.enabled ??
+      off?.enable ??
+      off?.status ??
+      off?.useOffline ??
+      off?.useOfflinePay;
+    let isOfflineOpen: boolean | null = null;
+    if (rawFlag !== undefined) {
+      isOfflineOpen = rawFlag === true || rawFlag === "1" || Number(rawFlag) === 1;
+    }
+    if (isOfflineOpen === null) {
+      // 读取旧开关 useOffline（字符串："0"/"1"），默认 false
+      try {
+        isOfflineOpen = await this.settingConfig.getBooleanConfig(
+          "useOffline",
+          false,
+        );
+      } catch (_) {
+        isOfflineOpen = false;
+      }
+    }
+    const useOffline = Boolean(isOfflineOpen);
 
     return [
       {

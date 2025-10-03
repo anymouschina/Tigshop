@@ -277,8 +277,12 @@ export class OrderService {
    * @returns 订单详情
    */
   async getOrderDetail(orderId: number, userId?: number) {
-    // 使用 snake_case 字段查询
-    const where: any = { order_id: Number(orderId) };
+    // 使用 snake_case 字段查询，先校验 orderId 合法性，避免 Prisma NaN/undefined 报错
+    const oid = Number(orderId);
+    if (!Number.isInteger(oid) || oid <= 0) {
+      throw new BadRequestException("订单ID无效");
+    }
+    const where: any = { order_id: oid };
     if (userId) where.user_id = Number(userId);
 
     const order = await this.prisma.order.findFirst({ where });
@@ -349,9 +353,9 @@ export class OrderService {
 
     // 更新订单状态
     return this.prisma.order.update({
-      where: { orderId },
+      where: { order_id: Number(order.orderId) },
       data: {
-        orderStatus: 2, // CANCELLED = 2
+        order_status: 2, // CANCELLED = 2
         // cancelReason and cancelTime fields don't exist in schema
       },
     });
@@ -372,9 +376,9 @@ export class OrderService {
     }
 
     return this.prisma.order.update({
-      where: { orderId },
+      where: { order_id: Number(order.orderId) },
       data: {
-        orderStatus: 3, // COMPLETED = 3
+        order_status: 3, // COMPLETED = 3
         // completeTime field doesn't exist in schema
       },
     });

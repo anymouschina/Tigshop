@@ -4,9 +4,10 @@ import { UserRechargeOrderService } from "./user-recharge-order.service";
 import { UserRechargeOrderController } from "./user-recharge-order.controller";
 import { UserRechargeOrderApiCompatController } from "./user-recharge-order.api-compat.controller";
 import { RechargeSettingModule } from "src/promotion/recharge-setting/rechargeSetting.module";
+import { SettingModule } from "src/setting/setting.module";
 
 @Module({
-  imports: [RechargeSettingModule],
+  imports: [RechargeSettingModule, SettingModule],
   controllers: [UserRechargeOrderController, UserRechargeOrderApiCompatController],
   providers: [UserRechargeOrderService],
   exports: [UserRechargeOrderService],

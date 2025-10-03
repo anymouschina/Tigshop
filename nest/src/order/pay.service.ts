@@ -43,6 +43,29 @@ export class PayService {
 
   // 获取可用支付方式（不包含余额）
   let paymentList = this.getAvailablePayment().filter((p) => p !== "balance");
+    // 根据配置开关移除支付宝入口
+    try {
+      const aliCfg = (await this.settingConfig.getJsonConfig("aliPaySettings")) || {};
+      const useAlipay = aliCfg.useAlipay;
+      const enabled = useAlipay === 1 || useAlipay === true || useAlipay === "1";
+      if (!enabled) {
+        paymentList = paymentList.filter((p) => p !== "alipay");
+      }
+    } catch (e) {
+      this.logger.warn(`读取 aliPaySettings 失败: ${(e as Error)?.message}`);
+    }
+    // 根据配置开关移除线下支付入口
+    let offlineCfg: any = null;
+    try {
+      offlineCfg = (await this.settingConfig.getJsonConfig("offlinePaySettings")) || {};
+      const flag = offlineCfg?.isOpen ?? offlineCfg?.open ?? offlineCfg?.enabled ?? offlineCfg?.enable ?? offlineCfg?.status ?? offlineCfg?.useOffline ?? offlineCfg?.useOfflinePay;
+      const isOpen = flag === 1 || flag === true || flag === "1";
+      if (!isOpen) {
+        paymentList = paymentList.filter((p) => p !== "offline");
+      }
+    } catch (e) {
+      this.logger.warn(`读取 offlinePaySettings 失败: ${(e as Error)?.message}`);
+    }
     // 小程序端仅保留 wechat
     const ct = (clientType || "").toLowerCase();
     if (ct.includes("mini") || ct.includes("mp")) {
@@ -72,11 +95,11 @@ export class PayService {
 
   const offlinePaymentList = [] as any[];
     if (paymentList.includes("offline")) {
+      const bankInfo = offlineCfg?.offlinePayBank || offlineCfg?.bankInfo || offlineCfg?.bank || "";
+      const companyInfo = offlineCfg?.offlinePayCompany || offlineCfg?.companyInfo || offlineCfg?.company || "";
       offlinePaymentList.push({
-        offlinePayBank:
-          "银行名称：中国银行\n账号：6222********1234\n开户行：中国银行XX支行",
-        offlinePayCompany:
-          "公司名称：XX科技有限公司\n账号：1234567890123456\n开户行：XX银行XX支行",
+        offlinePayBank: String(bankInfo || ""),
+        offlinePayCompany: String(companyInfo || ""),
       });
     }
 
