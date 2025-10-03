@@ -194,39 +194,117 @@ const parseJsonSafely = (value: any) => {
   }
 };
 
+// 对齐 PHP 购物车/订单中 SKU 属性展示逻辑：
+// 可能的输入形态（后端历史/兼容多端）：
+// 1. 已规范：[{"name":"时长","value":"7"}]
+// 2. PHP 原始 attr 结构：[{"attrName":"时长","attrValue":"7"}]
+// 3. 下划线形式：[{"attr_name":"时长","attr_value":"7"}]
+// 4. 键值被拍平成普通对象：{"时长":"7","颜色":"红"}
+// 5. 退化：[{"attrName":"时长"}] （缺 value）
+// 之前逻辑把 2 解析成 {name:"attrName", value:"时长"} 错误，这里修正匹配 attrName/attrValue
 const normalizeSkuData = (value: any, fallback: any[] = []) => {
   const parsed = parseJsonSafely(value);
+
+  const coerce = (v: any) => {
+    if (v === null || v === undefined) return "";
+    if (typeof v === "object") return JSON.stringify(v);
+    return String(v);
+  };
+
+  const buildPair = (name: any, val: any) => ({
+    name: coerce(name),
+    value: coerce(val),
+  });
+
   if (Array.isArray(parsed)) {
-    return parsed
-      .map((entry) => {
-        if (entry && typeof entry === "object") {
-          if ("name" in entry && "value" in entry) {
-            return {
-              name: String(entry.name ?? ""),
-              value: String(entry.value ?? ""),
-            };
-          }
-          const [firstKey] = Object.keys(entry);
-          if (firstKey) {
-            return {
-              name: String(firstKey),
-              value: String((entry as any)[firstKey] ?? ""),
-            };
-          }
+    const result: { name: string; value: string }[] = [];
+    let pendingName: string | null = null;
+    for (const entry of parsed) {
+      // 允许 entry 是简单值：若有挂起名称则合并
+      if (!entry || typeof entry !== "object") {
+        if (pendingName) {
+          result.push(buildPair(pendingName, entry));
+          pendingName = null;
         }
-        return {
-          name: "",
-          value: String(entry ?? ""),
-        };
-      })
-      .filter((it) => it.name !== "" || it.value !== "");
+        continue;
+      }
+
+      const nameField = (entry as any).name ?? (entry as any).attrName ?? (entry as any).attr_name ?? (entry as any).specName;
+      const valueField = (entry as any).value ?? (entry as any).attrValue ?? (entry as any).attr_value ?? (entry as any).specValue;
+
+      // 情况一：同时具备 name & value（或变体）
+      if (nameField !== undefined && valueField !== undefined) {
+        result.push(buildPair(nameField, valueField));
+        pendingName = null;
+        continue;
+      }
+
+      // 情况二：只有 name（或 attrName）暂存，等待后续 value/attrValue
+      if (nameField !== undefined && valueField === undefined) {
+        pendingName = coerce(nameField);
+        continue;
+      }
+
+      // 情况三：只有 value 且前面缓存了 name
+      if (nameField === undefined && valueField !== undefined && pendingName) {
+        result.push(buildPair(pendingName, valueField));
+        pendingName = null;
+        continue;
+      }
+
+      // 情况四：对象只有一个键，例如 {attrName:"时长"} 或 {value:"7"}
+      const keys = Object.keys(entry);
+      if (keys.length === 1) {
+        const k = keys[0];
+        const v = (entry as any)[k];
+        if (pendingName && ["value", "attrValue", "attr_value", "specValue"].includes(k)) {
+          result.push(buildPair(pendingName, v));
+          pendingName = null;
+          continue;
+        }
+        if (k === "attrName" || k === "attr_name") {
+          pendingName = coerce(v);
+          continue;
+        }
+        // 普通兜底
+        result.push(buildPair(k, v));
+        continue;
+      }
+
+      // 情况五：KV 展开成普通对象 {"时长":"7","颜色":"红"}
+      if (keys.length > 1) {
+        for (const k of keys) {
+          const v = (entry as any)[k];
+          if (pendingName && ["value", "attrValue", "attr_value", "specValue"].includes(k)) {
+            result.push(buildPair(pendingName, v));
+            pendingName = null;
+            continue;
+          }
+          // 如果 k 看似语义键（包含Name/Value），按已处理逻辑跳过，避免重复
+          if (/attrName|attr_value|attrValue|value|specName|specValue/i.test(k)) {
+            continue;
+          }
+          result.push(buildPair(k, v));
+        }
+      }
+    }
+    // 若遍历结束仍有挂起的名称但没有 value，不输出（与期望一致）
+    if (result.length > 0) return result;
   }
+
   if (parsed && typeof parsed === "object") {
-    return Object.entries(parsed).map(([key, val]) => ({
-      name: String(key ?? ""),
-      value: Array.isArray(val) ? val.map((v) => String(v ?? "")).join(" ") : String(val ?? ""),
-    }));
+    // 对象形态：尝试识别 attrName/attrValue 或普通 KV
+    if ("attrName" in parsed && ("attrValue" in parsed || "attr_value" in parsed)) {
+      return [
+        buildPair(
+          (parsed as any).attrName,
+          (parsed as any).attrValue ?? (parsed as any).attr_value ?? "",
+        ),
+      ];
+    }
+    return Object.entries(parsed).map(([key, val]) => buildPair(key, Array.isArray(val) ? val.join(" ") : val));
   }
+
   return Array.isArray(fallback) ? fallback : [];
 };
 
