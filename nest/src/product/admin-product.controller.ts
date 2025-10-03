@@ -1,10 +1,13 @@
 // @ts-nocheck
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
+import { AuthorityGuard } from "src/auth/guards/authority.guard";
+import { Authorities } from "src/auth/decorators/authority.decorator";
 import { ProductService } from "./product.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { toMoneyString } from "src/common/utils/format";
+import { PanelService } from "src/panel/panel.service";
 
 @ApiTags("Admin API - 商品管理")
 @Controller("adminapi/product/product")
@@ -14,7 +17,414 @@ export class AdminApiProductController {
   constructor(
     private readonly productService: ProductService,
     private readonly prisma: PrismaService,
+    private readonly panel: PanelService,
   ) {}
+
+  /**
+   * 管理端创建商品（兼容 PHP 路径）
+   * 前端：POST /adminapi/product/product/create
+   */
+  @Post("create")
+  @UseGuards(AuthorityGuard)
+  @Authorities("productManage")
+  async createProduct(@Body() body: any, @Req() req: any) {
+    // 店铺隔离：绑定当前管理员店铺
+    const shopId = Number((await this.panel.getUserShopId(req.user?.userId)) || 0) || 0;
+
+    // 简易 SN 生成（若未提供）
+    const genSn = () => `SN${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`;
+
+    // 组装商品主表数据（尽量容错，兼容驼峰/下划线）
+    const pickNum = (v: any, d = 0) => {
+      if (v === null || v === undefined || v === "") return d;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : d;
+    };
+    const pickStr = (v: any, d = "") => (v === null || v === undefined ? d : String(v));
+
+    const firstImg = Array.isArray(body.imgList) && body.imgList.length ? body.imgList[0] : null;
+    const productDescArr: Array<{ html?: string; pic?: string; type?: string }> = Array.isArray(body.productDescArr)
+      ? body.productDescArr
+      : [];
+    // 将 productDescArr 合成为 HTML，若条目自带 html 则直接拼接，否则按 pic 渲染 img 标签
+    const product_desc = productDescArr
+      .map((it) => {
+        if (it && typeof it.html === "string" && it.html) return it.html;
+        if (it && typeof it.pic === "string" && it.pic) return `<div class="desc-pic-item"><img src="${it.pic}"></div>`;
+        return "";
+      })
+      .filter(Boolean)
+      .join("");
+
+    // 电子卡券组：取第一个启用项作为绑定 group
+    let card_group_id = 0;
+    if (Array.isArray(body.eCardList) && body.eCardList.length) {
+      const hit = body.eCardList.find((x: any) => (x?.isUse ?? x?.is_use ?? false) === true);
+      card_group_id = pickNum(hit?.groupId ?? hit?.group_id ?? 0, 0);
+    }
+
+  const product_type_bool = Number(body.productType ?? body.product_type ?? 0) ? true : false;
+  const data: any = {
+      product_name: pickStr(body.productName ?? body.product_name, ""),
+      product_sn: pickStr(body.productSn ?? body.product_sn, "") || genSn(),
+      product_tsn: pickStr(body.productTsn ?? body.product_tsn ?? "0", "0"),
+      category_id: pickNum(body.categoryId ?? body.category_id ?? 0, 0),
+      brand_id: pickNum(body.brandId ?? body.brand_id ?? 0, 0),
+      product_price: pickNum(body.productPrice ?? body.product_price ?? 0, 0),
+      market_price: pickNum(body.marketPrice ?? body.market_price ?? 0, 0),
+      product_status: pickNum(body.productStatus ?? body.product_status ?? 1, 1),
+  product_type: product_type_bool,
+      shipping_tpl_id: pickNum(body.shippingTplId ?? body.shipping_tpl_id ?? 0, 0),
+      free_shipping: pickNum(body.freeShipping ?? body.free_shipping ?? 0, 0),
+      keywords: pickStr(body.keywords ?? body.keyword ?? ""),
+      product_brief: pickStr(body.productBrief ?? body.product_brief ?? ""),
+      product_desc,
+      product_weight: pickNum(body.productWeight ?? body.product_weight ?? 0, 0),
+      product_stock: pickNum(body.productStock ?? body.product_stock ?? 0, 0),
+      shop_category_id: pickNum(body.shopCategoryId ?? body.shop_category_id ?? 0, 0),
+      check_status: pickNum(body.checkStatus ?? body.check_status ?? 1, 1),
+      check_reason: pickStr(body.checkReason ?? body.check_reason ?? ""),
+      remark: pickStr(body.remark ?? ""),
+      give_integral: pickNum(body.giveIntegral ?? body.give_integral ?? -1, -1),
+      rank_integral: pickNum(body.rankIntegral ?? body.rank_integral ?? -1, -1),
+      integral: pickNum(body.integral ?? 0, 0),
+      no_shipping: pickNum(body.noShipping ?? body.no_shipping ?? 0, 0),
+      fixed_shipping_type: pickNum(body.fixedShippingType ?? body.fixed_shipping_type ?? 2, 2),
+      fixed_shipping_fee: pickNum(body.fixedShippingFee ?? body.fixed_shipping_fee ?? 0, 0),
+      card_group_id,
+      pic_url: pickStr(firstImg?.picUrl ?? firstImg?.pic_url ?? body.picUrl ?? body.pic_url ?? ""),
+      pic_thumb: pickStr(firstImg?.picThumb ?? firstImg?.pic_thumb ?? body.picThumb ?? body.pic_thumb ?? ""),
+      pic_original: pickStr(firstImg?.picOriginal ?? firstImg?.pic_original ?? body.picOriginal ?? body.pic_original ?? ""),
+      shop_id: shopId,
+      add_time: Math.floor(Date.now() / 1000),
+      last_update: Math.floor(Date.now() / 1000),
+    };
+
+    // 服务说明 ID 列表保存为逗号分隔字符串（与现有 detail 取法兼容）
+    if (Array.isArray(body.productServiceIds) && body.productServiceIds.length) {
+      data.product_service_ids = body.productServiceIds.map((x: any) => String(x)).join(",");
+    }
+
+  const created = await this.prisma.product.create({ data });
+
+    // 图集入库
+    if (Array.isArray(body.imgList) && body.imgList.length) {
+      let sort = 1;
+      for (const img of body.imgList) {
+        const picUrl = pickStr(img?.picUrl ?? img?.url ?? img?.pic_url ?? "");
+        if (!picUrl) continue;
+        await this.prisma.product_gallery.create({
+          data: {
+            product_id: created.product_id,
+            pic_url: picUrl,
+            pic_thumb: pickStr(img?.picThumb ?? img?.thumb ?? img?.pic_thumb ?? picUrl),
+            pic_large: pickStr(img?.picLarge ?? img?.large ?? img?.pic_large ?? picUrl),
+            pic_original: pickStr(img?.picOriginal ?? img?.original ?? img?.pic_original ?? picUrl),
+            sort_order: sort++,
+          },
+        });
+      }
+    }
+
+    // 规格/属性入库：attrList.normal(0)/spe(1)/extra(其他)
+    if (body?.attrList && typeof body.attrList === "object") {
+      const groups: Array<{ typeGuess: number; list: any[] }> = [];
+      const toNum = (v: any, d = 0) => {
+        if (v === null || v === undefined || v === "") return d;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : d;
+      };
+      if (Array.isArray(body.attrList.normal)) groups.push({ typeGuess: 0, list: body.attrList.normal });
+      if (Array.isArray(body.attrList.spe)) groups.push({ typeGuess: 1, list: body.attrList.spe });
+      if (Array.isArray(body.attrList.extra)) groups.push({ typeGuess: 2, list: body.attrList.extra });
+      const rows: any[] = [];
+      for (const g of groups) {
+        for (const grp of g.list) {
+          const attrName = String(grp?.attrName ?? grp?.name ?? "");
+          const arr = Array.isArray(grp?.attrList) ? grp.attrList : [];
+          for (const it of arr) {
+            const attrType = toNum(it?.attrType ?? g.typeGuess, g.typeGuess);
+            rows.push({
+              product_id: created.product_id,
+              attr_type: attrType,
+              attr_name: attrName,
+              attr_value: String(it?.attrValue ?? it?.value ?? ""),
+              attr_price: toNum(it?.attrPrice ?? it?.price ?? 0, 0),
+              attr_color: it?.attrColor ?? it?.color ?? "",
+              attr_pic: it?.attrPic ?? it?.pic ?? "",
+              attr_pic_thumb: it?.attrPicThumb ?? it?.picThumb ?? "",
+            });
+          }
+        }
+      }
+      if (rows.length) {
+        await this.prisma.product_attributes.createMany({ data: rows });
+      }
+    }
+
+    // SKU 入库与库存汇总：根据 productList 创建并回写 product_stock
+    if (Array.isArray(body.productList) && body.productList.length) {
+      const toNumber = (v: any, d = 0) => {
+        if (v === null || v === undefined || v === "") return d;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : d;
+      };
+      let totalStock = 0;
+      for (const item of body.productList) {
+        const skuValue = String(item?.skuValue ?? item?.sku_value ?? "");
+        const skuData = item?.skuData ?? (Array.isArray(item?.attrs) ? JSON.stringify(item.attrs) : undefined);
+        const skuSn = item?.skuSn ?? item?.sku_sn ?? "";
+        const skuTsn = item?.skuTsn ?? item?.sku_tsn ?? "";
+        const skuStock = toNumber(item?.skuStock ?? item?.sku_stock ?? 0, 0);
+        const skuPrice = toNumber(item?.skuPrice ?? item?.sku_price ?? data.product_price ?? 0, 0);
+        totalStock += skuStock;
+        await this.prisma.product_sku.create({
+          data: {
+            product_id: created.product_id,
+            sku_value: skuValue,
+            sku_data: skuData as any,
+            sku_sn: String(skuSn || ""),
+            sku_tsn: String(skuTsn || ""),
+            sku_stock: skuStock,
+            sku_price: skuPrice,
+            vendor_product_sku_id: item?.vendorProductSkuId ?? item?.vendor_product_sku_id ?? null,
+          },
+        });
+      }
+      // 汇总库存覆盖主表库存
+      await this.prisma.product.updateMany({ where: { product_id: created.product_id }, data: { product_stock: totalStock } });
+    }
+
+    return { code: 0, message: "success", data: { productId: created.product_id } };
+  }
+
+  /**
+   * 管理端更新商品（兼容 PHP 路径）
+   * 前端：POST /adminapi/product/product/update
+   */
+  @Post("update")
+  @UseGuards(AuthorityGuard)
+  @Authorities("productManage")
+  async updateProduct(@Body() body: any, @Req() req: any) {
+    const productId = Number(body.productId ?? body.product_id ?? body.id);
+    if (!Number.isFinite(productId) || productId <= 0) {
+      return { code: 400, message: "#id 错误", data: null };
+    }
+    const shopId = Number((await this.panel.getUserShopId(req.user?.userId)) || 0) || 0;
+
+    // 店铺隔离：校验归属
+    const existing = await this.prisma.product.findFirst({ where: { product_id: productId, ...(shopId > 0 ? { shop_id: shopId } : {}) } });
+    if (!existing) return { code: 404, message: "商品不存在", data: null };
+
+    const pickNum = (v: any) => {
+      if (v === null || v === undefined || v === "") return undefined;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : undefined;
+    };
+    const pickStr = (v: any) => (v === null || v === undefined ? undefined : String(v));
+
+    const firstImg = Array.isArray(body.imgList) && body.imgList.length ? body.imgList[0] : null;
+    const productDescArr: Array<{ html?: string; pic?: string; type?: string }> = Array.isArray(body.productDescArr)
+      ? body.productDescArr
+      : [];
+    const product_desc = productDescArr
+      .map((it) => {
+        if (it && typeof it.html === "string" && it.html) return it.html;
+        if (it && typeof it.pic === "string" && it.pic) return `<div class=\"desc-pic-item\"><img src=\"${it.pic}\"></div>`;
+        return "";
+      })
+      .filter(Boolean)
+      .join("");
+
+    // 电子卡券组：取第一个启用项作为绑定 group（若传入）
+    let card_group_id_upd: number | undefined = undefined;
+    if (Array.isArray(body.eCardList)) {
+      const hit = body.eCardList.find((x: any) => (x?.isUse ?? x?.is_use ?? false) === true);
+      const n = Number(hit?.groupId ?? hit?.group_id);
+      if (Number.isFinite(n)) card_group_id_upd = n;
+    }
+
+    const data: any = {
+      product_name: pickStr(body.productName ?? body.product_name),
+      product_sn: pickStr(body.productSn ?? body.product_sn),
+      product_tsn: pickStr(body.productTsn ?? body.product_tsn),
+      category_id: pickNum(body.categoryId ?? body.category_id),
+      brand_id: pickNum(body.brandId ?? body.brand_id),
+      product_price: pickNum(body.productPrice ?? body.product_price),
+      market_price: pickNum(body.marketPrice ?? body.market_price),
+  product_status: pickNum(body.productStatus ?? body.product_status),
+  product_type: (body.productType ?? body.product_type) !== undefined ? (Number(body.productType ?? body.product_type) ? true : false) : undefined,
+      shipping_tpl_id: pickNum(body.shippingTplId ?? body.shipping_tpl_id),
+      free_shipping: pickNum(body.freeShipping ?? body.free_shipping),
+      keywords: pickStr(body.keywords ?? body.keyword),
+      product_brief: pickStr(body.productBrief ?? body.product_brief),
+      product_desc: product_desc || undefined,
+      product_weight: pickNum(body.productWeight ?? body.product_weight),
+      product_stock: pickNum(body.productStock ?? body.product_stock),
+      shop_category_id: pickNum(body.shopCategoryId ?? body.shop_category_id),
+      check_status: pickNum(body.checkStatus ?? body.check_status),
+      check_reason: pickStr(body.checkReason ?? body.check_reason),
+      remark: pickStr(body.remark),
+      give_integral: pickNum(body.giveIntegral ?? body.give_integral),
+      rank_integral: pickNum(body.rankIntegral ?? body.rank_integral),
+      integral: pickNum(body.integral),
+      no_shipping: pickNum(body.noShipping ?? body.no_shipping),
+      fixed_shipping_type: pickNum(body.fixedShippingType ?? body.fixed_shipping_type),
+      fixed_shipping_fee: pickNum(body.fixedShippingFee ?? body.fixed_shipping_fee),
+      last_update: Math.floor(Date.now() / 1000),
+    };
+
+    if (card_group_id_upd !== undefined) data.card_group_id = card_group_id_upd || 0;
+
+    // 主图字段
+    const pic_url = pickStr(firstImg?.picUrl ?? firstImg?.pic_url ?? body.picUrl ?? body.pic_url);
+    const pic_thumb = pickStr(firstImg?.picThumb ?? firstImg?.pic_thumb ?? body.picThumb ?? body.pic_thumb);
+    const pic_original = pickStr(firstImg?.picOriginal ?? firstImg?.pic_original ?? body.picOriginal ?? body.pic_original);
+    if (pic_url !== undefined) data.pic_url = pic_url;
+    if (pic_thumb !== undefined) data.pic_thumb = pic_thumb;
+    if (pic_original !== undefined) data.pic_original = pic_original;
+
+    // 服务 ID 列表
+    if (Array.isArray(body.productServiceIds)) {
+      data.product_service_ids = body.productServiceIds.map((x: any) => String(x)).join(",");
+    }
+
+    await this.prisma.product.updateMany({ where: { product_id: productId, ...(shopId > 0 ? { shop_id: shopId } : {}) }, data });
+
+    // 规格/属性同步：若传入 attrList 则重建 product_attributes
+    if (body?.attrList && typeof body.attrList === "object") {
+      await this.prisma.product_attributes.deleteMany({ where: { product_id: productId } });
+      const groups: Array<{ typeGuess: number; list: any[] }> = [];
+      const toNum = (v: any, d = 0) => {
+        if (v === null || v === undefined || v === "") return d;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : d;
+      };
+      if (Array.isArray(body.attrList.normal)) groups.push({ typeGuess: 0, list: body.attrList.normal });
+      if (Array.isArray(body.attrList.spe)) groups.push({ typeGuess: 1, list: body.attrList.spe });
+      if (Array.isArray(body.attrList.extra)) groups.push({ typeGuess: 2, list: body.attrList.extra });
+      const rows: any[] = [];
+      for (const g of groups) {
+        for (const grp of g.list) {
+          const attrName = String(grp?.attrName ?? grp?.name ?? "");
+          const arr = Array.isArray(grp?.attrList) ? grp.attrList : [];
+          for (const it of arr) {
+            const attrType = toNum(it?.attrType ?? g.typeGuess, g.typeGuess);
+            rows.push({
+              product_id: productId,
+              attr_type: attrType,
+              attr_name: attrName,
+              attr_value: String(it?.attrValue ?? it?.value ?? ""),
+              attr_price: toNum(it?.attrPrice ?? it?.price ?? 0, 0),
+              attr_color: it?.attrColor ?? it?.color ?? "",
+              attr_pic: it?.attrPic ?? it?.pic ?? "",
+              attr_pic_thumb: it?.attrPicThumb ?? it?.picThumb ?? "",
+            });
+          }
+        }
+      }
+      if (rows.length) await this.prisma.product_attributes.createMany({ data: rows });
+    }
+
+    // SKU 同步：根据 productList 增删改，并回写总库存
+    if (Array.isArray(body.productList)) {
+      const incoming: any[] = body.productList || [];
+      const exists = await this.prisma.product_sku.findMany({
+        where: { product_id: productId },
+        select: { sku_id: true, sku_value: true },
+      });
+      const idByValue = new Map<string, number>();
+      for (const r of exists) idByValue.set(String(r.sku_value || ""), r.sku_id);
+      const keepIds: number[] = [];
+
+      const toNumber = (v: any, d = 0) => {
+        if (v === null || v === undefined || v === "") return d;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : d;
+      };
+
+      for (const item of incoming) {
+        const rawSkuId = item?.skuId ?? item?.sku_id;
+        const skuId = Number(rawSkuId);
+        const skuValue = String(item?.skuValue ?? item?.sku_value ?? "");
+        const skuData = item?.skuData ?? (Array.isArray(item?.attrs) ? JSON.stringify(item.attrs) : undefined);
+        const skuSn = item?.skuSn ?? item?.sku_sn ?? "";
+        const skuTsn = item?.skuTsn ?? item?.sku_tsn ?? "";
+        const skuStock = toNumber(item?.skuStock ?? item?.sku_stock ?? 0, 0);
+  const skuPrice = toNumber(item?.skuPrice ?? item?.sku_price ?? 0, 0);
+
+        let targetId: number | null = null;
+        if (Number.isFinite(skuId) && skuId > 0) targetId = skuId;
+        else if (skuValue && idByValue.has(skuValue)) targetId = idByValue.get(skuValue)!;
+
+        if (targetId) {
+          await this.prisma.product_sku.update({
+            where: { sku_id: targetId },
+            data: {
+              sku_value: skuValue,
+              sku_data: skuData as any,
+              sku_sn: String(skuSn || ""),
+              sku_tsn: String(skuTsn || ""),
+              sku_stock: skuStock,
+              sku_price: skuPrice,
+              vendor_product_sku_id: item?.vendorProductSkuId ?? item?.vendor_product_sku_id ?? null,
+            },
+          });
+          keepIds.push(targetId);
+        } else {
+          const created = await this.prisma.product_sku.create({
+            data: {
+              product_id: productId,
+              sku_value: skuValue,
+              sku_data: skuData as any,
+              sku_sn: String(skuSn || ""),
+              sku_tsn: String(skuTsn || ""),
+              sku_stock: skuStock,
+              sku_price: skuPrice,
+              vendor_product_sku_id: item?.vendorProductSkuId ?? item?.vendor_product_sku_id ?? null,
+            },
+            select: { sku_id: true },
+          });
+          keepIds.push(created.sku_id);
+        }
+      }
+
+      // 删除未保留的 SKU
+      if (exists.length) {
+        const toDelete = exists.map((r) => r.sku_id).filter((id) => !keepIds.includes(id));
+        if (toDelete.length) {
+          await this.prisma.product_sku.deleteMany({ where: { product_id: productId, sku_id: { in: toDelete } } });
+        }
+      }
+
+      // 汇总库存并回写商品总库存
+      const agg = await this.prisma.product_sku.aggregate({ _sum: { sku_stock: true }, where: { product_id: productId } });
+      const totalStock = Number(agg._sum.sku_stock ?? 0) || 0;
+      await this.prisma.product.updateMany({ where: { product_id: productId }, data: { product_stock: totalStock } });
+    }
+
+    // 图集：若传入则简单重建
+    if (Array.isArray(body.imgList)) {
+      await this.prisma.product_gallery.deleteMany({ where: { product_id: productId } });
+      let sort = 1;
+      for (const img of body.imgList) {
+        const url = img?.picUrl ?? img?.url ?? img?.pic_url;
+        if (!url) continue;
+        await this.prisma.product_gallery.create({
+          data: {
+            product_id: productId,
+            pic_url: String(url),
+            pic_thumb: String(img?.picThumb ?? img?.thumb ?? img?.pic_thumb ?? url),
+            pic_large: String(img?.picLarge ?? img?.large ?? img?.pic_large ?? url),
+            pic_original: String(img?.picOriginal ?? img?.original ?? img?.pic_original ?? url),
+            sort_order: sort++,
+          },
+        });
+      }
+    }
+
+    return { code: 0, message: "success", data: true };
+  }
 
   // 商品列表（adminapi）- 映射前端 product/product/list
   @Get("list")

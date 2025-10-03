@@ -24,6 +24,7 @@ import { AdminApiProductInventoryLogCompatController } from "./admin-product-inv
 import { AdminApiPriceInquiryCompatController } from "./admin-price-inquiry-compat.controller";
 import { AdminApiProductAttributesTplCompatController } from "./admin-product-attributes-tpl-compat.controller";
 import { AdminApiProductServicesCompatController } from "./admin-product-services-compat.controller";
+import { AdminApiProductCreateCompatController } from "./admin-product-create-compat.controller";
 import { ProductInventoryLogModule } from "./product-inventory-log/product-inventory-log.module";
 import { PriceInquiryModule } from "./price-inquiry/price-inquiry.module";
 import { ProductAttributesTplModule } from "./product-attributes-tpl/product-attributes-tpl.module";
@@ -59,6 +60,7 @@ import { ProductPricingService } from "./pricing/product-pricing.service";
     AdminApiPriceInquiryCompatController,
     AdminApiProductAttributesTplCompatController,
     AdminApiProductServicesCompatController,
+    AdminApiProductCreateCompatController,
   ],
   providers: [
     ProductService,
