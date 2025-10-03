@@ -974,11 +974,11 @@ export class AdminOrderCompatService {
 
           if (isGift) {
             if (productId > 0) {
-              const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+              const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
               if (prod) {
                 const oldNum = Number(prod.product_stock || 0);
                 const newNum = oldNum + quantity;
-                await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+                await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
                 await tx.product_inventory_log.create({
                   data: { product_id: productId, spec_id: 0, number: quantity, add_time: now, old_number: oldNum, type: true as any, change_number: quantity, desc: "取消订单恢复库存", shop_id: shopId },
                 });
@@ -996,11 +996,11 @@ export class AdminOrderCompatService {
 
               const pId = Number(sku.product_id || productId || 0);
               if (pId > 0) {
-                const prod = await tx.product.findUnique({ where: { product_id: pId }, select: { product_stock: true } });
+                const prod = await tx.product.findFirst({ where: { product_id: pId }, select: { product_stock: true } });
                 if (prod) {
                   const oldProd = Number(prod.product_stock || 0);
                   const newProd = oldProd + quantity;
-                  await tx.product.update({ where: { product_id: pId }, data: { product_stock: newProd } });
+                  await tx.product.updateMany({ where: { product_id: pId }, data: { product_stock: newProd } });
                   await tx.product_inventory_log.create({
                     data: { product_id: pId, spec_id: skuId, number: quantity, add_time: now, old_number: oldSku, type: true as any, change_number: quantity, desc: "取消订单恢复库存", shop_id: shopId },
                   });
@@ -1008,11 +1008,11 @@ export class AdminOrderCompatService {
               }
             }
           } else if (productId > 0) {
-            const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+            const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
             if (prod) {
               const oldNum = Number(prod.product_stock || 0);
               const newNum = oldNum + quantity;
-              await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+              await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
               await tx.product_inventory_log.create({
                 data: { product_id: productId, spec_id: 0, number: quantity, add_time: now, old_number: oldNum, type: true as any, change_number: quantity, desc: "取消订单恢复库存", shop_id: shopId },
               });

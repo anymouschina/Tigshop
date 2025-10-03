@@ -450,6 +450,7 @@ export class CartService {
         }
       }
       this.logger.debug(`skuData=${JSON.stringify(skuData)} extraSkuDataPayload=${JSON.stringify(extraSkuDataPayload)}`);
+      console.log(`skuData=${JSON.stringify(skuData)} extraSkuDataPayload=${JSON.stringify(extraSkuDataPayload)}`);
       cartItem = await this.prisma.cart.create({
         data: {
           user_id: userId,

@@ -142,7 +142,7 @@ export class PointsExchangeService {
     }
     // 读取产品与 SKU
     const [prod, sku] = await Promise.all([
-      this.prisma.product.findUnique({ where: { product_id: result.product_id }, select: { product_id: true, product_name: true, product_price: true, product_stock: true, pic_thumb: true } }),
+  this.prisma.product.findFirst({ where: { product_id: result.product_id }, select: { product_id: true, product_name: true, product_price: true, product_stock: true, pic_thumb: true } }),
       result.sku_id && Number(result.sku_id) > 0
         ? this.prisma.product_sku.findUnique({ where: { sku_id: Number(result.sku_id) }, select: { sku_id: true, sku_price: true, sku_stock: true, sku_sn: true } })
         : Promise.resolve(null),

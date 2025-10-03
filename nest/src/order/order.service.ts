@@ -49,7 +49,7 @@ export class OrderService {
 
     // 验证库存
     for (const item of cart.items) {
-      const product = await this.prisma.product.findUnique({
+      const product = await this.prisma.product.findFirst({
         where: { productId: item.productId },
       });
 
@@ -139,17 +139,17 @@ export class OrderService {
         `;
 
         // 扣减库存
-        await tx.product.update({
-          where: { productId: item.productId },
-          data: {
-            productStock: {
-              decrement: item.quantity,
+          await tx.product.updateMany({
+            where: { productId: item.productId },
+            data: {
+              productStock: {
+                decrement: item.quantity,
+              },
+              clickCount: {
+                increment: item.quantity,
+              },
             },
-            clickCount: {
-              increment: item.quantity,
-            },
-          },
-        });
+          });
       }
 
       // 使用优惠券
@@ -440,7 +440,7 @@ export class OrderService {
             if (prod) {
               const oldNum = Number(prod.product_stock || 0);
               const newNum = oldNum + quantity;
-              await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+              await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
               await tx.product_inventory_log.create({
                 data: {
                   product_id: productId,
@@ -474,7 +474,7 @@ export class OrderService {
               if (prod) {
                 const oldProd = Number(prod.product_stock || 0);
                 const newProd = oldProd + quantity;
-                await tx.product.update({ where: { product_id: pId }, data: { product_stock: newProd } });
+                await tx.product.updateMany({ where: { product_id: pId }, data: { product_stock: newProd } });
                 await tx.product_inventory_log.create({
                   data: {
                     product_id: pId,
@@ -497,7 +497,7 @@ export class OrderService {
           if (prod) {
             const oldNum = Number(prod.product_stock || 0);
             const newNum = oldNum + quantity;
-            await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+            await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
             await tx.product_inventory_log.create({
               data: {
                 product_id: productId,

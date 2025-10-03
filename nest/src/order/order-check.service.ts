@@ -1289,12 +1289,12 @@ export class OrderCheckService {
           if (isGift) {
             // 赠品库存扣减（如果有 giftId 可在此扩展到赠品表，目前仅扣商品库存作为保底）
             if (productId > 0) {
-              const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+              const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
               if (prod) {
                 const oldNum = this.toNumber(prod.product_stock ?? 0);
                 const newNum = Math.max(oldNum - quantity, 0);
                 if (newNum !== oldNum) {
-                  await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+                  await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
                   await tx.product_inventory_log.create({
                     data: {
                       product_id: productId,
@@ -1326,12 +1326,12 @@ export class OrderCheckService {
               }
               const pId = Number(sku.product_id ?? productId ?? 0);
               if (pId > 0) {
-                const prod = await tx.product.findUnique({ where: { product_id: pId }, select: { product_stock: true } });
+                const prod = await tx.product.findFirst({ where: { product_id: pId }, select: { product_stock: true } });
                 if (prod) {
                   const oldProdNum = this.toNumber(prod.product_stock ?? 0);
                   const newProdNum = Math.max(oldProdNum - quantity, 0);
                   if (newProdNum !== oldProdNum) {
-                    await tx.product.update({ where: { product_id: pId }, data: { product_stock: newProdNum } });
+                    await tx.product.updateMany({ where: { product_id: pId }, data: { product_stock: newProdNum } });
                   }
                   await tx.product_inventory_log.create({
                     data: {
@@ -1351,12 +1351,12 @@ export class OrderCheckService {
             }
           } else if (productId > 0) {
             // 仅减商品总库存
-            const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+            const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
             if (prod) {
               const oldNum = this.toNumber(prod.product_stock ?? 0);
               const newNum = Math.max(oldNum - quantity, 0);
               if (newNum !== oldNum) {
-                await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+                await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
                 await tx.product_inventory_log.create({
                   data: {
                     product_id: productId,
