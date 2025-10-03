@@ -116,6 +116,13 @@ export class PanelController {
     return { code: 0, message: "success", data: menuList };
   }
 
+  // 兼容老路径：/adminapi/panel/panel/searchMenu
+  // 与前端保持一致，提供驼峰形式的别名路由
+  @Get("panel/searchMenu")
+  async searchMenuAlias(@Query("keyword") keyword: string, @Request() req) {
+    return this.searchMenu(keyword, req);
+  }
+
   @Get("vendor")
   @ApiOperation({ summary: "获取供应商面板数据" })
   @ApiResponse({ status: 200, description: "获取成功" })

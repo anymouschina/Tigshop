@@ -47,7 +47,7 @@ import { CsrfModule } from "./common/csrf/csrf.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
 import { StatisticsModule } from "./statistics/statistics.module";
-import { AppController } from "./app.controller";
+import { AppController } from "./app.contronller";
 import { AdminUserCompatController } from "./admin/authority/admin-user-compat.controller";
 import { DecorateDiscreteCompatController } from "./decorate/decorate-discrete-compat.controller";
 import { MerchantApplyCompatController } from "./merchant/merchant-apply-compat.controller";
@@ -56,6 +56,7 @@ import { TranslationsModule } from "./lang/translations/translations.module";
 import { PrintModule } from "./print/print.module";
 import { AdminOrderConfigCompatController } from "./order/admin-order-config-compat.controller";
 import { AdminECardGroupCompatController } from "./product/admin-ecard-group-compat.controller";
+import { AdminECardCompatController } from "./product/admin-ecard-compat.controller";
 import { AdminMobileCatNavCompatController } from "./decorate/admin-mobile-cat-nav-compat.controller";
 import { AdminDecorateCompatController } from "./decorate/admin-decorate-compat.controller";
 import { AdminDecorateShareCompatController } from "./decorate/admin-decorate-share-compat.controller";
@@ -151,7 +152,8 @@ import { CategoryModule } from "./category/category.module";
     MerchantApplyCompatController,
     MerchantCompatController,
     AdminOrderConfigCompatController,
-    AdminECardGroupCompatController,
+  AdminECardGroupCompatController,
+  AdminECardCompatController,
     AdminMobileCatNavCompatController,
     AdminDecorateCompatController,
     AdminDecorateShareCompatController,
