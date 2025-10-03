@@ -54,7 +54,9 @@ export class PayController {
     }
 
     const payLog = await this.payService.getPayLogByOrderId(orderId);
-    return payLog || null;
+    // PHP 返回 data 为 null，但前端期望余额支付场景回显 []
+    // 这里对齐前端期望：若无记录，返回 []，否则返回对象
+    return payLog ? payLog : [];
   }
 
   /**

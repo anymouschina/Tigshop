@@ -127,7 +127,8 @@ export class PayService {
   async getPayLogByOrderId(orderId: number) {
     const oid = Number(orderId);
     const log = await this.prisma.paylog.findFirst({
-      where: { order_id: oid },
+      // 与 PHP 行为对齐：仅返回已支付的日志记录
+      where: { order_id: oid, pay_status: 1 as any },
       orderBy: { add_time: "desc" },
     });
     return log ? this.mapPayLogCamel(log) : null;

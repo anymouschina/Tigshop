@@ -183,19 +183,39 @@ export class OrderService {
    * @returns 订单列表
    */
   async getOrderList(userId: number, query: any = {}) {
-    const { page = 1, size = 10, status, paymentStatus, keyword } = query;
+    const { page = 1, size = 10 } = query;
+    // 兼容多种查询参数命名（与 PHP 对齐），-1 表示不过滤
+    const keyword = query.keyword ?? query.orderSn ?? query.order_sn ?? "";
+    const orderStatusRaw = query.orderStatus ?? query.status;
+    const payStatusRaw = query.payStatus ?? query.paymentStatus;
+    const shippingStatusRaw = query.shippingStatus;
+    const commentStatusRaw = query.commentStatus;
 
     const pageNum = Number(page) || 1;
     const sizeNum = Number(size) || 10;
     const skip = (pageNum - 1) * sizeNum;
     const where: any = { user_id: userId };
 
-    if (status !== undefined && status !== null && status !== "") {
-      where.order_status = Number(status);
-    }
+    const toNum = (v: any) => (v === undefined || v === null || v === "" ? undefined : Number(v));
+    const orderStatus = toNum(orderStatusRaw);
+    if (orderStatus !== undefined && orderStatus !== -1) where.order_status = orderStatus;
+    const payStatus = toNum(payStatusRaw);
+    if (payStatus !== undefined && payStatus !== -1) where.pay_status = payStatus;
+    const shippingStatus = toNum(shippingStatusRaw);
+    if (shippingStatus !== undefined && shippingStatus !== -1) where.shipping_status = shippingStatus;
+    const commentStatus = toNum(commentStatusRaw);
+    if (commentStatus !== undefined && commentStatus !== -1) where.comment_status = commentStatus;
 
-    if (paymentStatus !== undefined && paymentStatus !== null && paymentStatus !== "") {
-      where.pay_status = Number(paymentStatus);
+    // PHP 行为补充：当仅筛选“待评价”(commentStatus=0) 且未显式限定订单状态时，
+    // 需排除待支付/已取消，保留已确认和已完成，且必须已支付。
+    const hasExplicitOrderStatus = orderStatus !== undefined && orderStatus !== -1;
+    if (!hasExplicitOrderStatus && commentStatus === 0) {
+      // 若调用方未指定 pay_status，则限定为已支付集合 [1,2]
+      if (where.pay_status === undefined) {
+        (where as any).pay_status = { in: [1, 2] } as any;
+      }
+      // 限定订单状态为已确认(1) 或 已完成(3)
+      (where as any).order_status = { in: [1, 3] } as any;
     }
 
     if (keyword) {
@@ -219,7 +239,7 @@ export class OrderService {
       new Set(orders.map((o: any) => o.shop_id).filter((id: number) => Number(id) > 0)),
     );
 
-    const [items, users, shops] = await Promise.all([
+    const [items, users, shops, paylogs] = await Promise.all([
       orderIds.length
         ? this.prisma.order_item.findMany({ where: { order_id: { in: orderIds } } })
         : Promise.resolve([]),
@@ -243,6 +263,13 @@ export class OrderService {
             },
           })
         : Promise.resolve([]),
+      orderIds.length
+        ? this.prisma.paylog.findMany({
+            where: { order_id: { in: orderIds } },
+            select: { order_id: true, pay_sn: true, pay_code: true, transaction_id: true, add_time: true },
+            orderBy: { add_time: "desc" },
+          })
+        : Promise.resolve([]),
     ]);
 
     const itemsByOrder: Record<number, any[]> = {};
@@ -258,7 +285,33 @@ export class OrderService {
     const shopMap = new Map<number, any>();
     for (const s of shops as any[]) shopMap.set(s.shop_id, s);
 
-    const records = orders.map((o: any) => this.mapOrderRowToRecord(o, itemsByOrder[o.order_id] || [], userMap, shopMap));
+    // 聚合每个订单的最新 paylog
+    const paylogByOrder = new Map<number, { paySn: string; payCode: string; transactionId: string; orderId: number; add_time: number }>();
+    for (const p of paylogs as any[]) {
+      const oid = Number(p.order_id);
+      if (!paylogByOrder.has(oid)) {
+        paylogByOrder.set(oid, {
+          paySn: p.pay_sn || "",
+          payCode: p.pay_code || "",
+          transactionId: p.transaction_id || "",
+          orderId: oid,
+          add_time: Number(p.add_time || 0),
+        });
+      }
+    }
+
+    let records = orders.map((o: any) => this.mapOrderRowToRecord(o, itemsByOrder[o.order_id] || [], userMap, shopMap));
+    records = records.map((r: any) => ({
+      ...r,
+      payLog: paylogByOrder.get(Number(r.orderId))
+        ? {
+            paySn: paylogByOrder.get(Number(r.orderId))!.paySn,
+            payCode: paylogByOrder.get(Number(r.orderId))!.payCode,
+            transactionId: paylogByOrder.get(Number(r.orderId))!.transactionId,
+            orderId: Number(r.orderId),
+          }
+        : null,
+    }));
 
     return {
       records,
@@ -314,7 +367,38 @@ export class OrderService {
     if (user) userMap.set(user.user_id, user);
     const shopMap = new Map<number, any>();
     if (shop) shopMap.set(shop.shop_id, shop);
-    return this.mapOrderRowToRecord(order as any, items as any[], userMap, shopMap);
+    const base = this.mapOrderRowToRecord(order as any, items as any[], userMap, shopMap);
+    // 附加最近一条 paylog
+    const lastPaylog = await this.prisma.paylog.findFirst({
+      where: { order_id: order.order_id },
+      select: { pay_sn: true, pay_code: true, transaction_id: true },
+      orderBy: { add_time: "desc" },
+    });
+    // 计算总商品重量（按商品重量*数量）
+    let totalProductWeight = 0;
+    const pids = Array.from(new Set((items as any[]).map((x) => Number(x.product_id)).filter((n) => Number.isFinite(n) && n > 0)));
+    if (pids.length) {
+      const products = await this.prisma.product.findMany({ where: { product_id: { in: pids as any } }, select: { product_id: true, product_weight: true } });
+      const wmap = new Map<number, number>();
+      for (const p of products as any[]) wmap.set(Number(p.product_id), Number(p.product_weight || 0));
+      for (const it of items as any[]) {
+        const w = wmap.get(Number(it.product_id)) || 0;
+        totalProductWeight += w * Number(it.quantity || 0);
+      }
+    }
+    return {
+      ...base,
+      payLog: lastPaylog
+        ? {
+            paySn: lastPaylog.pay_sn || "",
+            payCode: lastPaylog.pay_code || "",
+            transactionId: lastPaylog.transaction_id || "",
+            orderId: Number(order.order_id),
+          }
+        : null,
+      stepStatus: this.buildStepStatus(order as any),
+      totalProductWeight: Number(totalProductWeight || 0),
+    };
   }
 
   /**
@@ -624,6 +708,10 @@ export class OrderService {
       skuStock: null,
       skuSn: "",
       skuValue,
+      // 额外补齐以匹配 PHP 返回
+      stock: (it as any).sku_stock ?? null,
+      subtotal: money((Number(it.price || 0) || 0) * (Number(it.quantity || 0) || 0)),
+      allowDeliverNum: Math.max(0, Number(it.quantity || 0) - Number(it.delivery_quantity || 0)),
       aftersalesItem: null,
       eCard: [],
     };
@@ -660,7 +748,8 @@ export class OrderService {
       case 0:
         return "待支付";
       case 1:
-        return "已发货";
+        // PHP 语义：1 表示已确认，未发货阶段展示“待发货”
+        return "待发货";
       case 2:
         return "已取消";
       case 3:
@@ -690,10 +779,25 @@ export class OrderService {
       case 1:
         return "已支付";
       case 2:
-        return "部分支付";
+        // 与 PHP 返回对齐：2 也显示为“已支付”
+        return "已支付";
       default:
         return "";
     }
+  }
+
+  private buildStepStatus(order: any) {
+    const addDesc = this.formatUnixToTime(order.add_time);
+    const paid = Number(order.pay_status) > 0;
+    const shipped = Number(order.shipping_status) > 0;
+    const steps = [
+      { title: "提交订单", description: addDesc },
+      { title: paid ? "已支付" : "待支付", description: paid ? this.formatUnixToTime(order.pay_time) : "" },
+      { title: shipped ? "已发货" : "待发货", description: shipped ? this.formatUnixToTime(order.shipping_time) : "" },
+    ];
+    let current = 1;
+    if (shipped) current = 3; else if (paid) current = 2; else current = 1;
+    return { current, status: "process", steps };
   }
 
   private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number) {
