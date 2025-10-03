@@ -228,8 +228,19 @@ export class WechatPayV3Service {
     this.logger.debug(`[wechat-unified-order-sdk] transactions_jsapi body=${JSON.stringify(debugBody)}`);
 
     const result = await pay.transactions_jsapi(body);
-    if (result?.status >= 200 && result?.status < 300 && result?.data?.prepay_id) {
-      return { prepay_id: result.data.prepay_id };
+    if (result?.status >= 200 && result?.status < 300) {
+      const data = result?.data || {};
+      if (data?.prepay_id) {
+        return { prepay_id: data.prepay_id };
+      }
+      // 兼容：若返回中已包含 "package":"prepay_id=xxx"，则提取出 prepay_id 继续流程
+      if (typeof data?.package === "string" && data.package.startsWith("prepay_id=")) {
+        const prepayId = data.package.replace(/^prepay_id=/, "");
+        if (prepayId) return { prepay_id: prepayId };
+      }
+      // 未拿到 prepay_id，按异常处理并打印返回体
+      this.logger.error(`微信统一下单返回异常，无 prepay_id: ${JSON.stringify(result)}`);
+      throw new HttpException("微信统一下单失败：未返回 prepay_id", HttpStatus.BAD_GATEWAY);
     }
     const errText = result?.error || JSON.stringify(result);
     this.logger.error(`微信统一下单失败: ${errText}`);
