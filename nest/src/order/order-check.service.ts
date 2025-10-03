@@ -357,34 +357,24 @@ export class OrderCheckService {
    * 获取可用支付方式
    */
   async getAvailablePaymentType() {
-    // 对齐 PHP：is_show 取决于配置开关（优先 offlinePaySettings，其次 useOffline 标量），默认关闭
+    // 对齐 PHP：Config::get('useOffline')
+    // 新配置优先读取 offlinePaySettings.isOpen，否则读取 useOffline，默认 false
     const off = (await this.settingConfig.getJsonConfig(
       "offlinePaySettings",
     )) as any | null;
-    const rawFlag =
-      off?.isOpen ??
-      off?.open ??
-      off?.enabled ??
-      off?.enable ??
-      off?.status ??
-      off?.useOffline ??
-      off?.useOfflinePay;
-    let isOfflineOpen: boolean | null = null;
-    if (rawFlag !== undefined) {
-      isOfflineOpen = rawFlag === true || rawFlag === "1" || Number(rawFlag) === 1;
+    let useOffline = false;
+    if (off && typeof off === "object") {
+      const v = off.isOpen ?? off.open ?? off.enabled ?? off.enable ?? off.status;
+      if (v !== undefined) useOffline = v === true || v === "1" || Number(v) === 1;
     }
-    if (isOfflineOpen === null) {
-      // 读取旧开关 useOffline（字符串："0"/"1"），默认 false
+    if (!useOffline) {
       try {
-        isOfflineOpen = await this.settingConfig.getBooleanConfig(
-          "useOffline",
-          false,
-        );
-      } catch (_) {
-        isOfflineOpen = false;
+        const legacy = await this.settingConfig.getConfig("useOffline");
+        useOffline = legacy === "1" || legacy === 1 || legacy === true;
+      } catch (e) {
+        useOffline = false;
       }
     }
-    const useOffline = Boolean(isOfflineOpen);
 
     return [
       {

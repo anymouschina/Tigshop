@@ -314,7 +314,18 @@ export class LoginController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "更新用户OpenId" })
   async updateUserOpenId(@Request() req, @Body() body: { code: string }) {
-    return this.loginService.updateUserOpenId(req.user.userId, body.code);
+    const userId = req.user?.user_id ?? req.user?.userId ?? req.user?.sub;
+    return this.loginService.updateUserOpenId(Number(userId), body.code);
+  }
+
+  // 兼容：/api/user/login/updateUserOpenid（小写 d）
+  @Post("login/updateUserOpenid")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "更新用户OpenId（兼容小写路径）" })
+  async updateUserOpenidAlias(@Request() req, @Body() body: { code: string }) {
+    const userId = req.user?.user_id ?? req.user?.userId ?? req.user?.sub;
+    return this.loginService.updateUserOpenId(Number(userId), body.code);
   }
 
   /**

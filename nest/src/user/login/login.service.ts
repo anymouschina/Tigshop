@@ -859,12 +859,15 @@ export class LoginService {
 
       userId = newUser.user_id;
 
-      // 绑定微信授权信息
-      await this.prisma.userAuthorize.create({
+      // 绑定微信授权信息（对齐数据库表 user_authorize）
+      const nowTs = Math.floor(Date.now() / 1000);
+      await this.prisma.user_authorize.create({
         data: {
           user_id: userId,
-          openid,
-          auth_data: JSON.stringify({ openid }),
+          authorize_type: 2, // 2: 小程序
+          open_id: openid,
+          open_data: JSON.stringify({ openid }),
+          add_time: nowTs,
         },
       });
     } else {
@@ -913,26 +916,38 @@ export class LoginService {
    * 更新用户OpenId
    */
   async updateUserOpenId(userId: number, code: string) {
+    // 检查登录态
+    const uid = Number(userId);
+    if (!Number.isInteger(uid) || uid <= 0) {
+      throw new HttpException("未登录或用户无效", HttpStatus.UNAUTHORIZED);
+    }
+
     // 模拟获取小程序openid
     const openid = `mini_openid_${Date.now()}`;
+    const nowTs = Math.floor(Date.now() / 1000);
 
-    // 更新用户授权信息
-    await this.prisma.userAuthorize.upsert({
-      where: {
-        user_id_platform: {
-          user_id: userId,
-          platform: 2, // 小程序
-        },
-      },
-      update: {
-        openid,
-      },
-      create: {
-        user_id: userId,
-        openid,
-        platform: 2,
-      },
+    // user_authorize 表没有复合唯一键，不能使用 upsert，只能先查再更新/创建
+    const exists = await this.prisma.user_authorize.findFirst({
+      where: { user_id: uid, authorize_type: 2 },
+      select: { authorize_id: true },
     });
+
+    if (exists?.authorize_id) {
+      await this.prisma.user_authorize.update({
+        where: { authorize_id: exists.authorize_id },
+        data: { open_id: openid, add_time: nowTs },
+      });
+    } else {
+      await this.prisma.user_authorize.create({
+        data: {
+          user_id: uid,
+          authorize_type: 2,
+          open_id: openid,
+          open_data: JSON.stringify({ openid }),
+          add_time: nowTs,
+        },
+      });
+    }
 
     return { success: true };
   }

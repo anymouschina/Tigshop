@@ -170,18 +170,109 @@ export class UserService {
    * 获取用户详情
    */
   async getUserDetail(user_id: number) {
-    const user = await this.findById(user_id);
-
-    // 移除敏感信息
-    const { password, ...raw } = user;
-    // snake_case -> camelCase
-    const toCamel = (k: string) =>
-      k.replace(/_([a-z])/g, (_m, c) => c.toUpperCase());
-    const mapped: any = {};
-    Object.keys(raw).forEach((k) => {
-      mapped[toCamel(k)] = (raw as any)[k];
+    // 基础用户
+    const user = await this.databaseService.user.findUnique({
+      where: { user_id },
     });
-    return mapped;
+    if (!user) throw new NotFoundException("用户不存在");
+
+    // 会员等级
+    const rank = user.rank_id
+      ? await this.databaseService.user_rank.findUnique({
+          where: { rank_id: Number(user.rank_id) },
+        })
+      : null;
+
+    // 会员等级配置（按 code=rank_config 取最新一条）
+    const rankConfig = await this.databaseService.user_rank_config.findFirst({
+      where: { code: "rank_config" },
+      orderBy: { id: "desc" },
+    });
+    const rankConfigParsed = rankConfig?.data
+      ? { id: rankConfig.id, code: rankConfig.code, rankType: rankConfig.rank_type, data: safeJson(rankConfig.data) }
+      : rankConfig
+        ? { id: rankConfig.id, code: rankConfig.code, rankType: rankConfig.rank_type, data: null }
+        : null;
+
+    // 销售员（如果有）
+    const salesman = await this.databaseService.salesman.findFirst({
+      where: { user_id },
+      orderBy: { salesman_id: "desc" },
+    });
+
+    // 优惠券数量
+    const coupon = await this.databaseService.user_coupon.count({
+      where: { user_id, used_time: 0 },
+    });
+
+    // 汇总余额
+    const totalBalance = (Number(user.balance) + Number(user.frozen_balance)).toFixed(2);
+
+    // 掩码用户名 dimUsername
+    const dimUsername = maskUsername(user.username || user.mobile || "");
+
+    // 是否绑定微信 isBindWechat（是否存在 authorize_type=2 或 open_id 非空）
+    const isBindWechat =
+      (await this.databaseService.user_authorize.count({
+        where: { user_id, OR: [{ authorize_type: 2 }, { open_id: { not: "" } }] },
+      })) > 0;
+
+    // 生日格式化
+    const birthdayStr = user.birthday ? formatDate(user.birthday) : "";
+
+    // 折扣字符串
+    const discountStr = rank ? String(rank.discount) : "0.0";
+
+    // 构造返回（对齐示例字段名）
+    return {
+      dimUsername,
+      userId: user.user_id,
+      username: user.username,
+      nickname: user.nickname ?? "",
+      avatar: user.avatar,
+      points: user.points,
+      balance: Number(user.balance).toFixed(2),
+      frozenBalance: Number(user.frozen_balance).toFixed(2),
+      birthday: birthdayStr,
+      mobile: user.mobile,
+      email: user.email,
+      rankId: user.rank_id,
+      wechatImg: user.wechat_img,
+      isCompanyAuth: user.is_company_auth,
+      rankName: rank?.rank_name ?? "",
+      minGrowthPoints: rank ? Number(rank.min_growth_points).toFixed(2) : "0.00",
+      rankIco: rank?.rank_ico ?? "",
+      discount: discountStr,
+      rankType: rank?.rank_type ?? 0,
+      rankBg: rank?.rank_bg ?? "",
+      rankPoint: rank?.rank_point ?? "0",
+      freeShipping: rank?.free_shipping ?? 0,
+      rights: rank?.rights ? safeJson(rank.rights) ?? [] : [],
+      rankLevel: rank?.rank_level ?? "",
+      rankCardType: rank?.rank_card_type ?? 1,
+      rankLogo: rank?.rank_logo ?? "",
+      totalBalance,
+      coupon,
+      rankExpireTime: user.svip_expire_time ? formatUnixTs(user.svip_expire_time) : "",
+      growth: 0,
+      growthPoints: user.growth_points,
+      rankConfig: rankConfigParsed,
+      isBindWechat,
+      salesman: salesman
+        ? {
+            salesmanId: salesman.salesman_id,
+            userId: salesman.user_id ?? 0,
+            level: salesman.level ?? 1,
+            groupId: salesman.group_id ?? 0,
+            pid: salesman.pid ?? 0,
+            addTime: salesman.add_time ? formatUnixTs(Number(salesman.add_time)) : "",
+            shopId: salesman.shop_id ?? 0,
+            saleAmount: salesman.sale_amount ? String(salesman.sale_amount) : "0.00",
+          }
+        : null,
+      showSign: "",
+      hasShop: false,
+    };
   }
 
   /**
@@ -642,4 +733,43 @@ export class UserService {
       },
     };
   }
+}
+
+// ===== Helpers =====
+function maskUsername(s: string) {
+  if (!s) return "";
+  if (s.length <= 2) return s[0] + "*";
+  return s[0] + "***" + s[s.length - 1];
+}
+
+function safeJson(str: string | null | undefined) {
+  if (!str) return null;
+  try {
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
+}
+
+function pad(n: number) {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+function formatDate(d: Date) {
+  const y = d.getFullYear();
+  const m = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  return `${y}-${m}-${day}`;
+}
+
+function formatUnixTs(ts: number) {
+  if (!ts) return "";
+  const d = new Date(ts * 1000);
+  const y = d.getFullYear();
+  const m = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mm = pad(d.getMinutes());
+  const ss = pad(d.getSeconds());
+  return `${y}-${m}-${day} ${hh}:${mm}:${ss}`;
 }
