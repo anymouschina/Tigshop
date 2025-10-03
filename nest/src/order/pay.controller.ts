@@ -109,9 +109,10 @@ export class PayController {
   @Post("order/pay/notify")
   @Public()
   @ApiOperation({ summary: "支付回调" })
-  async notify(@Body() body: any, @Query() query: { payCode?: string }) {
+  async notify(@Body() body: any, @Query() query: { payCode?: string }, @Request() req: any) {
     const payCode = query.payCode || body.payCode;
-    return this.payService.handleNotify(payCode, body);
+    const headers = req?.headers || {};
+    return this.payService.handleNotify(payCode, body, headers);
   }
 
   /**

@@ -33,11 +33,10 @@ export class OrderController {
    */
   @Get("detail")
   @ApiOperation({ summary: "获取订单详情" })
-  async getOrderDetail(@Request() req, @Query() query: { orderId: number }) {
-    return this.orderService.getOrderDetail(
-      Number(query.orderId),
-      req.user.userId,
-    );
+  async getOrderDetail(@Request() req, @Query() query: any) {
+    // 兼容前端传参：优先 orderId，其次 id/order_id
+    const oid = Number(query?.orderId ?? query?.id ?? query?.order_id);
+    return this.orderService.getOrderDetail(oid, req.user.userId);
   }
 
   /**

@@ -31,16 +31,36 @@ export class AdminLogisticsCompanyCompatController {
       sort_field: query.sortField ?? query.sort_field,
       sort_order: query.sortOrder ?? query.sort_order,
     };
+    // 统一字段映射为前端期望的驼峰结构
+    const mapRow = (r: any) => ({
+      logisticsId: r.logistics_id,
+      logisticsCode: r.logistics_code,
+      logisticsName: r.logistics_name,
+      logisticsDesc: r.logistics_desc,
+      sortOrder: r.sort_order,
+      isShow: r.is_show,
+      shopId: r.shop_id,
+      customerName: r.customer_name ?? "",
+      customerPwd: r.customer_pwd ?? "",
+      monthCode: r.month_code ?? "",
+      sendSite: r.send_site ?? "",
+      sendStaff: r.send_staff ?? "",
+      expType: r.exp_type ?? "",
+      apiLogisticsCode: r.api_logistics_code ?? "",
+    });
 
     if (!filter.paging) {
-      const records = await this.svc.getFilterResult(filter);
-      return { code: 0, message: "success", data: records };
+      const raw = await this.svc.getFilterResult(filter);
+      const records = raw.map(mapRow);
+      const total = records.length;
+      return { code: 0, message: "success", data: { records, total } };
     }
 
-    const [records, total] = await Promise.all([
+    const [raw, total] = await Promise.all([
       this.svc.getFilterResult(filter),
       this.svc.getFilterCount(filter),
     ]);
+    const records = raw.map(mapRow);
     const data = {
       records,
       total,

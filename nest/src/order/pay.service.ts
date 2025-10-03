@@ -305,23 +305,75 @@ export class PayService {
         payInfo,
       };
     } catch (error) {
+      // 微信返回 ORDERPAID：说明该 out_trade_no 已支付（可能回调未到达或被拦截）
+      try {
+        const msg = String((error as any)?.message || "");
+        if (msg.includes("ORDERPAID")) {
+          // 主动补单：根据 out_trade_no 标记订单为已支付并更新支付日志
+          await this.reconcileWechatOrderPaidByOutTradeNo(order.order_sn, Number(payParams.unpaid_amount || 0));
+          // 与 PHP 行为对齐：告知前端订单已支付
+          throw new HttpException("订单已支付", HttpStatus.BAD_REQUEST);
+        }
+      } catch (inner) {
+        // 若补单流程异常则继续抛出原错误
+      }
       throw new HttpException(
-        error.message || "支付失败",
+        (error as any)?.message || "支付失败",
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   /**
+   * 主动补单：当微信返回 ORDERPAID 或未收到回调时，依据 out_trade_no 将订单置为已支付
+   * - 以订单当前 unpaid_amount 作为本次支付金额写回（保持与 PHP paySuccess->updateOrderMoney 一致的效果）
+   * - 更新 order 与 paylog 状态，避免重复回调
+   */
+  private async reconcileWechatOrderPaidByOutTradeNo(outTradeNo: string, fallbackPayAmount: number) {
+    // 通过 out_trade_no = 我们的 order_sn 反查订单
+    const order = await this.prisma.order.findFirst({ where: { order_sn: outTradeNo } });
+    if (!order) return;
+    if (order.pay_status === 1) return; // 已支付则忽略
+
+    const now = Math.floor(Date.now() / 1000);
+    const unpaid = Number(order.unpaid_amount ?? 0);
+    const paidAdd = Number.isFinite(unpaid) && unpaid > 0 ? unpaid : Number(fallbackPayAmount || 0);
+
+    // 更新订单为已支付（paid_amount 累加，unpaid_amount 归零）
+    await this.prisma.order.update({
+      where: { order_id: order.order_id },
+      data: {
+        pay_status: 1,
+        paid_amount: (Number(order.paid_amount ?? 0) + Number(paidAdd || 0)) as any,
+        unpaid_amount: 0 as any,
+        pay_time: now,
+        out_trade_no: outTradeNo,
+      },
+    });
+
+    // 将最近一次支付日志置为已支付
+    const lastLog = await this.prisma.paylog.findFirst({
+      where: { order_id: order.order_id },
+      orderBy: { add_time: "desc" },
+    });
+    if (lastLog && lastLog.pay_status !== 1) {
+      await this.prisma.paylog.update({
+        where: { paylog_id: lastLog.paylog_id },
+        data: { pay_status: 1 },
+      });
+    }
+  }
+
+  /**
    * 处理支付回调
    */
-  async handleNotify(payCode: string, data: any) {
+  async handleNotify(payCode: string, data: any, headers?: Record<string, any>) {
     try {
       let result;
 
       switch (payCode) {
         case "wechat":
-          result = await this.handleWechatNotify(data);
+          result = await this.handleWechatNotify(data, headers || {});
           break;
         case "alipay":
           result = await this.handleAlipayNotify(data);
@@ -593,21 +645,76 @@ export class PayService {
   /**
    * 处理微信支付回调
    */
-  private async handleWechatNotify(data: any): Promise<any> {
-    // 模拟微信支付回调处理
-    const orderId = parseInt(data.out_trade_no);
+  private async handleWechatNotify(body: any, headers: Record<string, any>): Promise<any> {
+    // 优先处理 v3 JSON 通知：{ id, create_time, resource: { algorithm, ciphertext, nonce, associated_data } }
+    try {
+      let outTradeNo: string | undefined;
+      let transactionId: string | undefined;
+      let payerTotalFen: number | undefined;
+      // v3 解密
+      if (body && body.resource && body.resource.ciphertext) {
+        const dec = await this.wechatPayV3.decryptNotifyResource(body.resource);
+        if (dec && typeof dec === "object") {
+          // 结构参考微信官方文档
+          outTradeNo = dec.out_trade_no || dec.outTradeNo;
+          transactionId = dec.transaction_id || dec.transactionId;
+          payerTotalFen = Number(dec.amount?.payer_total ?? dec.amount?.total ?? dec.total);
+        }
+      }
+      // 兼容老格式：直接 body.out_trade_no 与 total_fee（单位分）
+      if (!outTradeNo && body?.out_trade_no) outTradeNo = String(body.out_trade_no);
+      if (payerTotalFen == null && body?.total_fee != null) payerTotalFen = Number(body.total_fee);
 
-    await this.prisma.order.update({
-      where: { order_id: orderId },
-      data: {
-        pay_status: 1,
-        paid_amount: (Number(data.total_fee) / 100) as any,
-        unpaid_amount: 0 as any,
-        pay_time: Math.floor(Date.now() / 1000),
-      },
-    });
+      if (!outTradeNo) {
+        this.logger.warn(`微信回调缺少 out_trade_no，body=${JSON.stringify(body).slice(0,500)}`);
+        return { code: "FAIL", message: "缺少out_trade_no" };
+      }
 
-    return { code: "SUCCESS", message: "OK" };
+      // 通过 order_sn 匹配订单
+      const order = await this.prisma.order.findFirst({ where: { order_sn: outTradeNo } });
+      if (!order) {
+        this.logger.warn(`微信回调未找到订单 out_trade_no=${outTradeNo}`);
+        return { code: "FAIL", message: "订单不存在" };
+      }
+
+      // 金额：从分转元；若缺失则以订单未支付金额兜底，避免置零
+      const payYuan = payerTotalFen != null ? Number(payerTotalFen) / 100 : Number(order.unpaid_amount ?? 0);
+
+      // 幂等：若已支付直接返回成功
+      if (order.pay_status === 1) {
+        return { code: "SUCCESS", message: "OK" };
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      await this.prisma.order.update({
+        where: { order_id: order.order_id },
+        data: {
+          pay_status: 1,
+          paid_amount: (Number(order.paid_amount ?? 0) + Number(payYuan || 0)) as any,
+          unpaid_amount: 0 as any,
+          pay_time: now,
+          transaction_id: transactionId || (order as any).transaction_id || null,
+        },
+      });
+
+      // 更新最近的支付日志
+      const lastLog = await this.prisma.paylog.findFirst({ where: { order_id: order.order_id }, orderBy: { add_time: "desc" } });
+      if (lastLog) {
+        await this.prisma.paylog.update({
+          where: { paylog_id: lastLog.paylog_id },
+          data: {
+            pay_status: 1,
+            transaction_id: transactionId || lastLog.transaction_id || null,
+            notify_data: JSON.stringify(body).slice(0, 4000),
+          },
+        });
+      }
+
+      return { code: "SUCCESS", message: "OK" };
+    } catch (e) {
+      this.logger.error(`处理微信回调异常: ${(e as Error)?.message}`);
+      return { code: "FAIL", message: "失败" };
+    }
   }
 
   /**

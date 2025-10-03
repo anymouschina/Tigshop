@@ -275,5 +275,50 @@ export class WechatPayV3Service {
       };
     });
   }
+  
+  /**
+   * 解密微信支付 v3 通知资源
+   * - 入参为 body.resource（包含 ciphertext, nonce, associated_data）
+   * - 使用 APIv3 Key 进行 AES-256-GCM 解密
+   * - 返回解密后的 JSON 对象（若失败返回 null 并记录日志）
+   */
+  async decryptNotifyResource(resource: {
+    ciphertext: string;
+    nonce: string;
+    associated_data?: string;
+  }): Promise<any | null> {
+    if (!resource || !resource.ciphertext || !resource.nonce) return null;
+    try {
+      const { apiV3Key } = (await this.getWechatPaySettings()) as any;
+      if (!apiV3Key || String(apiV3Key).length !== 32) {
+        this.logger.error("缺少有效的 apiV3Key（长度需为32字节）以解密微信通知");
+        return null;
+      }
+      const key = Buffer.from(String(apiV3Key), "utf8");
+      const iv = Buffer.from(String(resource.nonce), "utf8");
+      const authTagLen = 16; // GCM tag 为 16 字节
+      const ciphertextBuf = Buffer.from(resource.ciphertext, "base64");
+      // 切分出密文与 authTag（最后16字节为tag）
+      const dataLen = ciphertextBuf.length - authTagLen;
+      if (dataLen <= 0) return null;
+      const data = ciphertextBuf.slice(0, dataLen);
+      const authTag = ciphertextBuf.slice(dataLen);
+      const aad = resource.associated_data ? Buffer.from(resource.associated_data, "utf8") : undefined;
+
+      const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+      if (aad) decipher.setAAD(aad);
+      decipher.setAuthTag(authTag);
+      const decrypted = Buffer.concat([decipher.update(data), decipher.final()]);
+      const txt = decrypted.toString("utf8");
+      try {
+        return JSON.parse(txt);
+      } catch {
+        return txt;
+      }
+    } catch (e) {
+      this.logger.error(`解密微信通知失败: ${(e as Error)?.message}`);
+      return null;
+    }
+  }
   // 其余接口（如查询、关闭、退款、回调验签等）建议统一通过 wechatpay-node-v3 提供的方法实现
 }
