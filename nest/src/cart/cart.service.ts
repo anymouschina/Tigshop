@@ -3,6 +3,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -281,6 +282,7 @@ const buildAttributeMap = (records: any[]) => {
 
 @Injectable()
 export class CartService {
+  private readonly logger = new Logger(CartService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -296,6 +298,7 @@ export class CartService {
     productId: number,
     quantity: number = 1,
     skuId: number = 0,
+    options?: { type?: number; salesmanId?: number; extraAttrIds?: string | number[] },
   ) {
     // 入参兜底校验，避免 NaN/无效值导致 Prisma where 报错
     const pid = Number(productId);
@@ -341,12 +344,17 @@ export class CartService {
       throw new BadRequestException("库存不足");
     }
 
-    // 检查购物车中是否已有该商品（相同SKU）
+    // 购物车类型与业务员信息
+    const cartType = Number(options?.type ?? DEFAULT_CART_TYPE);
+    const salesmanId = Number(options?.salesmanId ?? 0) || 0;
+
+    // 检查购物车中是否已有该商品（相同SKU、相同购物车类型）
     const existingItem = await this.prisma.cart.findFirst({
       where: {
         user_id: userId,
         product_id: pid,
         sku_id: sid,
+        type: cartType,
       },
     });
 
@@ -376,6 +384,7 @@ export class CartService {
           shop_id: true,
           market_price: true,
           product_price: true,
+          product_type: true,
         },
       });
 
@@ -386,6 +395,7 @@ export class CartService {
   let skuData = null as string | null;
   let marketPrice = 0;
   let originalPrice = 0;
+  let skuPicThumb: string | null = null;
 
       if (sid > 0) {
         const sku = await this.prisma.product_sku.findUnique({
@@ -393,6 +403,7 @@ export class CartService {
         });
         if (sku) {
           skuData = sku.sku_data ?? null;
+          this.logger.debug(`addItem skuData=${JSON.stringify(skuData)}`);
           // 使用商品的市场价作为市场价，SKU价格作为原价；当SKU价格为0或空时回退到商品价
           marketPrice = Number(productData?.market_price ?? 0);
           const skuPriceNum = Number(sku.sku_price ?? 0);
@@ -404,22 +415,59 @@ export class CartService {
         originalPrice = Number(product.product_price ?? 0);
       }
 
+      // 处理额外属性 extra_attr_ids -> extra_sku_data（可选）
+      let extraSkuDataPayload: any[] | undefined = undefined;
+      const rawExtra = options?.extraAttrIds;
+      if (rawExtra !== undefined && rawExtra !== null) {
+        let attrIds: number[] = [];
+        if (Array.isArray(rawExtra)) {
+          attrIds = rawExtra
+            .map((v) => Number(v))
+            .filter((v) => Number.isInteger(v) && v > 0);
+        } else if (typeof rawExtra === "string") {
+          attrIds = rawExtra
+            .split(",")
+            .map((s) => Number(s.trim()))
+            .filter((v) => Number.isInteger(v) && v > 0);
+        }
+        if (attrIds.length > 0) {
+          const attrs = await this.prisma.product_attributes.findMany({
+            where: { attributes_id: { in: attrIds } },
+          });
+          if (attrs && attrs.length > 0) {
+            extraSkuDataPayload = attrs.map((attr) => ({
+              attributesId: attr.attributes_id,
+              productId: attr.product_id,
+              attrType: attr.attr_type,
+              attrName: attr.attr_name ?? "",
+              attrValue: attr.attr_value ?? "",
+              attrPrice: formatDecimal(attr.attr_price ?? 0),
+              attrColor: attr.attr_color ?? "",
+              attrPic: attr.attr_pic ?? "",
+              attrPicThumb: attr.attr_pic_thumb ?? "",
+            }));
+          }
+        }
+      }
+      this.logger.debug(`skuData=${JSON.stringify(skuData)} extraSkuDataPayload=${JSON.stringify(extraSkuDataPayload)}`);
       cartItem = await this.prisma.cart.create({
         data: {
           user_id: userId,
           product_id: pid,
           product_sn: productData.product_sn,
-          pic_thumb: productData.pic_thumb || "",
+          pic_thumb: (skuPicThumb && skuPicThumb !== "") ? skuPicThumb : (productData.pic_thumb || ""),
           market_price: marketPrice,
           original_price: originalPrice,
           quantity: qty,
           sku_id: sid,
           sku_data: skuData ?? undefined,
-          product_type: 1,
+          product_type: Number(productData.product_type ?? 1),
           is_checked: 1,
           shop_id: productData.shop_id || 0,
-          type: DEFAULT_CART_TYPE,
+          type: cartType,
           update_time: Math.floor(Date.now() / 1000),
+          salesman_id: salesmanId,
+          extra_sku_data: extraSkuDataPayload ? JSON.stringify(extraSkuDataPayload) : undefined,
         },
       });
     }

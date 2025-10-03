@@ -83,11 +83,12 @@ export class AdminOrderCompatService {
       const p = productMap.get(it.product_id);
       (it as any).sku_stock = s ? Number(s.sku_stock || 0) : null;
       (it as any).product_stock = p ? Number(p.product_stock || 0) : null;
+      (it as any).sku_value_str = s ? (s.sku_value || null) : null;
       arr.push(it);
       itemMap.set(it.order_id, arr);
     }
 
-    const records = orders.map((o) => this.mapOrderRowToRecord(o, itemMap.get(o.order_id) || [], userMap, shopMap));
+  const records = orders.map((o) => this.mapOrderRowToRecord(o, itemMap.get(o.order_id) || [], userMap, shopMap));
 
     return { records, total, size, current: page, pages: Math.max(1, Math.ceil((total || 0) / size)) };
   }
@@ -123,10 +124,26 @@ export class AdminOrderCompatService {
       const p = productMap.get(it.product_id);
       (it as any).sku_stock = s ? Number(s.sku_stock || 0) : null;
       (it as any).product_stock = p ? Number(p.product_stock || 0) : null;
+      (it as any).sku_value_str = s ? (s.sku_value || null) : null;
       return it;
     });
 
     const record = this.mapOrderRowToRecord(o, itemsWithStock, userMap, shopMap);
+    // 追加 admin 详情期望字段
+    const stepStatus = this.buildStepStatus(o);
+    const totalProductWeight = itemsWithStock.reduce((sum, it) => {
+      const p = productMap.get(it.product_id);
+      const w = p ? Number(p.product_weight || 0) : 0;
+      return sum + w * Number(it.quantity || 0);
+    }, 0);
+  // 面单能力：先返回 true 标识可用（后续接 SDK 时可联调）
+  const wayBill = true;
+  // 预售/预订单状态：按示例/PHP 语义，pay_status=2 时视作预单已取消
+  let preOrderStatus: number | null = null;
+  let preOrderStatusDesc: string | null = null;
+  if (Number(o.pay_status) === 2) { preOrderStatus = 3; preOrderStatusDesc = "已取消"; }
+  else if (Number(o.order_status) === 2) { preOrderStatus = 3; preOrderStatusDesc = "已取消"; }
+  const isChangeOrderStatus = (Number(o.pay_status) >= 1 || Number(o.order_status) === 2 || Number(o.order_status) === 3) ? 1 : 0;
     const mappedLogs = logs.map((lg) => ({
       logId: lg.log_id,
       orderId: lg.order_id,
@@ -138,7 +155,7 @@ export class AdminOrderCompatService {
       shopId: lg.shop_id,
     }));
 
-    return { ...record, logs: mappedLogs };
+    return { ...record, logs: mappedLogs, stepStatus, totalProductWeight, wayBill, preOrderStatus, preOrderStatusDesc, isChangeOrderStatus };
   }
 
   async updateField(id: number, field: string, value: any) {
@@ -556,7 +573,7 @@ export class AdminOrderCompatService {
       orderType: o.order_type ?? 1,
       mark: o.mark ?? 0,
       vendorId: o.vendor_id ?? 0,
-      availableActions: this.getAvailableActions(o.order_status, o.pay_status, o.shipping_status),
+  availableActions: this.getAvailableActions(o.order_status, o.pay_status, o.shipping_status, o.is_store_splited),
       autoDeliveryDays: null,
       preOrderStatus: null,
       preOrderStatusDesc: null,
@@ -582,11 +599,10 @@ export class AdminOrderCompatService {
   }
 
   private mapOrderItem(it: any) {
+    this.logger.debug(`mapOrderItem item=${JSON.stringify(it)}`);
     const money = (v: any) => this.formatMoney(v);
     const skuData = this.safeParseArray(it.sku_data);
-    const skuValue = Array.isArray(skuData)
-      ? skuData.map((p: any) => `${p.name}:${p.value}`).join("|")
-      : it.sku_data || null;
+  let skuValue = this.buildSkuValue(skuData, this.safeParseArray(it.extra_sku_data), (it as any).sku_value_str);
     return {
       itemId: it.item_id,
       orderId: it.order_id,
@@ -623,11 +639,54 @@ export class AdminOrderCompatService {
       paidContent: "",
       cardGroupId: 0,
       skuStock: (it as any).sku_stock ?? null,
-      skuSn: "",
+      skuSn: null,
       skuValue,
+      // 额外对齐
+      stock: (it as any).product_stock ?? null,
+      subtotal: money((Number(it.price || 0) || 0) * (Number(it.quantity || 0) || 0)),
+      allowDeliverNum: Math.max(0, Number(it.quantity || 0) - Number(it.delivery_quantity || 0)),
       aftersalesItem: null,
       eCard: [],
     };
+  }
+
+  private buildSkuValue(skuData: any[], extra: any[], skuValueStr?: string) {
+    const pairs: string[] = [];
+    const tryPush = (e: any) => {
+      if (!e || typeof e !== "object") return;
+      let name = e.name ?? e.attrName ?? e.k ?? e.key ?? e.label ?? "";
+      let value = e.value ?? e.attrValue ?? e.v ?? e.val ?? e.valueId ?? e.id ?? "";
+      name = name == null ? "" : String(name).trim();
+      value = value == null ? "" : String(value).trim();
+      if (name && value) pairs.push(`${name}:${value}`);
+    };
+    this.logger.debug(`buildSkuValue skuData=${JSON.stringify(skuData)} extra=${JSON.stringify(extra)} skuValueStr=${skuValueStr}`);
+    if (Array.isArray(skuData)) skuData.forEach(tryPush);
+    if (!pairs.length && Array.isArray(extra)) extra.forEach(tryPush);
+    if (pairs.length) return pairs.join("|");
+    if (skuValueStr) {
+      // 兜底：使用 product_sku.sku_value，规范分隔符
+      const normalized = String(skuValueStr)
+        .replace(/，/g, ",")
+        .replace(/：/g, ":")
+        .replace(/\s*[-~]\s*/g, ":");
+      return normalized || null;
+    }
+    return null;
+  }
+
+  private buildStepStatus(order: any) {
+    const addDesc = this.formatUnixToTime(order.add_time);
+    const paid = Number(order.pay_status) > 0;
+    const shipped = Number(order.shipping_status) > 0;
+    const steps = [
+      { title: "提交订单", description: addDesc },
+      { title: paid ? "已支付" : "待支付", description: paid ? this.formatUnixToTime(order.pay_time) : "" },
+      { title: shipped ? "已发货" : "待发货", description: shipped ? this.formatUnixToTime(order.shipping_time) : "" },
+    ];
+    let current = 1;
+    if (shipped) current = 3; else if (paid) current = 2; else current = 1;
+    return { current, status: "process", steps };
   }
 
   private mapAddressData(addr: any) {
@@ -638,8 +697,8 @@ export class AdminOrderCompatService {
       userId: addr.user_id ?? addr.userId ?? 0,
       consignee: addr.consignee ?? "",
       email: addr.email ?? "",
-      regionIds: addr.region_ids ?? addr.regionIds ?? [],
-      regionNames: addr.region_names ?? addr.regionNames ?? [],
+      regionIds: this.safeParseArray(addr.region_ids ?? addr.regionIds),
+      regionNames: this.safeParseArray(addr.region_names ?? addr.regionNames),
       address: addr.address ?? "",
       postcode: addr.postcode ?? "",
       telephone: addr.telephone ?? "",
@@ -696,10 +755,11 @@ export class AdminOrderCompatService {
     }
   }
 
-  private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number) {
+  private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number, isStoreSplited?: any) {
     const os = Number(orderStatus);
     const ps = Number(payStatus);
     const ss = Number(shippingStatus);
+    const splited = Number(isStoreSplited || 0) === 1;
     const isPendingPay = os === 0 && ps === 0; // 待支付
     const isPaidUnshipped = ps === 1 && ss === 0; // 已支付待发货
     const isShipped = ss === 1; // 已发货
@@ -707,25 +767,25 @@ export class AdminOrderCompatService {
     const isCompleted = os === 3; // 已完成
 
     return {
-      // PHP 语义：仅待支付可“设置已确认”（或下单后确认），已支付阶段一般不再设置确认
       setConfirm: isPendingPay,
       toPay: isPendingPay,
       setPaid: isPendingPay,
       setUnpaid: false,
-      // PHP 允许管理员在“待发货”阶段取消
-      cancelOrder: isPendingPay || isPaidUnshipped,
+      // 允许“待支付”或“已支付待发货”取消，但若已拆单则不允许
+      cancelOrder: (isPendingPay || isPaidUnshipped) && !splited,
       delOrder: isCancelled,
       deliver: isPaidUnshipped,
       confirmReceipt: isShipped,
       splitOrder: false,
-      // 可修改类：未完成且未取消均可，但金额只允许在待支付阶段调整
-      modifyOrder: !isCompleted && !isCancelled,
+      // 修改订单仅允许待支付
+      modifyOrder: isPendingPay,
       rebuy: false,
       modifyOrderMoney: isPendingPay,
       modifyOrderConsignee: !isCompleted && !isCancelled,
       modifyOrderProduct: false,
-      modifyShippingInfo: !isCompleted && !isCancelled && !isShipped,
-      toAftersales: false,
+      // 配送信息仅允许待支付修改
+      modifyShippingInfo: isPendingPay,
+      toAftersales: ps >= 1,
       toComment: false,
     };
   }
@@ -771,9 +831,10 @@ export class AdminOrderCompatService {
 
   private composeUserAddress(regionNames: any[], address: string) {
     const names = Array.isArray(regionNames) ? regionNames.filter(Boolean) : [];
-    const uniq: string[] = [];
-    for (const n of names) if (!uniq.includes(n)) uniq.push(n);
-    const prefix = uniq.slice(0, 2).join(" ");
+    // 忽略“国家”层级，优先使用最后两个行政区（省/市 + 区/县），直辖市会自然变成“市 区”
+    const filtered = names.filter((n) => n !== "中国");
+    const lastTwo = filtered.length >= 2 ? filtered.slice(-2) : filtered;
+    const prefix = lastTwo.join(" ");
     return prefix ? `${prefix} ${address || ""}`.trim() : address || "";
   }
 

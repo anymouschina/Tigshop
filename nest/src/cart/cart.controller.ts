@@ -71,8 +71,28 @@ export class CartController {
     const qty = Number(rawQuantity ?? 1);
     const sid = Number(rawSkuId ?? 0);
 
-  const userId = resolveRequestUserId(req);
-    return this.cartService.addItem(userId, pid, qty, sid);
+    // PHP 端兼容参数
+    const isQuick = payload.isQuick === 1 || payload.is_quick === 1 || payload.isQuick === true;
+    const typeRaw = payload.type ?? payload.cartType ?? payload.flowType;
+    const typeNum = Number(typeRaw ?? 1);
+    const salesmanId = Number(payload.salesmanId ?? payload.salesman_id ?? 0) || 0;
+    const extraAttrIds = payload.extraAttrIds ?? payload.extra_attr_ids;
+    // skuItem 目前忽略批量行为，采用第一个或 sid 为准
+    const skuItem = Array.isArray(payload.skuItem ?? payload.sku_item)
+      ? (payload.skuItem ?? payload.sku_item)
+      : [];
+    const firstSku = skuItem.length > 0 ? skuItem[0] : null;
+    const finalSkuId = Number(firstSku?.sku_id ?? firstSku?.skuId ?? sid);
+    const finalQty = Number(firstSku?.num ?? firstSku?.quantity ?? qty);
+
+    const userId = resolveRequestUserId(req);
+    const result = await this.cartService.addItem(userId, pid, finalQty, finalSkuId, {
+      type: typeNum > 0 ? typeNum : 1,
+      salesmanId,
+      extraAttrIds,
+    });
+    // PHP 返回 { item: true, flow_type }
+    return { item: !!result, flow_type: typeNum > 0 ? typeNum : 1 };
   }
 
   /**
