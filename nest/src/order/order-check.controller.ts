@@ -459,6 +459,18 @@ export class OrderCheckController {
       );
     }
 
+    // 当客户端为微信端时，校验 openid 是否存在（对齐 PHP：UserAuthorizeService::checkUserIsAuthorize）
+    // 这里通过常见头部/UA 简单识别，前端也可显式传递 clientType
+    const clientType =
+      (req.headers["x-client-type"] as string) ||
+      (req.headers["x-platform"] as string) ||
+      (req.headers["user-agent"] as string) ||
+      "";
+    const isWechatClient = /miniprogram|micromessenger|wechat/i.test(clientType);
+    if (isWechatClient) {
+      await this.orderCheckService.ensureWechatOpenId(userId);
+    }
+
     // 兼容驼峰与下划线字段，并进行基础类型规整
     const addressId = Number(body.address_id ?? body.addressId ?? 0);
     const shippingType = (body.shipping_type ?? body.shippingType ?? []) as any;

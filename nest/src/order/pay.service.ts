@@ -344,6 +344,7 @@ export class PayService {
     await this.prisma.order.update({
       where: { order_id: order.order_id },
       data: {
+        order_status: 1 as any,
         pay_status: 1,
         paid_amount: (Number(order.paid_amount ?? 0) + Number(paidAdd || 0)) as any,
         unpaid_amount: 0 as any,
@@ -627,6 +628,7 @@ export class PayService {
     await this.prisma.order.update({
       where: { order_id: params.order_id },
       data: {
+        order_status: 1 as any,
         pay_status: 1,
         paid_amount: Number(params.unpaid_amount ?? 0) as any,
         unpaid_amount: 0 as any,
@@ -690,6 +692,7 @@ export class PayService {
       await this.prisma.order.update({
         where: { order_id: order.order_id },
         data: {
+          order_status: 1 as any,
           pay_status: 1,
           paid_amount: (Number(order.paid_amount ?? 0) + Number(payYuan || 0)) as any,
           unpaid_amount: 0 as any,
@@ -728,6 +731,7 @@ export class PayService {
     await this.prisma.order.update({
       where: { order_id: orderId },
       data: {
+        order_status: 1 as any,
         pay_status: 1,
         paid_amount: Number(data.total_amount),
         pay_time: new Date(),

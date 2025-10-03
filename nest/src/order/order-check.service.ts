@@ -100,6 +100,25 @@ export class OrderCheckService {
   ) {}
 
   /**
+   * 当客户端为微信时校验用户是否已绑定 openid（对齐 PHP：UserAuthorizeService::checkUserIsAuthorize）
+   * 未绑定时抛出业务码 5002
+   */
+  async ensureWechatOpenId(userId: number) {
+    const auth = await this.prisma.user_authorize.findFirst({
+      where: { user_id: userId },
+      select: { open_id: true },
+    });
+    const openid = auth?.open_id ?? "";
+    if (!openid) {
+      const err: any = new HttpException("openid为空！", HttpStatus.BAD_REQUEST);
+      // 附带与 PHP 一致的业务码（5002）供前端识别
+      (err as any).code = 5002;
+      throw err;
+    }
+    return openid;
+  }
+
+  /**
    * 检查用户企业认证
    */
   async checkUserCompanyAuth(userId: number) {
@@ -1304,6 +1323,8 @@ export class OrderCheckService {
         await tx.order.update({
           where: { order_id: order.order_id },
           data: {
+            // 同时将订单状态置为已确认，避免出现“待支付/待发货”并存
+            order_status: 1,
             pay_status: 1,
             paid_amount: paidAmount as any,
             unpaid_amount: 0 as any,
