@@ -173,9 +173,15 @@ export class UserService {
     const user = await this.findById(user_id);
 
     // 移除敏感信息
-    const { password, ...userDetails } = user;
-
-    return userDetails;
+    const { password, ...raw } = user;
+    // snake_case -> camelCase
+    const toCamel = (k: string) =>
+      k.replace(/_([a-z])/g, (_m, c) => c.toUpperCase());
+    const mapped: any = {};
+    Object.keys(raw).forEach((k) => {
+      mapped[toCamel(k)] = (raw as any)[k];
+    });
+    return mapped;
   }
 
   /**

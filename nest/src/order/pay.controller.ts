@@ -30,12 +30,13 @@ export class PayController {
   async index(@Request() req, @Query() query: { id: number }) {
     const userId = Number(req.user?.userId || 0);
     const orderId = Number((query as any)?.id || 0);
+    const clientType = String(req.headers["x-client-type"] || "");
 
     if (!orderId || isNaN(orderId)) {
       throw new HttpException("参数缺失", HttpStatus.BAD_REQUEST);
     }
 
-    return this.payService.getOrderPaymentInfo(userId, orderId);
+    return this.payService.getOrderPaymentInfo(userId, orderId, clientType);
   }
 
   /**

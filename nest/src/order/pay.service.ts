@@ -9,7 +9,7 @@ export class PayService {
   /**
    * 获取订单支付信息
    */
-  async getOrderPaymentInfo(userId: number, orderId: number) {
+  async getOrderPaymentInfo(userId: number, orderId: number, clientType?: string) {
     // 获取订单详情
     const oid = Number(orderId);
     const uid = Number(userId);
@@ -35,6 +35,11 @@ export class PayService {
 
   // 获取可用支付方式（不包含余额）
   let paymentList = this.getAvailablePayment().filter((p) => p !== "balance");
+    // 小程序端仅保留 wechat
+    const ct = (clientType || "").toLowerCase();
+    if (ct.includes("mini") || ct.includes("mp")) {
+      paymentList = paymentList.filter((p) => p === "wechat");
+    }
 
     // 根据支付类型过滤
     if (order.pay_type_id === 1) {
@@ -187,10 +192,11 @@ export class PayService {
 
       // 统一输出给前端期望的数据结构
       let payInfo: any = {};
+      const ct = (clientType || "").toLowerCase();
       switch (payType) {
         case "alipay":
           // H5 期望 html，App 期望 orderString
-          if ((clientType || "").toLowerCase() === "h5") {
+          if (ct === "h5" || ct.includes("web")) {
             // 若上游未返回 html，这里不再填充 mock，交由前端降级提示
             payInfo = payInfoRaw.html ? { html: payInfoRaw.html } : (payInfoRaw.orderString ? { html: payInfoRaw.orderString } : {});
           } else {
@@ -200,8 +206,20 @@ export class PayService {
         case "wechat":
         case "yabanpay_wechat":
         case "yunpay_wechat":
-          // 对 H5 返回一个可唤起/跳转的 URL；若上游无返回，则以 weixin 协议兜底，避免 mock 域名
-          {
+          // 小程序返回 JSAPI 所需参数；H5 返回 URL；其余平台保持兜底 URL
+          if (ct.includes("mini") || ct.includes("mp")) {
+            // 统一字段并保证 timeStamp 为字符串
+            const ts = payInfoRaw.timeStamp ?? payInfoRaw.timestamp ?? Math.floor(Date.now() / 1000);
+            payInfo = {
+              appId: payInfoRaw.appId || payInfoRaw.appid || "",
+              timeStamp: String(ts),
+              nonceStr: payInfoRaw.nonceStr || payInfoRaw.noncestr || "",
+              package: payInfoRaw.package || payInfoRaw.prepayId || "",
+              signType: payInfoRaw.signType || "MD5",
+              paySign: payInfoRaw.paySign || payInfoRaw.sign || "",
+            };
+          } else {
+            // 对 H5 返回一个可唤起/跳转的 URL；若上游无返回，则以 weixin 协议兜底，避免 mock 域名
             const pr = (payParams as any).paylog_id || payParams.order_sn || Date.now();
             const fallback = `weixin://wxpay/bizpayurl?pr=${pr}`;
             payInfo = { url: payInfoRaw.url || fallback };
