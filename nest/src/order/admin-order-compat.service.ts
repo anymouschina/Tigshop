@@ -517,8 +517,76 @@ export class AdminOrderCompatService {
   async cancelOrder(orderId: number, reason?: string, orderStatus?: any, adminName?: string) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
-    const status = orderStatus != null ? Number(orderStatus) : 2; // 默认 2=已取消（占位值）
-    await this.prisma.order.update({ where: { order_id: orderId }, data: { order_status: status } });
+
+    // 仅当待付款(0)且未支付(0)时恢复库存；其他状态仅置取消，不动库存
+    const shouldRestore = Number(order.order_status) === 0 && Number(order.pay_status) === 0;
+    if (shouldRestore) {
+      const items = await this.prisma.order_item.findMany({ where: { order_id: orderId } });
+      const now = Math.floor(Date.now() / 1000);
+      await this.prisma.$transaction(async (tx) => {
+        for (const it of items as any[]) {
+          const quantity = Number(it.quantity || 0);
+          if (quantity <= 0) continue;
+          const productId = Number(it.product_id || 0);
+          const skuId = Number(it.sku_id || 0);
+          const shopId = Number(it.shop_id || 0);
+          const isGift = Number(it.is_gift || 0) === 1;
+
+          if (isGift) {
+            if (productId > 0) {
+              const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+              if (prod) {
+                const oldNum = Number(prod.product_stock || 0);
+                const newNum = oldNum + quantity;
+                await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+                await tx.product_inventory_log.create({
+                  data: { product_id: productId, spec_id: 0, number: quantity, add_time: now, old_number: oldNum, type: true as any, change_number: quantity, desc: "取消订单恢复库存", shop_id: shopId },
+                });
+              }
+            }
+            continue;
+          }
+
+          if (skuId > 0) {
+            const sku = await tx.product_sku.findUnique({ where: { sku_id: skuId }, select: { sku_stock: true, product_id: true } });
+            if (sku) {
+              const oldSku = Number(sku.sku_stock || 0);
+              const newSku = oldSku + quantity;
+              await tx.product_sku.update({ where: { sku_id: skuId }, data: { sku_stock: newSku } });
+
+              const pId = Number(sku.product_id || productId || 0);
+              if (pId > 0) {
+                const prod = await tx.product.findUnique({ where: { product_id: pId }, select: { product_stock: true } });
+                if (prod) {
+                  const oldProd = Number(prod.product_stock || 0);
+                  const newProd = oldProd + quantity;
+                  await tx.product.update({ where: { product_id: pId }, data: { product_stock: newProd } });
+                  await tx.product_inventory_log.create({
+                    data: { product_id: pId, spec_id: skuId, number: quantity, add_time: now, old_number: oldSku, type: true as any, change_number: quantity, desc: "取消订单恢复库存", shop_id: shopId },
+                  });
+                }
+              }
+            }
+          } else if (productId > 0) {
+            const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+            if (prod) {
+              const oldNum = Number(prod.product_stock || 0);
+              const newNum = oldNum + quantity;
+              await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+              await tx.product_inventory_log.create({
+                data: { product_id: productId, spec_id: 0, number: quantity, add_time: now, old_number: oldNum, type: true as any, change_number: quantity, desc: "取消订单恢复库存", shop_id: shopId },
+              });
+            }
+          }
+        }
+
+        await tx.order.update({ where: { order_id: orderId }, data: { order_status: 2 } });
+      });
+    } else {
+      const status = orderStatus != null ? Number(orderStatus) : 2; // 默认 2=已取消
+      await this.prisma.order.update({ where: { order_id: orderId }, data: { order_status: status } });
+    }
+
     await this.addLog(orderId, `取消订单${reason ? `：${reason}` : ""}`, adminName);
     return true;
   }

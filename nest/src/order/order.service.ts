@@ -409,36 +409,121 @@ export class OrderService {
    * @returns 更新后的订单
    */
   async cancelOrder(orderId: number, userId: number, reason?: string) {
-    const order = await this.getOrderDetail(orderId, userId);
+    // 使用原表字段校验，避免 detail 映射差异
+    const rawOrder = await this.prisma.order.findFirst({
+      where: { order_id: Number(orderId), user_id: Number(userId) },
+    });
+    if (!rawOrder) throw new NotFoundException("订单不存在");
 
-    if (order.orderStatus !== 0) {
-      // PENDING = 0
+    // 仅允许待付款状态（order_status=0 且 pay_status=0）的订单取消
+    if (Number(rawOrder.order_status) !== 0 || Number(rawOrder.pay_status) !== 0) {
       throw new BadRequestException("只有待付款的订单才能取消");
     }
 
-    // 恢复库存
-    for (const item of order.orderItems) {
-      await this.prisma.product.update({
-        where: { productId: item.productId },
-        data: {
-          productStock: {
-            increment: item.quantity,
-          },
-          clickCount: {
-            decrement: item.quantity,
-          },
-        },
-      });
-    }
+    const items = await this.prisma.order_item.findMany({ where: { order_id: Number(orderId) } });
+    const now = Math.floor(Date.now() / 1000);
 
-    // 更新订单状态
-    return this.prisma.order.update({
-      where: { order_id: Number(order.orderId) },
-      data: {
-        order_status: 2, // CANCELLED = 2
-        // cancelReason and cancelTime fields don't exist in schema
-      },
+    await this.prisma.$transaction(async (tx) => {
+      // 恢复库存 + 写入库存变更日志
+      for (const it of items as any[]) {
+        const quantity = Number(it.quantity || 0);
+        if (quantity <= 0) continue;
+        const productId = Number(it.product_id || 0);
+        const skuId = Number(it.sku_id || 0);
+        const shopId = Number(it.shop_id || 0);
+        const isGift = Number(it.is_gift || 0) === 1;
+
+        if (isGift) {
+          // 赠品按商品维度恢复
+          if (productId > 0) {
+            const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+            if (prod) {
+              const oldNum = Number(prod.product_stock || 0);
+              const newNum = oldNum + quantity;
+              await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+              await tx.product_inventory_log.create({
+                data: {
+                  product_id: productId,
+                  spec_id: 0,
+                  number: quantity,
+                  add_time: now,
+                  old_number: oldNum,
+                  // type: true 表示入库/增加
+                  type: true as any,
+                  change_number: quantity,
+                  desc: "取消订单恢复库存",
+                  shop_id: shopId,
+                },
+              });
+            }
+          }
+          continue;
+        }
+
+        if (skuId > 0) {
+          // 恢复 SKU 库存，同时恢复商品总库存
+          const sku = await tx.product_sku.findUnique({ where: { sku_id: skuId }, select: { sku_stock: true, product_id: true } });
+          if (sku) {
+            const oldSku = Number(sku.sku_stock || 0);
+            const newSku = oldSku + quantity;
+            await tx.product_sku.update({ where: { sku_id: skuId }, data: { sku_stock: newSku } });
+
+            const pId = Number(sku.product_id || productId || 0);
+            if (pId > 0) {
+              const prod = await tx.product.findUnique({ where: { product_id: pId }, select: { product_stock: true } });
+              if (prod) {
+                const oldProd = Number(prod.product_stock || 0);
+                const newProd = oldProd + quantity;
+                await tx.product.update({ where: { product_id: pId }, data: { product_stock: newProd } });
+                await tx.product_inventory_log.create({
+                  data: {
+                    product_id: pId,
+                    spec_id: skuId,
+                    number: quantity,
+                    add_time: now,
+                    old_number: oldSku,
+                    type: true as any,
+                    change_number: quantity,
+                    desc: "取消订单恢复库存",
+                    shop_id: shopId,
+                  },
+                });
+              }
+            }
+          }
+        } else if (productId > 0) {
+          // 无规格商品直接恢复商品总库存
+          const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+          if (prod) {
+            const oldNum = Number(prod.product_stock || 0);
+            const newNum = oldNum + quantity;
+            await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+            await tx.product_inventory_log.create({
+              data: {
+                product_id: productId,
+                spec_id: 0,
+                number: quantity,
+                add_time: now,
+                old_number: oldNum,
+                type: true as any,
+                change_number: quantity,
+                desc: "取消订单恢复库存",
+                shop_id: shopId,
+              },
+            });
+          }
+        }
+      }
+
+      // 更新订单状态为已取消
+      await tx.order.update({
+        where: { order_id: Number(orderId) },
+        data: { order_status: 2 }, // CANCELLED = 2
+      });
     });
+
+    // 返回最新详情
+    return this.getOrderDetail(orderId, userId);
   }
 
   /**
