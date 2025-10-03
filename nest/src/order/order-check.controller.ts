@@ -436,6 +436,16 @@ export class OrderCheckController {
       buyer_note?: string;
       invoice_data?: any;
       flow_type?: number;
+      // 兼容驼峰入参
+      addressId?: number;
+      shippingType?: any;
+      payTypeId?: number;
+      usePoint?: number;
+      useBalance?: number | string;
+      useCouponIds?: number[];
+      buyerNote?: string;
+      invoiceData?: any;
+      flowType?: number;
     },
   ) {
     const userId = resolveRequestUserId(req);
@@ -449,25 +459,38 @@ export class OrderCheckController {
       );
     }
 
+    // 兼容驼峰与下划线字段，并进行基础类型规整
+    const addressId = Number(body.address_id ?? body.addressId ?? 0);
+    const shippingType = (body.shipping_type ?? body.shippingType ?? []) as any;
+    const payTypeId = Number(body.pay_type_id ?? body.payTypeId ?? 1);
+    const usePoint = Number(body.use_point ?? body.usePoint ?? 0);
+    const rawUseBalance = body.use_balance ?? body.useBalance ?? 0;
+    const useBalance = Number(rawUseBalance) || 0;
+    const useCouponIds = (body.use_coupon_ids ?? body.useCouponIds ?? []) as number[];
+    const buyerNote = String(body.buyer_note ?? body.buyerNote ?? "");
+    const invoiceData = (body.invoice_data ?? body.invoiceData ?? []) as any;
+    const flowType = Number(body.flow_type ?? body.flowType ?? 1);
+
     const params = {
-      address_id: body.address_id || 0,
-      shipping_type: body.shipping_type || [],
-      pay_type_id: body.pay_type_id || 1,
-      use_point: body.use_point || 0,
-      use_balance: body.use_balance || 0,
-      use_coupon_ids: body.use_coupon_ids || [],
-      buyer_note: body.buyer_note || "",
-      invoice_data: body.invoice_data || [],
-      flow_type: body.flow_type || 1,
+      address_id: addressId,
+      shipping_type: shippingType,
+      pay_type_id: payTypeId,
+      use_point: usePoint,
+      use_balance: useBalance,
+      use_coupon_ids: useCouponIds,
+      buyer_note: buyerNote,
+      invoice_data: invoiceData,
+      flow_type: flowType,
       user_id: userId,
     };
 
     await this.orderCheckService.initSet(params);
 
     const result = await this.orderCheckService.submit();
+    // 返回驼峰字段以契合前端期望
     return {
-      order_id: result.order_id,
-      return_type: result.unpaid_amount > 0 ? 1 : 2,
+      orderId: result.order_id,
+      returnType: result.unpaid_amount > 0 ? 1 : 2,
     };
   }
 

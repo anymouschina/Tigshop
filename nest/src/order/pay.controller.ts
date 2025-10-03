@@ -93,12 +93,13 @@ export class PayController {
     const id = Number((query as any)?.id || 0);
     const type = String((query as any)?.type || "");
     const code = (query as any)?.code;
+    const clientType = String(req.headers["x-client-type"] || "");
 
     if (!id || isNaN(id) || !type) {
       throw new HttpException("未选择支付方式", HttpStatus.BAD_REQUEST);
     }
 
-    return this.payService.createPayment(userId, Number(id), String(type), code);
+    return this.payService.createPayment(userId, Number(id), String(type), code, clientType);
   }
 
   /**

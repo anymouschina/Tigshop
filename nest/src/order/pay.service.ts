@@ -131,6 +131,7 @@ export class PayService {
     orderId: number,
     payType: string,
     code?: string,
+    clientType?: string,
   ) {
     // 余额支付不在支付方式列表中，防御性拦截
     if (payType === "balance") {
@@ -182,13 +183,47 @@ export class PayService {
 
     // 调用第三方支付
     try {
-      const payInfo = await this.callThirdPartyPay(payParams, payType);
+  const payInfoRaw = await this.callThirdPartyPay(payParams, payType);
+
+      // 统一输出给前端期望的数据结构
+      let payInfo: any = {};
+      switch (payType) {
+        case "alipay":
+          // H5 期望 html，App 期望 orderString
+          if ((clientType || "").toLowerCase() === "h5") {
+            // 若上游未返回 html，这里不再填充 mock，交由前端降级提示
+            payInfo = payInfoRaw.html ? { html: payInfoRaw.html } : (payInfoRaw.orderString ? { html: payInfoRaw.orderString } : {});
+          } else {
+            payInfo = payInfoRaw.orderString ? { orderString: payInfoRaw.orderString } : {};
+          }
+          break;
+        case "wechat":
+        case "yabanpay_wechat":
+        case "yunpay_wechat":
+          // 对 H5 返回一个可唤起/跳转的 URL；若上游无返回，则以 weixin 协议兜底，避免 mock 域名
+          {
+            const pr = (payParams as any).paylog_id || payParams.order_sn || Date.now();
+            const fallback = `weixin://wxpay/bizpayurl?pr=${pr}`;
+            payInfo = { url: payInfoRaw.url || fallback };
+          }
+          break;
+        case "paypal":
+        case "yabanpay_alipay":
+          payInfo = payInfoRaw.url ? { url: payInfoRaw.url } : {};
+          break;
+        case "yunpay_alipay":
+        case "yunpay_yunshanfu":
+          payInfo = payInfoRaw.codeUrl ? { codeUrl: payInfoRaw.codeUrl } : (payInfoRaw.url ? { codeUrl: payInfoRaw.url } : {});
+          break;
+        default:
+          payInfo = payInfoRaw;
+      }
 
       return {
         orderId: oid,
         orderSn: order.order_sn,
         orderAmount: Number(payParams.unpaid_amount ?? 0),
-        payInfo: payInfo,
+        payInfo,
       };
     } catch (error) {
       throw new HttpException(
@@ -373,15 +408,22 @@ export class PayService {
           package: `prepay_id=${Date.now()}`,
           signType: "MD5",
           paySign: "mock_sign",
+          url: "https://mock.wechatpay.qr"
         };
       case "alipay":
-        return {
-          orderString: "mock_alipay_order_string",
-        };
+        return { orderString: "mock_alipay_order_string", html: "<form>mock</form>" };
       case "balance":
         // 余额支付
         await this.processBalancePayment(params);
         return { success: true };
+      case "yabanpay_wechat":
+      case "yabanpay_alipay":
+        return { url: "https://mock.yabanpay.redirect" };
+      case "yunpay_wechat":
+        return { url: "https://mock.yunpay.wechat" };
+      case "yunpay_alipay":
+      case "yunpay_yunshanfu":
+        return { codeUrl: "https://mock.code.url" };
       default:
         throw new HttpException("不支持的支付方式", HttpStatus.BAD_REQUEST);
     }
