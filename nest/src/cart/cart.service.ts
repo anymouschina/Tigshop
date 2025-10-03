@@ -702,7 +702,7 @@ export class CartService {
 
       const skuDataList = normalizeSkuData(row.sku_data ?? sku?.sku_data ?? []);
       const extraSkuData = normalizeExtraSkuData(row.extra_sku_data);
-      const checked = row.is_checked === 1;
+  const checked = Number(row.is_checked ?? 0) === 1;
       const price = sku?.sku_price ?? row.original_price ?? product?.product_price ?? 0;
       const priceNumber = toPlainNumber(price, 0);
       const subtotal = priceNumber * row.quantity;

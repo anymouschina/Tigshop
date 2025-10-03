@@ -48,8 +48,11 @@ export class OrderCheckController {
     // B2B模式下，判断用户是否实名
     await this.orderCheckService.checkUserCompanyAuth(userId);
 
-    const cartList = await this.orderCheckService.getStoreCarts("", flowType);
-    if (!cartList.carts || cartList.carts.length === 0) {
+    const cartSource = await this.orderCheckService.getStoreCarts(
+      userId,
+      flowType,
+    );
+    if (!cartSource?.carts || cartSource.carts.length === 0) {
       throw new HttpException("您还未选择商品！", HttpStatus.BAD_REQUEST);
     }
 
@@ -57,27 +60,27 @@ export class OrderCheckController {
     const selectUserCouponIds: number[] = [];
 
     // 构建购物车促销信息
-    const builtCartList = await this.orderCheckService.buildCartPromotion(
-      cartList,
+    const builtCart = await this.orderCheckService.buildCartPromotion(
+      cartSource,
       userId,
       flowType,
     );
 
     // 提取使用的优惠券ID
-    if (builtCartList.carts) {
-      for (const shopCart of builtCartList.carts) {
-        if (shopCart.used_promotions) {
-          for (const usedPromotion of shopCart.used_promotions) {
-            if (usedPromotion.type === 2) {
-              useCouponIds.push(usedPromotion.coupon_id);
-              const userCouponId =
-                await this.orderCheckService.getUserCouponIdByCouponId(
-                  userId,
-                  usedPromotion.coupon_id,
-                );
-              if (userCouponId > 0) {
-                selectUserCouponIds.push(userCouponId);
-              }
+    if (builtCart?.cartList) {
+      for (const shopCart of builtCart.cartList) {
+        const usedPromotions =
+          shopCart.usedPromotions ?? shopCart.used_promotions ?? [];
+        for (const usedPromotion of usedPromotions) {
+          if (usedPromotion.type === 2) {
+            useCouponIds.push(usedPromotion.coupon_id);
+            const userCouponId =
+              await this.orderCheckService.getUserCouponIdByCouponId(
+                userId,
+                usedPromotion.coupon_id,
+              );
+            if (userCouponId > 0) {
+              selectUserCouponIds.push(userCouponId);
             }
           }
         }
@@ -99,26 +102,103 @@ export class OrderCheckController {
 
     await this.orderCheckService.initSet(params);
 
-    const result = {
-      address_list: await this.orderCheckService.getAddressList(userId),
-      available_payment_type:
-        await this.orderCheckService.getAvailablePaymentType(),
-      store_shipping_type: await this.orderCheckService.getStoreShippingType(),
-      cart_list: builtCartList.carts,
-      total: await this.orderCheckService.getTotalFee(builtCartList),
-      balance: await this.orderCheckService.getUserBalance(userId),
-      points: await this.orderCheckService.getUserPoints(userId),
-      available_points: await this.orderCheckService.getOrderAvailablePoints(),
-      coupon_list: await this.orderCheckService.getCouponListByPromotion(
-        builtCartList,
+    const [
+      addressList,
+      availablePaymentType,
+      storeShippingType,
+      total,
+      balance,
+      points,
+      availablePoints,
+      couponList,
+      tmplIds,
+    ] = await Promise.all([
+      this.orderCheckService.getAddressList(userId),
+      this.orderCheckService.getAvailablePaymentType(),
+      this.orderCheckService.getStoreShippingType(flowType),
+      this.orderCheckService.getTotalFee(builtCart),
+      this.orderCheckService.getUserBalance(userId),
+      this.orderCheckService.getUserPoints(userId),
+      this.orderCheckService.getOrderAvailablePoints(),
+      this.orderCheckService.getCouponListByPromotion(
+        builtCart,
         useCouponIds,
         selectUserCouponIds,
       ),
+      this.orderCheckService.getMiniProgramTemplateIds(),
+    ]);
+
+    const shippingSelections = Array.isArray(params.shipping_type)
+      ? params.shipping_type.map((item: any) => ({
+          typeId:
+            item?.typeId ??
+            item?.shippingTypeId ??
+            item?.shipping_type_id ??
+            item?.id ??
+            1,
+          shopId: item?.shopId ?? item?.shop_id ?? 0,
+          typeName:
+            item?.typeName ??
+            item?.shippingTypeName ??
+            item?.shipping_type_name ??
+            item?.name ??
+            "普通快递",
+        }))
+      : [];
+
+    const fallbackSelections =
+      shippingSelections.length > 0
+        ? shippingSelections
+        : storeShippingType.flat().map((item: any) => ({
+            typeId: item?.typeId ?? 1,
+            shopId: item?.shopId ?? 0,
+            typeName: item?.typeName ?? "普通快递",
+          }));
+
+    const cartList = builtCart?.cartList ?? [];
+
+    const result = {
+      addressList,
+      availablePaymentType,
+      storeShippingType,
+      cartList,
+      total,
+      balance,
+      points,
+      availablePoints,
+      couponList,
+      useCouponIds,
+      selectUserCouponIds,
+      tmplIds,
+      flowType,
+      item: {
+        addressId: params.address_id,
+        shippingType: fallbackSelections,
+        payTypeId: params.pay_type_id,
+        usePoint: params.use_point,
+        useBalance: params.use_balance,
+        flowType,
+        useCouponIds,
+        selectUserCouponIds,
+        productExtra: params.product_extra,
+        address_id: params.address_id,
+        shipping_type: fallbackSelections,
+        pay_type_id: params.pay_type_id,
+        use_point: params.use_point,
+        use_balance: params.use_balance,
+        use_coupon_ids: useCouponIds,
+        select_user_coupon_ids: selectUserCouponIds,
+        product_extra: params.product_extra,
+      },
+      address_list: addressList,
+      available_payment_type: availablePaymentType,
+      store_shipping_type: storeShippingType,
+      cart_list: cartList,
+      available_points: availablePoints,
+      coupon_list: couponList,
       use_coupon_ids: useCouponIds,
       select_user_coupon_ids: selectUserCouponIds,
-      tmpl_ids: await this.orderCheckService.getMiniProgramTemplateIds(),
-      flow_type: flowType,
-      item: params,
+      tmpl_ids: tmplIds,
     };
 
     return result;
@@ -143,7 +223,7 @@ export class OrderCheckController {
       product_extra?: any;
     },
   ) {
-  const userId = resolveRequestUserId(req);
+    const userId = resolveRequestUserId(req);
     const params = {
       address_id: body.address_id || 0,
       shipping_type: body.shipping_type || [],
@@ -169,30 +249,45 @@ export class OrderCheckController {
       );
     }
 
-    const cartList = await this.orderCheckService.getStoreCarts(
-      "",
+    const cartSource = await this.orderCheckService.getStoreCarts(
+      userId,
       params.flow_type,
     );
-    if (!cartList.carts || cartList.carts.length === 0) {
+    if (!cartSource?.carts || cartSource.carts.length === 0) {
       throw new HttpException("您还未选择商品！", HttpStatus.BAD_REQUEST);
     }
 
-    const builtCartList = await this.orderCheckService.buildCartPromotion(
-      cartList,
+    const builtCart = await this.orderCheckService.buildCartPromotion(
+      cartSource,
       userId,
       params.flow_type,
       0,
       params.use_coupon_ids,
     );
 
+    const [storeShippingType, availablePaymentType, total, availablePoints, addressList] =
+      await Promise.all([
+        this.orderCheckService.getStoreShippingType(params.flow_type),
+        this.orderCheckService.getAvailablePaymentType(),
+        this.orderCheckService.getTotalFee(builtCart),
+        this.orderCheckService.getOrderAvailablePoints(),
+        this.orderCheckService.getAddressList(userId),
+      ]);
+
+    const cartList = builtCart?.cartList ?? [];
+
     const result = {
-      store_shipping_type: await this.orderCheckService.getStoreShippingType(),
-      available_payment_type:
-        await this.orderCheckService.getAvailablePaymentType(),
-      cart_list: builtCartList.carts,
-      total: await this.orderCheckService.getTotalFee(builtCartList),
-      available_points: await this.orderCheckService.getOrderAvailablePoints(),
-      address_list: await this.orderCheckService.getAddressList(userId),
+      storeShippingType,
+      availablePaymentType,
+      cartList,
+      total,
+      availablePoints,
+      addressList,
+      store_shipping_type: storeShippingType,
+      available_payment_type: availablePaymentType,
+      cart_list: cartList,
+      available_points: availablePoints,
+      address_list: addressList,
     };
 
     return result;
@@ -284,7 +379,7 @@ export class OrderCheckController {
     await this.orderCheckService.initSet(params);
 
     const cartList = await this.orderCheckService.getStoreCarts(
-      "",
+      userId,
       params.flow_type,
     );
     if (!cartList.carts || cartList.carts.length === 0) {
@@ -304,8 +399,11 @@ export class OrderCheckController {
       params.use_coupon_ids = [];
       selectUserCouponIds = [];
 
-      if (builtCartList.carts) {
-        for (const shopCart of builtCartList.carts) {
+      const normalizedCartList =
+        builtCartList?.cartList ?? builtCartList?.carts ?? [];
+
+      if (normalizedCartList.length > 0) {
+        for (const shopCart of normalizedCartList) {
           if (shopCart.used_promotions) {
             for (const usedPromotion of shopCart.used_promotions) {
               if (usedPromotion.type === 2) {
@@ -325,20 +423,21 @@ export class OrderCheckController {
       }
     }
 
-    const result = {
-      coupon_list: await this.orderCheckService.getCouponListByPromotion(
+    const normalizedCartList =
+      builtCartList?.cartList ?? builtCartList?.carts ?? [];
+
+    return {
+      couponList: await this.orderCheckService.getCouponListByPromotion(
         builtCartList,
         params.use_coupon_ids,
         selectUserCouponIds,
       ),
-      use_coupon_ids: params.use_coupon_ids,
-      select_user_coupon_ids: selectUserCouponIds,
-      cart_list: builtCartList.carts,
-      available_points: await this.orderCheckService.getOrderAvailablePoints(),
+      useCouponIds: params.use_coupon_ids,
+      selectUserCouponIds,
+      cartList: normalizedCartList,
+      availablePoints: await this.orderCheckService.getOrderAvailablePoints(),
       total: await this.orderCheckService.getTotalFee(builtCartList),
     };
-
-    return result;
   }
 
   /**
