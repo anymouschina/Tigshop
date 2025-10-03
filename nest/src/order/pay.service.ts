@@ -55,7 +55,7 @@ export class PayService {
       p.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase()),
     );
 
-    const offlinePaymentList = [];
+  const offlinePaymentList = [] as any[];
     if (paymentList.includes("offline")) {
       offlinePaymentList.push({
         offline_pay_bank:
@@ -76,7 +76,7 @@ export class PayService {
    * 获取支付日志
    */
   async getPayLogByOrderId(orderId: number) {
-    return this.prisma.payLog.findFirst({
+    return this.prisma.paylog.findFirst({
       where: { order_id: orderId },
       orderBy: { add_time: "desc" },
     });
@@ -98,8 +98,8 @@ export class PayService {
    * 根据支付日志ID获取支付状态
    */
   async getPayStatusByPayLogId(payLogId: number) {
-    const payLog = await this.prisma.payLog.findUnique({
-      where: { pay_log_id: payLogId },
+    const payLog = await this.prisma.paylog.findUnique({
+      where: { paylog_id: payLogId },
       select: { pay_status: true },
     });
 
@@ -133,7 +133,7 @@ export class PayService {
     }
 
     // 获取用户OpenID（微信支付需要）
-    let openid = "";
+  let openid = "";
     if (
       code &&
       ["wechat", "yabanpay_wechat", "yunpay_wechat"].includes(payType)
@@ -145,17 +145,17 @@ export class PayService {
     const payParams = {
       order_id: orderId,
       order_sn: order.order_sn,
-      order_amount: order.order_amount,
-      unpaid_amount: order.order_amount - (order.paid_amount || 0),
+      order_amount: Number(order.total_amount ?? order.order_amount ?? 0),
+      unpaid_amount: Number(order.unpaid_amount ?? (Number(order.total_amount ?? 0) - Number(order.paid_amount ?? 0))),
       pay_code: payType,
       user_id: userId,
       openid,
       order_type: 0,
-    };
+    } as any;
 
     // 创建支付日志
-    const payLogId = await this.createPayLog(payParams);
-    payParams.paylog_id = payLogId;
+  const payLogId = await this.createPayLog(payParams);
+  (payParams as any).paylog_id = payLogId;
 
     // 调用第三方支付
     try {
@@ -268,19 +268,22 @@ export class PayService {
    * 创建支付日志
    */
   private async createPayLog(params: any): Promise<number> {
-    const payLog = await this.prisma.payLog.create({
+    const payLog = await this.prisma.paylog.create({
       data: {
         order_id: params.order_id,
-        user_id: params.user_id,
-        pay_code: params.pay_code,
-        pay_name: this.getPayName(params.pay_code),
-        pay_amount: params.unpaid_amount,
+        order_sn: params.order_sn ?? "",
+        order_amount: Number(params.order_amount ?? 0),
+        order_type: 0,
+        pay_amount: Number(params.unpaid_amount ?? 0),
         pay_status: 0,
-        add_time: new Date(),
+        pay_code: params.pay_code,
+        add_time: Math.floor(Date.now() / 1000),
+        notify_data: "",
+        token_code: "",
       },
     });
 
-    return payLog.pay_log_id;
+    return payLog.paylog_id;
   }
 
   /**
@@ -344,7 +347,7 @@ export class PayService {
     await this.prisma.user.update({
       where: { user_id: params.user_id },
       data: {
-        balance: currentBalance - unpaidAmount,
+        balance: (currentBalance - unpaidAmount) as any,
       },
     });
 
@@ -353,17 +356,17 @@ export class PayService {
       where: { order_id: params.order_id },
       data: {
         pay_status: 1,
-        paid_amount: params.unpaid_amount,
-        pay_time: new Date(),
+        paid_amount: Number(params.unpaid_amount ?? 0) as any,
+        unpaid_amount: 0 as any,
+        pay_time: Math.floor(Date.now() / 1000),
       },
     });
 
     // 更新支付日志
-    await this.prisma.payLog.update({
-      where: { pay_log_id: params.paylog_id },
+    await this.prisma.paylog.update({
+      where: { paylog_id: params.paylog_id },
       data: {
         pay_status: 1,
-        pay_time: new Date(),
       },
     });
   }
@@ -379,8 +382,9 @@ export class PayService {
       where: { order_id: orderId },
       data: {
         pay_status: 1,
-        paid_amount: Number(data.total_fee) / 100,
-        pay_time: new Date(),
+        paid_amount: (Number(data.total_fee) / 100) as any,
+        unpaid_amount: 0 as any,
+        pay_time: Math.floor(Date.now() / 1000),
       },
     });
 
