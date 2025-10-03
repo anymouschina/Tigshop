@@ -383,9 +383,9 @@ export class CartService {
         throw new NotFoundException("商品信息不完整");
       }
 
-      let skuData = null as string | null;
-      let marketPrice = 0;
-      let originalPrice = 0;
+  let skuData = null as string | null;
+  let marketPrice = 0;
+  let originalPrice = 0;
 
       if (sid > 0) {
         const sku = await this.prisma.product_sku.findUnique({
@@ -393,9 +393,10 @@ export class CartService {
         });
         if (sku) {
           skuData = sku.sku_data ?? null;
-          // 使用商品的市场价作为市场价，SKU价格作为原价
+          // 使用商品的市场价作为市场价，SKU价格作为原价；当SKU价格为0或空时回退到商品价
           marketPrice = Number(productData?.market_price ?? 0);
-          originalPrice = Number(sku.sku_price ?? 0);
+          const skuPriceNum = Number(sku.sku_price ?? 0);
+          originalPrice = skuPriceNum > 0 ? skuPriceNum : Number(product.product_price ?? 0);
         }
       } else {
         // Use product price if no SKU
@@ -703,8 +704,12 @@ export class CartService {
       const skuDataList = normalizeSkuData(row.sku_data ?? sku?.sku_data ?? []);
       const extraSkuData = normalizeExtraSkuData(row.extra_sku_data);
   const checked = Number(row.is_checked ?? 0) === 1;
-      const price = sku?.sku_price ?? row.original_price ?? product?.product_price ?? 0;
-      const priceNumber = toPlainNumber(price, 0);
+      const skuPriceRaw = sku?.sku_price;
+      const priceCandidate =
+        (skuPriceRaw !== undefined && skuPriceRaw !== null && Number(skuPriceRaw) > 0
+          ? skuPriceRaw
+          : row.original_price) ?? product?.product_price ?? 0;
+      const priceNumber = toPlainNumber(priceCandidate, 0);
       const subtotal = priceNumber * row.quantity;
 
       const cartItem: CartItemDetail = {

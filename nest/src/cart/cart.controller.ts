@@ -236,7 +236,7 @@ export class CartController {
   @Post("clear")
   @ApiOperation({ summary: "清空购物车" })
   async clearCart(@Request() req) {
-    const userId = this.extractUserId(req);
+    const userId = resolveRequestUserId(req);
     return this.cartService.clearCart(userId);
   }
 
@@ -246,7 +246,7 @@ export class CartController {
   @Get("getCount")
   @ApiOperation({ summary: "获取购物车商品数量" })
   async getCartCount(@Request() req) {
-    const userId = this.extractUserId(req);
+    const userId = resolveRequestUserId(req);
     return this.cartService.getCartCount(userId);
   }
 

@@ -1117,24 +1117,186 @@ export class OrderCheckService {
    * 提交订单
    */
   async submit() {
-    // 模拟订单提交
-    const orderId = Date.now();
+    const userId = Number(this.checkoutParams?.user_id ?? 0);
+    if (userId <= 0) {
+      throw new HttpException("请先登录", HttpStatus.UNAUTHORIZED);
+    }
 
-    const order = await this.prisma.order.create({
-      data: {
-        order_sn: `ORDER${orderId}`,
-        user_id: this.checkoutParams.user_id || 1,
-        order_amount: 100,
-        shipping_fee: 10,
-        pay_status: 0,
-        order_status: 0,
-        add_time: new Date(),
-      },
+    // 1) 获取购物车（仅已选中项）并构建促销
+    const flowType = Number(this.checkoutParams?.flow_type ?? 1);
+    const cartSource = await this.getStoreCarts(userId, flowType);
+    if (!cartSource?.carts || cartSource.carts.length === 0) {
+      throw new HttpException("您还未选择商品！", HttpStatus.BAD_REQUEST);
+    }
+    const builtCart = await this.buildCartPromotion(
+      cartSource,
+      userId,
+      flowType,
+      0,
+      this.checkoutParams.use_coupon_ids ?? [],
+    );
+
+    // 2) 计算总计
+    const totals = await this.getTotalFee(builtCart);
+
+    // 3) 读取地址（使用传入或当前选中的地址；若无则报错）
+    const addressId = Number(this.checkoutParams?.address_id ?? 0);
+    const addr = await this.getSelectedOrDefaultAddressRaw(userId, addressId);
+    if (!addr) {
+      throw new HttpException("请先选择收货地址", HttpStatus.BAD_REQUEST);
+    }
+
+    // 4) 生成订单基础字段
+    const now = Math.floor(Date.now() / 1000);
+    const orderSn = `ORDER${now}${Math.floor(Math.random() * 1000)}`;
+    const shippingType = Array.isArray(this.checkoutParams?.shipping_type)
+      ? this.checkoutParams.shipping_type[0]
+      : null;
+    const shippingTypeId = Number(shippingType?.typeId ?? 1);
+    const shippingTypeName = String(shippingType?.typeName ?? "普通快递");
+    const payTypeId = Number(this.checkoutParams?.pay_type_id ?? 1);
+
+    // 5) 开启事务：写入订单、订单商品、券使用、扣积分/余额、清除购物车
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 5.1 创建订单
+      const order = await tx.order.create({
+        data: {
+          order_sn: orderSn,
+          user_id: userId,
+          order_status: 0,
+          pay_status: 0,
+          shipping_status: 0,
+          add_time: now,
+          consignee: String(addr.consignee ?? ""),
+          address: String(addr.address ?? ""),
+          region_ids: String(addr.region_ids ?? ""),
+          region_names: String(addr.region_names ?? ""),
+          mobile: String(addr.mobile ?? ""),
+          email: String(addr.email ?? ""),
+          shipping_method: 1,
+          logistics_id: 0,
+          logistics_name: "",
+          shipping_type_id: shippingTypeId,
+          shipping_type_name: shippingTypeName,
+          pay_type_id: payTypeId,
+          // 金额类字段
+          product_amount: totals.productAmount,
+          service_fee: totals.serviceFee,
+          shipping_fee: totals.shippingFee,
+          coupon_amount: totals.couponAmount,
+          discount_amount: totals.discountAmount ?? totals.discounts ?? 0,
+          points_amount: totals.pointsAmount,
+          balance: totals.balance,
+          total_amount: totals.totalAmount,
+          unpaid_amount: totals.unpaidAmount,
+          paid_amount: 0,
+          order_extension: "",
+          order_source: "app",
+          address_data: JSON.stringify({
+            addressId: addr.address_id,
+            consignee: addr.consignee,
+            regionIds: addr.region_ids,
+            regionNames: addr.region_names,
+            address: addr.address,
+            mobile: addr.mobile,
+            email: addr.email ?? "",
+          }),
+        },
+      });
+
+      // 5.2 创建订单商品
+      const orderItemsData = [] as any[];
+      for (const shop of builtCart.cartList ?? []) {
+        for (const item of shop.carts ?? []) {
+          // 过滤未选中的，以防万一
+          const checked = this.isCartItemChecked(item);
+          if (!checked) continue;
+          const price = this.toNumber(item?.originPrice ?? item?.price ?? 0);
+          const quantity = this.toNumber(item?.quantity ?? 0);
+          orderItemsData.push({
+            order_id: order.order_id,
+            order_sn: order.order_sn,
+            user_id: userId,
+            price,
+            quantity,
+            product_id: Number(item?.productId ?? 0),
+            product_name: String(item?.productName ?? ""),
+            product_sn: String(item?.productSn ?? ""),
+            pic_thumb: String(item?.picThumb ?? ""),
+            sku_id: Number(item?.skuId ?? 0),
+            sku_data: JSON.stringify(item?.skuData ?? []),
+            delivery_quantity: 0,
+            product_type: Number(item?.productType ?? 1),
+            is_gift: 0,
+            shop_id: Number(item?.shopId ?? 0),
+            is_pin: 0,
+            origin_price: price,
+            promotion_data: "",
+            is_seckill: 0,
+            extra_sku_data: JSON.stringify(item?.extraSkuData ?? []),
+            suppliers_id: item?.suppliersId ?? 0,
+            card_group_name: "",
+            vendor_product_id: item?.vendorProductId ?? null,
+            vendor_product_sku_id: item?.vendorProductSkuId ?? null,
+            vendor_id: item?.vendorId ?? null,
+          });
+        }
+      }
+      if (orderItemsData.length > 0) {
+        await tx.order_item.createMany({ data: orderItemsData });
+      }
+
+      // 5.3 标记优惠券已用（若有）
+      const selectedUserCouponIds: number[] = Array.isArray(this.checkoutParams?.select_user_coupon_ids)
+        ? this.checkoutParams.select_user_coupon_ids
+            .map((id) => Number(id))
+            .filter((n) => Number.isFinite(n) && n > 0)
+        : [];
+      if (selectedUserCouponIds.length > 0) {
+        await tx.user_coupon.updateMany({
+          where: { id: { in: selectedUserCouponIds }, user_id: userId },
+          data: { used_time: now, order_id: order.order_id },
+        });
+        // 记录订单-优惠券明细
+        const couponIds = Array.isArray(this.checkoutParams?.use_coupon_ids)
+          ? this.checkoutParams.use_coupon_ids
+              .map((id) => Number(id))
+              .filter((n) => Number.isFinite(n) && n > 0)
+          : [];
+        const couponDetails = couponIds.map((cid) => ({
+          order_id: order.order_id,
+          shop_id: 0,
+          coupon_id: cid,
+          coupon_fee: 0,
+        }));
+        if (couponDetails.length > 0) {
+          await tx.order_coupon_detail.createMany({ data: couponDetails });
+        }
+      }
+
+      // 5.4 扣余额与积分（若有）
+      if ((totals.balance ?? 0) > 0) {
+        const user = await tx.user.findUnique({ where: { user_id: userId }, select: { balance: true } });
+        const current = this.toNumber(user?.balance ?? 0);
+        const next = Math.max(current - this.toNumber(totals.balance, 0), 0);
+        await tx.user.update({ where: { user_id: userId }, data: { balance: next } });
+      }
+      if ((totals.usePoint ?? 0) > 0) {
+        const user = await tx.user.findUnique({ where: { user_id: userId }, select: { points: true } });
+        const current = this.toNumber(user?.points ?? 0);
+        const next = Math.max(current - this.toNumber(totals.usePoint, 0), 0);
+        await tx.user.update({ where: { user_id: userId }, data: { points: next } });
+      }
+
+      // 5.5 删除勾选的购物车项
+      await tx.cart.deleteMany({ where: { user_id: userId, is_checked: 1 } });
+
+      return order;
     });
 
     return {
-      order_id: order.order_id,
-      unpaid_amount: order.order_amount,
+      order_id: result.order_id,
+      unpaid_amount: Number(totals.unpaidAmount ?? 0),
     };
   }
 
@@ -1238,6 +1400,30 @@ export class OrderCheckService {
 
     const pad = (num: number) => num.toString().padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  }
+
+  /**
+   * 获取用户所选或默认地址（原始DB记录，用于下单持久化）
+   */
+  private async getSelectedOrDefaultAddressRaw(userId: number, addressId?: number) {
+    if (addressId && addressId > 0) {
+      const rec = await this.prisma.user_address.findFirst({
+        where: { user_id: userId, address_id: addressId },
+      });
+      if (rec) return rec;
+    }
+    // 尝试获取当前选中地址
+    const selected = await this.prisma.user_address.findFirst({
+      where: { user_id: userId, is_selected: 1 },
+      orderBy: [{ address_id: "desc" }],
+    });
+    if (selected) return selected;
+    // 再尝试默认地址
+    const def = await this.prisma.user_address.findFirst({
+      where: { user_id: userId, is_default: 1 },
+      orderBy: [{ address_id: "desc" }],
+    });
+    return def;
   }
 
   private async getPointValueAmount(point: number): Promise<number> {
