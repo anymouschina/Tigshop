@@ -436,7 +436,8 @@ export class OrderService {
         if (isGift) {
           // 赠品按商品维度恢复
           if (productId > 0) {
-            const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+            // product 表使用复合主键，不能仅用 product_id 调用 findUnique，这里改为 findFirst
+            const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
             if (prod) {
               const oldNum = Number(prod.product_stock || 0);
               const newNum = oldNum + quantity;
@@ -470,7 +471,8 @@ export class OrderService {
 
             const pId = Number(sku.product_id || productId || 0);
             if (pId > 0) {
-              const prod = await tx.product.findUnique({ where: { product_id: pId }, select: { product_stock: true } });
+              // 复合主键限制：使用 findFirst 而不是 findUnique
+              const prod = await tx.product.findFirst({ where: { product_id: pId }, select: { product_stock: true } });
               if (prod) {
                 const oldProd = Number(prod.product_stock || 0);
                 const newProd = oldProd + quantity;
@@ -493,7 +495,8 @@ export class OrderService {
           }
         } else if (productId > 0) {
           // 无规格商品直接恢复商品总库存
-          const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+          // 复合主键限制：使用 findFirst 而不是 findUnique
+          const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
           if (prod) {
             const oldNum = Number(prod.product_stock || 0);
             const newNum = oldNum + quantity;

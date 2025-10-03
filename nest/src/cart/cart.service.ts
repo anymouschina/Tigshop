@@ -666,7 +666,7 @@ export class CartService {
       where: { product_id: { in: productIdSet } },
     });
     const attrMap = buildAttributeMap(attrRecords);
-
+    this.logger.debug(`attrMap=${JSON.stringify([...attrMap])}`);
     const nowTimestamp = Math.floor(Date.now() / 1000);
     const seckillItems = productIdSet.length
       ? await this.prisma.seckill_item.findMany({
@@ -751,6 +751,7 @@ export class CartService {
       }
 
       const skuDataList = normalizeSkuData(row.sku_data ?? sku?.sku_data ?? []);
+      this.logger.debug(`cart_id=${row.cart_id} skuDataList=${JSON.stringify(skuDataList)} ${sku?.sku_data}`);
       const extraSkuData = normalizeExtraSkuData(row.extra_sku_data);
   const checked = Number(row.is_checked ?? 0) === 1;
       const skuPriceRaw = sku?.sku_price;
