@@ -67,7 +67,11 @@ type CheckoutTotals = {
 
 type ShippingFeeResult = {
   total: number;
-  storeShippingFee: number[];
+  storeShippingFee: Map<number, number>;
+};
+type ShippingFeeAccumulator = {
+  total: number;
+  perShop: Map<number, number>;
 };
 
 @Injectable()
@@ -86,7 +90,7 @@ export class OrderCheckService {
   };
 
   private configCache = new Map<string, string | null>();
-  private integralScale = 0;
+  private integralScaleCache: number | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -458,58 +462,269 @@ export class OrderCheckService {
    * 获取订单总费用
    */
   async getTotalFee(cartData: any) {
-    if (cartData?.total) {
-      return cartData.total;
+    const shops: CheckoutShop[] = Array.isArray(cartData?.carts)
+      ? cartData.carts
+      : Array.isArray(cartData?.cartList)
+        ? cartData.cartList
+        : [];
+
+    const totals = this.recalculateTotals(shops);
+    const productAmount = this.roundCurrency(totals.productAmount ?? 0);
+    const serviceFee = this.roundCurrency(totals.serviceFee ?? 0);
+    // Compute selected coupon deduction based on current selection and cart content
+    const couponCalc = await this.calculateSelectedCouponsAmount(shops);
+    const couponAmount = this.roundCurrency(couponCalc.totalAmount ?? 0);
+    const discountAmount = this.roundCurrency(totals.discountDiscountAmount ?? 0);
+    const discountSeckillAmount = this.roundCurrency(
+      totals.discountSeckillAmount ?? 0,
+    );
+    const discountProductPromotionAmount = this.roundCurrency(
+      totals.discountProductPromotionAmount ?? 0,
+    );
+    const discountTimeDiscountAmount = this.roundCurrency(
+      totals.discountTimeDiscountAmount ?? 0,
+    );
+    const discounts = this.roundCurrency(totals.discounts ?? 0);
+    const discountAfter = this.roundCurrency(productAmount - discounts);
+
+    const shippingFeeResult = this.calculateShippingFee(shops);
+    const shippingFee = shippingFeeResult.total;
+    const storeShippingFeeList: number[] = [];
+    const storeShippingFeeMap: Record<string, number> = {};
+
+    for (const [shopId, fee] of shippingFeeResult.storeShippingFee.entries()) {
+      const roundedFee = this.roundCurrency(fee);
+      storeShippingFeeMap[String(shopId)] = roundedFee;
     }
 
-    const shops = cartData?.cartList ?? cartData?.carts ?? [];
+    for (const shop of shops) {
+      const shopId = Number(shop?.shopId ?? 0);
+      const fee = shippingFeeResult.storeShippingFee.get(shopId) ?? 0;
+      storeShippingFeeList.push(this.roundCurrency(fee));
+    }
 
-    const productAmountRaw = lodashSumBy(shops, (shop: any) =>
-      this.sumCartSubtotal(shop?.carts ?? []),
-    );
-
-    const shippingFeeRaw = lodashSumBy(shops, (shop: any) =>
-      this.toNumber(shop?.fixedShippingFee ?? 0),
-    );
-
-    const checkedCount = Math.max(
+    const userId = Number(this.checkoutParams?.user_id ?? 0);
+    const availablePoints = userId > 0
+      ? await this.calculateAvailablePoints(productAmount, userId)
+      : 0;
+    const requestedPoints = Math.max(
+      this.toNumber(this.checkoutParams?.use_point ?? 0),
       0,
-      Math.round(
-        lodashSumBy(shops, (shop: any) =>
-          this.sumCartQuantity(shop?.carts ?? []),
-        ),
-      ),
     );
+    const usePoint = Math.min(requestedPoints, availablePoints);
+    this.checkoutParams.use_point = usePoint;
+    const pointsAmount = await this.getPointValueAmount(usePoint);
 
-    const productAmount = this.roundCurrency(productAmountRaw);
-    const shippingFee = this.roundCurrency(shippingFeeRaw);
+    const totalAmountRaw =
+      productAmount + shippingFee + serviceFee - pointsAmount - discountAmount - couponAmount;
+    const totalAmount = this.roundCurrency(Math.max(totalAmountRaw, 0));
+
+    const requestedBalance = Math.max(
+      this.toNumber(this.checkoutParams?.use_balance ?? 0),
+      0,
+    );
+    const userBalance = userId > 0 ? await this.getUserBalance(userId) : 0;
+    let balance = 0;
+    if (requestedBalance > 0 && userBalance > 0 && totalAmount > 0) {
+      balance = this.roundCurrency(
+        Math.min(requestedBalance, userBalance, totalAmount),
+      );
+    }
+
+    const unpaidAmount = this.roundCurrency(Math.max(totalAmount - balance, 0));
 
     return {
       productAmount,
-      checkedCount,
-      discounts: 0,
-      discountAfter: this.roundCurrency(productAmountRaw),
-      totalCount: checkedCount,
-      discountCouponAmount: 0,
-      discountDiscountAmount: 0,
-      discountSeckillAmount: 0,
-      discountProductPromotionAmount: 0,
-      discountTimeDiscountAmount: 0,
-      serviceFee: this.roundCurrency(0),
-      paidAmount: 0,
-      couponAmount: 0,
-      discountAmount: 0,
-      exchangePoints: 0,
-      pointsAmount: 0,
+      checkedCount: totals.checkedCount ?? 0,
+      discounts,
+      discountAfter,
+      totalCount: totals.totalCount ?? totals.checkedCount ?? 0,
+      discountCouponAmount: couponAmount,
+      discountDiscountAmount: discountAmount,
+      discountSeckillAmount,
+      discountProductPromotionAmount,
+      discountTimeDiscountAmount,
+      serviceFee,
       shippingFee,
-      storeShippingFee: shops.map((shop: any) =>
-        this.roundCurrency(shop?.fixedShippingFee ?? 0),
-      ),
-      totalAmount: this.roundCurrency(productAmountRaw + shippingFeeRaw),
+  storeShippingFee: storeShippingFeeList,
+  storeShippingFeeMap,
+      couponAmount,
+      discountAmount,
+      totalAmount,
+      unpaidAmount,
+      paidAmount: 0,
+      pointsAmount,
+      usePoint,
+      exchangePoints: 0,
       orderSendPoint: 0,
-      balance: 0,
-      unpaidAmount: this.roundCurrency(productAmountRaw + shippingFeeRaw),
+      couponIds: Array.isArray(this.checkoutParams?.use_coupon_ids)
+        ? this.checkoutParams.use_coupon_ids
+        : [],
+      balance,
     };
+  }
+
+  /**
+   * 依据当前选中的优惠券计算抵扣金额
+   */
+  private async calculateSelectedCouponsAmount(shops: CheckoutShop[]) {
+    const userId = Number(this.checkoutParams?.user_id ?? 0);
+    const useCouponIds: number[] = Array.isArray(this.checkoutParams?.use_coupon_ids)
+      ? this.checkoutParams.use_coupon_ids.map((id) => Number(id)).filter((n) => Number.isFinite(n) && n > 0)
+      : [];
+    const selectUserCouponIds: number[] = Array.isArray(this.checkoutParams?.select_user_coupon_ids)
+      ? this.checkoutParams.select_user_coupon_ids.map((id) => Number(id)).filter((n) => Number.isFinite(n) && n > 0)
+      : [];
+
+    if (userId <= 0 || shops.length === 0 || (useCouponIds.length === 0 && selectUserCouponIds.length === 0)) {
+      return { totalAmount: 0, perShop: new Map<number, number>() };
+    }
+
+    // 统计每个店铺及全局的商品金额和商品ID清单
+    const shopSummary = new Map<
+      number,
+      { amount: number; productIds: number[]; productAmountMap: Map<number, number> }
+    >();
+    let totalProductAmount = 0;
+
+    for (const shop of shops) {
+      const carts = Array.isArray(shop?.carts) ? shop.carts : [];
+      const amount = this.sumCartSubtotal(carts);
+      totalProductAmount += amount;
+      const productIds: number[] = [];
+      const productAmountMap = new Map<number, number>();
+
+      for (const item of carts) {
+        const productId = Number(item?.productId ?? item?.product_id ?? 0);
+        if (productId > 0) {
+          productIds.push(productId);
+          const subtotal = this.toNumber(item?.subtotal ?? 0);
+          productAmountMap.set(
+            productId,
+            (productAmountMap.get(productId) ?? 0) + subtotal,
+          );
+        }
+      }
+
+      shopSummary.set(Number(shop?.shopId ?? 0), {
+        amount,
+        productIds,
+        productAmountMap,
+      });
+    }
+
+    // 读取选中的用户优惠券
+    const nowTs = Math.floor(Date.now() / 1000);
+    const userCoupons = await this.prisma.user_coupon.findMany({
+      where: {
+        user_id: userId,
+        used_time: 0,
+        order_id: 0,
+        start_date: { lte: nowTs },
+        end_date: { gte: nowTs },
+        OR: [
+          selectUserCouponIds.length > 0 ? { id: { in: selectUserCouponIds } } : undefined,
+          useCouponIds.length > 0 ? { coupon_id: { in: useCouponIds } } : undefined,
+        ].filter(Boolean) as any,
+      },
+    });
+
+    if (userCoupons.length === 0) {
+      return { totalAmount: 0, perShop: new Map<number, number>() };
+    }
+
+    const couponIds = userCoupons
+      .map((uc) => Number(uc.coupon_id ?? 0))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
+    if (couponIds.length === 0) {
+      return { totalAmount: 0, perShop: new Map<number, number>() };
+    }
+
+    const couponRecords = await this.prisma.coupon.findMany({
+      where: {
+        coupon_id: { in: couponIds },
+      },
+    });
+    const couponMap = new Map<number, any>();
+    for (const c of couponRecords) {
+      couponMap.set(Number(c.coupon_id), c);
+    }
+
+    let totalAmount = 0;
+    const perShop = new Map<number, number>();
+
+    for (const uc of userCoupons) {
+      const couponId = Number(uc.coupon_id ?? 0);
+      if (!useCouponIds.includes(couponId)) continue; // 仅计算用户当前选择的优惠券
+      const coupon = couponMap.get(couponId);
+      if (!coupon) continue;
+
+      const isGlobal = Number(coupon.is_global ?? 0) === 1;
+      const shopId = Number(coupon.shop_id ?? 0);
+      const shopInfo = shopSummary.get(shopId);
+      const sendRange = Number(coupon.send_range ?? 0);
+      const sendRangeData = this.parseCouponRangeData(coupon.send_range_data ?? []);
+      const minOrderAmount = this.toNumber(coupon.min_order_amount ?? 0);
+
+      // 计算作用范围金额与商品集合
+      let scopeAmount = 0;
+      let scopeProductIds: number[] = [];
+      let scopeProductAmountMap = new Map<number, number>();
+
+      if (isGlobal) {
+        scopeAmount = totalProductAmount;
+        // 合并所有店铺商品
+        const idsSet = new Set<number>();
+        for (const entry of shopSummary.values()) {
+          entry.productIds.forEach((pid) => idsSet.add(pid));
+          for (const [pid, sub] of entry.productAmountMap.entries()) {
+            scopeProductAmountMap.set(pid, (scopeProductAmountMap.get(pid) ?? 0) + sub);
+          }
+        }
+        scopeProductIds = Array.from(idsSet.values());
+      } else {
+        scopeAmount = shopInfo?.amount ?? 0;
+        scopeProductIds = shopInfo?.productIds ?? [];
+        scopeProductAmountMap = shopInfo?.productAmountMap ?? new Map<number, number>();
+      }
+
+      // sendRange: 3 指定商品可用，4 排除指定商品
+      let applicableAmount = scopeAmount;
+      if (sendRange === 3) {
+        const intersection = scopeProductIds.filter((id) => sendRangeData.includes(id));
+        applicableAmount = intersection.reduce((sum, pid) => sum + (scopeProductAmountMap.get(pid) ?? 0), 0);
+      }
+      if (sendRange === 4) {
+        const remaining = scopeProductIds.filter((id) => !sendRangeData.includes(id));
+        applicableAmount = remaining.reduce((sum, pid) => sum + (scopeProductAmountMap.get(pid) ?? 0), 0);
+      }
+
+      if (applicableAmount <= 0 || applicableAmount < minOrderAmount) {
+        continue;
+      }
+
+      // 计算抵扣金额：coupon_type 1 面额券，2 折扣券
+      const couponType = Number(coupon.coupon_type ?? 1);
+      let deduction = 0;
+      if (couponType === 1) {
+        const face = this.toNumber(coupon.coupon_money ?? 0);
+        deduction = Math.min(face, applicableAmount);
+      } else if (couponType === 2) {
+        const discount = this.toNumber(coupon.coupon_discount ?? 10);
+        const factor = Math.min(Math.max(discount / 10, 0), 1); // 9.5折 -> 0.95
+        const after = this.roundCurrency(applicableAmount * factor);
+        deduction = this.roundCurrency(applicableAmount - after);
+      }
+
+      if (deduction > 0) {
+        totalAmount += deduction;
+        const keyShopId = isGlobal ? 0 : shopId;
+        perShop.set(keyShopId, this.roundCurrency((perShop.get(keyShopId) ?? 0) + deduction));
+      }
+    }
+
+    return { totalAmount: this.roundCurrency(totalAmount), perShop };
   }
 
   /**
@@ -525,9 +740,13 @@ export class OrderCheckService {
       return 0;
     }
 
-    const numericBalance = Number(user.balance ?? 0);
+    const numericBalance = this.toNumber(user.balance ?? 0);
 
-    return Number.isFinite(numericBalance) ? numericBalance : 0;
+    if (!Number.isFinite(numericBalance) || numericBalance <= 0) {
+      return 0;
+    }
+
+    return this.roundCurrency(numericBalance);
   }
 
   /**
@@ -539,15 +758,49 @@ export class OrderCheckService {
       select: { points: true },
     });
 
-    return user?.points || 0;
+    const points = this.toNumber(user?.points ?? 0);
+
+    return points > 0 ? Math.floor(points) : 0;
   }
 
   /**
    * 获取订单可用积分
    */
   async getOrderAvailablePoints() {
-    // 模拟计算订单可用积分
-    return 100;
+    const userId = Number(this.checkoutParams?.user_id ?? 0);
+    if (userId <= 0) {
+      return 0;
+    }
+
+    const flowType = Number(this.checkoutParams?.flow_type ?? 1);
+    const cartData = await this.getStoreCarts(userId, flowType);
+    const productAmount = this.roundCurrency(
+      cartData?.total?.productAmount ?? 0,
+    );
+
+    return this.calculateAvailablePoints(productAmount, userId);
+  }
+
+  private async calculateAvailablePoints(
+    productAmount: number,
+    userId: number,
+  ): Promise<number> {
+    const integralScale = await this.getIntegralScale();
+    if (integralScale <= 0 || productAmount <= 0) {
+      return 0;
+    }
+
+    const userPoints = await this.getUserPoints(userId);
+    if (userPoints <= 0) {
+      return 0;
+    }
+
+    const maxPoints = Math.floor((productAmount / integralScale) * 100);
+    if (maxPoints <= 0) {
+      return 0;
+    }
+
+    return Math.min(userPoints, maxPoints);
   }
 
   /**
@@ -987,6 +1240,23 @@ export class OrderCheckService {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
 
+  private async getPointValueAmount(point: number): Promise<number> {
+    if (point <= 0) return 0;
+    const scale = await this.getIntegralScale();
+    if (scale <= 0) return 0;
+    return this.roundCurrency((point / 100) * scale);
+  }
+
+  private async getIntegralScale(): Promise<number> {
+    if (this.integralScaleCache !== null) {
+      return this.integralScaleCache;
+    }
+    const raw = await this.getConfigValue("integralScale", "0");
+    const val = this.toNumber(raw, 0);
+    this.integralScaleCache = val > 0 ? val : 0;
+    return this.integralScaleCache;
+  }
+
   private parseCouponRangeData(data: any): number[] {
     if (data === null || data === undefined) {
       return [];
@@ -1115,6 +1385,33 @@ export class OrderCheckService {
     }
 
     return lodashSumBy(carts, (item) => this.toNumber(item?.serviceFee ?? 0));
+  }
+
+  private calculateShippingFee(shops: CheckoutShop[]): ShippingFeeResult {
+    const perShop = new Map<number, number>();
+    let total = 0;
+
+    if (!Array.isArray(shops) || shops.length === 0) {
+      return { total: 0, storeShippingFee: perShop };
+    }
+
+    for (const shop of shops) {
+      const shopId = Number(shop?.shopId ?? 0);
+      if (!perShop.has(shopId)) perShop.set(shopId, 0);
+      if (Number(shop?.noShipping ?? 0) === 1) continue;
+
+      const fixed = this.toNumber(shop?.fixedShippingFee ?? 0);
+      if (fixed > 0) {
+        perShop.set(shopId, this.roundCurrency((perShop.get(shopId) ?? 0) + fixed));
+      }
+    }
+
+    for (const fee of perShop.values()) {
+      total += fee;
+    }
+    total = this.roundCurrency(total);
+
+    return { total, storeShippingFee: perShop };
   }
 
   private recalculateTotals(shops: CheckoutShop[]): CheckoutTotals {

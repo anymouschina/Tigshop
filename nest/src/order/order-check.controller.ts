@@ -181,24 +181,7 @@ export class OrderCheckController {
         useCouponIds,
         selectUserCouponIds,
         productExtra: params.product_extra,
-        address_id: params.address_id,
-        shipping_type: fallbackSelections,
-        pay_type_id: params.pay_type_id,
-        use_point: params.use_point,
-        use_balance: params.use_balance,
-        use_coupon_ids: useCouponIds,
-        select_user_coupon_ids: selectUserCouponIds,
-        product_extra: params.product_extra,
       },
-      address_list: addressList,
-      available_payment_type: availablePaymentType,
-      store_shipping_type: storeShippingType,
-      cart_list: cartList,
-      available_points: availablePoints,
-      coupon_list: couponList,
-      use_coupon_ids: useCouponIds,
-      select_user_coupon_ids: selectUserCouponIds,
-      tmpl_ids: tmplIds,
     };
 
     return result;
@@ -283,11 +266,6 @@ export class OrderCheckController {
       total,
       availablePoints,
       addressList,
-      store_shipping_type: storeShippingType,
-      available_payment_type: availablePaymentType,
-      cart_list: cartList,
-      available_points: availablePoints,
-      address_list: addressList,
     };
 
     return result;
