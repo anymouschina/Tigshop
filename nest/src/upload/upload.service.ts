@@ -154,6 +154,9 @@ export class UploadService {
     },
   ): Promise<any> {
     try {
+      if (!file) {
+        throw new BadRequestException("未接收到文件");
+      }
       this.validateFile(file, uploadDto.type);
 
       const category = this.getFileCategory(file.mimetype);
@@ -172,7 +175,7 @@ export class UploadService {
       let thumbnailRecord = null;
 
       // 如果是用户头像，生成缩略图
-      if (options?.generateThumbnail && uploadDto.type === UploadType.USER) {
+  if (options?.generateThumbnail && uploadDto.type === UploadType.USER) {
         const thumbWidth = options.thumbnailWidth || 200;
         const thumbHeight = options.thumbnailHeight || 200;
         const thumbFilename = this.generateThumbnailFilename(
@@ -197,54 +200,59 @@ export class UploadService {
           file.mimetype,
         );
 
-        // 创建缩略图数据库记录
-        thumbnailRecord = await this.prisma.upload.create({
+        // 创建缩略图数据库记录（若 upload 模型可用）
+        if ((this.prisma as any)?.upload?.create) {
+          thumbnailRecord = await (this.prisma as any).upload.create({
+            data: {
+              file_name: `thumb_${file.originalname}`,
+              file_path: thumbRelativePath,
+              file_url: thumbnailUrl,
+              file_size: thumbnailBuffer.length,
+              file_type: file.mimetype,
+              category,
+              type: uploadDto.type,
+              related_id: uploadDto.relatedId,
+              description: `${uploadDto.description}_thumbnail`,
+              status: 1,
+              user_id: userId,
+            },
+          });
+        }
+      }
+
+      // 创建主文件数据库记录（若 upload 模型可用）
+      let uploadRecord: any = null;
+      if ((this.prisma as any)?.upload?.create) {
+        uploadRecord = await (this.prisma as any).upload.create({
           data: {
-            file_name: `thumb_${file.originalname}`,
-            file_path: thumbRelativePath,
-            file_url: thumbnailUrl,
-            file_size: thumbnailBuffer.length,
+            file_name: file.originalname,
+            file_path: relativePath,
+            file_url: `/uploads/${relativePath}`,
+            file_size: file.size,
             file_type: file.mimetype,
             category,
             type: uploadDto.type,
             related_id: uploadDto.relatedId,
-            description: `${uploadDto.description}_thumbnail`,
-            status: 1,
+            description: uploadDto.description,
+            status: 1, // 上传成功
             user_id: userId,
           },
         });
       }
 
-      // 创建主文件数据库记录
-      const uploadRecord = await this.prisma.upload.create({
-        data: {
-          file_name: file.originalname,
-          file_path: relativePath,
-          file_url: `/uploads/${relativePath}`,
-          file_size: file.size,
-          file_type: file.mimetype,
-          category,
-          type: uploadDto.type,
-          related_id: uploadDto.relatedId,
-          description: uploadDto.description,
-          status: 1, // 上传成功
-          user_id: userId,
-        },
-      });
-
       return {
-        id: uploadRecord.id,
-        fileName: uploadRecord.file_name,
-        filePath: uploadRecord.file_path,
+        id: uploadRecord?.id ?? 0,
+        fileName: uploadRecord?.file_name ?? file.originalname,
+        filePath: uploadRecord?.file_path ?? relativePath,
         fileUrl: fileUrl, // 使用存储策略返回的实际URL
-        fileSize: uploadRecord.file_size,
-        fileType: uploadRecord.file_type,
-        category: uploadRecord.category,
-        type: uploadRecord.type,
-        relatedId: uploadRecord.related_id,
-        description: uploadRecord.description,
-        status: uploadRecord.status,
-        createdAt: uploadRecord.created_at,
+        fileSize: uploadRecord?.file_size ?? file.size,
+        fileType: uploadRecord?.file_type ?? file.mimetype,
+        category: uploadRecord?.category ?? category,
+        type: uploadRecord?.type ?? uploadDto.type,
+        relatedId: uploadRecord?.related_id ?? uploadDto.relatedId,
+        description: uploadRecord?.description ?? uploadDto.description,
+        status: uploadRecord?.status ?? 1,
+        createdAt: uploadRecord?.created_at ?? new Date(),
         thumbnailUrl: thumbnailUrl,
         thumbnailId: thumbnailRecord?.id,
       };

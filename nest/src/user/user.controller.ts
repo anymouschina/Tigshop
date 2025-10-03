@@ -279,7 +279,8 @@ export class UserController {
     @Request() req,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.userService.uploadAvatar(req.user.user_id, file);
+    const userId = req.user?.user_id ?? req.user?.userId ?? req.user?.sub;
+    return this.userService.uploadAvatar(Number(userId), file);
   }
 
   // 兼容 PHP: /api/user/user/uploadImg
@@ -309,7 +310,8 @@ export class UserController {
     @Request() req,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.userService.modifyAvatar(req.user.user_id, file);
+    const userId = req.user?.user_id ?? req.user?.userId ?? req.user?.sub;
+    return this.userService.modifyAvatar(Number(userId), file);
   }
 
   /**
@@ -320,7 +322,8 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "用户退出登录" })
   async logout(@Request() req) {
-    return this.userService.logout(req.user.user_id);
+    const userId = req.user?.user_id ?? req.user?.userId ?? req.user?.sub;
+    return this.userService.logout(Number(userId));
   }
 
   // 兼容 PHP: /api/user/user/logout
