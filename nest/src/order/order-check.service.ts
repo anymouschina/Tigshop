@@ -1272,6 +1272,110 @@ export class OrderCheckService {
         await tx.order_item.createMany({ data: orderItemsData });
       }
 
+      // 5.2.1 扣减库存并记录库存变更日志（对齐 PHP：下单扣减库存）
+      const decTs = Math.floor(Date.now() / 1000);
+      for (const shop of builtCart.cartList ?? []) {
+        for (const item of shop.carts ?? []) {
+          const checked = this.isCartItemChecked(item);
+          if (!checked) continue;
+          const isGift = Number(item?.is_gift ?? 0) === 1;
+          const quantity = this.toNumber(item?.quantity ?? 0);
+          if (quantity <= 0) continue;
+          // 赠品扣赠品库存，普通商品扣商品/规格库存
+          const productId = Number(item?.productId ?? 0);
+          const skuId = Number(item?.skuId ?? 0);
+          const shopId = Number(item?.shopId ?? 0);
+
+          if (isGift) {
+            // 赠品库存扣减（如果有 giftId 可在此扩展到赠品表，目前仅扣商品库存作为保底）
+            if (productId > 0) {
+              const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+              if (prod) {
+                const oldNum = this.toNumber(prod.product_stock ?? 0);
+                const newNum = Math.max(oldNum - quantity, 0);
+                if (newNum !== oldNum) {
+                  await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+                  await tx.product_inventory_log.create({
+                    data: {
+                      product_id: productId,
+                      spec_id: 0,
+                      number: Math.abs(newNum - oldNum),
+                      add_time: decTs,
+                      old_number: oldNum,
+                      // type: false 表示扣减（schema 中为 Boolean）
+                      type: false as any,
+                      change_number: quantity,
+                      desc: "下单扣减库存",
+                      shop_id: shopId,
+                    },
+                  });
+                }
+              }
+            }
+            continue;
+          }
+
+          if (skuId > 0) {
+            // 减 SKU 库存，同时减商品总库存
+            const sku = await tx.product_sku.findUnique({ where: { sku_id: skuId }, select: { sku_stock: true, product_id: true } });
+            if (sku) {
+              const oldSkuNum = this.toNumber(sku.sku_stock ?? 0);
+              const newSkuNum = Math.max(oldSkuNum - quantity, 0);
+              if (newSkuNum !== oldSkuNum) {
+                await tx.product_sku.update({ where: { sku_id: skuId }, data: { sku_stock: newSkuNum } });
+              }
+              const pId = Number(sku.product_id ?? productId ?? 0);
+              if (pId > 0) {
+                const prod = await tx.product.findUnique({ where: { product_id: pId }, select: { product_stock: true } });
+                if (prod) {
+                  const oldProdNum = this.toNumber(prod.product_stock ?? 0);
+                  const newProdNum = Math.max(oldProdNum - quantity, 0);
+                  if (newProdNum !== oldProdNum) {
+                    await tx.product.update({ where: { product_id: pId }, data: { product_stock: newProdNum } });
+                  }
+                  await tx.product_inventory_log.create({
+                    data: {
+                      product_id: pId,
+                      spec_id: skuId,
+                      number: Math.abs(newSkuNum - oldSkuNum) || Math.min(quantity, oldSkuNum),
+                      add_time: decTs,
+                      old_number: oldSkuNum,
+                      type: false as any,
+                      change_number: quantity,
+                      desc: "下单扣减库存",
+                      shop_id: shopId,
+                    },
+                  });
+                }
+              }
+            }
+          } else if (productId > 0) {
+            // 仅减商品总库存
+            const prod = await tx.product.findUnique({ where: { product_id: productId }, select: { product_stock: true } });
+            if (prod) {
+              const oldNum = this.toNumber(prod.product_stock ?? 0);
+              const newNum = Math.max(oldNum - quantity, 0);
+              if (newNum !== oldNum) {
+                await tx.product.update({ where: { product_id: productId }, data: { product_stock: newNum } });
+                await tx.product_inventory_log.create({
+                  data: {
+                    product_id: productId,
+                    spec_id: 0,
+                    number: Math.abs(newNum - oldNum),
+                    add_time: decTs,
+                    old_number: oldNum,
+                    type: false as any,
+                    change_number: quantity,
+                    desc: "下单扣减库存",
+                    shop_id: shopId,
+                  },
+                });
+              }
+            }
+          }
+        }
+      }
+
       // 5.3 标记优惠券已用（若有）
       const selectedUserCouponIds: number[] = Array.isArray(this.checkoutParams?.select_user_coupon_ids)
         ? this.checkoutParams.select_user_coupon_ids
