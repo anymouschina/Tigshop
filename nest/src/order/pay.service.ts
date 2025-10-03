@@ -11,10 +11,12 @@ export class PayService {
    */
   async getOrderPaymentInfo(userId: number, orderId: number) {
     // 获取订单详情
+    const oid = Number(orderId);
+    const uid = Number(userId);
     const order = await this.prisma.order.findFirst({
       where: {
-        order_id: orderId,
-        user_id: userId,
+        order_id: oid,
+        ...(uid ? { user_id: uid } : {}),
       },
     });
 
@@ -31,8 +33,8 @@ export class PayService {
       throw new HttpException("订单已取消", HttpStatus.BAD_REQUEST);
     }
 
-    // 获取可用支付方式
-    let paymentList = this.getAvailablePayment();
+  // 获取可用支付方式（不包含余额）
+  let paymentList = this.getAvailablePayment().filter((p) => p !== "balance");
 
     // 根据支付类型过滤
     if (order.pay_type_id === 1) {
@@ -58,17 +60,28 @@ export class PayService {
   const offlinePaymentList = [] as any[];
     if (paymentList.includes("offline")) {
       offlinePaymentList.push({
-        offline_pay_bank:
+        offlinePayBank:
           "银行名称：中国银行\n账号：6222********1234\n开户行：中国银行XX支行",
-        offline_pay_company:
+        offlinePayCompany:
           "公司名称：XX科技有限公司\n账号：1234567890123456\n开户行：XX银行XX支行",
       });
     }
 
     return {
-      order: this.formatOrder(order),
-      payment_list: formattedPaymentList,
-      offline_payment_list: offlinePaymentList,
+      order: {
+        orderId: order.order_id,
+        orderSn: order.order_sn,
+        orderStatus: order.order_status,
+        payStatus: order.pay_status,
+        totalAmount: Number(order.total_amount || 0),
+        paidAmount: Number(order.paid_amount || 0),
+        unpaidAmount: Number(order.unpaid_amount || 0),
+        shippingFee: Number(order.shipping_fee || 0),
+        payTypeId: order.pay_type_id,
+        addTime: this.formatUnixToTime(order.add_time),
+      },
+      paymentList: formattedPaymentList,
+      offlinePaymentList: offlinePaymentList,
     };
   }
 
@@ -76,18 +89,21 @@ export class PayService {
    * 获取支付日志
    */
   async getPayLogByOrderId(orderId: number) {
-    return this.prisma.paylog.findFirst({
-      where: { order_id: orderId },
+    const oid = Number(orderId);
+    const log = await this.prisma.paylog.findFirst({
+      where: { order_id: oid },
       orderBy: { add_time: "desc" },
     });
+    return log ? this.mapPayLogCamel(log) : null;
   }
 
   /**
    * 根据订单ID获取支付状态
    */
   async getPayStatusByOrderId(orderId: number) {
+    const oid = Number(orderId);
     const order = await this.prisma.order.findUnique({
-      where: { order_id: orderId },
+      where: { order_id: oid },
       select: { pay_status: true },
     });
 
@@ -98,8 +114,9 @@ export class PayService {
    * 根据支付日志ID获取支付状态
    */
   async getPayStatusByPayLogId(payLogId: number) {
+    const pid = Number(payLogId);
     const payLog = await this.prisma.paylog.findUnique({
-      where: { paylog_id: payLogId },
+      where: { paylog_id: pid },
       select: { pay_status: true },
     });
 
@@ -115,11 +132,17 @@ export class PayService {
     payType: string,
     code?: string,
   ) {
+    // 余额支付不在支付方式列表中，防御性拦截
+    if (payType === "balance") {
+      throw new HttpException("余额支付请在结算页处理，不作为支付方式返回", HttpStatus.BAD_REQUEST);
+    }
     // 获取订单详情
+    const oid = Number(orderId);
+    const uid = Number(userId);
     const order = await this.prisma.order.findFirst({
       where: {
-        order_id: orderId,
-        user_id: userId,
+        order_id: oid,
+        ...(uid ? { user_id: uid } : {}),
       },
     });
 
@@ -143,12 +166,12 @@ export class PayService {
 
     // 创建支付参数
     const payParams = {
-      order_id: orderId,
+      order_id: oid,
       order_sn: order.order_sn,
       order_amount: Number(order.total_amount ?? order.order_amount ?? 0),
       unpaid_amount: Number(order.unpaid_amount ?? (Number(order.total_amount ?? 0) - Number(order.paid_amount ?? 0))),
       pay_code: payType,
-      user_id: userId,
+      user_id: uid,
       openid,
       order_type: 0,
     } as any;
@@ -162,10 +185,10 @@ export class PayService {
       const payInfo = await this.callThirdPartyPay(payParams, payType);
 
       return {
-        order_id: orderId,
-        order_sn: order.order_sn,
-        order_amount: payParams.unpaid_amount,
-        pay_info: payInfo,
+        orderId: oid,
+        orderSn: order.order_sn,
+        orderAmount: Number(payParams.unpaid_amount ?? 0),
+        payInfo: payInfo,
       };
     } catch (error) {
       throw new HttpException(
@@ -241,7 +264,8 @@ export class PayService {
    * 获取可用支付方式
    */
   private getAvailablePayment(): string[] {
-    return ["wechat", "alipay", "balance", "offline"];
+    // 去除 balance，避免在订单详情页显示并导致直接扣减
+    return ["wechat", "alipay", "offline"];
   }
 
   /**
@@ -254,6 +278,41 @@ export class PayService {
       paid_amount: Number(order.paid_amount || 0),
       shipping_fee: Number(order.shipping_fee || 0),
     };
+  }
+
+  private mapPayLogCamel(log: any) {
+    return {
+      paylogId: log.paylog_id,
+      paySn: log.pay_sn,
+      payName: log.pay_name,
+      orderId: log.order_id,
+      orderSn: log.order_sn,
+      orderAmount: Number(log.order_amount || 0),
+      orderType: log.order_type,
+      payAmount: Number(log.pay_amount || 0),
+      payStatus: log.pay_status,
+      payCode: log.pay_code,
+      addTime: this.formatUnixToTime(log.add_time),
+      transactionId: log.transaction_id,
+      notifyData: log.notify_data,
+      refundAmount: Number(log.refund_amount || 0),
+      tokenCode: log.token_code,
+      appid: log.appid,
+    };
+  }
+
+  private formatUnixToTime(v: any): string {
+    const ts = Number(v || 0);
+    if (!ts) return "";
+    const d = new Date(ts * 1000);
+    const pad = (x: number) => String(x).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const MM = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    const ss = pad(d.getSeconds());
+    return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
   }
 
   /**

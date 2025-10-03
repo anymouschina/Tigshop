@@ -28,10 +28,10 @@ export class PayController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "订单支付" })
   async index(@Request() req, @Query() query: { id: number }) {
-    const userId = req.user.userId;
-    const orderId = query.id;
+    const userId = Number(req.user?.userId || 0);
+    const orderId = Number((query as any)?.id || 0);
 
-    if (!orderId) {
+    if (!orderId || isNaN(orderId)) {
       throw new HttpException("参数缺失", HttpStatus.BAD_REQUEST);
     }
 
@@ -46,9 +46,9 @@ export class PayController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "检测订单支付状态" })
   async getPayLog(@Query() query: { id: number }) {
-    const orderId = query.id;
+    const orderId = Number((query as any)?.id || 0);
 
-    if (!orderId) {
+    if (!orderId || isNaN(orderId)) {
       throw new HttpException("参数缺失", HttpStatus.BAD_REQUEST);
     }
 
@@ -64,17 +64,18 @@ export class PayController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "检测订单支付状态" })
   async checkStatus(@Query() query: { id?: number; paylog_id?: number }) {
-    const { id, paylog_id } = query;
+    const idNum = query?.id != null ? Number((query as any).id) : undefined;
+    const paylogIdNum = query?.paylog_id != null ? Number((query as any).paylog_id) : undefined;
 
-    if (!id && !paylog_id) {
+    if ((idNum == null || isNaN(idNum)) && (paylogIdNum == null || isNaN(paylogIdNum))) {
       throw new HttpException("参数缺失", HttpStatus.BAD_REQUEST);
     }
 
     let payStatus = 0;
-    if (id) {
-      payStatus = await this.payService.getPayStatusByOrderId(id);
+    if (idNum != null && !isNaN(idNum)) {
+      payStatus = await this.payService.getPayStatusByOrderId(idNum);
     } else {
-      payStatus = await this.payService.getPayStatusByPayLogId(paylog_id);
+      payStatus = await this.payService.getPayStatusByPayLogId(paylogIdNum as number);
     }
 
     return payStatus > 0 ? 1 : 0;
@@ -88,10 +89,12 @@ export class PayController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "创建支付" })
   async create(@Request() req, @Query() query: { id: number; type: string; code?: string }) {
-    const userId = req.user.userId;
-    const { id, type, code } = query;
+    const userId = Number(req.user?.userId || 0);
+    const id = Number((query as any)?.id || 0);
+    const type = String((query as any)?.type || "");
+    const code = (query as any)?.code;
 
-    if (!id || !type) {
+    if (!id || isNaN(id) || !type) {
       throw new HttpException("未选择支付方式", HttpStatus.BAD_REQUEST);
     }
 
