@@ -93,13 +93,52 @@ export class AdminOrderCompatService {
   }
 
   async detail(id: number) {
-    const base = await this.prisma.order.findUnique({ where: { order_id: id } });
-    if (!base) return null;
+    const o = await this.prisma.order.findUnique({ where: { order_id: id } });
+    if (!o) throw new NotFoundException("订单不存在");
+
     const [items, logs] = await Promise.all([
       this.prisma.order_item.findMany({ where: { order_id: id } }),
       this.prisma.order_log.findMany({ where: { order_id: id }, orderBy: { log_id: "desc" } }),
     ]);
-    return { ...base, items, logs };
+
+    // 关联数据：用户、店铺、商品、SKU
+    const [user, shop] = await Promise.all([
+      o.user_id ? this.prisma.user.findUnique({ where: { user_id: o.user_id } }).catch(() => null) : Promise.resolve(null),
+      o.shop_id ? this.prisma.shop.findUnique({ where: { shop_id: o.shop_id } }).catch(() => null) : Promise.resolve(null),
+    ]);
+    const productIds = Array.from(new Set(items.map((it) => it.product_id).filter((x) => x > 0)));
+    const skuIds = Array.from(new Set(items.map((it) => it.sku_id).filter((x) => x > 0)));
+    const [products, skus] = await Promise.all([
+      productIds.length ? this.prisma.product.findMany({ where: { product_id: { in: productIds } } }) : Promise.resolve([]),
+      skuIds.length ? this.prisma.product_sku.findMany({ where: { sku_id: { in: skuIds } } }) : Promise.resolve([]),
+    ]);
+    const userMap = new Map(user ? [[user.user_id, user]] : []);
+    const shopMap = new Map(shop ? [[shop.shop_id, shop]] : []);
+    const productMap = new Map(products.map((p: any) => [p.product_id, p]));
+    const skuMap = new Map(skus.map((s: any) => [s.sku_id, s]));
+
+    // 补充库存字段
+    const itemsWithStock = items.map((it) => {
+      const s = skuMap.get(it.sku_id);
+      const p = productMap.get(it.product_id);
+      (it as any).sku_stock = s ? Number(s.sku_stock || 0) : null;
+      (it as any).product_stock = p ? Number(p.product_stock || 0) : null;
+      return it;
+    });
+
+    const record = this.mapOrderRowToRecord(o, itemsWithStock, userMap, shopMap);
+    const mappedLogs = logs.map((lg) => ({
+      logId: lg.log_id,
+      orderId: lg.order_id,
+      orderSn: lg.order_sn,
+      adminId: lg.admin_id,
+      userId: lg.user_id,
+      description: lg.description,
+      logTime: this.formatUnixToTime(lg.log_time),
+      shopId: lg.shop_id,
+    }));
+
+    return { ...record, logs: mappedLogs };
   }
 
   async updateField(id: number, field: string, value: any) {
@@ -658,27 +697,34 @@ export class AdminOrderCompatService {
   }
 
   private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number) {
-    const isPendingPay = Number(orderStatus) === 0 && Number(payStatus) === 0;
-    const isPaid = Number(payStatus) === 1;
-    const isShipped = Number(shippingStatus) === 1;
-    const isCompleted = Number(orderStatus) === 3;
-    const isCancelled = Number(orderStatus) === 2;
+    const os = Number(orderStatus);
+    const ps = Number(payStatus);
+    const ss = Number(shippingStatus);
+    const isPendingPay = os === 0 && ps === 0; // 待支付
+    const isPaidUnshipped = ps === 1 && ss === 0; // 已支付待发货
+    const isShipped = ss === 1; // 已发货
+    const isCancelled = os === 2; // 已取消
+    const isCompleted = os === 3; // 已完成
+
     return {
-      setConfirm: isPendingPay || isPaid,
+      // PHP 语义：仅待支付可“设置已确认”（或下单后确认），已支付阶段一般不再设置确认
+      setConfirm: isPendingPay,
       toPay: isPendingPay,
       setPaid: isPendingPay,
       setUnpaid: false,
-      cancelOrder: isPendingPay,
+      // PHP 允许管理员在“待发货”阶段取消
+      cancelOrder: isPendingPay || isPaidUnshipped,
       delOrder: isCancelled,
-      deliver: isPaid && !isShipped,
+      deliver: isPaidUnshipped,
       confirmReceipt: isShipped,
       splitOrder: false,
+      // 可修改类：未完成且未取消均可，但金额只允许在待支付阶段调整
       modifyOrder: !isCompleted && !isCancelled,
       rebuy: false,
       modifyOrderMoney: isPendingPay,
       modifyOrderConsignee: !isCompleted && !isCancelled,
       modifyOrderProduct: false,
-      modifyShippingInfo: !isCompleted && !isCancelled,
+      modifyShippingInfo: !isCompleted && !isCancelled && !isShipped,
       toAftersales: false,
       toComment: false,
     };
@@ -851,8 +897,8 @@ export class AdminOrderCompatService {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
 
-    // 仅当待付款(0)且未支付(0)时恢复库存；其他状态仅置取消，不动库存
-    const shouldRestore = Number(order.order_status) === 0 && Number(order.pay_status) === 0;
+  // 对齐 PHP：未发货阶段（shipping_status=0）取消时恢复库存
+  const shouldRestore = Number(order.shipping_status) === 0;
     if (shouldRestore) {
       const items = await this.prisma.order_item.findMany({ where: { order_id: orderId } });
       const now = Math.floor(Date.now() / 1000);
