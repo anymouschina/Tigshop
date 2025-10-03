@@ -13,11 +13,13 @@ import { AdminOrderCompatController } from "./admin-order-compat.controller";
 import { AdminOrderCompatService } from "./admin-order-compat.service";
 import { PrismaModule } from "src/prisma/prisma.module";
 import { PanelModule } from "src/panel/panel.module";
+import { SettingModule } from "src/setting/setting.module";
+import { WechatPayV3Service } from "src/payment/services/wechat-pay-v3.service";
 
 @Module({
-  imports: [CartModule, PrismaModule, PanelModule],
+  imports: [CartModule, PrismaModule, PanelModule, SettingModule],
   controllers: [OrderController, OrderCheckController, AftersalesController, AdminOrderCompatController, PayController],
-  providers: [OrderService, OrderCheckService, AftersalesService, AdminOrderCompatService, PayService],
+  providers: [OrderService, OrderCheckService, AftersalesService, AdminOrderCompatService, PayService, WechatPayV3Service],
   exports: [OrderService, OrderCheckService, AftersalesService, PayService],
 })
 export class OrderModule {}

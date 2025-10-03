@@ -28,20 +28,32 @@ export class LogController {
     this.logger = new Logger(LogController.name);
   }
 
-  private async upsertStatisticsBase(dateStr: string) {
+  private async updateStatisticsBase(dateStr: string, incClicks = 0, incVisits = 1) {
     try {
-      await this.prisma.statistics_base.upsert({
-        where: { id: 1 },
-        update: {},
-        create: {
-          date: new Date(dateStr),
-          click_count: 0,
-          shop_id: 0,
-          visitor_count: 0,
-        },
+      const day = new Date(dateStr);
+      const existed = await this.prisma.statistics_base.findFirst({
+        where: { date: day, shop_id: 0 },
       });
+      if (existed) {
+        await this.prisma.statistics_base.update({
+          where: { id: existed.id },
+          data: {
+            click_count: { increment: incClicks },
+            visitor_count: { increment: incVisits },
+          },
+        });
+      } else {
+        await this.prisma.statistics_base.create({
+          data: {
+            date: day,
+            shop_id: 0,
+            click_count: incClicks,
+            visitor_count: incVisits,
+          },
+        });
+      }
     } catch (error) {
-      this.logger.error("Failed to upsert statistics base:", error);
+      this.logger.error("Failed to update statistics base:", error);
       throw error;
     }
   }
@@ -94,8 +106,9 @@ export class LogController {
       const today = new Date();
       const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-      // 更新或创建统计基础数据
-      await this.upsertStatisticsBase(todayStr);
+  // 统计：访问+1；若为点击事件，点击+1
+  const isClick = query.click !== undefined && query.click !== null;
+  await this.updateStatisticsBase(todayStr, isClick ? 1 : 0, 1);
 
       // 记录详细日志（如果有产品ID或相关数据）
       await this.logStatisticsDetail({
@@ -107,7 +120,7 @@ export class LogController {
       });
 
       this.logger.debug("Log data recorded successfully for user:", user);
-      return;
+      return { ok: true };
     } catch (error) {
       this.logger.error("记录日志失败:", error);
       throw new HttpException("记录日志失败", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -135,8 +148,9 @@ export class LogController {
       const today = new Date();
       const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-      // 更新或创建统计基础数据
-      await this.upsertStatisticsBase(todayStr);
+  // 统计：访问+1；若为点击事件，点击+1
+  const isClick = body.click !== undefined && body.click !== null;
+  await this.updateStatisticsBase(todayStr, isClick ? 1 : 0, 1);
 
       // 记录详细日志（如果有产品ID或相关数据）
       await this.logStatisticsDetail({
@@ -148,7 +162,7 @@ export class LogController {
       });
 
       this.logger.debug("POST Log data recorded successfully for user:", user);
-      return;
+      return { ok: true };
     } catch (error) {
       this.logger.error("POST记录日志失败:", error);
       throw new HttpException(

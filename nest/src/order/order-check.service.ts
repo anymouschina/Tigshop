@@ -1291,6 +1291,20 @@ export class OrderCheckService {
       // 5.5 删除勾选的购物车项
       await tx.cart.deleteMany({ where: { user_id: userId, is_checked: 1 } });
 
+      // 5.6 若未付款金额为 0，则直接标记订单为已支付（对齐 PHP 行为）
+      if (Number(totals.unpaidAmount ?? 0) <= 0) {
+        const paidAmount = Number(order.total_amount ?? totals.totalAmount ?? 0);
+        await tx.order.update({
+          where: { order_id: order.order_id },
+          data: {
+            pay_status: 1,
+            paid_amount: paidAmount as any,
+            unpaid_amount: 0 as any,
+            pay_time: now,
+          },
+        });
+      }
+
       return order;
     });
 

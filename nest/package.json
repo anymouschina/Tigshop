@@ -72,7 +72,8 @@
     "sharp": "^0.34.4",
     "svg-captcha": "^1.4.0",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "wechatpay-node-v3": "^2.2.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

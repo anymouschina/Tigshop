@@ -1,10 +1,18 @@
 // @ts-nocheck
-import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { Injectable, HttpException, HttpStatus, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import axios from "axios";
+import { ConfigService as SettingConfigService } from "src/setting/config.service";
+import { WechatPayV3Service } from "src/payment/services/wechat-pay-v3.service";
 
 @Injectable()
 export class PayService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private settingConfig: SettingConfigService,
+    private wechatPayV3: WechatPayV3Service,
+  ) {}
+  private readonly logger = new Logger(PayService.name);
 
   /**
    * 获取订单支付信息
@@ -138,6 +146,7 @@ export class PayService {
     code?: string,
     clientType?: string,
   ) {
+    this.logger.debug(`[createPayment] userId=${userId} orderId=${orderId} payType=${payType} clientType=${clientType}`);
     // 余额支付不在支付方式列表中，防御性拦截
     if (payType === "balance") {
       throw new HttpException("余额支付请在结算页处理，不作为支付方式返回", HttpStatus.BAD_REQUEST);
@@ -155,6 +164,7 @@ export class PayService {
     if (!order) {
       throw new HttpException("订单不存在", HttpStatus.NOT_FOUND);
     }
+    this.logger.debug(`[createPayment] order ${order.order_sn} amount total=${order.total_amount} paid=${order.paid_amount} unpaid=${order.unpaid_amount}`);
 
     // 检查订单是否可支付
     if (order.pay_status === 1) {
@@ -168,6 +178,7 @@ export class PayService {
       ["wechat", "yabanpay_wechat", "yunpay_wechat"].includes(payType)
     ) {
       openid = await this.getWechatOpenId(code);
+      this.logger.debug(`[createPayment] fetched openid=${openid ? (openid as any).slice(0,6)+"***" : ""}`);
     }
 
     // 创建支付参数
@@ -188,7 +199,34 @@ export class PayService {
 
     // 调用第三方支付
     try {
-  const payInfoRaw = await this.callThirdPartyPay(payParams, payType);
+  let payInfoRaw: any;
+      if (["wechat", "yabanpay_wechat", "yunpay_wechat"].includes(payType)) {
+        const ct = (clientType || "").toLowerCase();
+        if (ct.includes("mini") || ct.includes("mp")) {
+          // 使用微信 v3 JSAPI 统一下单
+          if (!openid) {
+            throw new HttpException("缺少 openid", HttpStatus.BAD_REQUEST);
+          }
+          const cfgSnap = await this.wechatPayV3.getConfigDebugSnapshot();
+          this.logger.debug(`[createPayment] wechat v3 cfg=${JSON.stringify(cfgSnap)}`);
+          const prepay = await this.wechatPayV3.unifiedOrderJsapi({
+            outTradeNo: String(payParams.order_sn),
+            description: `订单${payParams.order_sn}`,
+            total: Number(payParams.unpaid_amount || 0),
+            payerOpenId: openid,
+          });
+          this.logger.debug(`[createPayment] unified order ok prepay_id=${(prepay.prepay_id || "").slice(0,10)}***`);
+          payInfoRaw = await this.wechatPayV3.buildJsapiPayInfo(
+            (await this.getWechatPayAppId()) || "",
+            prepay.prepay_id,
+          );
+        } else {
+          // 非小程序，退回到第三方网关/URL（仍用旧 mock 行为的兜底生成 weixin://）
+          payInfoRaw = await this.callThirdPartyPay(payParams, payType);
+        }
+      } else {
+        payInfoRaw = await this.callThirdPartyPay(payParams, payType);
+      }
 
       // 统一输出给前端期望的数据结构
       let payInfo: any = {};
@@ -372,8 +410,47 @@ export class PayService {
    * 获取微信OpenID
    */
   private async getWechatOpenId(code: string): Promise<string> {
-    // 模拟获取微信OpenID
-    return `mock_openid_${Date.now()}`;
+    // 兼容配置项：优先从 wechatPaySettings 取小程序 appId/secret；若无则从 apiSettings 取 wechatMiniProgramAppId/Secret
+    const payCfg = (await this.settingConfig.getJsonConfig("wechatPaySettings")) || {};
+    const appId = payCfg.wechatMiniProgramAppId || payCfg.miniProgramAppId || payCfg.appId;
+    const secret = payCfg.wechatMiniProgramSecret || payCfg.miniProgramSecret || payCfg.appSecret;
+    if (!appId || !secret) {
+      // 退回到 apiSettings
+      const apiCfg = await this.settingConfig.getConfigsByCodes([
+        "wechatMiniProgramAppId",
+        "wechatMiniProgramSecret",
+      ]);
+      const a2 = apiCfg.wechatMiniProgramAppId;
+      const s2 = apiCfg.wechatMiniProgramSecret;
+      if (!a2 || !s2) {
+        throw new HttpException("未配置小程序AppId或AppSecret", HttpStatus.BAD_REQUEST);
+      }
+      return this.exchangeCodeForOpenid(a2, s2, code);
+    }
+    return this.exchangeCodeForOpenid(appId, secret, code);
+  }
+
+  private async getWechatPayAppId(): Promise<string | undefined> {
+    const payCfg = (await this.settingConfig.getJsonConfig("wechatPaySettings")) || {};
+    return payCfg.wechatMiniProgramAppId || payCfg.appId || payCfg.wechatPayAppId || payCfg.appid;
+  }
+
+  private async exchangeCodeForOpenid(appId: string, secret: string, code: string): Promise<string> {
+    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${encodeURIComponent(appId)}&secret=${encodeURIComponent(secret)}&js_code=${encodeURIComponent(code)}&grant_type=authorization_code`;
+    try {
+      const resp = await axios.get(url, { timeout: 8000 });
+      const data = resp.data || {};
+      if (data.errcode) {
+        throw new HttpException(`jscode2session 失败: ${data.errmsg || data.errcode}`, HttpStatus.BAD_GATEWAY);
+      }
+      if (!data.openid) {
+        throw new HttpException("未获取到openid", HttpStatus.BAD_GATEWAY);
+      }
+      return String(data.openid);
+    } catch (e: any) {
+      const msg = e?.response?.data ? JSON.stringify(e.response.data) : e?.message;
+      throw new HttpException(`获取openid失败: ${msg}`, HttpStatus.BAD_GATEWAY);
+    }
   }
 
   /**
@@ -426,7 +503,7 @@ export class PayService {
           package: `prepay_id=${Date.now()}`,
           signType: "MD5",
           paySign: "mock_sign",
-          url: "https://mock.wechatpay.qr"
+          // 不再返回 mock 域名 URL，交由上层按客户端类型处理（小程序 JSAPI；H5 使用 weixin:// 协议兜底）
         };
       case "alipay":
         return { orderString: "mock_alipay_order_string", html: "<form>mock</form>" };
