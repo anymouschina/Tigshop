@@ -39,4 +39,92 @@ export class ImConversationController {
     });
     return { code: 0, message: 'success', data: result };
   }
+
+  @Get('list')
+  async listConversations(
+    @Query('shopId') shopId?: string,
+    @Query('userFrom') userFrom?: string,
+    @Query('page') page?: string,
+    @Query('size') size?: string,
+    @Query('role') role?: string,
+    @Query('status') status?: string,
+  ) {
+    const data = await this.service.listConversations({
+      shopId: shopId ? Number(shopId) : 0,
+      userFrom,
+      page: page ? Number(page) : 1,
+      size: size ? Number(size) : 20,
+      role: (role === 'servant' ? 'servant' : 'user'),
+      status: status !== undefined ? Number(status) : undefined,
+    });
+    return { code: 0, message: 'success', data };
+  }
+
+  // 兼容客户端路径多加一层 conversation
+  @Get('conversation/list')
+  async listConversationsAlias(
+    @Query('shopId') shopId?: string,
+    @Query('userFrom') userFrom?: string,
+    @Query('page') page?: string,
+    @Query('size') size?: string,
+    @Query('role') role?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.listConversations(shopId, userFrom, page, size, role, status);
+  }
+
+  @Post('open')
+  async openConversation(@Body() body: any) {
+    const data = await this.service.openConversation({
+      shopId: body.shopId ? Number(body.shopId) : 0,
+      userFrom: body.userFrom,
+      servantId: body.servantId ? Number(body.servantId) : undefined,
+    });
+    return { code: 0, message: 'success', data };
+  }
+
+  @Post('markRead')
+  async markRead(@Body() body: any) {
+    const data = await this.service.markRead({
+      conversationId: Number(body.conversationId),
+      role: body.role === 'servant' ? 'servant' : 'user',
+      messageIds: Array.isArray(body.messageIds) ? body.messageIds.map((v: any) => Number(v)) : undefined,
+    });
+    return { code: 0, message: 'success', data };
+  }
+
+  @Post('markAllRead')
+  async markAllRead(@Body() body: any) {
+    const data = await this.service.markAllRead({
+      conversationId: Number(body.conversationId),
+      role: body.role === 'servant' ? 'servant' : 'user',
+    });
+    return { code: 0, message: 'success', data };
+  }
+
+  @Get('unreadCount')
+  async unreadCount(
+    @Query('shopId') shopId?: string,
+    @Query('userFrom') userFrom?: string,
+    @Query('role') role?: string,
+  ) {
+    const data = await this.service.unreadCount({
+      shopId: shopId ? Number(shopId) : 0,
+      userFrom,
+      role: role === 'servant' ? 'servant' : 'user',
+    });
+    return { code: 0, message: 'success', data };
+  }
+
+  @Post('close')
+  async closeConversation(@Body() body: any) {
+    const data = await this.service.closeConversation({ conversationId: Number(body.conversationId) });
+    return { code: 0, message: 'success', data };
+  }
+
+  @Post('delete')
+  async deleteConversation(@Body() body: any) {
+    const data = await this.service.deleteConversation({ conversationId: Number(body.conversationId) });
+    return { code: 0, message: 'success', data };
+  }
 }
