@@ -11,11 +11,11 @@ export class ImConversationService {
     conversationId?: number;
     firstId?: number;
     sortOrder?: 'asc' | 'desc';
-    size?: number;
+    size?: number; // 每次返回条数，需求固定 10，保留参数以兼容调用方，但默认 10
     shopId?: number;
     userFrom?: string;
   }) {
-    const { conversationId, firstId = -1, sortOrder = 'desc', size = 20, shopId = 0, userFrom } = params;
+    const { conversationId, firstId = -1, sortOrder = 'desc', size = 10, shopId = 0, userFrom } = params;
 
     // 基于 conversationId 或 shopId + userFrom 推断最近会话
     let convId = conversationId;
@@ -32,30 +32,51 @@ export class ImConversationService {
       if (!convId) return { records: [], total: 0, conversationId: null };
     }
 
-    const where: any = { conversation_id: convId };
+    const where: any = { 
+      conversation_id: convId ,
+      message_type: { not: 'custom' }
+    };
+    let refMessage: any = null;
     if (firstId && firstId > 0) {
+      refMessage = await this.prisma.im_message.findFirst({
+        where: { id: firstId, conversation_id: convId },
+      });
+      if (!refMessage) {
+        return { records: [], total: 0, size, current: 1, pages: 0, conversationId: convId } as any;
+      }
       if (sortOrder === 'desc') {
-        where.id = { lt: firstId }; // 下拉加载更多
+        where.OR = [
+          { send_time: { lt: refMessage.send_time } },
+          { send_time: refMessage.send_time, id: { lt: refMessage.id } },
+        ];
       } else {
-        where.id = { gt: firstId }; // 正序时加载更新
+        where.OR = [
+          { send_time: { gt: refMessage.send_time } },
+          { send_time: refMessage.send_time, id: { gt: refMessage.id } },
+        ];
       }
     }
 
+    const orderBy =
+      sortOrder === 'desc'
+        ? [{ send_time: 'desc' as const }, { id: 'desc' as const }]
+        : [{ send_time: 'asc' as const }, { id: 'asc' as const }];
+
     let recordsRaw = await this.prisma.im_message.findMany({
       where,
-      orderBy: [{ id: sortOrder }],
+      orderBy,
       take: size,
     });
 
-    // 如果选择 asc，则需要把结果保证从小到大（Prisma 已经 asc 排序）；
-    // 如果 desc，则保持最新在前；前端如需时间线正序可以再传 sortOrder=asc。
-    // 若后续需要“desc 但又要返回时间正序”，可以增加一个参数，例如 `normalizeAsc=1`。
-    if (sortOrder === 'asc') {
-      // 已经是升序，无需调整；这里预留钩子
+    // total：首次加载返回会话全部消息数量；翻页(firstId>0)只需要返回当前批次长度（为空即0）
+    let total: number;
+    if (firstId && firstId > 0) {
+      total = recordsRaw.length;
+    } else {
+      total = await this.prisma.im_message.count({
+          where
+        });
     }
-
-    // total 取该会话总消息数量（可优化：前端仅需是否还有更多）
-    const total = await this.prisma.im_message.count({ where: { conversation_id: convId } });
 
     // 聚合用户与客服ID，批量查询资料
     const userIds = Array.from(
@@ -90,7 +111,7 @@ export class ImConversationService {
         return {
           messageType: 'text',
           content: m.content ?? '',
-          pic: '',
+          pic: null,
           contentCategory: null,
           order: null,
           product: null,
@@ -108,7 +129,7 @@ export class ImConversationService {
         const pic = (ext && (ext.pic || ext.url)) || m.content || '';
         return {
           messageType: 'image',
-          content: '',
+          content: null,
           pic: String(pic),
           contentCategory: null,
           order: null,
@@ -135,7 +156,7 @@ export class ImConversationService {
         conversationId: m.conversation_id,
         content: formatContent(m),
         messageType: m.message_type,
-        type: m.type,
+  type: m.type === 0 ? 1 : 2,
         userId: m.user_id ?? null,
         servantId: m.servant_id ?? null,
         sendTime: fmt(m.send_time),
@@ -162,7 +183,7 @@ export class ImConversationService {
           : null,
       };
     });
-
+    records.sort((a, b) => (sortOrder === 'desc' ? a.id - b.id : b.id - a.id));
     const pages = Math.ceil(total / size);
     const current = 1; // firstId 滚动场景默认视为第一页
     return { records, total, size, current, pages, conversationId: convId } as any;
@@ -436,8 +457,9 @@ export class ImConversationService {
     // 抓取消息：如果需要附带消息列表则多抓一些，否则只抓最新单条
     const fetchFactor = includeMessages ? 50 : 5; // 粗略：每会话平均需要的数量
     const messages = await this.prisma.im_message.findMany({
-      where: { conversation_id: { in: convIds } },
-      orderBy: [{ id: 'desc' }],
+      where: { conversation_id: { in: convIds }, message_type:{ not: 'custom' } }, // 只统计有效消息
+      // 稳定排序：先按 send_time 再按 id，避免同秒消息无序
+      orderBy: [{ send_time: 'desc' }, { id: 'desc' }],
       take: convIds.length * fetchFactor,
     });
     const latestMap: Record<number, any> = {};
@@ -446,6 +468,7 @@ export class ImConversationService {
       const cid = m.conversation_id!;
       if (!latestMap[cid]) latestMap[cid] = m; // 第一条即最新
       if (includeMessages) {
+        // 先全部收集，稍后再排序截取 10 条，避免同秒时间提前截断顺序错乱
         (groupedMessages[cid] ||= []).push(m);
       }
     }
@@ -456,6 +479,7 @@ export class ImConversationService {
       where: {
         conversation_id: { in: convIds },
         is_read: false,
+        message_type:{ not: 'custom' }, // 只统计有效消息
         ...(role === 'servant' ? { type: 0 } : { type: 1 }), // 对方发送的消息
       },
       select: { id: true, conversation_id: true },
@@ -534,8 +558,9 @@ export class ImConversationService {
       const externalStatus = statusMappingMode ? (rawStatus === 0 ? 1 : 2) : rawStatus;
       let msgList: any[] | null = null;
       if (includeMessages) {
-        const arr = (groupedMessages[c.id] || []).slice(); // desc
-        // 转成期望结构（保持最新在前）
+        const arrFull = groupedMessages[c.id] || [];
+        arrFull.sort((a, b) => ((a.send_time ?? 0) - (b.send_time ?? 0)) || ((b.id ?? 0) - (a.id ?? 0)));
+        const arr = arrFull.slice(0, 10);
         msgList = arr.map(m => ({
           messageTypeText: typeText(m.message_type),
           id: m.id,
