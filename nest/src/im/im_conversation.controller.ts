@@ -25,6 +25,33 @@ export class ImConversationController {
     return { code: 0, message: 'success', data: result };
   }
 
+  // 发送消息（文本/图片/自定义卡片）
+  @Post('message/send')
+  async sendMessage(@Body() body: any) {
+    const data = await this.service.sendMessage({
+      conversationId: body.conversationId ? Number(body.conversationId) : undefined,
+      shopId: body.shopId ? Number(body.shopId) : 0,
+      userFrom: body.userFrom,
+      userId: body.userId ? Number(body.userId) : undefined,
+      servantId: body.servantId ? Number(body.servantId) : undefined,
+      role: body.role === 'servant' ? 'servant' : 'user',
+      orderId: body.orderId ? Number(body.orderId) : undefined,
+      content: body.content,
+    });
+    return { code: 0, message: 'success', data };
+  }
+
+  // 兼容客户端老路径：message/setRead → 标记已读
+  @Post('message/setRead')
+  async setRead(@Body() body: any) {
+    const data = await this.service.markRead({
+      conversationId: Number(body.conversationId),
+      role: body.role === 'servant' ? 'servant' : 'user',
+      messageIds: Array.isArray(body.messageIds) ? body.messageIds.map((v: any) => Number(v)) : undefined,
+    });
+    return { code: 0, message: 'success', data };
+  }
+
 
   @Get('list')
   async listConversations(

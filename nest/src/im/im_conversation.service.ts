@@ -51,6 +51,130 @@ export class ImConversationService {
     return { records, total, conversationId: convId };
   }
 
+  // 发送消息（文本/图片/自定义卡片）
+  async sendMessage(params: {
+    conversationId?: number;
+    shopId?: number;
+    userFrom?: string;
+    userId?: number;
+    servantId?: number;
+    role?: 'user' | 'servant';
+    orderId?: number;
+    content: any; // { messageType: 'text'|'image'|'custom'|..., content?: string, pic?: string, ... }
+  }) {
+    const {
+      conversationId,
+      shopId = 0,
+      userFrom,
+      userId,
+      servantId,
+      role = 'user',
+      orderId,
+      content,
+    } = params;
+
+    const now = Math.floor(Date.now() / 1000);
+
+    // 1) 决定会话ID：优先 conversationId，其次 userFrom，再其次 userId/orderId 推断
+    let convId = conversationId;
+    let conv: any = null;
+    if (!convId) {
+      // 通过 userFrom 定位
+      if (userFrom) {
+        conv = await this.prisma.im_conversation.findFirst({
+          where: { shop_id: shopId, user_from: userFrom, is_delete: 0 },
+          orderBy: [{ last_update_time: 'desc' }, { id: 'desc' }],
+        });
+      }
+
+      // 通过 userId/orderId 定位
+      let resolvedUserId = userId;
+      if (!resolvedUserId && orderId) {
+        const ord = await this.prisma.order.findUnique({ where: { order_id: Number(orderId) } });
+        if (ord) resolvedUserId = ord.user_id;
+      }
+      if (!conv && resolvedUserId) {
+        conv = await this.prisma.im_conversation.findFirst({
+          where: { shop_id: shopId, user_id: resolvedUserId, is_delete: 0 },
+          orderBy: [{ last_update_time: 'desc' }, { id: 'desc' }],
+        });
+      }
+
+      // 若仍不存在，创建一个新的会话
+      if (!conv) {
+        conv = await this.prisma.im_conversation.create({
+          data: {
+            shop_id: shopId,
+            user_from: userFrom,
+            user_id: resolvedUserId ?? 0,
+            add_time: now,
+            last_update_time: now,
+            last_servant_id: servantId ?? 0,
+            status: 0,
+          },
+        });
+      }
+      convId = conv.id;
+    } else {
+      conv = await this.prisma.im_conversation.findUnique({ where: { id: convId } });
+    }
+
+    if (!convId) throw new Error('缺少会话信息');
+
+    // 2) 整理消息内容
+    const messageType = content?.messageType || content?.type || 'text';
+    let contentStr = '';
+    let extendStr: string | null = null;
+
+    switch (messageType) {
+      case 'text':
+        contentStr = String(content?.content ?? '');
+        break;
+      case 'image':
+        contentStr = String(content?.pic ?? content?.url ?? '');
+        extendStr = JSON.stringify(content);
+        break;
+      default:
+        // 自定义（如订单卡片/商品卡片等）直接存入 JSON
+        contentStr = JSON.stringify(content ?? {});
+        extendStr = contentStr;
+        break;
+    }
+
+    // 发送方类型：user=0，servant=1（未读统计中对方消息才计数）
+    const senderType = role === 'servant' ? 1 : 0;
+
+    // 3) 入库消息
+    const msg = await this.prisma.im_message.create({
+      data: {
+        conversation_id: convId,
+        content: contentStr,
+        message_type: messageType,
+        type: senderType,
+        user_id: conv?.user_id ?? 0,
+        servant_id: role === 'servant' ? (servantId ?? 0) : 0,
+        send_time: now,
+        status: 1,
+        extend: extendStr ?? undefined,
+        push_status: 0,
+        is_read: false,
+        shop_id: shopId,
+        user_from: userFrom,
+      },
+    });
+
+    // 4) 更新会话最近信息
+    await this.prisma.im_conversation.update({
+      where: { id: convId },
+      data: {
+        last_update_time: now,
+        ...(role === 'servant' && servantId ? { last_servant_id: servantId } : {}),
+      },
+    });
+
+    return msg;
+  }
+
   // 会话列表（简单实现，可按需扩展过滤条件）
   async listConversations(params: {
     shopId?: number; // 店铺侧查看

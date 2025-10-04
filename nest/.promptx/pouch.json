@@ -1,0 +1,35 @@
+{
+  "currentState": "initial",
+  "stateHistory": [
+    {
+      "from": "initial",
+      "command": "project",
+      "timestamp": "2025-10-04T03:59:20.150Z",
+      "args": [
+        {
+          "workingDirectory": "/Users/libiqiang/Documents/workspace/Tigshop/nest",
+          "ideType": "codex-cli"
+        }
+      ]
+    },
+    {
+      "from": "initial",
+      "command": "remember",
+      "timestamp": "2025-10-04T03:59:22.054Z",
+      "args": [
+        {
+          "role": "assistant",
+          "engrams": [
+            {
+              "content": "Bound project root at /Users/libiqiang/Documents/workspace/Tigshop/nest",
+              "schema": "project-root - /Users/libiqiang/Documents/workspace/Tigshop/nest - nestjs",
+              "strength": 0.7,
+              "type": "ATOMIC"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "lastUpdated": "2025-10-04T03:59:22.129Z"
+}
