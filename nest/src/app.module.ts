@@ -92,6 +92,7 @@ import { CategoryModule } from "./category/category.module";
 import { ImModule } from "./im/im.module";
 import { CaseTransformMiddleware } from "./common/middleware/case-transform.middleware";
 import { RequestSourceMiddleware } from "./common/middleware/request-source.middleware";
+import { UserFromExtractMiddleware } from "./common/middleware/user-from-extract.middleware";
 
 @Module({
   imports: [
@@ -204,6 +205,12 @@ import { RequestSourceMiddleware } from "./common/middleware/request-source.midd
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Detect request source first, then normalize keys
-    consumer.apply(RequestSourceMiddleware, CaseTransformMiddleware).forRoutes('*');
+    consumer
+      .apply(
+        RequestSourceMiddleware, // 识别来源
+        UserFromExtractMiddleware, // 提前剥离 userFrom，避免被 DTO 校验拦截
+        CaseTransformMiddleware, // 键名格式转换
+      )
+      .forRoutes('*');
   }
 }
