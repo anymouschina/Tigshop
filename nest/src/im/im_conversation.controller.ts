@@ -25,20 +25,6 @@ export class ImConversationController {
     return { code: 0, message: 'success', data: result };
   }
 
-  @Post('message/send')
-  async sendMessage(@Body() body: any) {
-    const result = await this.service.sendMessage({
-      conversationId: body.conversationId ? Number(body.conversationId) : undefined,
-      shopId: body.shopId ? Number(body.shopId) : 0,
-      userFrom: body.userFrom,
-      content: body.content,
-      messageType: body.messageType,
-      type: body.type !== undefined ? Number(body.type) : 0,
-      userId: body.userId ? Number(body.userId) : undefined,
-      servantId: body.servantId ? Number(body.servantId) : undefined,
-    });
-    return { code: 0, message: 'success', data: result };
-  }
 
   @Get('list')
   async listConversations(
