@@ -304,6 +304,31 @@ export class ImConversationService {
     return { conversationId, deleted: true };
   }
 
+  // 会话详情：根据 conversationId 或 (shopId + userFrom) 获取
+  async getConversationDetail(params: { conversationId?: number; shopId?: number; userFrom?: string }) {
+    const { conversationId, shopId, userFrom } = params;
+    let conv: any | null = null;
+
+    if (conversationId) {
+      conv = await this.prisma.im_conversation.findFirst({ where: { id: conversationId, is_delete: 0 } });
+    } else if (shopId && userFrom) {
+      conv = await this.prisma.im_conversation.findFirst({
+        where: { shop_id: shopId, user_from: userFrom, is_delete: 0 },
+        orderBy: [{ last_update_time: 'desc' }, { id: 'desc' }],
+      });
+    }
+
+    if (!conv) return null;
+
+    // 附带最近一条消息
+    const lastMessage = await this.prisma.im_message.findFirst({
+      where: { conversation_id: conv.id },
+      orderBy: [{ id: 'desc' }],
+    });
+
+    return { ...conv, lastMessage };
+  }
+
   // 待接入会话列表（客服侧）
   async waitServantList(params: { shopId?: number; page?: number; size?: number }) {
     const { shopId = 0, page = 1, size = 15 } = params;
@@ -369,17 +394,147 @@ export class ImConversationService {
       this.prisma.im_conversation.count({ where }),
     ]);
 
-    if (!convs.length) return { records: [], total, page, size };
+    if (!convs.length) return { records: [], total, page, size, current: page, pages: 0 } as any;
     const convIds = convs.map((c) => c.id);
-    const lastMsgs = await this.prisma.im_message.findMany({
-      where: { conversation_id: { in: convIds } },
-      orderBy: [{ id: 'desc' }],
-      take: convIds.length * 5,
-    });
-    const lastMap: Record<number, any> = {};
-    for (const m of lastMsgs) if (!lastMap[m.conversation_id!]) lastMap[m.conversation_id!] = m;
 
-    const records = convs.map((c) => ({ ...c, lastMessage: lastMap[c.id] || null }));
-    return { records, total, page, size };
+    // 关联合并：用户信息、客服信息
+    const userIds = convs.map((c) => c.user_id).filter((v) => !!v) as number[];
+    const servantIds = convs.map((c) => c.last_servant_id).filter((v) => !!v) as number[];
+    const users = userIds.length
+      ? await this.prisma.user.findMany({ where: { user_id: { in: userIds } } })
+      : ([] as any[]);
+    const servants = servantIds.length
+      ? await this.prisma.admin_user.findMany({ where: { admin_id: { in: servantIds } } })
+      : ([] as any[]);
+    const userMap: Record<number, any> = {};
+    for (const u of users) userMap[u.user_id] = u;
+    const servantMap: Record<number, any> = {};
+    for (const s of servants) servantMap[s.admin_id] = s;
+
+    // 每个会话：首条用户消息、客服消息聚合
+    const firstUserMsgMap: Record<number, any> = {};
+    // 为避免 N+1 过多，按会话逐个查找（页尺寸较小）；
+    for (const cid of convIds) {
+      const firstUser = await this.prisma.im_message.findFirst({
+        where: { conversation_id: cid, type: 0 },
+        orderBy: [{ send_time: 'asc' }, { id: 'asc' }],
+        select: { conversation_id: true, user_id: true, send_time: true, message_type: true },
+      });
+      if (firstUser) firstUserMsgMap[cid] = firstUser;
+    }
+
+    // 客服消息聚合（type=1）：按会话+消息类型统计数量与首/末时间
+    const servantAgg = await this.prisma.im_message.groupBy({
+      by: ['conversation_id', 'message_type'],
+      where: { conversation_id: { in: convIds }, type: 1 },
+      _count: { id: true },
+      _min: { send_time: true },
+      _max: { send_time: true },
+    });
+    const servantAggMap: Record<number, any[]> = {};
+    for (const row of servantAgg as any[]) {
+      const list = servantAggMap[row.conversation_id] || (servantAggMap[row.conversation_id] = []);
+      list.push(row);
+    }
+
+    // 会话整体首末消息时间
+    const convSpan = await this.prisma.im_message.groupBy({
+      by: ['conversation_id'],
+      where: { conversation_id: { in: convIds } },
+      _min: { send_time: true },
+      _max: { send_time: true },
+    });
+    const spanMap: Record<number, { first?: number | null; last?: number | null }> = {};
+    for (const it of convSpan as any[]) spanMap[it.conversation_id] = { first: it._min?.send_time ?? null, last: it._max?.send_time ?? null };
+
+    // 首次响应时间（首条客服消息 - 首条用户消息）
+    const firstServantMsgMap: Record<number, any> = {};
+    for (const cid of convIds) {
+      const firstSrv = await this.prisma.im_message.findFirst({
+        where: { conversation_id: cid, type: 1 },
+        orderBy: [{ send_time: 'asc' }, { id: 'asc' }],
+        select: { send_time: true },
+      });
+      if (firstSrv) firstServantMsgMap[cid] = firstSrv;
+    }
+
+    const fmt = (sec?: number | null) =>
+      sec ? new Date((sec as number) * 1000).toISOString().replace('T', ' ').substring(0, 19) : null;
+    const typeText = (t?: string | null) => {
+      const map: Record<string, string> = { text: '文本', image: '图片', custom: '自定义', file: '文件', video: '视频' };
+      return t && map[t] ? map[t] : '文本';
+    };
+
+    const records = convs.map((c) => {
+      const u = c.user_id ? userMap[c.user_id] : null;
+      const s = c.last_servant_id ? servantMap[c.last_servant_id] : null;
+      const firstUser = firstUserMsgMap[c.id];
+      const srvAgg = servantAggMap[c.id] || [];
+      const span = spanMap[c.id] || {};
+      const firstSrv = firstServantMsgMap[c.id];
+
+      const firstUserMessage = firstUser
+        ? [
+            {
+              messageTypeText: typeText(firstUser.message_type as any),
+              conversationId: c.id,
+              userId: firstUser.user_id,
+              sendTime: fmt(firstUser.send_time),
+              messageType: firstUser.message_type,
+            },
+          ]
+        : [];
+
+      const servantMessage = srvAgg.map((a: any) => ({
+        messageTypeText: typeText(a.message_type),
+        conversationId: c.id,
+        servantId: c.last_servant_id ?? null,
+        lastSendTime: a._max?.send_time ?? null,
+        firstSendTime: a._min?.send_time ?? null,
+        messageCount: a._count?.id ?? 0,
+        messageType: a.message_type,
+      }));
+
+      const firstResponseTime = firstUser?.send_time && firstSrv?.send_time ? (firstSrv.send_time as number) - (firstUser.send_time as number) : null;
+      const conversationDuration = span.first && span.last ? (span.last as number) - (span.first as number) : null;
+
+      return {
+        id: c.id,
+        userId: c.user_id ?? null,
+        lastServantId: c.last_servant_id ?? null,
+        addTime: fmt(c.add_time) as any,
+        shopId: c.shop_id ?? 0,
+        userFrom: c.user_from ?? null,
+        status: c.status ?? 0,
+        lastUpdateTime: fmt(c.last_update_time) as any,
+        isDelete: c.is_delete ?? 0,
+        remark: c.remark ?? '',
+        summary: c.summary ?? '',
+        firstResponseTime,
+        conversationDuration,
+        user: u
+          ? {
+              userId: u.user_id,
+              username: u.username,
+              nickname: u.nickname,
+              avatar: u.avatar,
+            }
+          : null,
+        averageResponseTime: null, // 可后续计算更精细的平均响应
+        servant: s
+          ? {
+              adminId: s.admin_id,
+              username: s.username,
+              mobile: s.mobile,
+              avatar: s.avatar,
+            }
+          : null,
+        firstUserMessage,
+        servantMessage,
+      };
+    });
+
+    const pages = Math.ceil(total / size);
+    return { records, total, size, current: page, pages } as any;
   }
 }

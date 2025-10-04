@@ -91,6 +91,7 @@ import { AppVersionController } from "./app-version/app-version.controller";
 import { CategoryModule } from "./category/category.module";
 import { ImModule } from "./im/im.module";
 import { CaseTransformMiddleware } from "./common/middleware/case-transform.middleware";
+import { RequestSourceMiddleware } from "./common/middleware/request-source.middleware";
 
 @Module({
   imports: [
@@ -202,6 +203,7 @@ import { CaseTransformMiddleware } from "./common/middleware/case-transform.midd
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CaseTransformMiddleware).forRoutes('*');
+    // Detect request source first, then normalize keys
+    consumer.apply(RequestSourceMiddleware, CaseTransformMiddleware).forRoutes('*');
   }
 }

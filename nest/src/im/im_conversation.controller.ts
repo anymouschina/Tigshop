@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Req } from '@nestjs/common';
 import { ImConversationService } from './im_conversation.service';
 
 @Controller('im/conversation')
@@ -25,13 +25,38 @@ export class ImConversationController {
     return { code: 0, message: 'success', data: result };
   }
 
+  // 会话详情（支持旧路径别名）
+  @Get('detail')
+  async conversationDetail(
+    @Query('conversationId') conversationId?: string,
+    @Query('shopId') shopId?: string,
+    @Query('userFrom') userFrom?: string,
+  ) {
+    const data = await this.service.getConversationDetail({
+      conversationId: conversationId ? Number(conversationId) : undefined,
+      shopId: shopId ? Number(shopId) : undefined,
+      userFrom,
+    });
+    return { code: 0, message: 'success', data };
+  }
+
+  // 兼容客户端路径多加一层 conversation：/im/conversation/conversation/detail
+  @Get('conversation/detail')
+  async conversationDetailAlias(
+    @Query('conversationId') conversationId?: string,
+    @Query('shopId') shopId?: string,
+    @Query('userFrom') userFrom?: string,
+  ) {
+    return this.conversationDetail(conversationId, shopId, userFrom);
+  }
+
   // 发送消息（文本/图片/自定义卡片）
   @Post('message/send')
-  async sendMessage(@Body() body: any) {
+  async sendMessage(@Body() body: any, @Req() req: any) {
     const data = await this.service.sendMessage({
       conversationId: body.conversationId ? Number(body.conversationId) : undefined,
       shopId: body.shopId ? Number(body.shopId) : 0,
-      userFrom: body.userFrom,
+      userFrom: body.userFrom || req.userFrom,
       userId: body.userId ? Number(body.userId) : undefined,
       servantId: body.servantId ? Number(body.servantId) : undefined,
       role: body.role === 'servant' ? 'servant' : 'user',
