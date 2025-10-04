@@ -303,4 +303,83 @@ export class ImConversationService {
     await this.prisma.im_conversation.update({ where: { id: conversationId }, data: { is_delete: 1 } });
     return { conversationId, deleted: true };
   }
+
+  // 待接入会话列表（客服侧）
+  async waitServantList(params: { shopId?: number; page?: number; size?: number }) {
+    const { shopId = 0, page = 1, size = 15 } = params;
+    const skip = (page - 1) * size;
+    const where: any = { is_delete: 0, status: 0 };
+    if (shopId) where.shop_id = shopId;
+
+    const [convs, total] = await this.prisma.$transaction([
+      this.prisma.im_conversation.findMany({
+        where,
+        orderBy: [{ last_update_time: 'desc' }, { id: 'desc' }],
+        skip,
+        take: size,
+      }),
+      this.prisma.im_conversation.count({ where }),
+    ]);
+
+    if (!convs.length) return { records: [], total, page, size };
+    const convIds = convs.map((c) => c.id);
+    // 未读数（客服侧，统计用户发来的未读）
+    const unreadAgg = await this.prisma.im_message.groupBy({
+      by: ['conversation_id'],
+      where: { conversation_id: { in: convIds }, is_read: false, type: 0 }, // 用户发的
+      _count: { id: true },
+    });
+    const unreadMap: Record<number, number> = {};
+    for (const it of unreadAgg) unreadMap[it.conversation_id as number] = (it as any)._count.id;
+
+    const lastMsgs = await this.prisma.im_message.findMany({
+      where: { conversation_id: { in: convIds } },
+      orderBy: [{ id: 'desc' }],
+      take: convIds.length * 5,
+    });
+    const lastMap: Record<number, any> = {};
+    for (const m of lastMsgs) if (!lastMap[m.conversation_id!]) lastMap[m.conversation_id!] = m;
+
+    const records = convs.map((c) => ({ ...c, lastMessage: lastMap[c.id] || null, unread: unreadMap[c.id] || 0 }));
+    return { records, total, page, size };
+  }
+
+  // 咨询历史列表（可按时间范围）
+  async consultHistory(params: { shopId?: number; page?: number; size?: number; timeType?: number }) {
+    const { shopId = 0, page = 1, size = 15, timeType } = params;
+    const skip = (page - 1) * size;
+    const where: any = { is_delete: 0 };
+    if (shopId) where.shop_id = shopId;
+
+    // timeType: 1=近7天, 2=近30天, 3=近90天（默认：全部）
+    const nowSec = Math.floor(Date.now() / 1000);
+    let fromSec: number | undefined;
+    if (timeType === 1) fromSec = nowSec - 7 * 24 * 3600;
+    else if (timeType === 2) fromSec = nowSec - 30 * 24 * 3600;
+    else if (timeType === 3) fromSec = nowSec - 90 * 24 * 3600;
+    if (fromSec) where.last_update_time = { gte: fromSec };
+
+    const [convs, total] = await this.prisma.$transaction([
+      this.prisma.im_conversation.findMany({
+        where,
+        orderBy: [{ last_update_time: 'desc' }, { id: 'desc' }],
+        skip,
+        take: size,
+      }),
+      this.prisma.im_conversation.count({ where }),
+    ]);
+
+    if (!convs.length) return { records: [], total, page, size };
+    const convIds = convs.map((c) => c.id);
+    const lastMsgs = await this.prisma.im_message.findMany({
+      where: { conversation_id: { in: convIds } },
+      orderBy: [{ id: 'desc' }],
+      take: convIds.length * 5,
+    });
+    const lastMap: Record<number, any> = {};
+    for (const m of lastMsgs) if (!lastMap[m.conversation_id!]) lastMap[m.conversation_id!] = m;
+
+    const records = convs.map((c) => ({ ...c, lastMessage: lastMap[c.id] || null }));
+    return { records, total, page, size };
+  }
 }

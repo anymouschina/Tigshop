@@ -4,10 +4,12 @@ import { ImConversationService } from './im_conversation.service';
 import { ImServantController } from './im_servant.controller';
 import { ImServantService } from './im_servant.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ImConfigController } from './im_config.controller';
+import { ImConfigService } from './im_config.service';
 
 @Module({
-  controllers: [ImConversationController, ImServantController],
-  providers: [ImConversationService, ImServantService, PrismaService],
-  exports: [ImConversationService, ImServantService],
+  controllers: [ImConversationController, ImServantController, ImConfigController],
+  providers: [ImConversationService, ImServantService, ImConfigService, PrismaService],
+  exports: [ImConversationService, ImServantService, ImConfigService],
 })
 export class ImModule {}

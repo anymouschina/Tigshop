@@ -86,6 +86,38 @@ export class ImConversationController {
     return this.listConversations(shopId, userFrom, page, size, role, status);
   }
 
+  // 待接入会话列表（客服侧）
+  @Get('conversation/waitServantList')
+  async waitServantList(
+    @Query('shopId') shopId?: string,
+    @Query('page') page?: string,
+    @Query('size') size?: string,
+  ) {
+    const data = await this.service.waitServantList({
+      shopId: shopId ? Number(shopId) : 0,
+      page: page ? Number(page) : 1,
+      size: size ? Number(size) : 15,
+    });
+    return { code: 0, message: 'success', data };
+  }
+
+  // 咨询历史（客服侧）
+  @Get('conversation/consultHistory')
+  async consultHistory(
+    @Query('shopId') shopId?: string,
+    @Query('page') page?: string,
+    @Query('size') size?: string,
+    @Query('timeType') timeType?: string,
+  ) {
+    const data = await this.service.consultHistory({
+      shopId: shopId ? Number(shopId) : 0,
+      page: page ? Number(page) : 1,
+      size: size ? Number(size) : 15,
+      timeType: timeType ? Number(timeType) : undefined,
+    });
+    return { code: 0, message: 'success', data };
+  }
+
   @Post('open')
   async openConversation(@Body() body: any) {
     const data = await this.service.openConversation({
