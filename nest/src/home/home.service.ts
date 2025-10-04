@@ -71,13 +71,7 @@ export class HomeService {
         where: { decorate_id: previewId, decorate_type: 1 },
       });
 
-      if (!decorate) {
-        return {
-          decorateId: previewId,
-          moduleList: [],
-          pageModule: this.getMockPageModuleV2(),
-        };
-      }
+      if (!decorate) throw new Error('模板不存在');
 
       // 预览规则：moduleList 来自 draft_data，pageModule 来自 data（对齐 PHP）
       let draftParsed: any = null;
@@ -94,21 +88,17 @@ export class HomeService {
         ? (draftParsed.moduleList ?? draftParsed.module_list ?? [])
         : [];
       const pageModule = pubParsed
-        ? (pubParsed.pageModule ?? pubParsed.page_module ?? this.getMockPageModuleV2())
-        : this.getMockPageModuleV2();
+        ? (pubParsed.pageModule ?? pubParsed.page_module ?? {})
+        : {};
 
       return {
         decorateId: decorate.decorate_id,
         moduleList: moduleList || [],
-        pageModule: pageModule || this.getMockPageModuleV2(),
+        pageModule: pageModule || {},
       };
     } catch (error) {
       this.logger.error("获取预览装修失败", error);
-      return {
-        decorateId: previewId,
-        moduleList: [],
-        pageModule: this.getMockPageModuleV2(),
-      };
+      throw error;
     }
   }
 
@@ -193,24 +183,19 @@ export class HomeService {
         orderBy: [{ update_time: "desc" }, { decorate_id: "desc" }],
       });
 
-      if (!decorate) {
-        return { decorateId: 0, moduleList: [], pageModule: this.getMockPageModuleV2() };
-      }
-
-      if (!decorate.data) {
-        return { decorateId: decorate.decorate_id, moduleList: [], pageModule: this.getMockPageModuleV2() };
-      }
+      if (!decorate) throw new Error('模板不存在');
+      if (!decorate.data) return { decorateId: decorate.decorate_id, moduleList: [], pageModule: {} };
 
       try {
         const parsed = JSON.parse(decorate.data);
         return this.normalizeDecorateData(parsed, decorate.decorate_id);
       } catch (e) {
         this.logger.warn("首页装修数据解析失败", e);
-        return { decorateId: decorate.decorate_id, moduleList: [], pageModule: this.getMockPageModuleV2() };
+        throw e;
       }
     } catch (error) {
       this.logger.error("获取默认首页失败", error);
-      return { decorateId: 0, moduleList: [], pageModule: this.getMockPageModuleV2() };
+      throw error;
     }
   }
 
@@ -221,7 +206,7 @@ export class HomeService {
         orderBy: [{ update_time: "desc" }, { decorate_id: "desc" }],
       });
 
-      if (!decorate) return { decorate_id: 0, module_list: [], backgroundImage: "" };
+  if (!decorate) throw new Error('模板不存在');
       if (!decorate.data) return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
 
       try {
@@ -229,11 +214,11 @@ export class HomeService {
         return parsed;
       } catch (e) {
         this.logger.warn("PC 首页装修数据解析失败", e);
-        return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
+        throw e;
       }
     } catch (error) {
       this.logger.error("获取 PC 默认首页失败", error);
-      return { decorate_id: 0, module_list: [], backgroundImage: "" };
+      throw error;
     }
   }
 
@@ -263,12 +248,42 @@ export class HomeService {
     moduleIndex: string,
     pagination: { page: number; size: number },
   ) {
-    // 这里没有装修模块引擎，返回模拟数据
+    // TODO: 装修模块引擎尚未迁移，这里使用真实商品数据作为推荐占位
+    const { page, size } = pagination;
+    const skip = (page - 1) * size;
+    const where: any = { product_status: 1, is_delete: 0 };
+    const [list, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        orderBy: [{ is_hot: "desc" }, { sort_order: "asc" }, { product_id: "desc" }],
+        skip,
+        take: size,
+        select: {
+          product_id: true,
+          product_name: true,
+          pic_thumb: true,
+          product_price: true,
+          market_price: true,
+          virtual_sales: true,
+          product_stock: true,
+        },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+    const data = list.map((p) => ({
+      product_id: p.product_id,
+      product_name: p.product_name,
+      product_image: p.pic_thumb,
+      product_price: this.formatAmount(Number(p.product_price)),
+      market_price: this.formatAmount(Number(p.market_price)),
+      sales_count: p.virtual_sales ?? 0,
+      product_stock: p.product_stock,
+    }));
     return {
       module_name: "推荐商品",
       module_type: "product",
-      data: this.getMockProductList(pagination.page, pagination.size),
-      pagination: { current: pagination.page, size: pagination.size, total: 100 },
+      data,
+      pagination: { current: page, size, total },
     };
   }
 
@@ -277,21 +292,97 @@ export class HomeService {
     moduleIndex: string,
     pagination: { page: number; size: number },
   ) {
-    // 同上，返回模拟数据
-    return {
-      module_name: "推荐商品",
-      module_type: "product",
-      data: this.getMockProductList(pagination.page, pagination.size),
-      pagination: { current: pagination.page, size: pagination.size, total: 100 },
-    };
+    // 同 getPreviewDecorateModuleData，占位真实商品列表
+    return this.getPreviewDecorateModuleData(decorateId, moduleIndex, pagination);
   }
 
   // -------- 秒杀 --------
   async getSeckill(query: { page?: number; un_started?: number }) {
     const page = Number(query.page ?? 1) || 1;
     const size = 15;
-    const records = this.getMockSeckillList(page, size);
-    return { records, total: 200 };
+    const unStarted = Number(query.un_started ?? 0) === 1;
+    const now = Math.floor(Date.now() / 1000);
+    const skip = (page - 1) * size;
+
+    // 查询活动
+    const seckillWhere: any = unStarted
+      ? { seckill_start_time: { gt: now } }
+      : { seckill_start_time: { lt: now }, seckill_end_time: { gt: now } };
+
+    const seckills = await this.prisma.seckill.findMany({
+      where: seckillWhere,
+      orderBy: [{ seckill_start_time: "asc" }],
+      skip,
+      take: size,
+      select: {
+        seckill_id: true,
+        seckill_name: true,
+        seckill_start_time: true,
+        seckill_end_time: true,
+        seckill_limit_num: true,
+        product_id: true,
+      },
+    });
+
+    if (!seckills.length) return { records: [], total: 0 };
+
+    const productIds = seckills.map((s) => s.product_id!).filter(Boolean);
+    const items = await this.prisma.seckill_item.findMany({
+      where: { product_id: { in: productIds } },
+      select: {
+        product_id: true,
+        sku_id: true,
+        seckill_price: true,
+        seckill_stock: true,
+        seckill_sales: true,
+        seckill_start_time: true,
+        seckill_end_time: true,
+      },
+      orderBy: [{ seckill_price: "asc" }],
+    });
+    const productMap: Record<number, any> = {};
+    for (const it of items) {
+      if (!it.product_id) continue;
+      if (!productMap[it.product_id]) {
+        productMap[it.product_id] = { items: [], totalStock: 0, totalSales: 0, firstSku: it };
+      }
+      productMap[it.product_id].items.push(it);
+      productMap[it.product_id].totalStock += it.seckill_stock ?? 0;
+      productMap[it.product_id].totalSales += it.seckill_sales ?? 0;
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: { product_id: { in: productIds }, is_delete: 0, product_status: 1 },
+      select: {
+        product_id: true,
+        product_name: true,
+        pic_thumb: true,
+        product_price: true,
+        market_price: true,
+        product_stock: true,
+        virtual_sales: true,
+      },
+    });
+
+    const records = products.map((p) => {
+      const agg = productMap[p.product_id] || { totalStock: 0, totalSales: 0, firstSku: {} };
+      const firstSku = agg.firstSku;
+      return {
+        product_id: p.product_id,
+        product_name: p.product_name,
+        product_image: p.pic_thumb,
+        market_price: this.formatAmount(Number(firstSku?.seckill_price ?? p.market_price)),
+        product_price: this.formatAmount(Number(p.product_price)),
+        seckill_limit_num: seckills.find(s => s.product_id === p.product_id)?.seckill_limit_num || 0,
+        seckill_sales: agg.totalSales,
+        seckill_stock: agg.totalStock,
+        sku_id: firstSku?.sku_id || 0,
+        seckill_start_time: firstSku?.seckill_start_time || seckills.find(s => s.product_id === p.product_id)?.seckill_start_time,
+        seckill_end_time: firstSku?.seckill_end_time || seckills.find(s => s.product_id === p.product_id)?.seckill_end_time,
+      };
+    });
+
+    return { records, total: records.length };
   }
 
   // -------- 优惠券 --------
@@ -420,12 +511,18 @@ export class HomeService {
     }
 
     return {
+      // camelCase 主输出
       h5Domain,
       corpId,
       url,
       openType,
       serviceType,
       show: serviceType > 0 ? 1 : 0,
+      // snake_case 兼容（前端完成迁移后可移除）
+      h5_domain: h5Domain,
+      corp_id: corpId,
+      open_type: openType,
+      service_type: serviceType,
     };
   }
 
@@ -439,74 +536,27 @@ export class HomeService {
     return amount.toFixed(2);
   }
 
-  private getMockModuleList() {
-    return [];
-  }
-
-  private getMockPageModule() {
-    return { title: "", keywords: "商城,购物,商品", description: "欢迎访问我们的商城" };
-  }
-
-  private getMockPageModuleV2() {
-    return {
-      type: "page",
-      module: [],
-      backgroundRepeat: "",
-      backgroundSize: "",
-      style: 0,
-      title: "",
-      titleColor: "",
-      headerStyle: 1,
-      titleBackgroundColor: "",
-      backgroundImage: { picUrl: "", picThumb: "" },
-      backgroundColor: "",
-    };
-  }
+  // 预留：模块格式化（尚未移植 PHP modules 下各 Service）
+  private formatModule(type: string, module: any, params?: any, decorate?: any) { return module; }
 
   private normalizeDecorateData(input: any, fallbackDecorateId?: number) {
     if (!input || typeof input !== "object") {
-      return { decorateId: fallbackDecorateId ?? 0, moduleList: [], pageModule: this.getMockPageModuleV2() };
+  return { decorateId: fallbackDecorateId ?? 0, moduleList: [], pageModule: {} };
     }
     const alreadyCamel = "decorateId" in input || "moduleList" in input;
     if (alreadyCamel) {
       return {
         decorateId: input.decorateId ?? fallbackDecorateId ?? 0,
         moduleList: input.moduleList ?? [],
-        pageModule: input.pageModule ?? this.getMockPageModuleV2(),
+  pageModule: input.pageModule ?? {},
       };
     }
     return {
       decorateId: input.decorate_id ?? fallbackDecorateId ?? 0,
       moduleList: input.module_list ?? [],
-      pageModule: input.page_module ?? this.getMockPageModuleV2(),
+      pageModule: input.page_module ?? {},
     };
   }
 
-  private getMockProductList(page: number, size: number) {
-    const start = (page - 1) * size;
-    return Array.from({ length: size }).map((_, i) => ({
-      product_id: start + i + 1,
-      product_name: `商品${start + i + 1}`,
-      product_image: `/images/product${start + i + 1}.jpg`,
-      product_price: (Math.random() * 1000 + 10).toFixed(2),
-      market_price: (Math.random() * 1200 + 20).toFixed(2),
-      sales_count: Math.floor(Math.random() * 1000),
-    }));
-  }
-
-  private getMockSeckillList(page: number, size: number) {
-    const start = (page - 1) * size;
-    return Array.from({ length: size }).map((_, i) => ({
-      seckill_id: start + i + 1,
-      product_id: start + i + 1,
-      product_name: `秒杀商品${start + i + 1}`,
-      product_image: `/images/seckill${start + i + 1}.jpg`,
-      seckill_price: (Math.random() * 100 + 1).toFixed(2),
-      original_price: (Math.random() * 200 + 50).toFixed(2),
-      start_time: new Date(Date.now() + Math.random() * 86400000).toISOString(),
-      end_time: new Date(Date.now() + Math.random() * 86400000 + 86400000).toISOString(),
-      stock_count: Math.floor(Math.random() * 100) + 1,
-      sold_count: Math.floor(Math.random() * 50),
-    }));
-  }
+  // 旧 mock 函数已移除
 }
