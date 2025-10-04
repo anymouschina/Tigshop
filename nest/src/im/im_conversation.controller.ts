@@ -1,8 +1,15 @@
-import { Controller, Get, Post, Body, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Req, Logger, UseGuards } from '@nestjs/common';
 import { ImConversationService } from './im_conversation.service';
+import { AdminJwtAuthGuard } from 'src/auth/guards/admin-jwt-auth.guard';
+import { AuthorityGuard } from 'src/auth/guards/authority.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+
 
 @Controller('im/conversation')
+@UseGuards(AdminJwtAuthGuard, AuthorityGuard)
+@ApiBearerAuth()
 export class ImConversationController {
+  private readonly logger = new Logger(ImConversationController.name);
   constructor(private service: ImConversationService) {}
 
   @Get('message/list')
@@ -210,7 +217,7 @@ export class ImConversationController {
     if (!conversationId) {
       return { code: 400, message: '缺少 conversationId', data: null };
     }
-    if (!toServantId) {
+    if (!toServantId && toServantId !== 0) {
       return { code: 400, message: '缺少 toServantId', data: null };
     }
     const data = await this.service.transfer({ conversationId, toServantId, fromServantId, force });
