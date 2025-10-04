@@ -41,11 +41,18 @@ export class ImConversationService {
       }
     }
 
-    const recordsRaw = await this.prisma.im_message.findMany({
+    let recordsRaw = await this.prisma.im_message.findMany({
       where,
       orderBy: [{ id: sortOrder }],
       take: size,
     });
+
+    // 如果选择 asc，则需要把结果保证从小到大（Prisma 已经 asc 排序）；
+    // 如果 desc，则保持最新在前；前端如需时间线正序可以再传 sortOrder=asc。
+    // 若后续需要“desc 但又要返回时间正序”，可以增加一个参数，例如 `normalizeAsc=1`。
+    if (sortOrder === 'asc') {
+      // 已经是升序，无需调整；这里预留钩子
+    }
 
     // total 取该会话总消息数量（可优化：前端仅需是否还有更多）
     const total = await this.prisma.im_message.count({ where: { conversation_id: convId } });
@@ -282,7 +289,102 @@ export class ImConversationService {
       },
     });
 
-    return msg;
+    const fmt = (sec?: number | null) =>
+      sec ? new Date((sec as number) * 1000).toISOString().replace('T', ' ').substring(0, 19) : null;
+    const typeText = (t?: string | null) => {
+      const map: Record<string, string> = { text: '文本', image: '图片', custom: '自定义', file: '文件', video: '视频' };
+      return t && map[t] ? map[t] : '文本';
+    };
+    const formatContent = (m: any) => {
+      const t = (m.message_type || 'text') as string;
+      if (t === 'text') {
+        return { messageType: 'text', content: m.content ?? '', pic: null, contentCategory: null, order: null, product: null };
+      }
+      if (t === 'image') {
+        let pic: string | null = null;
+        try {
+          const ext = m.extend ? JSON.parse(m.extend) : null;
+          pic = (ext && (ext.pic || ext.url)) || (m.content ? String(m.content) : null);
+        } catch {
+          pic = m.content ? String(m.content) : null;
+        }
+        return { messageType: 'image', content: '', pic, contentCategory: null, order: null, product: null };
+      }
+      // custom 解析（与 listConversations formatContent 保持一致）
+      let raw: any = null;
+      try {
+        if (m.extend) raw = JSON.parse(m.extend);
+        else if (m.content && (String(m.content).startsWith('{') || String(m.content).startsWith('['))) raw = JSON.parse(m.content);
+      } catch {}
+      let contentCategory: string | null = null;
+      let order: any = null;
+      let product: any = null;
+      if (raw && typeof raw === 'object') {
+        const looksLikeOrder = (raw.orderId || raw.order_id) && (raw.orderSn || raw.order_sn);
+        const looksLikeProduct = (raw.productId || raw.product_id) && (raw.productName || raw.product_name || raw.productSn || raw.product_sn);
+        if (looksLikeOrder) {
+          contentCategory = 'order';
+          order = {
+            orderId: raw.orderId ?? raw.order_id ?? null,
+            orderSn: raw.orderSn ?? raw.order_sn ?? '',
+            picUrl: raw.picUrl ?? raw.pic_url ?? '',
+            productName: raw.productName ?? raw.product_name ?? '',
+            productNum: raw.productNum ?? raw.product_num ?? null,
+            totalAmount: raw.totalAmount ?? raw.total_amount ?? null,
+            orderStatusName: raw.orderStatusName ?? raw.order_status_name ?? '',
+          };
+        } else if (looksLikeProduct) {
+          contentCategory = 'product';
+          product = {
+            productId: raw.productId ?? raw.product_id ?? null,
+            picUrl: raw.picUrl ?? raw.pic_url ?? '',
+            productName: raw.productName ?? raw.product_name ?? '',
+            productSn: raw.productSn ?? raw.product_sn ?? '',
+            productPrice: raw.productPrice ?? raw.product_price ?? null,
+          };
+        }
+      }
+      return { messageType: t, content: '', pic: null, contentCategory, order, product };
+    };
+
+    // 补充用户与客服信息
+    const [user, servant] = await Promise.all([
+      msg.user_id ? this.prisma.user.findUnique({ where: { user_id: msg.user_id } }) : null,
+      msg.servant_id ? this.prisma.admin_user.findUnique({ where: { admin_id: msg.servant_id } }) : null,
+    ]);
+
+    return {
+      messageTypeText: typeText(msg.message_type),
+      id: msg.id,
+      conversationId: msg.conversation_id,
+      content: formatContent(msg),
+      messageType: msg.message_type,
+      type: msg.type === 0 ? 1 : 2,
+      userId: msg.user_id ?? null,
+      servantId: msg.servant_id ?? null,
+      sendTime: fmt(msg.send_time),
+      status: msg.status ?? null,
+      extend: msg.extend ?? null,
+      pushStatus: msg.push_status ?? null,
+      isRead: msg.is_read ? 1 : 0,
+      shopId: msg.shop_id ?? 0,
+      userFrom: msg.user_from ?? null,
+      user: user
+        ? {
+            userId: user.user_id,
+            username: user.username,
+            nickname: user.nickname,
+            avatar: user.avatar,
+          }
+        : null,
+      servant: servant
+        ? {
+            adminId: servant.admin_id,
+            username: servant.username,
+            avatar: servant.avatar,
+          }
+        : null,
+    };
   }
 
   // 会话列表（简单实现，可按需扩展过滤条件）

@@ -6,7 +6,6 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 
 
 @Controller('im/conversation')
-@UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class ImConversationController {
   private readonly logger = new Logger(ImConversationController.name);
