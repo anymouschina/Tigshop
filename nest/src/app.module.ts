@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, MiddlewareConsumer, NestModule } from "@nestjs/common";
 import { APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
 import { MulterModule } from "@nestjs/platform-express";
 import { UserModule } from "src/user/user.module";
@@ -90,6 +90,7 @@ import { SearchService } from "./search/search.service";
 import { AppVersionController } from "./app-version/app-version.controller";
 import { CategoryModule } from "./category/category.module";
 import { ImModule } from "./im/im.module";
+import { CaseTransformMiddleware } from "./common/middleware/case-transform.middleware";
 
 @Module({
   imports: [
@@ -199,4 +200,8 @@ import { ImModule } from "./im/im.module";
     AuthorityGuard,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(CaseTransformMiddleware).forRoutes('*');
+  }
+}

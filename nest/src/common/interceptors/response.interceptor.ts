@@ -85,24 +85,26 @@ export class ResponseInterceptor<T>
         const isAdminApi = url.startsWith("/adminapi/");
         // 已包装的返回
         if (data && typeof data === "object" && "code" in data) {
-          if (isAdminApi) {
-            // 仅对 data 字段做驼峰转换，避免动到 code/message 等外层字段
-            const payload = (data as any).data;
-            if (payload && typeof payload === "object") {
-              const transformed = this.transformAdminTimeFields(payload);
-              return { ...(data as any), data: camelCase(transformed, false) } as any;
-            }
+          const payload = (data as any).data;
+          if (payload && typeof payload === "object") {
+            const transformed = isAdminApi
+              ? this.transformAdminTimeFields(payload)
+              : payload;
+            return { ...(data as any), data: camelCase(transformed, false) } as any;
           }
           return data as any;
         }
 
-        // 未包装的返回
-        const finalData = isAdminApi && data && typeof data === "object" ? camelCase(this.transformAdminTimeFields(data), false) : data;
-        // 保持键顺序为 code, message, data 以对齐部分前端严格比较
+        // 未包装的返回：对所有接口数据做驼峰转换（admin 还额外处理时间字段）
+        let finalPayload = data;
+        if (data && typeof data === "object") {
+          const transformed = isAdminApi ? this.transformAdminTimeFields(data) : data;
+          finalPayload = camelCase(transformed, false);
+        }
         return {
           code: 0,
           message: "success",
-          data: finalData,
+          data: finalPayload,
         } as any;
       }),
     );
