@@ -538,16 +538,21 @@ export class OrderService {
   async confirmReceive(orderId: number, userId: number) {
     const order = await this.getOrderDetail(orderId, userId);
 
-    if (order.orderStatus !== 1) {
-      // SHIPPED = 1
-      throw new BadRequestException("只有已发货的订单才能确认收货");
-    }
+    // 前端 user 详情里 orderStatus=1 表示待发货，而是否已发货应参考 shipping_status
+    // 重新从 DB 拿原始记录避免映射后的语义偏差
+    const raw = await this.prisma.order.findUnique({ where: { order_id: Number(orderId) } });
+    if (!raw) throw new NotFoundException("订单不存在");
+    if (Number(raw.order_status) === 2) throw new BadRequestException("已取消订单无法确认收货");
+    if (Number(raw.order_status) === 3) return raw; // 幂等
+    if (Number(raw.shipping_status) === 0) throw new BadRequestException("未发货订单不能确认收货");
 
+    const now = Math.floor(Date.now() / 1000);
     return this.prisma.order.update({
-      where: { order_id: Number(order.orderId) },
+      where: { order_id: Number(orderId) },
       data: {
-        order_status: 3, // COMPLETED = 3
-        // completeTime field doesn't exist in schema
+        order_status: 3, // 已完成
+        shipping_status: Number(raw.shipping_status) === 0 ? 1 : raw.shipping_status,
+        received_time: now,
       },
     });
   }

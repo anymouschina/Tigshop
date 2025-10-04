@@ -775,7 +775,8 @@ export class AdminOrderCompatService {
       cancelOrder: (isPendingPay || isPaidUnshipped) && !splited,
       delOrder: isCancelled,
       deliver: isPaidUnshipped,
-      confirmReceipt: isShipped,
+      // 收货后不再显示确认按钮
+      confirmReceipt: isShipped && !isCompleted && !isCancelled,
       splitOrder: false,
       // 修改订单仅允许待支付
       modifyOrder: isPendingPay,
@@ -938,9 +939,26 @@ export class AdminOrderCompatService {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
     const now = Math.floor(Date.now() / 1000);
-    const status = shippingStatus != null ? Number(shippingStatus) : 2; // 默认 2=已收货
-    await this.prisma.order.update({ where: { order_id: orderId }, data: { shipping_status: status, received_time: now } });
-    await this.addLog(orderId, "确认收货", adminName);
+    // PHP 行为：确认收货 => order_status=3(已完成) + shipping_status=1(已发货) + received_time
+    if (Number(order.order_status) === 3) {
+      return true; // 幂等：已完成直接返回
+    }
+    if (Number(order.order_status) === 2) {
+      throw new BadRequestException("已取消订单无法确认收货");
+    }
+    if (Number(order.shipping_status) === 0) {
+      throw new BadRequestException("未发货订单不能确认收货");
+    }
+    const targetShipping = shippingStatus != null ? Number(shippingStatus) : 1;
+    await this.prisma.order.update({
+      where: { order_id: orderId },
+      data: {
+        order_status: 3,
+        shipping_status: targetShipping === 0 ? 1 : targetShipping,
+        received_time: now,
+      },
+    });
+    await this.addLog(orderId, "确认收货，订单已完成", adminName);
     return true;
   }
 

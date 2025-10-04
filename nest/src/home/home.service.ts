@@ -372,33 +372,59 @@ export class HomeService {
 
   // -------- 客服设置 --------
   async getCustomerServiceConfig() {
-    // 简化实现：读取环境变量或使用默认
-    const serviceType = Number(process.env.KEFU_TYPE ?? 1);
-    let openType = Number(process.env.KEFU_YZF_TYPE ?? 1);
-    let url = "";
-    let corpId = process.env.CORP_ID ?? "";
+    // 对齐 PHP: 走 config 表 (biz_code) 读取；ENV 仅兜底
+    const codes = [
+      'kefuType','kefuYzfType','kefuYzfSign','corpId','kefuWorkwxId','kefuCode','h5Domain'
+    ];
+    const rows = await this.prisma.config.findMany({
+      where: { biz_code: { in: codes }, OR: [{ is_del: 0 }, { is_del: null }] },
+      select: { biz_code: true, biz_val: true },
+    });
+    const cfg: Record<string, string> = {};
+    for (const r of rows) {
+      if (r.biz_code) cfg[r.biz_code] = r.biz_val ?? '';
+    }
+    const get = (k: string, envFallback?: string, def: any = ''): string => {
+      return (cfg[k] ?? envFallback ?? def) as string;
+    };
+    const num = (v: any, d = 0) => {
+      const n = Number(v); return Number.isFinite(n) ? n : d;
+    };
+    const serviceType = num(get('kefuType', process.env.KEFU_TYPE, 0));
+    let openType = num(get('kefuYzfType', process.env.KEFU_YZF_TYPE, 0));
+    const yzfSign = get('kefuYzfSign', process.env.KEFU_YZF_SIGN, '');
+    const corpId = get('corpId', process.env.CORP_ID, '');
+    const workwxId = get('kefuWorkwxId', process.env.KEFU_WORKWX_ID, '');
+    const kefuCode = get('kefuCode', process.env.KEFU_CODE, '');
+    const h5Domain = get('h5Domain', process.env.H5_DOMAIN, '');
 
+    let url = '';
     switch (serviceType) {
-      case 1:
-        url = `${process.env.YZF_URL ?? "https://yzf.qq.com/"}${process.env.KEFU_YZF_SIGN ?? "mock_sign"}`;
+      case 0:
         break;
-      case 2:
-        url = `${process.env.WORKWX_URL ?? "https://work.weixin.qq.com/kfid/"}${process.env.KEFU_WORKWX_ID ?? "mock"}`;
-        openType = 0;
+      case 1: // 易支付/yzf
+        url = `${process.env.YZF_URL ?? 'https://yzf.qq.com/'}${yzfSign}`;
         break;
-      case 3:
-        url = process.env.KEFU_CODE ?? "";
+      case 2: // 企业微信
+        url = `${process.env.WORKWX_URL ?? 'https://work.weixin.qq.com/kfid/'}${workwxId}`;
+        openType = 0; // PHP 逻辑：企业微信强制 open_type=0
+        break;
+      case 3: // 自定义代码/链接
+        url = kefuCode;
+        break;
+      case 4: // 关闭 / 预留
+        url = '';
         break;
       default:
-        url = "";
+        url = '';
     }
 
     return {
-      h5_domain: process.env.H5_DOMAIN ?? "",
-      corp_id: corpId,
+      h5Domain,
+      corpId,
       url,
-      open_type: openType,
-      service_type: serviceType,
+      openType,
+      serviceType,
       show: serviceType > 0 ? 1 : 0,
     };
   }
