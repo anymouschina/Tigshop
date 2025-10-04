@@ -39,7 +39,7 @@ export class ImConversationService {
       }
     }
 
-    const records = await this.prisma.im_message.findMany({
+    const recordsRaw = await this.prisma.im_message.findMany({
       where,
       orderBy: [{ id: sortOrder }],
       take: size,
@@ -48,7 +48,115 @@ export class ImConversationService {
     // total 取该会话总消息数量（可优化：前端仅需是否还有更多）
     const total = await this.prisma.im_message.count({ where: { conversation_id: convId } });
 
-    return { records, total, conversationId: convId };
+    // 聚合用户与客服ID，批量查询资料
+    const userIds = Array.from(
+      new Set((recordsRaw.map((r) => r.user_id).filter((v) => !!v) as number[])),
+    );
+    const servantIds = Array.from(
+      new Set((recordsRaw.map((r) => r.servant_id).filter((v) => !!v) as number[])),
+    );
+
+    const users = userIds.length
+      ? await this.prisma.user.findMany({ where: { user_id: { in: userIds } } })
+      : ([] as any[]);
+    const servants = servantIds.length
+      ? await this.prisma.admin_user.findMany({ where: { admin_id: { in: servantIds } } })
+      : ([] as any[]);
+    const userMap: Record<number, any> = {};
+    for (const u of users as any[]) userMap[u.user_id] = u;
+    const servantMap: Record<number, any> = {};
+    for (const s of servants as any[]) servantMap[s.admin_id] = s;
+
+    const fmt = (sec?: number | null) =>
+      sec ? new Date((sec as number) * 1000).toISOString().replace('T', ' ').substring(0, 19) : null;
+    const typeText = (t?: string | null) => {
+      const map: Record<string, string> = { text: '文本', image: '图片', custom: '自定义', file: '文件', video: '视频' };
+      return t && map[t] ? map[t] : '文本';
+    };
+
+    const formatContent = (m: any) => {
+      const t = (m.message_type || 'text') as string;
+      // 统一返回对象结构
+      if (t === 'text') {
+        return {
+          messageType: 'text',
+          content: m.content ?? '',
+          pic: '',
+          contentCategory: null,
+          order: null,
+          product: null,
+        };
+      }
+      if (t === 'image') {
+        // 图片放在 pic 字段，保留 content 为空串
+        const ext = (() => {
+          try {
+            return m.extend ? JSON.parse(m.extend) : null;
+          } catch {
+            return null;
+          }
+        })();
+        const pic = (ext && (ext.pic || ext.url)) || m.content || '';
+        return {
+          messageType: 'image',
+          content: '',
+          pic: String(pic),
+          contentCategory: null,
+          order: null,
+          product: null,
+        };
+      }
+      // 其他自定义类型：尽量透传到 extend，同时保持通用字段
+      return {
+        messageType: t,
+        content: '',
+        pic: '',
+        contentCategory: null,
+        order: null,
+        product: null,
+      };
+    };
+
+    const records = (recordsRaw || []).map((m) => {
+      const u = m.user_id ? userMap[m.user_id] : null;
+      const s = m.servant_id ? servantMap[m.servant_id] : null;
+      return {
+        messageTypeText: typeText(m.message_type),
+        id: m.id,
+        conversationId: m.conversation_id,
+        content: formatContent(m),
+        messageType: m.message_type,
+        type: m.type,
+        userId: m.user_id ?? null,
+        servantId: m.servant_id ?? null,
+        sendTime: fmt(m.send_time),
+        status: m.status ?? 1,
+        extend: m.extend ?? null,
+        pushStatus: m.push_status ?? 0,
+        isRead: (m.is_read ? 1 : 0) as any,
+        shopId: m.shop_id ?? 0,
+        userFrom: (m.user_from ?? null) as any,
+        user: u
+          ? {
+              userId: u.user_id,
+              username: u.username,
+              nickname: u.nickname,
+              avatar: u.avatar,
+            }
+          : null,
+        servant: s
+          ? {
+              adminId: s.admin_id,
+              username: s.username,
+              avatar: s.avatar,
+            }
+          : null,
+      };
+    });
+
+    const pages = Math.ceil(total / size);
+    const current = 1; // firstId 滚动场景默认视为第一页
+    return { records, total, size, current, pages, conversationId: convId } as any;
   }
 
   // 发送消息（文本/图片/自定义卡片）
@@ -304,6 +412,36 @@ export class ImConversationService {
     return { conversationId, deleted: true };
   }
 
+  // 会话转接到指定客服
+  async transfer(params: { conversationId: number; toServantId: number; fromServantId?: number; force?: boolean }) {
+    const { conversationId, toServantId, fromServantId, force = false } = params;
+    if (!conversationId) throw new Error('缺少 conversationId');
+    if (!toServantId) throw new Error('缺少 toServantId');
+    // 可选：校验客服是否存在
+    const target = await this.prisma.admin_user.findFirst({ where: { admin_id: Number(toServantId) } });
+    if (!target) throw new Error('目标客服不存在');
+
+    const conv = await this.prisma.im_conversation.findUnique({ where: { id: Number(conversationId) } });
+    if (!conv || conv.is_delete) throw new Error('会话不存在或已删除');
+
+    // 来源客服校验（若指定且不强制）
+    if (fromServantId && !force && Number(conv.last_servant_id ?? 0) !== Number(fromServantId)) {
+      return { conversationId: conv.id, lastServantId: conv.last_servant_id ?? null, changed: false } as any;
+    }
+
+    // 已是目标客服则直接返回
+    if (Number(conv.last_servant_id ?? 0) === Number(toServantId)) {
+      return { conversationId: conv.id, lastServantId: conv.last_servant_id ?? null, changed: false } as any;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const updated = await this.prisma.im_conversation.update({
+      where: { id: Number(conversationId) },
+      data: { last_servant_id: Number(toServantId), last_update_time: now },
+    });
+    return { conversationId: updated.id, lastServantId: updated.last_servant_id, changed: true } as any;
+  }
+
   // 会话详情：根据 conversationId 或 (shopId + userFrom) 获取
   async getConversationDetail(params: { conversationId?: number; shopId?: number; userFrom?: string }) {
     const { conversationId, shopId, userFrom } = params;
@@ -348,6 +486,7 @@ export class ImConversationService {
 
     if (!convs.length) return { records: [], total, page, size };
     const convIds = convs.map((c) => c.id);
+
     // 未读数（客服侧，统计用户发来的未读）
     const unreadAgg = await this.prisma.im_message.groupBy({
       by: ['conversation_id'],
@@ -357,6 +496,7 @@ export class ImConversationService {
     const unreadMap: Record<number, number> = {};
     for (const it of unreadAgg) unreadMap[it.conversation_id as number] = (it as any)._count.id;
 
+    // 最近消息
     const lastMsgs = await this.prisma.im_message.findMany({
       where: { conversation_id: { in: convIds } },
       orderBy: [{ id: 'desc' }],
@@ -365,7 +505,94 @@ export class ImConversationService {
     const lastMap: Record<number, any> = {};
     for (const m of lastMsgs) if (!lastMap[m.conversation_id!]) lastMap[m.conversation_id!] = m;
 
-    const records = convs.map((c) => ({ ...c, lastMessage: lastMap[c.id] || null, unread: unreadMap[c.id] || 0 }));
+    // 用户信息、客服信息
+    const userIds = Array.from(new Set(convs.map((c) => c.user_id).filter((v) => !!v))) as number[];
+    const servantIds = Array.from(new Set(convs.map((c) => c.last_servant_id).filter((v) => !!v))) as number[];
+    const users = userIds.length
+      ? await this.prisma.user.findMany({ where: { user_id: { in: userIds } } })
+      : ([] as any[]);
+    const servants = servantIds.length
+      ? await this.prisma.admin_user.findMany({ where: { admin_id: { in: servantIds } } })
+      : ([] as any[]);
+    const userMap: Record<number, any> = {};
+    for (const u of users) userMap[u.user_id] = u;
+    const servantMap: Record<number, any> = {};
+    for (const s of servants) servantMap[s.admin_id] = s;
+
+    // 每个会话首条用户消息
+    const firstUserMsgMap: Record<number, any> = {};
+    for (const cid of convIds) {
+      const firstUser = await this.prisma.im_message.findFirst({
+        where: { conversation_id: cid, type: 0 },
+        orderBy: [{ send_time: 'asc' }, { id: 'asc' }],
+        select: { conversation_id: true, user_id: true, send_time: true, message_type: true },
+      });
+      if (firstUser) firstUserMsgMap[cid] = firstUser;
+    }
+
+    const typeText = (t?: string | null) => {
+      const map: Record<string, string> = { text: '文本', image: '图片', custom: '自定义', file: '文件', video: '视频' };
+      return t && map[t] ? map[t] : '文本';
+    };
+
+    const records = await Promise.all(convs.map(async (c) => {
+      const u = c.user_id ? userMap[c.user_id] : null;
+      const s = c.last_servant_id ? servantMap[c.last_servant_id] : null;
+      const firstUser = firstUserMsgMap[c.id];
+      const firstUserMessage = firstUser
+        ? [
+            {
+              messageTypeText: typeText(firstUser.message_type as any),
+              conversationId: c.id,
+              userId: firstUser.user_id,
+              sendTime: firstUser.send_time,
+              messageType: firstUser.message_type,
+            },
+          ]
+        : [];
+
+      // 用户最近两条消息（用于右侧预览）
+      const lastTwo = await this.prisma.im_message.findMany({
+        where: { conversation_id: c.id, type: 0 },
+        orderBy: [{ id: 'desc' }],
+        take: 2,
+        select: { conversation_id: true, user_id: true, send_time: true, message_type: true, content: true },
+      });
+      const userLastTwoMessage = lastTwo.map((m) => ({
+        messageTypeText: typeText(m.message_type as any),
+        conversationId: m.conversation_id,
+        userId: m.user_id,
+        sendTime: m.send_time,
+        messageType: m.message_type,
+        content: m.content,
+      }));
+
+      return {
+        id: c.id,
+        userId: c.user_id ?? null,
+        lastServantId: c.last_servant_id ?? 0,
+        addTime: c.add_time ?? 0,
+        shopId: c.shop_id ?? 0,
+        userFrom: c.user_from ?? null,
+        status: c.status ?? 0,
+        lastUpdateTime: c.last_update_time ?? 0,
+        isDelete: c.is_delete ?? 0,
+        remark: c.remark ?? '',
+        summary: c.summary ?? '',
+        user: u
+          ? { userId: u.user_id, username: u.username, nickname: u.nickname, avatar: u.avatar }
+          : null,
+        servant: s
+          ? { adminId: s.admin_id, username: s.username, mobile: s.mobile, avatar: s.avatar }
+          : null,
+        // 便于前端直接读取头像
+        avatar: u ? u.avatar : null,
+        lastMessage: lastMap[c.id] || null,
+        unread: unreadMap[c.id] || 0,
+        firstUserMessage,
+        userLastTwoMessage,
+      };
+    }));
     return { records, total, page, size };
   }
 

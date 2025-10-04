@@ -144,13 +144,25 @@ export class ImConversationController {
   }
 
   @Post('open')
-  async openConversation(@Body() body: any) {
+  async openConversation(@Body() body: any, @Req() req: any) {
     const data = await this.service.openConversation({
       shopId: body.shopId ? Number(body.shopId) : 0,
-      userFrom: body.userFrom,
+      userFrom: body.userFrom || req.userFrom,
       servantId: body.servantId ? Number(body.servantId) : undefined,
     });
     return { code: 0, message: 'success', data };
+  }
+
+  // 兼容创建会话路径：/im/conversation/create
+  @Post('create')
+  async createConversation(@Body() body: any, @Req() req: any) {
+    return this.openConversation(body, req);
+  }
+
+  // 兼容老路径：/im/conversation/conversation/create
+  @Post('conversation/create')
+  async createConversationAlias(@Body() body: any, @Req() req: any) {
+    return this.openConversation(body, req);
   }
 
   @Post('markRead')
@@ -170,6 +182,45 @@ export class ImConversationController {
       role: body.role === 'servant' ? 'servant' : 'user',
     });
     return { code: 0, message: 'success', data };
+  }
+
+  // 会话转接到指定客服
+  @Post('transfer')
+  async transfer(@Body() body: any, @Req() req: any) {
+    // 兼容 PHP 命名：驼峰 + 下划线，多别名兜底
+    const num = (v: any) => (v === undefined || v === null || v === '' ? undefined : Number(v));
+    const conversationId = num(
+      body.conversationId ?? body.id ?? body.conversation_id,
+    );
+    let toServantId = num(
+      body.toServantId ?? body.servantId ?? body.adminId ?? body.toAdminId ?? body.kefuId ??
+      body.toKefuId ?? body.targetServantId ?? body.targetId ??
+      body.to_servant_id ?? body.servant_id ?? body.admin_id ?? body.to_admin_id ?? body.kefu_id ?? body.to_kefu_id,
+    );
+    // 若未提供目标客服ID，则默认指向当前登录管理员（接入会话的常见行为）
+    if (!toServantId) {
+      const currentAdminId = req?.user?.userId ?? req?.user?.adminId ?? req?.user?.admin_id;
+      toServantId = num(currentAdminId);
+    }
+    const fromServantId = num(
+      body.fromServantId ?? body.from_admin_id ?? body.fromServant_id ?? body.fromServant ?? body.from_admin ?? body.from_servant_id,
+    );
+    const force = body.force ? Boolean(Number(body.force) || body.force === true) : false;
+
+    if (!conversationId) {
+      return { code: 400, message: '缺少 conversationId', data: null };
+    }
+    if (!toServantId) {
+      return { code: 400, message: '缺少 toServantId', data: null };
+    }
+    const data = await this.service.transfer({ conversationId, toServantId, fromServantId, force });
+    return { code: 0, message: 'success', data };
+  }
+
+  // 兼容老路径多一层 conversation：/im/conversation/conversation/transfer
+  @Post('conversation/transfer')
+  async transferAlias(@Body() body: any, @Req() req: any) {
+    return this.transfer(body, req);
   }
 
   @Get('unreadCount')
