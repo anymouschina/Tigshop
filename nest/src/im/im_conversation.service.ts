@@ -293,8 +293,10 @@ export class ImConversationService {
     status?: number; // 会话状态过滤 (0=进行中,1=已关闭)
     currentServantId?: number; // 当前客服ID（仅客服视角）
     onlyMine?: boolean; // 是否只看当前客服自己的
+    includeMessages?: boolean; // 是否附带最近多条消息
+    statusMappingMode?: boolean; // 是否启用外部 status=1->内部0 兼容映射
   }) {
-    const { shopId = 0, userFrom, page = 1, size = 20, role = 'user', status, currentServantId, onlyMine } = params;
+    const { shopId = 0, userFrom, page = 1, size = 20, role = 'user', status, currentServantId, onlyMine, includeMessages, statusMappingMode } = params;
     const skip = (page - 1) * size;
     const where: any = { is_delete: 0 };
     if (userFrom) where.user_from = userFrom;
@@ -318,14 +320,21 @@ export class ImConversationService {
 
     if (!convs.length) return { records: [], total, page, size };
     const convIds = convs.map(c => c.id);
+    // 抓取消息：如果需要附带消息列表则多抓一些，否则只抓最新单条
+    const fetchFactor = includeMessages ? 50 : 5; // 粗略：每会话平均需要的数量
     const messages = await this.prisma.im_message.findMany({
       where: { conversation_id: { in: convIds } },
       orderBy: [{ id: 'desc' }],
-      take: convIds.length * 5, // 粗略抓取; 再聚合取每会话最新
+      take: convIds.length * fetchFactor,
     });
-    const lastMap: Record<number, any> = {};
+    const latestMap: Record<number, any> = {};
+    const groupedMessages: Record<number, any[]> = {};
     for (const m of messages) {
-      if (!lastMap[m.conversation_id!]) lastMap[m.conversation_id!] = m; // 第一条即最新（因 desc）
+      const cid = m.conversation_id!;
+      if (!latestMap[cid]) latestMap[cid] = m; // 第一条即最新
+      if (includeMessages) {
+        (groupedMessages[cid] ||= []).push(m);
+      }
     }
     // 未读统计：按角色区分
     const unreadMap: Record<number, number> = {};
@@ -342,12 +351,138 @@ export class ImConversationService {
       if (u.conversation_id) unreadMap[u.conversation_id] = (unreadMap[u.conversation_id] || 0) + 1;
     }
 
-    const records = convs.map(c => ({
-      ...c,
-      lastMessage: lastMap[c.id] || null,
-      unread: unreadMap[c.id] || 0,
-    }));
-    return { records, total, page, size };
+    const fmtTime = (sec?: number | null) => (sec ? new Date(sec * 1000).toISOString().replace('T', ' ').substring(0, 19) : null);
+    const typeText = (t?: string | null) => {
+      const map: Record<string, string> = { text: '文本', image: '图片', custom: '自定义', file: '文件', video: '视频' };
+      return t && map[t] ? map[t] : '文本';
+    };
+    const formatContent = (m: any) => {
+      const t = m.message_type || 'text';
+      if (t === 'text') return { messageType: 'text', content: m.content ?? '', pic: '', contentCategory: null, order: null, product: null };
+      if (t === 'image') {
+        let pic = '';
+        try { const ext = m.extend ? JSON.parse(m.extend) : null; pic = (ext && (ext.pic || ext.url)) || m.content || ''; } catch { pic = m.content || ''; }
+        return { messageType: 'image', content: '', pic, contentCategory: null, order: null, product: null };
+      }
+      // custom/其它：尝试解析 extend 或 content JSON
+      let raw: any = null;
+      try {
+        if (m.extend) raw = JSON.parse(m.extend);
+        else if (m.content && (m.content.startsWith('{') || m.content.startsWith('['))) raw = JSON.parse(m.content);
+      } catch {}
+      let contentCategory: string | null = null;
+      let order: any = null;
+      let product: any = null;
+      if (raw && typeof raw === 'object') {
+        // 订单卡片可能含有 orderId/orderSn/totalAmount/productNum/picUrl/orderStatusName
+        const looksLikeOrder = (raw.orderId || raw.order_id) && (raw.orderSn || raw.order_sn);
+        const looksLikeProduct = (raw.productId || raw.product_id) && (raw.productName || raw.product_name || raw.productSn || raw.product_sn);
+        if (looksLikeOrder) {
+          contentCategory = 'order';
+          order = {
+            orderId: raw.orderId ?? raw.order_id ?? null,
+            orderSn: raw.orderSn ?? raw.order_sn ?? '',
+            picUrl: raw.picUrl ?? raw.pic_url ?? '',
+            productName: raw.productName ?? raw.product_name ?? '',
+            productNum: raw.productNum ?? raw.product_num ?? null,
+            totalAmount: raw.totalAmount ?? raw.total_amount ?? null,
+            orderStatusName: raw.orderStatusName ?? raw.order_status_name ?? '',
+          };
+        } else if (looksLikeProduct) {
+          contentCategory = 'product';
+          product = {
+            productId: raw.productId ?? raw.product_id ?? null,
+            picUrl: raw.picUrl ?? raw.pic_url ?? '',
+            productName: raw.productName ?? raw.product_name ?? '',
+            productSn: raw.productSn ?? raw.product_sn ?? '',
+            productPrice: raw.productPrice ?? raw.product_price ?? null,
+          };
+        }
+      }
+      return { messageType: t, content: '', pic: '', contentCategory, order, product };
+    };
+
+    // 批量查询用户信息（user_id 聚合）
+    const userIds = Array.from(new Set(convs.map(c => c.user_id).filter(Boolean))) as number[];
+    let userMap: Record<number, any> = {};
+    if (userIds.length) {
+      const users = await this.prisma.user.findMany({
+        where: { user_id: { in: userIds } },
+        select: { user_id: true, username: true, nickname: true, avatar: true },
+      });
+      userMap = users.reduce((acc, u) => {
+        acc[u.user_id] = u; return acc;
+      }, {} as Record<number, any>);
+    }
+
+    const records = convs.map(c => {
+      const rawStatus = c.status ?? 0; // 内部：0=进行中,1=已关闭
+      // 兼容输出：如果启用映射并且内部0，前端期望显示为1（会话中）
+      const externalStatus = statusMappingMode ? (rawStatus === 0 ? 1 : 2) : rawStatus;
+      let msgList: any[] | null = null;
+      if (includeMessages) {
+        const arr = (groupedMessages[c.id] || []).slice(); // desc
+        // 转成期望结构（保持最新在前）
+        msgList = arr.map(m => ({
+          messageTypeText: typeText(m.message_type),
+          id: m.id,
+          conversationId: m.conversation_id,
+          content: formatContent(m),
+          messageType: m.message_type,
+          type: m.type === 0 ? 1 : 2, // 兼容：用户=1? 还是直接透传; 这里按示例 type=1/2 映射 (user->1 servant->2)
+          userId: m.user_id ?? null,
+          servantId: m.servant_id ?? null,
+          sendTime: fmtTime(m.send_time),
+          status: m.status ?? 1,
+          extend: m.extend ?? null,
+          pushStatus: m.push_status ?? 0,
+          isRead: (m.is_read ? 1 : 0) as any,
+          shopId: m.shop_id ?? 0,
+          userFrom: m.user_from ?? null,
+        }));
+      }
+      const last = latestMap[c.id];
+      return {
+        id: c.id,
+        userId: c.user_id ?? null,
+        lastServantId: c.last_servant_id ?? 0,
+        addTime: fmtTime(c.add_time) as any,
+        lastUpdateTime: fmtTime(c.last_update_time) as any,
+        shopId: c.shop_id ?? 0,
+        userFrom: c.user_from ?? null,
+        status: externalStatus,
+        remark: c.remark ?? '',
+        summary: c.summary ?? '',
+        isDelete: c.is_delete ?? 0,
+        unreadMessageCount: unreadMap[c.id] || 0,
+        user: c.user_id && userMap[c.user_id] ? {
+          userId: c.user_id,
+          username: userMap[c.user_id].username,
+          nickname: userMap[c.user_id].nickname ?? userMap[c.user_id].username,
+          avatar: userMap[c.user_id].avatar,
+        } : null,
+        lastMessage: includeMessages ? (msgList || []) : (last ? [{
+          messageTypeText: typeText(last.message_type),
+          id: last.id,
+          conversationId: last.conversation_id,
+          content: formatContent(last),
+          messageType: last.message_type,
+          type: last.type === 0 ? 1 : 2,
+          userId: last.user_id ?? null,
+          servantId: last.servant_id ?? null,
+          sendTime: fmtTime(last.send_time),
+          status: last.status ?? 1,
+          extend: last.extend ?? null,
+          pushStatus: last.push_status ?? 0,
+          isRead: (last.is_read ? 1 : 0) as any,
+          shopId: last.shop_id ?? 0,
+          userFrom: last.user_from ?? null,
+        }] : []),
+        shop: null,
+      };
+    });
+    const pages = Math.ceil(total / size);
+    return { records, total, size, current: page, pages } as any;
   }
 
   // 打开 / 创建会话

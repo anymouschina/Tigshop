@@ -106,15 +106,27 @@ export class ImConversationController {
     const resolvedRole = (role === 'servant' ? 'servant' : 'user') as 'servant' | 'user';
     const onlyMine = resolvedRole === 'servant' && (mine === '1' || mine === 'true');
     const currentAdminId = onlyMine ? (req?.user?.userId ?? req?.user?.adminId ?? req?.user?.admin_id) : undefined;
+    // 兼容要求：status=1 代表“进行中”(内部=0)；status=2 代表“已关闭”(内部=1)。其它保持原语义/不筛选。
+    let internalStatus: number | undefined = undefined;
+    let statusMappingMode = false;
+    if (status !== undefined) {
+      if (status === '1') { internalStatus = 0; statusMappingMode = true; }
+      else if (status === '2') { internalStatus = 1; statusMappingMode = true; }
+      else if (status === '0') { internalStatus = 0; }
+      else { internalStatus = Number(status); }
+    }
+    const includeMessages = status === '1'; // 仅“会话中”模式需要附带消息列表
     const data = await this.service.listConversations({
       shopId: shopId ? Number(shopId) : 0,
       userFrom,
       page: page ? Number(page) : 1,
       size: size ? Number(size) : 20,
       role: resolvedRole,
-      status: status !== undefined ? Number(status) : undefined,
+      status: internalStatus,
       currentServantId: onlyMine && currentAdminId ? Number(currentAdminId) : undefined,
       onlyMine,
+      includeMessages,
+      statusMappingMode,
     });
     return { code: 0, message: 'success', data };
   }
