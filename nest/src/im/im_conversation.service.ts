@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+const dayJs = require('dayjs')
 
 @Injectable()
 export class ImConversationService {
+  private readonly logger = new Logger(ImConversationService.name);
   constructor(private prisma: PrismaService) {}
 
   async listMessages(params: {
@@ -296,18 +298,27 @@ export class ImConversationService {
     includeMessages?: boolean; // 是否附带最近多条消息
     statusMappingMode?: boolean; // 是否启用外部 status=1->内部0 兼容映射
   }) {
-    const { shopId = 0, userFrom, page = 1, size = 20, role = 'user', status, currentServantId, onlyMine, includeMessages, statusMappingMode } = params;
+    const { shopId = 0, page = 1, size = 20, role = 'user', status, currentServantId, onlyMine, includeMessages, statusMappingMode } = params;
     const skip = (page - 1) * size;
     const where: any = { is_delete: 0 };
-    if (userFrom) where.user_from = userFrom;
     if (shopId) where.shop_id = shopId;
-    if (status !== undefined && status !== null && status !== -1) where.status = status;
+    if (status !== undefined && status !== null && status !== -1) {
+      if (status === 0) {
+        // 兼容历史数据 status 可能为 NULL 代表进行中
+        where.OR = [
+          { status: 0 },
+          { status: null },
+        ];
+      } else {
+        where.status = status;
+      }
+    }
     if (role === 'servant' && onlyMine && currentServantId) {
       // 仅当前客服负责的会话（进行中默认 status=0，如前端传了 status 则尊重）
       where.last_servant_id = currentServantId;
       if (status === undefined) where.status = 0;
     }
-
+    this.logger.debug(`listConversations: status=>${status} params=${JSON.stringify(params)} => where=${JSON.stringify(where)} `);
     const [convs, total] = await this.prisma.$transaction([
       this.prisma.im_conversation.findMany({
         where,
@@ -575,7 +586,11 @@ export class ImConversationService {
     const now = Math.floor(Date.now() / 1000);
     const updated = await this.prisma.im_conversation.update({
       where: { id: Number(conversationId) },
-      data: { last_servant_id: Number(toServantId), last_update_time: now },
+      data: { 
+        last_servant_id: Number(toServantId), 
+        last_update_time: now ,
+        status : 1
+      },
     });
     return { conversationId: updated.id, lastServantId: updated.last_servant_id, changed: true, accepted: acceptMode || undefined } as any;
   }
@@ -609,7 +624,15 @@ export class ImConversationService {
   async waitServantList(params: { shopId?: number; page?: number; size?: number }) {
     const { shopId = 0, page = 1, size = 15 } = params;
     const skip = (page - 1) * size;
-    const where: any = { is_delete: 0, status: 0 };
+    // 待接入：仅展示尚未分配客服的会话（last_servant_id 为 0 或 null 且进行中）
+    const where: any = {
+      is_delete: 0,
+      status: 0,
+      OR: [
+        { last_servant_id: 0 },
+        { last_servant_id: null },
+      ],
+    };
     if (shopId) where.shop_id = shopId;
 
     const [convs, total] = await this.prisma.$transaction([
@@ -621,6 +644,7 @@ export class ImConversationService {
       }),
       this.prisma.im_conversation.count({ where }),
     ]);
+    this.logger.debug('waitServantList', { where, convs, total });
 
     if (!convs.length) return { records: [], total, page, size };
     const convIds = convs.map((c) => c.id);
@@ -702,14 +726,14 @@ export class ImConversationService {
         userId: m.user_id,
         sendTime: m.send_time,
         messageType: m.message_type,
-        content: m.content,
+        content: JSON.parse(m.content || '{}'),
       }));
 
       return {
         id: c.id,
         userId: c.user_id ?? null,
         lastServantId: c.last_servant_id ?? 0,
-        addTime: c.add_time ?? 0,
+        addTime:  dayJs((c.add_time|| 0) * 1000).format('YYYY-MM-DD HH:mm:ss') ?? 0,
         shopId: c.shop_id ?? 0,
         userFrom: c.user_from ?? null,
         status: c.status ?? 0,

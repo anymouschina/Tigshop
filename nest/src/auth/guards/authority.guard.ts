@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { CanActivate, ExecutionContext, Injectable, HttpException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, Injectable, HttpException, Logger } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 
 @Injectable()
 export class AuthorityGuard implements CanActivate {
+  private logger = new Logger(AuthorityGuard.name);
   constructor(private readonly reflector: Reflector) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -23,7 +24,7 @@ export class AuthorityGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-
+    this.logger?.debug(`AuthorityGuard: user=${JSON.stringify(user)}, requiredAuthorities=${requiredAuthorities.join(",")}`);
     if (!user || !user.userId) {
       const body = {
         code: 401,

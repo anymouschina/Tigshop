@@ -103,20 +103,22 @@ export class ImConversationController {
     @Query('mine') mine?: string, // mine=1 仅查看当前客服自己的会话（进行中）
     @Req() req?: any,
   ) {
-    const resolvedRole = (role === 'servant' ? 'servant' : 'user') as 'servant' | 'user';
+    // 自动角色推断：若未显式传 role 且 JWT 中为 admin，则视为客服(servant)
+    const inferredRole: 'servant' | 'user' = role === 'servant'
+      ? 'servant'
+      : (role === 'user'
+          ? 'user'
+          : ( (req?.user?.role === 'admin' || req?.user?.isAdmin) ? 'servant' : 'user'));
+    const resolvedRole = inferredRole;
     const onlyMine = resolvedRole === 'servant' && (mine === '1' || mine === 'true');
     const currentAdminId = onlyMine ? (req?.user?.userId ?? req?.user?.adminId ?? req?.user?.admin_id) : undefined;
     // 兼容要求：status=1 代表“进行中”(内部=0)；status=2 代表“已关闭”(内部=1)。其它保持原语义/不筛选。
     let internalStatus: number | undefined = undefined;
     let statusMappingMode = false;
-    if (status !== undefined) {
-      if (status === '1') { internalStatus = 0; statusMappingMode = true; }
-      else if (status === '2') { internalStatus = 1; statusMappingMode = true; }
-      else if (status === '0') { internalStatus = 0; }
-      else { internalStatus = Number(status); }
-    }
+    internalStatus = Number(status);
     const includeMessages = status === '1'; // 仅“会话中”模式需要附带消息列表
-    const data = await this.service.listConversations({
+    this.logger.debug(`listCon ${internalStatus} ${status}`)
+   const data = await this.service.listConversations({
       shopId: shopId ? Number(shopId) : 0,
       userFrom,
       page: page ? Number(page) : 1,
