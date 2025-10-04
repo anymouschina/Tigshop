@@ -60,13 +60,20 @@ export class ImConversationController {
   // 发送消息（文本/图片/自定义卡片）
   @Post('message/send')
   async sendMessage(@Body() body: any, @Req() req: any) {
+    // 若为客服角色但未显式传 servantId，则兜底当前登录管理员，实现“接入后无需再传”体验
+    const role: 'servant' | 'user' = body.role === 'servant' ? 'servant' : 'user';
+    let servantId = body.servantId ? Number(body.servantId) : undefined;
+    if (role === 'servant' && !servantId) {
+      const currentAdminId = req?.user?.userId ?? req?.user?.adminId ?? req?.user?.admin_id;
+      if (currentAdminId) servantId = Number(currentAdminId);
+    }
     const data = await this.service.sendMessage({
       conversationId: body.conversationId ? Number(body.conversationId) : undefined,
       shopId: body.shopId ? Number(body.shopId) : 0,
       userFrom: body.userFrom || req.userFrom,
       userId: body.userId ? Number(body.userId) : undefined,
-      servantId: body.servantId ? Number(body.servantId) : undefined,
-      role: body.role === 'servant' ? 'servant' : 'user',
+      servantId,
+      role,
       orderId: body.orderId ? Number(body.orderId) : undefined,
       content: body.content,
     });
@@ -93,14 +100,21 @@ export class ImConversationController {
     @Query('size') size?: string,
     @Query('role') role?: string,
     @Query('status') status?: string,
+    @Query('mine') mine?: string, // mine=1 仅查看当前客服自己的会话（进行中）
+    @Req() req?: any,
   ) {
+    const resolvedRole = (role === 'servant' ? 'servant' : 'user') as 'servant' | 'user';
+    const onlyMine = resolvedRole === 'servant' && (mine === '1' || mine === 'true');
+    const currentAdminId = onlyMine ? (req?.user?.userId ?? req?.user?.adminId ?? req?.user?.admin_id) : undefined;
     const data = await this.service.listConversations({
       shopId: shopId ? Number(shopId) : 0,
       userFrom,
       page: page ? Number(page) : 1,
       size: size ? Number(size) : 20,
-      role: (role === 'servant' ? 'servant' : 'user'),
+      role: resolvedRole,
       status: status !== undefined ? Number(status) : undefined,
+      currentServantId: onlyMine && currentAdminId ? Number(currentAdminId) : undefined,
+      onlyMine,
     });
     return { code: 0, message: 'success', data };
   }
@@ -114,8 +128,10 @@ export class ImConversationController {
     @Query('size') size?: string,
     @Query('role') role?: string,
     @Query('status') status?: string,
+    @Query('mine') mine?: string,
+    @Req() req?: any,
   ) {
-    return this.listConversations(shopId, userFrom, page, size, role, status);
+    return this.listConversations(shopId, userFrom, page, size, role, status, mine, req);
   }
 
   // 待接入会话列表（客服侧）
@@ -199,15 +215,24 @@ export class ImConversationController {
     const conversationId = num(
       body.conversationId ?? body.id ?? body.conversation_id,
     );
+    const originalProvided = (
+      body.toServantId !== undefined || body.servantId !== undefined || body.adminId !== undefined ||
+      body.toAdminId !== undefined || body.kefuId !== undefined || body.toKefuId !== undefined ||
+      body.targetServantId !== undefined || body.targetId !== undefined || body.to_servant_id !== undefined ||
+      body.servant_id !== undefined || body.admin_id !== undefined || body.to_admin_id !== undefined ||
+      body.kefu_id !== undefined || body.to_kefu_id !== undefined
+    );
     let toServantId = num(
       body.toServantId ?? body.servantId ?? body.adminId ?? body.toAdminId ?? body.kefuId ??
       body.toKefuId ?? body.targetServantId ?? body.targetId ??
       body.to_servant_id ?? body.servant_id ?? body.admin_id ?? body.to_admin_id ?? body.kefu_id ?? body.to_kefu_id,
     );
-    // 若未提供目标客服ID，则默认指向当前登录管理员（接入会话的常见行为）
+    // 若未提供目标客服ID，则默认指向当前登录管理员（接入会话行为）。acceptMode 标识供 service 优化返回
+    let acceptMode = false;
     if (!toServantId) {
       const currentAdminId = req?.user?.userId ?? req?.user?.adminId ?? req?.user?.admin_id;
       toServantId = num(currentAdminId);
+      if (!originalProvided) acceptMode = true;
     }
     const fromServantId = num(
       body.fromServantId ?? body.from_admin_id ?? body.fromServant_id ?? body.fromServant ?? body.from_admin ?? body.from_servant_id,
@@ -220,7 +245,7 @@ export class ImConversationController {
     if (!toServantId && toServantId !== 0) {
       return { code: 400, message: '缺少 toServantId', data: null };
     }
-    const data = await this.service.transfer({ conversationId, toServantId, fromServantId, force });
+    const data = await this.service.transfer({ conversationId, toServantId, fromServantId, force, acceptMode });
     return { code: 0, message: 'success', data };
   }
 
@@ -228,6 +253,23 @@ export class ImConversationController {
   @Post('conversation/transfer')
   async transferAlias(@Body() body: any, @Req() req: any) {
     return this.transfer(body, req);
+  }
+
+  // 显式“接入”接口：语义清晰，前端可直接调用；内部与未提供 toServantId 的 transfer 行为一致
+  @Post('accept')
+  async accept(@Body() body: any, @Req() req: any) {
+    // 强制不允许客户端指定其他客服 => 忽略传入的 toServantId，仅使用当前登录管理员
+    const conversationId = Number(body.conversationId);
+    if (!conversationId) {
+      return { code: 400, message: '缺少 conversationId', data: null };
+    }
+    const currentAdminId = req?.user?.userId ?? req?.user?.adminId ?? req?.user?.admin_id;
+    if (!currentAdminId) {
+      return { code: 401, message: '未登录管理员', data: null };
+    }
+    const data = await this.service.transfer({ conversationId, toServantId: Number(currentAdminId), acceptMode: true });
+    // 为接入场景补充 accepted 语义（如果 service 没有 changed 仍视为成功）
+    return { code: 0, message: 'success', data: { ...data, accepted: true } };
   }
 
   @Get('unreadCount')

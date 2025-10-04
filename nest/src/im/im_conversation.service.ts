@@ -168,7 +168,7 @@ export class ImConversationService {
     servantId?: number;
     role?: 'user' | 'servant';
     orderId?: number;
-    content: any; // { messageType: 'text'|'image'|'custom'|..., content?: string, pic?: string, ... }
+    content: any
   }) {
     const {
       conversationId,
@@ -291,13 +291,20 @@ export class ImConversationService {
     size?: number;
     role?: 'user' | 'servant';
     status?: number; // 会话状态过滤 (0=进行中,1=已关闭)
+    currentServantId?: number; // 当前客服ID（仅客服视角）
+    onlyMine?: boolean; // 是否只看当前客服自己的
   }) {
-    const { shopId = 0, userFrom, page = 1, size = 20, role = 'user', status } = params;
+    const { shopId = 0, userFrom, page = 1, size = 20, role = 'user', status, currentServantId, onlyMine } = params;
     const skip = (page - 1) * size;
     const where: any = { is_delete: 0 };
     if (userFrom) where.user_from = userFrom;
     if (shopId) where.shop_id = shopId;
     if (status !== undefined && status !== null && status !== -1) where.status = status;
+    if (role === 'servant' && onlyMine && currentServantId) {
+      // 仅当前客服负责的会话（进行中默认 status=0，如前端传了 status 则尊重）
+      where.last_servant_id = currentServantId;
+      if (status === undefined) where.status = 0;
+    }
 
     const [convs, total] = await this.prisma.$transaction([
       this.prisma.im_conversation.findMany({
@@ -413,33 +420,29 @@ export class ImConversationService {
   }
 
   // 会话转接到指定客服
-  async transfer(params: { conversationId: number; toServantId: number; fromServantId?: number; force?: boolean }) {
-    const { conversationId, toServantId, fromServantId, force = false } = params;
+  async transfer(params: { conversationId: number; toServantId: number; fromServantId?: number; force?: boolean; acceptMode?: boolean }) {
+    const { conversationId, toServantId, fromServantId, force = false, acceptMode = false } = params;
     if (!conversationId) throw new Error('缺少 conversationId');
     if (!toServantId) throw new Error('缺少 toServantId');
-    // 可选：校验客服是否存在
     const target = await this.prisma.admin_user.findFirst({ where: { admin_id: Number(toServantId) } });
     if (!target) throw new Error('目标客服不存在');
-
     const conv = await this.prisma.im_conversation.findUnique({ where: { id: Number(conversationId) } });
     if (!conv || conv.is_delete) throw new Error('会话不存在或已删除');
-
-    // 来源客服校验（若指定且不强制）
     if (fromServantId && !force && Number(conv.last_servant_id ?? 0) !== Number(fromServantId)) {
       return { conversationId: conv.id, lastServantId: conv.last_servant_id ?? null, changed: false } as any;
     }
-
-    // 已是目标客服则直接返回
     if (Number(conv.last_servant_id ?? 0) === Number(toServantId)) {
+      if (acceptMode) {
+        return { conversationId: conv.id, lastServantId: conv.last_servant_id ?? null, changed: false, accepted: true } as any;
+      }
       return { conversationId: conv.id, lastServantId: conv.last_servant_id ?? null, changed: false } as any;
     }
-
     const now = Math.floor(Date.now() / 1000);
     const updated = await this.prisma.im_conversation.update({
       where: { id: Number(conversationId) },
       data: { last_servant_id: Number(toServantId), last_update_time: now },
     });
-    return { conversationId: updated.id, lastServantId: updated.last_servant_id, changed: true } as any;
+    return { conversationId: updated.id, lastServantId: updated.last_servant_id, changed: true, accepted: acceptMode || undefined } as any;
   }
 
   // 会话详情：根据 conversationId 或 (shopId + userFrom) 获取
