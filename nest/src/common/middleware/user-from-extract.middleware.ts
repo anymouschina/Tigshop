@@ -16,7 +16,9 @@ export class UserFromExtractMiddleware implements NestMiddleware {
       }
       if (req && req.query && typeof req.query === 'object' && 'userFrom' in req.query) {
         if (req.userFrom === undefined) req.userFrom = req.query.userFrom;
-        // query 中保留即可，不会走 Body DTO 校验；但可按需删除
+        // 之前为了方便保留，但由于很多 Query DTO 同样使用 whitelist + forbidNonWhitelisted
+        // 会导致报错 “property userFrom should not exist”，因此这里同样移除
+        delete req.query.userFrom;
       }
     } catch (_) {}
     next();

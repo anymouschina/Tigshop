@@ -13,19 +13,24 @@ export class ImConversationController {
 
   @Get('message/list')
   async getMessageList(
+    @Req() req: any,
     @Query('conversationId') conversationId?: string,
     @Query('firstId') firstId?: string,
     @Query('sortOrder') sortOrder?: string,
     @Query('size') size?: string,
     @Query('shopId') shopId?: string,
+    @Query('orderId') orderId?: string,
     @Query('userFrom') userFrom?: string,
   ) {
+    this.logger.debug(`getMessageList: ${JSON.stringify(req.user)}}`)
     const result = await this.service.listMessages({
       conversationId: conversationId ? Number(conversationId) : undefined,
       firstId: firstId ? Number(firstId) : -1,
       sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
       size: size ? Math.min(Number(size), 100) : 20,
       shopId: shopId ? Number(shopId) : 0,
+      userId:req.user?.userId ? Number( req.user?.userId) : undefined,
+      orderId: orderId ? Number(orderId) : undefined,
       userFrom,
     });
     return { code: 0, message: 'success', data: result };

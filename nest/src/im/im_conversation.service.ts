@@ -14,6 +14,8 @@ export class ImConversationService {
     size?: number; // 每次返回条数，需求固定 10，保留参数以兼容调用方，但默认 10
     shopId?: number;
     userFrom?: string;
+    orderId?: number;
+    userId?: number;
   }) {
     const { conversationId, firstId = -1, sortOrder = 'desc', size = 10, shopId = 0, userFrom } = params;
 
@@ -23,7 +25,7 @@ export class ImConversationService {
       const conv = await this.prisma.im_conversation.findFirst({
         where: {
           shop_id: shopId,
-          user_from: userFrom,
+          user_id: params.userId,
           is_delete: 0,
         },
         orderBy: [{ last_update_time: 'desc' }, { id: 'desc' }],
@@ -61,7 +63,7 @@ export class ImConversationService {
       sortOrder === 'desc'
         ? [{ send_time: 'desc' as const }, { id: 'desc' as const }]
         : [{ send_time: 'asc' as const }, { id: 'asc' as const }];
-
+    this.logger.debug(`listMessages: where=${JSON.stringify(where)}, orderBy=${JSON.stringify(orderBy)}, size=${size}`);
     let recordsRaw = await this.prisma.im_message.findMany({
       where,
       orderBy,
@@ -487,7 +489,7 @@ export class ImConversationService {
         conversation_id: { in: convIds },
         is_read: false,
         message_type:{ not: 'custom' }, // 只统计有效消息
-        ...(role === 'servant' ? { type: 0 } : { type: 1 }), // 对方发送的消息
+        ...(role === 'servant' ? { type: 2 } : { type: 1 }), // 对方发送的消息
       },
       select: { id: true, conversation_id: true },
     });
@@ -566,7 +568,6 @@ export class ImConversationService {
       let msgList: any[] | null = null;
       if (includeMessages) {
         const arrFull = groupedMessages[c.id] || [];
-        arrFull.sort((a, b) => ((a.send_time ?? 0) - (b.send_time ?? 0)) || ((b.id ?? 0) - (a.id ?? 0)));
         const arr = arrFull.slice(0, 10);
         msgList = arr.map(m => ({
           messageTypeText: typeText(m.message_type),

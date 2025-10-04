@@ -3,6 +3,7 @@ import { CanActivate, ExecutionContext, Injectable, HttpException } from '@nestj
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import * as passport from 'passport';
+import * as jwt from 'jsonwebtoken';
 
 // 按顺序尝试 admin-jwt (客服/后台) → jwt (前台用户)。admin 失败不会立刻抛错，而是自动降级再试用户策略。
 @Injectable()
@@ -29,15 +30,32 @@ export class HybridImAuthGuard implements CanActivate {
       })(request, response, () => null);
     });
 
-    // 先试 admin-jwt
-    const adminRes = await execStrategy('admin-jwt');
-    if (adminRes.ok) {
-      this.normalizeUser(adminRes.user, true);
-      request.user = adminRes.user;
-      return true;
+    // 提前 decode（不校验）判断是否包含 admin 角色标记，从而决定是否尝试 admin-jwt 策略
+    let tryAdmin = true;
+    const authHeader = request.headers['authorization'] as string | undefined;
+    if (authHeader) {
+      const raw = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+      try {
+        const decoded: any = jwt.decode(raw);
+        if (!decoded || decoded?.role !== 'admin') {
+          tryAdmin = false; // 没有 admin 角色，跳过 admin 策略，避免噪声日志
+        }
+      } catch { tryAdmin = false; }
+    } else {
+      tryAdmin = false;
     }
 
-    // 再试普通用户 jwt
+    if (tryAdmin) {
+      const adminRes = await execStrategy('admin-jwt');
+      if (adminRes.ok) {
+        this.normalizeUser(adminRes.user, true);
+        request.user = adminRes.user;
+        return true;
+      }
+      // admin 尝试失败后继续走普通用户
+    }
+
+    // 普通用户 jwt
     const userRes = await execStrategy('jwt');
     if (userRes.ok) {
       this.normalizeUser(userRes.user, false);
