@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Body, Query, Req, Logger, UseGuards } from '@nestjs/common';
 import { ImConversationService } from './im_conversation.service';
-import { AdminJwtAuthGuard } from 'src/auth/guards/admin-jwt-auth.guard';
-import { AuthorityGuard } from 'src/auth/guards/authority.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { HybridImAuthGuard } from 'src/auth/guards/hybrid-im-auth.guard';
 
 
 @Controller('im/conversation')
 @ApiBearerAuth()
+@UseGuards(HybridImAuthGuard)
 export class ImConversationController {
   private readonly logger = new Logger(ImConversationController.name);
   constructor(private service: ImConversationService) {}
@@ -59,18 +59,32 @@ export class ImConversationController {
   // 发送消息（文本/图片/自定义卡片）
   @Post('message/send')
   async sendMessage(@Body() body: any, @Req() req: any) {
-    // 若为客服角色但未显式传 servantId，则兜底当前登录管理员，实现“接入后无需再传”体验
-    const role: 'servant' | 'user' = body.role === 'servant' ? 'servant' : 'user';
+    const tokenUser = req?.user || {};
+    // 统一：后台管理员 => 客服；其他 => 用户
+    const isAdmin = tokenUser.role === 'admin' || tokenUser.isAdmin;
+    const role: 'servant' | 'user' = isAdmin ? 'servant' : 'user';
+
+    // 客服 ID 推断：body.servantId > token adminId > 会话中再由 service 回填
     let servantId = body.servantId ? Number(body.servantId) : undefined;
     if (role === 'servant' && !servantId) {
-      const currentAdminId = req?.user?.userId ?? req?.user?.adminId ?? req?.user?.admin_id;
+      const currentAdminId = tokenUser.userId || tokenUser.admin_id || tokenUser.adminId;
       if (currentAdminId) servantId = Number(currentAdminId);
     }
+
+    // 普通用户强制使用 token 中的 userId；客服只在新建会话时可指定 userId（留给 service 处理，不在此覆盖会话已有 user）
+    let normalizedUserId: number | undefined = undefined;
+    if (role === 'user') {
+      if (tokenUser.userId) normalizedUserId = Number(tokenUser.userId);
+      else if (body.userId) normalizedUserId = Number(body.userId); // 兜底（匿名兼容）
+    } else if (!body.conversationId && body.userId) {
+      normalizedUserId = Number(body.userId);
+    }
+
     const data = await this.service.sendMessage({
       conversationId: body.conversationId ? Number(body.conversationId) : undefined,
       shopId: body.shopId ? Number(body.shopId) : 0,
-      userFrom: body.userFrom || req.userFrom,
-      userId: body.userId ? Number(body.userId) : undefined,
+      userFrom: body.userFrom || req.userFrom || body.userFrom,
+      userId: normalizedUserId,
       servantId,
       role,
       orderId: body.orderId ? Number(body.orderId) : undefined,

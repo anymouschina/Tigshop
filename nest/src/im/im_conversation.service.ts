@@ -259,6 +259,13 @@ export class ImConversationService {
 
     if (!convId) throw new Error('缺少会话信息');
 
+    // 若为客服消息但未明确 servantId，尝试从会话最近客服回填
+    let effectiveServantId = servantId;
+    if (role === 'servant' && (!effectiveServantId || effectiveServantId === 0)) {
+      const guess = conv?.last_servant_id;
+      if (guess && guess > 0) effectiveServantId = guess;
+    }
+
     // 2) 整理消息内容
     const messageType = content?.messageType || content?.type || 'text';
     let contentStr = '';
@@ -280,7 +287,7 @@ export class ImConversationService {
     }
 
     // 发送方类型：user=0，servant=1（未读统计中对方消息才计数）
-    const senderType = role === 'servant' ? 1 : 0;
+  const senderType = role === 'servant' ? 1 : 0;
 
     // 3) 入库消息
     const msg = await this.prisma.im_message.create({
@@ -290,7 +297,7 @@ export class ImConversationService {
         message_type: messageType,
         type: senderType,
         user_id: conv?.user_id ?? 0,
-        servant_id: role === 'servant' ? (servantId ?? 0) : 0,
+  servant_id: role === 'servant' ? (effectiveServantId ?? 0) : 0,
         send_time: now,
         status: 1,
         extend: extendStr ?? undefined,
@@ -306,7 +313,7 @@ export class ImConversationService {
       where: { id: convId },
       data: {
         last_update_time: now,
-        ...(role === 'servant' && servantId ? { last_servant_id: servantId } : {}),
+  ...(role === 'servant' && effectiveServantId ? { last_servant_id: effectiveServantId } : {}),
       },
     });
 
@@ -319,7 +326,7 @@ export class ImConversationService {
     const formatContent = (m: any) => {
       const t = (m.message_type || 'text') as string;
       if (t === 'text') {
-        return { messageType: 'text', content: m.content ?? '', pic: null, contentCategory: null, order: null, product: null };
+        return { messageType: 'text', content: m.content ?? '', pic: '', contentCategory: null, order: null, product: null };
       }
       if (t === 'image') {
         let pic: string | null = null;
@@ -382,11 +389,11 @@ export class ImConversationService {
       messageType: msg.message_type,
       type: msg.type === 0 ? 1 : 2,
       userId: msg.user_id ?? null,
-      servantId: msg.servant_id ?? null,
+  servantId: msg.servant_id ?? null,
       sendTime: fmt(msg.send_time),
-      status: msg.status ?? null,
+      status: null,
       extend: msg.extend ?? null,
-      pushStatus: msg.push_status ?? null,
+      pushStatus: null,
       isRead: msg.is_read ? 1 : 0,
       shopId: msg.shop_id ?? 0,
       userFrom: msg.user_from ?? null,
