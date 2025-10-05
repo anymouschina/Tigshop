@@ -5,6 +5,24 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ImConfigService {
   constructor(private prisma: PrismaService) {}
 
+  private normalize(raw: any) {
+    const base = {
+      activate: false,
+      sendText: false,
+      sendWechat: false,
+      wechatImage: null as string | null,
+      replyContent: '',
+    };
+    if (!raw || typeof raw !== 'object') return base;
+    return {
+      activate: raw.activate === true,
+      sendText: raw.sendText === true,
+      sendWechat: raw.sendWechat === true,
+      wechatImage: (raw.wechatImage === '' ? null : (raw.wechatImage ?? null)),
+      replyContent: typeof raw.replyContent === 'string' ? raw.replyContent : '',
+    };
+  }
+
   async getDetail(params: { code: string; shopId?: number }) {
     const { code, shopId = 0 } = params;
     if (!code) return null;
@@ -19,7 +37,8 @@ export class ImConfigService {
     } catch (_) {
       // not JSON, keep as original string
     }
-    return { id: row.id, code: row.code, data: parsed, shopId: row.shop_id } as any;
+    const normalized = this.normalize(parsed);
+    return { id: row.id, code: row.code, data: normalized, shopId: row.shop_id } as any;
   }
 
   async save(params: { code: string; shopId?: number; data: any }) {
@@ -43,7 +62,11 @@ export class ImConfigService {
     } else {
       row = await this.prisma.im_config.create({ data: { code, data: dataStr as any, shop_id: shopId } });
     }
-    return { id: row.id, code: row.code, shopId: row.shop_id } as any;
+    // 返回标准化后的数据
+    let parsed: any = null;
+    try { parsed = row.data ? JSON.parse(row.data as any) : null; } catch { parsed = row.data; }
+    const normalized = this.normalize(parsed);
+    return { id: row.id, code: row.code, data: normalized, shopId: row.shop_id } as any;
   }
 }
 
