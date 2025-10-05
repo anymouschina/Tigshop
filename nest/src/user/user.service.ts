@@ -297,9 +297,55 @@ export class UserService {
       }
     }
 
+    // 允许更新的字段白名单（根据实际业务逐步扩展）
+    const ALLOWED_FIELDS: Record<string, string> = {
+      nickname: "nickname",
+      mobile: "mobile",
+      email: "email",
+      avatar: "avatar",
+      avatarUrl: "avatar", // 兼容前端可能的字段
+      birthday: "birthday",
+    };
+
+    const data: any = {};
+    for (const key of Object.keys(updateData || {})) {
+      const mapped = ALLOWED_FIELDS[key];
+      if (!mapped) continue; // 跳过不允许的字段（如 points / balance / rights 等只读字段）
+      if (mapped === "birthday") {
+        const raw = updateData[key];
+        if (raw === null || raw === undefined || raw === "") {
+          data.birthday = null; // 允许清空生日
+        } else if (raw instanceof Date) {
+          data.birthday = raw;
+        } else if (typeof raw === "string") {
+          // 仅支持 YYYY-MM-DD / YYYY/MM/DD 简单格式
+            const norm = raw.replace(/\//g, "-");
+            if (/^\d{4}-\d{2}-\d{2}$/.test(norm)) {
+              const d = new Date(norm + "T00:00:00");
+              if (!isNaN(d.getTime())) {
+                data.birthday = d;
+              }
+            }
+        }
+        continue;
+      }
+      if (mapped === "avatar") {
+        data.avatar = updateData[key] || "";
+        continue;
+      }
+      data[mapped] = updateData[key];
+    }
+
+    // 如果没有任何可更新字段，直接返回当前详情
+    if (Object.keys(data).length === 0) {
+      const current = await this.findById(user_id);
+      const { password: _pw, ...rest } = current as any;
+      return { status: "success", message: "无可更新字段", data: rest };
+    }
+
     const updatedUser = await this.databaseService.user.update({
       where: { user_id },
-      data: updateData,
+      data,
     });
 
     const { password, ...userDetails } = updatedUser;

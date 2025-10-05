@@ -137,6 +137,18 @@ export class UserAftersalesApiCompatController {
       if (qty <= 0) continue;
       itemAggregates[key] = (itemAggregates[key] || 0) + qty;
     }
+    // 限制每个条目的申请数量不超过订单原始可售后数量（目前=订单购买数量）
+    const orderQtyMap: Record<string, number> = {};
+    if (Array.isArray(orderDetail?.items)) {
+      for (const it of orderDetail.items) {
+        orderQtyMap[String(it.itemId)] = Number(it.quantity) || 0;
+      }
+    }
+    for (const k of Object.keys(itemAggregates)) {
+      const max = orderQtyMap[k] ?? Infinity;
+      if (itemAggregates[k] > max) itemAggregates[k] = max;
+      if (itemAggregates[k] <= 0) delete itemAggregates[k];
+    }
     for (const itemId of Object.keys(itemAggregates)) {
       computed += (priceMap[itemId] || 0) * itemAggregates[itemId];
     }
@@ -202,10 +214,11 @@ export class UserAftersalesApiCompatController {
           },
         });
 
-        const aftersaleItemsData: any[] = [];
-        for (const itemId of Object.keys(itemAggregates)) {
-          aftersaleItemsData.push({ aftersale_id: aftersales.aftersale_id, order_item_id: Number(itemId), number: itemAggregates[itemId] });
-        }
+        const aftersaleItemsData: any[] = Object.keys(itemAggregates).map((itemId) => ({
+          aftersale_id: aftersales.aftersale_id,
+          order_item_id: Number(itemId),
+          number: itemAggregates[itemId],
+        }));
         if (aftersaleItemsData.length) {
           await tx.aftersales_item.createMany({ data: aftersaleItemsData });
         }
@@ -462,10 +475,12 @@ export class UserAftersalesApiCompatController {
   }
 
   private composeAftersalesItem(link: any, oi: any, orderSn: string) {
+    const maxQty = Number(oi?.quantity || oi?.goods_number || 0) || 0;
+    const applied = Number(link.number || 0) || 0;
     return {
       aftersalesItemId: link.aftersales_item_id,
       orderItemId: link.order_item_id,
-      number: link.number,
+      number: applied > maxQty && maxQty > 0 ? maxQty : applied,
       aftersaleId: link.aftersale_id,
       orderSn,
       productName: oi?.product_name || oi?.productName || "",
