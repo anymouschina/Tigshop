@@ -5,7 +5,7 @@ import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { RefundApplyService } from "../../finance/refund-apply/refund-apply.service";
 import { OrderService } from "../../order/order.service";
 import { PrismaService } from "src/prisma/prisma.service";
-import { AFTERSALES_TYPE_NAME, STATUS_NAME } from "src/order/aftersales.service";
+import { AFTERSALES_TYPE_NAME, STATUS_NAME, AftersalesStatus } from "src/order/aftersales.service";
 
 @ApiTags("User Aftersales API Compat")
 @Controller("api/user/aftersales")
@@ -166,13 +166,73 @@ export class UserAftersalesApiCompatController {
       // 兼容：如果需要后续细化线上/线下拆分，可在此扩展
     };
 
-    let created;
+    // 生成售后单号（简单规则，可后续替换为更贴近旧系统的算法）
+    const generateAftersalesSn = () => {
+      const now = new Date();
+      return "AS" + now.getFullYear() + ("0" + (now.getMonth() + 1)).slice(-2) + ("0" + now.getDate()).slice(-2) + now.getTime().toString().slice(-5) + Math.floor(Math.random() * 1000).toString().padStart(3, "0");
+    };
+
+    // 事务：仅写入 aftersales 与 aftersales_item
+    let createdAftersales: any;
     try {
-      created = await this.refundApplyService.create(payload);
+      createdAftersales = await this.prisma.$transaction(async (tx) => {
+        const add_time = Math.floor(Date.now() / 1000);
+        const aftersales = await tx.aftersales.create({
+          data: {
+            aftersale_type: Number(refund_type) || 0,
+            status: AftersalesStatus.IN_REVIEW,
+            pics: Array.isArray(body.pics) ? JSON.stringify(body.pics) : body.pics || "[]",
+            description: refund_reason || "",
+            reply: "",
+            add_time,
+            tracking_no: "",
+            logistics_name: "",
+            return_address: null,
+            aftersale_reason: refund_reason || "",
+            aftersales_sn: generateAftersalesSn(),
+            order_id: Number(order_id),
+            user_id: user_id,
+            refund_amount: refund_amount,
+            shop_id: orderDetail?.shopId || orderDetail?.shop_id || 0,
+            audit_time: 0,
+            deal_time: 0,
+            final_time: 0,
+            return_goods_tip: "",
+            vendor_id: orderDetail?.vendor_id || null,
+          },
+        });
+
+        const aftersaleItemsData: any[] = [];
+        for (const itemId of Object.keys(itemAggregates)) {
+          aftersaleItemsData.push({ aftersale_id: aftersales.aftersale_id, order_item_id: Number(itemId), number: itemAggregates[itemId] });
+        }
+        if (aftersaleItemsData.length) {
+          await tx.aftersales_item.createMany({ data: aftersaleItemsData });
+        }
+        return aftersales;
+      });
     } catch (e: any) {
       return { code: 500, message: e?.message || "创建失败", data: null };
     }
-    return { code: 0, message: "success", data: created };
+
+    // 非阻塞：尝试同步创建 refund_apply；若已存在未完成申请则忽略
+    try {
+      await this.refundApplyService.create(payload);
+    } catch (e: any) {
+      if (!String(e?.message || "").includes("已有未完成")) {
+        // 其它错误可记录日志；这里简单忽略
+      }
+    }
+
+    // 组装返回
+    const items = await this.prisma.aftersales_item.findMany({ where: { aftersale_id: createdAftersales.aftersale_id } });
+    const orderItemIds = items.map((it) => it.order_item_id).filter(Boolean) as number[];
+    const orderItems = orderItemIds.length ? await this.prisma.order_item.findMany({ where: { item_id: { in: orderItemIds } } }) : [];
+    const orderItemMap = new Map(orderItems.map((oi) => [oi.item_id, oi] as const));
+    const orderSn = orderDetail?.orderSn || orderDetail?.order_sn || "";
+    const aftersalesItems = items.map((it) => this.composeAftersalesItem(it, orderItemMap.get(it.order_item_id as number), orderSn));
+    const record = this.composeAftersalesRecord(createdAftersales, orderSn, aftersalesItems);
+    return { code: 0, message: "success", data: record };
   }
 
   // 对齐 PHP：POST /api/user/aftersales/update
@@ -223,6 +283,64 @@ export class UserAftersalesApiCompatController {
       }),
       this.prisma.aftersales.count({ where: { user_id: userId } }),
     ]);
+
+    // Fallback：如果还没有迁移生成 aftersales 记录，则回退展示 refund_apply（只读转换）
+    if (rows.length === 0) {
+      const [refundRows, refundTotal] = await Promise.all([
+        this.prisma.refund_apply.findMany({
+          where: { user_id: userId },
+          orderBy: { refund_id: "desc" },
+          skip,
+          take: size,
+        }),
+        this.prisma.refund_apply.count({ where: { user_id: userId } }),
+      ]);
+      if (refundRows.length) {
+        const orderIds2 = Array.from(new Set(refundRows.map((r: any) => r.order_id).filter(Boolean)));
+        let orderSnMap2 = new Map<number, string>();
+        if (orderIds2.length) {
+          const orders2 = await this.prisma.order.findMany({
+            where: { order_id: { in: orderIds2 as number[] } },
+            select: { order_id: true, order_sn: true },
+          });
+            orderSnMap2 = new Map(orders2.map((o) => [o.order_id, o.order_sn] as const));
+        }
+        const transformed = refundRows.map((r: any) => {
+          // 粗略映射 refund_status -> aftersales status（可按需细化）
+          let status = AftersalesStatus.IN_REVIEW; // 默认审核中
+          if (r.refund_status === 2) status = AftersalesStatus.REFUSE; // 拒绝
+          if (r.refund_status === 3) status = AftersalesStatus.CANCEL; // 已取消
+          return this.composeAftersalesRecord(
+            {
+              aftersale_id: r.refund_id,
+              aftersale_type: r.refund_type,
+              status,
+              pics: r.payment_voucher || "[]",
+              description: r.refund_note || "",
+              reply: "",
+              add_time: r.add_time || 0,
+              tracking_no: "",
+              logistics_name: "",
+              return_address: null,
+              aftersale_reason: r.refund_note || "",
+              aftersales_sn: "", // refund_apply 没有对应字段
+              order_id: r.order_id,
+              user_id: r.user_id,
+              refund_amount: r.refund_balance || 0,
+              shop_id: r.shop_id || 0,
+              audit_time: 0,
+              deal_time: 0,
+              final_time: 0,
+              return_goods_tip: "",
+              vendor_id: 0,
+            },
+            orderSnMap2.get(r.order_id || 0) || "",
+            [],
+          );
+        });
+        return { code: 0, message: "success", data: { records: transformed, total: refundTotal } };
+      }
+    }
 
     // 预取涉及的订单号
     const orderIds = Array.from(new Set(rows.map((r: any) => r.order_id).filter(Boolean)));
