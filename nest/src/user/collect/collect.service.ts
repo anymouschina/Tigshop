@@ -66,55 +66,71 @@ export class CollectService {
     // 获取收藏的详细信息
     const detailedCollects = await Promise.all(
       collects.map(async (collect: any) => {
-        let targetInfo = null;
-
-        const mapped = isShop
-          ? {
-              collectId: collect.collect_id,
-              targetId: collect.shop_id,
-              collectType: CollectType.SHOP,
-            }
-          : {
-              collectId: collect.collect_id,
-              targetId: collect.product_id,
-              collectType: CollectType.PRODUCT,
-            };
-
-        if (mapped.collectType === CollectType.PRODUCT) {
-          targetInfo = await (this.databaseService as any).product.findFirst({
-            where: { product_id: mapped.targetId },
-            select: {
-              product_id: true,
-              product_name: true,
-              pic_url: true,
-              product_price: true,
-              market_price: true,
-              product_status: true,
-            },
-          });
-        } else if (mapped.collectType === CollectType.SHOP) {
-          targetInfo = await (this.databaseService as any).shop.findFirst({
-            where: { shop_id: mapped.targetId },
-            select: {
-              shop_id: true,
-              shop_title: true,
-              shop_logo: true,
-            },
-          });
+        if (isShop) {
+          // 暂时不改动店铺收藏结构（若后续需要再补）
+          return {
+            collectId: collect.collect_id,
+            userId,
+            shopId: collect.shop_id,
+            addTime: this.formatTime(collect.add_time),
+          };
         }
 
+        const product = await (this.databaseService as any).product.findFirst({
+          where: { product_id: collect.product_id },
+          select: {
+            product_id: true,
+            product_name: true,
+            product_sn: true,
+            pic_thumb: true,
+            market_price: true,
+            is_promote: true,
+            product_price: true,
+            product_stock: true,
+            pic_url: true,
+          },
+        });
+
+        // 用户信息（需要 username / rankId / discount 之类，这里最小化查询——如有折扣逻辑后续补充）
+        const user = await (this.databaseService as any).user.findFirst({
+          where: { user_id: userId },
+          select: { username: true, rank_id: true },
+        });
+
+        // 价格统一转字符串（与期望示例保持："78.00"）
+        const formatPrice = (p: any) => (p != null ? Number(p).toFixed(2) : "0.00");
+
         return {
-          ...mapped,
-          add_time: collect.add_time,
-          target_info: targetInfo,
+          collectId: collect.collect_id,
+          userId,
+          productId: product?.product_id || collect.product_id,
+          addTime: this.formatTime(collect.add_time),
+          productName: product?.product_name || "",
+            productSn: product?.product_sn || "",
+          picThumb: product?.pic_thumb || "",
+          marketPrice: formatPrice(product?.market_price),
+          isPromote: product?.is_promote || 0,
+          productPrice: formatPrice(product?.product_price),
+          productStock: product?.product_stock || 0,
+          picUrl: product?.pic_url || "",
+          username: user?.username || "",
+          rankId: user?.rank_id || 0,
+          discount: "0.0", // TODO: 会员折扣逻辑后续接入
+          skuPrice: null, // TODO: 如果需要展示最低 SKU 价，这里可扩展
+          price: formatPrice(product?.product_price), // 同 productPrice
+          productSku: [], // TODO: 后续可加载 sku 列表
         };
       }),
     );
 
-    return {
-      records: detailedCollects,
-      total,
-    };
+    return { records: detailedCollects, total };
+  }
+
+  private formatTime(ts: number) {
+    if (!ts) return "";
+    const d = new Date(ts * 1000);
+    const pad = (n: number) => (n < 10 ? "0" + n : String(n));
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
 
   /**

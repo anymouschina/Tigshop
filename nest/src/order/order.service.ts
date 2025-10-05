@@ -584,31 +584,63 @@ export class OrderService {
    * @returns 订单统计
    */
   async getOrderStats(userId: number) {
-    const [total, pending, paid, shipped, completed, cancelled] =
-      await Promise.all([
-        this.prisma.order.count({ where: { user_id: userId } }),
-        this.prisma.order.count({
-          where: { user_id: userId, order_status: 0 },
-        }), // PENDING = 0
-        this.prisma.order.count({ where: { user_id: userId, pay_status: 1 } }), // PAID = 1
-        this.prisma.order.count({
-          where: { user_id: userId, order_status: 1 },
-        }), // SHIPPED = 1
-        this.prisma.order.count({
-          where: { user_id: userId, order_status: 3 },
-        }), // COMPLETED = 3
-        this.prisma.order.count({
-          where: { user_id: userId, order_status: 2 },
-        }), // CANCELLED = 2
-      ]);
+    // awaitPay: 待付款 -> pay_status = 0 且 order_status = 0 (未取消)
+    // awaitShipping: 待发货 -> 已付款 (pay_status = 1) 且 shipping_status = 0 且 order_status = 0/1 (未取消未完成)
+    // awaitReceived: 待收货 -> 已发货 (shipping_status = 1) 且 未完成 (order_status != 3)
+    // awaitComment: 待评价 -> 已完成 (order_status = 3) 且 comment_status = 0
+    // orderCompleted: 已完成 -> order_status = 3
+    // productCollect: collect_product.count
+    // shopCollect: collect_shop.count
+    // awaitAftersalesCollect: 用户发起的售后单（仅统计进行中） -> aftersales.status IN (0,1,2?) 暂假设 status != 3 代表进行中
+
+    const [
+      awaitPay,
+      awaitShipping,
+      awaitReceived,
+      awaitComment,
+      orderCompleted,
+      productCollect,
+      shopCollect,
+      awaitAftersalesCollect,
+    ] = await Promise.all([
+      this.prisma.order.count({
+        where: { user_id: userId, pay_status: 0, order_status: { in: [0, 1] } },
+      }),
+      this.prisma.order.count({
+        where: {
+          user_id: userId,
+          pay_status: 1,
+          shipping_status: 0,
+          order_status: { in: [0, 1] },
+        },
+      }),
+      this.prisma.order.count({
+        where: {
+          user_id: userId,
+          shipping_status: 1,
+          order_status: { not: 3 },
+        },
+      }),
+      this.prisma.order.count({
+        where: { user_id: userId, order_status: 3, comment_status: 0 },
+      }),
+      this.prisma.order.count({ where: { user_id: userId, order_status: 3 } }),
+      this.prisma.collect_product.count({ where: { user_id: userId } }),
+      this.prisma.collect_shop.count({ where: { user_id: userId } }),
+      this.prisma.aftersales.count({
+        where: { user_id: userId, status: { not: 3 } }, // 假设 status=3 为已完结
+      }),
+    ]);
 
     return {
-      total,
-      pending,
-      paid,
-      shipped,
-      completed,
-      cancelled,
+      awaitPay,
+      awaitShipping,
+      awaitReceived,
+      awaitComment,
+      orderCompleted,
+      productCollect,
+      shopCollect,
+      awaitAftersalesCollect,
     };
   }
 
