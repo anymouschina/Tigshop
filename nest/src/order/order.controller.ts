@@ -64,13 +64,10 @@ export class OrderController {
   @ApiOperation({ summary: "取消订单" })
   async cancelOrder(
     @Request() req,
-    @Body() data: { orderId: number; reason?: string },
+    @Body() data: { orderId?: number; id?: number; order_id?: number; reason?: string },
   ) {
-    return this.orderService.cancelOrder(
-      Number(data.orderId),
-      req.user.userId,
-      data.reason,
-    );
+    const oid = Number(data.orderId ?? data.id ?? data.order_id);
+    return this.orderService.cancelOrder(oid, req.user.userId, data.reason);
   }
 
   /**

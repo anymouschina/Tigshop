@@ -210,12 +210,11 @@ export class OrderService {
     // 需排除待支付/已取消，保留已确认和已完成，且必须已支付。
     const hasExplicitOrderStatus = orderStatus !== undefined && orderStatus !== -1;
     if (!hasExplicitOrderStatus && commentStatus === 0) {
-      // 若调用方未指定 pay_status，则限定为已支付集合 [1,2]
+      // “待评价” 仅展示已完成但未评价的订单，限制为 order_status=3
       if (where.pay_status === undefined) {
-        (where as any).pay_status = { in: [1, 2] } as any;
+        (where as any).pay_status = { in: [1, 2] } as any; // 仅已支付
       }
-      // 限定订单状态为已确认(1) 或 已完成(3)
-      (where as any).order_status = { in: [1, 3] } as any;
+      (where as any).order_status = 3;
     }
 
     if (keyword) {
@@ -409,6 +408,9 @@ export class OrderService {
    * @returns 更新后的订单
    */
   async cancelOrder(orderId: number, userId: number, reason?: string) {
+    if (!orderId || !Number.isFinite(Number(orderId))) {
+      throw new BadRequestException("缺少有效的订单ID");
+    }
     // 使用原表字段校验，避免 detail 映射差异
     const rawOrder = await this.prisma.order.findFirst({
       where: { order_id: Number(orderId), user_id: Number(userId) },
@@ -700,7 +702,7 @@ export class OrderService {
     const shippingTypeName = o.shipping_type_name || "普通快递";
 
     return {
-      orderStatusName: this.getOrderStatusName(o.order_status),
+  orderStatusName: this.getOrderStatusName(o.order_status, o.shipping_status, o.comment_status),
       userAddress,
       shippingStatusName: this.getShippingStatusName(o.shipping_status),
       payStatusName: this.getPayStatusName(o.pay_status),
@@ -763,7 +765,7 @@ export class OrderService {
       orderType: o.order_type ?? 1,
       mark: o.mark ?? 0,
       vendorId: o.vendor_id ?? 0,
-      availableActions: this.getAvailableActions(o.order_status, o.pay_status, o.shipping_status),
+  availableActions: this.getAvailableActions(o.order_status, o.pay_status, o.shipping_status, o.comment_status),
       autoDeliveryDays: null,
       items: items.map((it) => this.mapOrderItem(it)),
       user: user
@@ -868,20 +870,19 @@ export class OrderService {
     return ext;
   }
 
-  private getOrderStatusName(status: number) {
-    switch (Number(status)) {
-      case 0:
-        return "待支付";
-      case 1:
-        // PHP 语义：1 表示已确认，未发货阶段展示“待发货”
-        return "待发货";
-      case 2:
-        return "已取消";
-      case 3:
-        return "已完成";
-      default:
-        return "";
+  private getOrderStatusName(status: number, shippingStatus?: number, commentStatus?: number) {
+    const s = Number(status);
+    if (s === 0) return "待支付";
+    if (s === 2) return "已取消";
+    if (s === 3) {
+      return Number(commentStatus) === 0 ? "待评价" : "已完成";
     }
+    // s === 1 (已确认) 根据发货进度细化
+    const ship = Number(shippingStatus);
+    if (ship === 0) return "待发货";
+    if (ship === 2) return "部分发货";
+    if (ship === 1) return "待收货"; // 已发货待收货
+    return "";
   }
 
   private getShippingStatusName(status: number) {
@@ -915,22 +916,27 @@ export class OrderService {
     const addDesc = this.formatUnixToTime(order.add_time);
     const paid = Number(order.pay_status) > 0;
     const shipped = Number(order.shipping_status) > 0;
+    const completed = Number(order.order_status) === 3;
     const steps = [
       { title: "提交订单", description: addDesc },
       { title: paid ? "已支付" : "待支付", description: paid ? this.formatUnixToTime(order.pay_time) : "" },
-      { title: shipped ? "已发货" : "待发货", description: shipped ? this.formatUnixToTime(order.shipping_time) : "" },
+      { title: shipped ? "已发货" : Number(order.order_status) === 2 ? "已取消" : "待发货", description: shipped ? this.formatUnixToTime(order.shipping_time) : "" },
     ];
+    if (completed) {
+      steps.push({ title: Number(order.comment_status) === 0 ? "待评价" : "已完成", description: this.formatUnixToTime(order.received_time) });
+    }
     let current = 1;
-    if (shipped) current = 3; else if (paid) current = 2; else current = 1;
+    if (completed) current = steps.length; else if (shipped) current = 3; else if (paid) current = 2; else current = 1;
     return { current, status: "process", steps };
   }
 
-  private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number) {
+  private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number, commentStatus?: number) {
     const isPendingPay = Number(orderStatus) === 0 && Number(payStatus) === 0;
     const isPaid = Number(payStatus) === 1;
     const isShipped = Number(shippingStatus) === 1;
     const isCompleted = Number(orderStatus) === 3;
     const isCancelled = Number(orderStatus) === 2;
+    const canComment = isCompleted && Number(commentStatus) === 0;
     return {
       setConfirm: isPendingPay || isPaid,
       toPay: isPendingPay,
@@ -948,7 +954,7 @@ export class OrderService {
       modifyOrderProduct: false,
       modifyShippingInfo: !isCompleted && !isCancelled,
       toAftersales: false,
-      toComment: false,
+      toComment: canComment,
     };
   }
 
