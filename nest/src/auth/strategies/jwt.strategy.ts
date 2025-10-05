@@ -115,6 +115,31 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     this.logger.debug(
       `User validation successful for user_id: ${user.user_id}, username: ${user.username}`,
     );
-    return user;
+
+    // 为了兼容现有控制器大多使用 req.user.userId 的驼峰写法，同时保留原始 snake_case 字段，增加别名。
+    // 注意：不要删除原字段，避免已经使用 req.user.user_id 的代码出问题。
+    const unifiedUser: any = {
+      ...user, // 保留数据库字段 (user_id, avatar, etc.)
+      userId: user.user_id, // 驼峰别名
+      mobileValidated: user.mobile_validated,
+      emailValidated: user.email_validated,
+      rankId: user.rank_id,
+      referrerUserId: user.referrer_user_id,
+      fromTag: user.from_tag,
+      svipExpireTime: user.svip_expire_time,
+      orderCount: user.order_count,
+      orderAmount: user.order_amount,
+      historyProductIds: user.history_product_ids,
+      distributionRegisterTime: user.distribution_register_time,
+      lastLogin: user.last_login,
+      lastIp: user.last_ip,
+    };
+
+    // 方便调试一次性确认返回结构（只打印关键字段，避免日志过大）
+    this.logger.debug(
+      `Unified user object keys: ${Object.keys(unifiedUser).slice(0,30).join(', ')}...`,
+    );
+
+    return unifiedUser;
   }
 }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Request } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards, Request, Logger } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { CollectService } from "./collect.service";
@@ -10,6 +10,7 @@ import { CollectListDto, CollectType, CollectListResponse, CollectProductDto, De
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class CollectProductCompatController {
+  private readonly logger = new Logger(CollectProductCompatController.name);
   constructor(private readonly collectService: CollectService) {}
 
   /**
@@ -38,6 +39,7 @@ export class CollectProductCompatController {
     @Request() req,
     @Body() body: CollectProductDto,
   ): Promise<SuccessResponse> {
+    this.logger.debug(`CollectProductCompatController save called with body: ${JSON.stringify(body)} ${JSON.stringify(req.user)}`);
     return this.collectService.collectProduct(req.user.userId, body);
   }
 
