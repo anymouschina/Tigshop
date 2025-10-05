@@ -87,20 +87,17 @@ export class LogController {
   @ApiQuery({ name: "page", required: false, description: "页面访问" })
   @ApiQuery({ name: "action", required: false, description: "用户行为" })
   @ApiQuery({ name: "type", required: false, description: "日志类型" })
+  @ApiQuery({ name: "productId", required: false, description: "浏览的商品ID" })
   @ApiResponse({ status: 200, description: "记录成功" })
   async log(
     @Query()
-    query: { click?: string; page?: string; action?: string; type?: string },
+    query: { click?: string; page?: string; action?: string; type?: string; productId?: string | number },
     @Request() req: any,
   ) {
     try {
       // 获取用户信息或IP地址
-      const user =
-        req.user?.userId ||
-        req.user?.user_id ||
-        req.user?.sub ||
-        req.ip ||
-        "unknown";
+      const extractedUserId = this.extractUserId(req);
+      const user = extractedUserId ?? (req.ip || "unknown");
 
       // 获取当前日期
       const today = new Date();
@@ -119,6 +116,13 @@ export class LogController {
         access_time: Math.floor(Date.now() / 1000), // 转换为Unix时间戳
       });
 
+      // 如果包含 productId 且解析出 userId（无需强制鉴权 Guard）则写入浏览足迹
+      const pidRaw = query.productId;
+      const pidNum = Number(pidRaw);
+      if (pidRaw !== undefined && Number.isFinite(pidNum) && pidNum > 0 && extractedUserId) {
+        await this.appendHistoryProduct(extractedUserId, pidNum);
+      }
+
       this.logger.debug("Log data recorded successfully for user:", user);
       return { ok: true };
     } catch (error) {
@@ -132,17 +136,13 @@ export class LogController {
   @ApiResponse({ status: 200, description: "记录成功" })
   async logPost(
     @Body()
-    body: { click?: string; page?: string; action?: string; type?: string },
+    body: { click?: string; page?: string; action?: string; type?: string; productId?: string | number },
     @Request() req: any,
   ) {
     try {
       // 获取用户信息或IP地址
-      const user =
-        req.user?.userId ||
-        req.user?.user_id ||
-        req.user?.sub ||
-        req.ip ||
-        "unknown";
+      const extractedUserId = this.extractUserId(req);
+      const user = extractedUserId ?? (req.ip || "unknown");
 
       // 获取当前日期
       const today = new Date();
@@ -161,6 +161,13 @@ export class LogController {
         access_time: Math.floor(Date.now() / 1000), // 转换为Unix时间戳
       });
 
+      // 同步 productId 足迹（POST 也支持）
+      const pidRaw = body.productId;
+      const pidNum = Number(pidRaw);
+      if (pidRaw !== undefined && Number.isFinite(pidNum) && pidNum > 0 && extractedUserId) {
+        await this.appendHistoryProduct(extractedUserId, pidNum);
+      }
+
       this.logger.debug("POST Log data recorded successfully for user:", user);
       return { ok: true };
     } catch (error) {
@@ -169,6 +176,53 @@ export class LogController {
         "POST记录日志失败",
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  /**
+   * 解析请求中的用户ID（优先 req.user，其次 Bearer Token 解码；失败返回 null）
+   */
+  private extractUserId(req: any): number | null {
+    const direct = req?.user?.userId || req?.user?.user_id || req?.user?.sub;
+    if (direct) return Number(direct);
+    const auth = req.headers?.authorization || req.headers?.Authorization;
+    if (typeof auth === "string" && auth.startsWith("Bearer ")) {
+      const token = auth.slice(7).trim();
+      try {
+        const parts = token.split(".");
+        if (parts.length >= 2) {
+          const payloadSeg = parts[1]
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
+          const padded = payloadSeg + "=".repeat((4 - (payloadSeg.length % 4)) % 4);
+            const json = Buffer.from(padded, "base64").toString("utf8");
+            const decoded: any = JSON.parse(json);
+            const candidate = decoded?.userId || decoded?.user_id || decoded?.sub;
+            if (candidate) return Number(candidate);
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  /** 将商品ID追加到用户的浏览历史（去重前插，最多100） */
+  private async appendHistoryProduct(userId: number, productId: number) {
+    try {
+      const u = await this.prisma.user.findFirst({ where: { user_id: userId }, select: { history_product_ids: true } });
+      let arr: number[] = [];
+      if (u?.history_product_ids) {
+        try {
+          const parsed = JSON.parse(u.history_product_ids);
+          if (Array.isArray(parsed)) arr = parsed.filter((n: any) => Number.isFinite(Number(n))).map((n: any) => Number(n));
+        } catch {}
+      }
+      const existIdx = arr.indexOf(productId);
+      if (existIdx !== -1) arr.splice(existIdx, 1);
+      arr.unshift(productId);
+      if (arr.length > 100) arr = arr.slice(0, 100);
+      await this.prisma.user.update({ where: { user_id: userId }, data: { history_product_ids: JSON.stringify(arr) } });
+    } catch (e) {
+      this.logger.warn(`记录浏览足迹失败 productId=${productId}: ${e?.message || e}`);
     }
   }
 }

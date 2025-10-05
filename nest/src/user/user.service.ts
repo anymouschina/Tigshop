@@ -462,60 +462,44 @@ export class UserService {
     page: number = 1,
     limit: number = 10,
   ) {
-    const safeNum = (v: any, def = 0) => {
-      const n = Number(v);
-      return Number.isFinite(n) ? n : def;
-    };
-    const pageNum = Math.max(1, safeNum(page, 1));
-    const sizeNum = Math.max(1, Math.min(50, safeNum(limit, 10)));
-    const skip = (pageNum - 1) * sizeNum;
+    // 忽略 page / limit（保留参数签名以兼容调用），按 PHP 实现只返回最近最多 20 条。
+    // 重构：抽离解析 / 查询 / 映射，便于后续扩展（例如需要补 viewTime、占位商品等）。
 
-    // 读取用户历史 productId 列表(JSON 数组形式，最新在前)
-    const user = await this.databaseService.user.findFirst({
+    const raw = await this.databaseService.user.findFirst({
       where: { user_id },
       select: { history_product_ids: true },
     });
-    let historyIds: number[] = [];
-    if (user?.history_product_ids) {
-      try {
-        const arr = JSON.parse(user.history_product_ids);
-        if (Array.isArray(arr)) {
-          historyIds = arr
-            .map((x) => Number(x))
-            .filter((n) => Number.isFinite(n) && n > 0);
-        }
-      } catch {}
-    }
+    const historyIds = this.parseHistoryIds(raw?.history_product_ids).slice(0, 20);
+    if (historyIds.length === 0) return [];
 
-    if (historyIds.length === 0) {
-      return {
-        status: "success",
-        data: {
-          list: [],
-          pagination: { page: pageNum, limit: sizeNum, total: 0, totalPages: 0 },
-        },
-      };
-    }
+    const products = await this.fetchHistoryProducts(historyIds);
+    const map = new Map(products.map((p: any) => [p.product_id, p]));
 
-    // 截取当前页涉及的 productIds（保持原顺序）
-    const sliceIds = historyIds.slice(skip, skip + sizeNum);
-    if (sliceIds.length === 0) {
-      return {
-        status: "success",
-        data: {
-          list: [],
-          pagination: {
-            page: pageNum,
-            limit: sizeNum,
-            total: historyIds.length,
-            totalPages: Math.ceil(historyIds.length / sizeNum),
-          },
-        },
-      };
-    }
+    return historyIds
+      .map((id) => map.get(id))
+      .filter(Boolean)
+      .map((p) => this.mapHistoryProduct(p as any));
+  }
 
-    const products = await this.databaseService.product.findMany({
-      where: { product_id: { in: sliceIds as any } },
+  /** 解析用户 history_product_ids JSON 字符串为数字数组 */
+  private parseHistoryIds(raw: any): number[] {
+    if (!raw) return [];
+    try {
+      const arr = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (!Array.isArray(arr)) return [];
+      return arr
+        .map((x) => Number(x))
+        .filter((n) => Number.isFinite(n) && n > 0);
+    } catch {
+      return [];
+    }
+  }
+
+  /** 批量查询足迹商品（只取必要字段） */
+  private async fetchHistoryProducts(ids: number[]) {
+    if (ids.length === 0) return [];
+    return this.databaseService.product.findMany({
+      where: { product_id: { in: ids as any } },
       select: {
         product_id: true,
         category_id: true,
@@ -541,22 +525,14 @@ export class UserService {
         is_hot: true,
         product_stock: true,
         sort_order: true,
-        is_seckill: true,
       },
     });
+  }
 
-    // 以 historyIds 当前页顺序重排
-    const productMap = new Map(products.map((p) => [p.product_id, p]));
-    const ordered = sliceIds
-      .map((id) => productMap.get(id))
-      .filter((p): p is typeof products[number] => !!p);
-
-    const money = (v: any) => {
-      const n = Number(v || 0);
-      return n.toFixed(2);
-    };
-
-    const list = ordered.map((p) => ({
+  /** 将商品行映射为足迹返回结构 */
+  private mapHistoryProduct(p: any) {
+    const money = (v: any) => (Number(v || 0)).toFixed(2);
+    return {
       categoryId: p.category_id || 0,
       brandId: p.brand_id || 0,
       productTsn: p.product_tsn || "0",
@@ -582,23 +558,11 @@ export class UserService {
       productStock: p.product_stock || 0,
       sortOrder: p.sort_order || 0,
       price: money(p.product_price),
-      isSeckill: p.is_seckill || 0,
+      // 字段 is_seckill 不存在于 product 主表（为 order_item 专属），这里保持兼容输出 0
+      isSeckill: 0,
       seckillEndTime: "",
       productSku: [],
       shop: null,
-    }));
-
-    return {
-      status: "success",
-      data: {
-        list,
-        pagination: {
-          page: pageNum,
-          limit: sizeNum,
-          total: historyIds.length,
-          totalPages: Math.ceil(historyIds.length / sizeNum),
-        },
-      },
     };
   }
 
