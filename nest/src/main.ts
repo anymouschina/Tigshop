@@ -92,7 +92,9 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // 允许存在额外的蛇形/驼峰重复字段
+      skipMissingProperties: false,
+      transformOptions: { enableImplicitConversion: true },
     }),
   );
 
