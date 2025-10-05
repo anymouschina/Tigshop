@@ -54,6 +54,7 @@ export class ProductDetailService {
     ]);
 
     // 对齐PHP版本与前端期望的响应数据结构（item 使用 camelCase）
+    const shopDataReal = await this.getShopBasic(product.shop_id ?? 0);
     return {
       // 商品基本信息 - 对齐PHP的item字段（camelCase + 类型对齐）
       item: {
@@ -130,26 +131,70 @@ export class ProductDetailService {
         eCardGroup: eCardGroup,
       },
       // 商品描述数组 - 对齐PHP的descArr字段
-      descArr,
+  descArr,
       // SKU列表 - 对齐PHP的skuList字段
-      skuList,
+  skuList,
       // 商品图片列表 - 对齐PHP的picList字段
-      picList,
+  picList,
       // 视频列表 - 对齐PHP的videoList字段
-      videoList,
+  videoList,
       // 属性列表 - 对齐PHP的attrList字段
-      attrList,
+  attrList,
       // 评论评分详情 - 对齐PHP的rankDetail字段
-      rankDetail,
+  rankDetail,
       // 秒杀信息 - 对齐PHP的seckillDetail字段
-      seckillDetail,
+  seckillDetail,
       // 服务列表 - 对齐PHP的serviceList字段
-      serviceList,
+  serviceList,
       // 选中的属性值 - 对齐PHP的checkedValue字段
-      checkedValue,
+  checkedValue,
       // 咨询总数 - 对齐PHP的consultationTotal字段
       consultationTotal,
+      // 新增：店铺客服/联系方式（与订单详情结构部分对齐）
+      shop: shopDataReal
+        ? {
+            shopId: shopDataReal.shop_id,
+            shopTitle: shopDataReal.shop_title || "",
+            kefuInlet: this.safeParseArray(shopDataReal.kefu_inlet),
+            kefuLink: shopDataReal.kefu_link || "",
+            kefuPhone: shopDataReal.kefu_phone || "",
+          }
+        : null,
+      // 为前端快速访问（有些旧代码可能直接读顶层）再扁平提供一份（不影响已有字段）
+      kefuInlet: shopDataReal ? this.safeParseArray(shopDataReal.kefu_inlet) : [],
+      kefuLink: shopDataReal?.kefu_link || "",
+      kefuPhone: shopDataReal?.kefu_phone || "",
     };
+  }
+
+  private async getShopBasic(shopId: number) {
+    if (!shopId || shopId <= 0) return null;
+    try {
+      return await this.prisma.shop.findFirst({
+        where: { shop_id: shopId },
+        select: {
+          shop_id: true,
+          shop_title: true,
+          kefu_inlet: true,
+          kefu_link: true,
+          kefu_phone: true,
+        },
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  private safeParseArray(v: any) {
+    if (!v) return [];
+    if (Array.isArray(v)) return v;
+    try {
+      const parsed = JSON.parse(String(v));
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      if (typeof v === "string" && v.includes(",")) return v.split(",").map((x) => x.trim()).filter(Boolean);
+      return [];
+    }
   }
 
   // 将布尔/可选字段转为数值标记，默认 defaultVal

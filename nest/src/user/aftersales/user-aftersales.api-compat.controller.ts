@@ -3,13 +3,17 @@ import { Controller, Get, Post, Body, Query, UseGuards, Request } from "@nestjs/
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { RefundApplyService } from "../../finance/refund-apply/refund-apply.service";
+import { OrderService } from "../../order/order.service";
 
 @ApiTags("User Aftersales API Compat")
 @Controller("api/user/aftersales")
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserAftersalesApiCompatController {
-  constructor(private readonly refundApplyService: RefundApplyService) {}
+  constructor(
+    private readonly refundApplyService: RefundApplyService,
+    private readonly orderService: OrderService,
+  ) {}
 
   // 对齐 PHP：GET /api/user/aftersales/list
   @Get("list")
@@ -32,17 +36,45 @@ export class UserAftersalesApiCompatController {
   // 对齐 PHP：GET /api/user/aftersales/applyData
   @Get("applyData")
   @ApiOperation({ summary: "获取售后申请基础数据（兼容）" })
-  async applyData(@Query() query: { order_id?: number }) {
-    // 占位：返回前端所需基础枚举，后续可补充订单商品可申请项
+  async applyData(@Request() req, @Query() query: { order_id?: number; orderId?: number }) {
+    const userId = req.user?.user_id ?? req.user?.userId;
+    const oid = Number(query.order_id || query.orderId);
+    if (!oid || !Number.isFinite(oid)) {
+      return { code: 400, message: "缺少订单ID", data: null };
+    }
+
+    // 复用订单详情服务，保证字段与订单详情完全一致（含 availableActions、stepStatus 等）
+    let order: any;
+    try {
+      order = await this.orderService.getOrderDetail(oid, userId);
+    } catch (e: any) {
+      return { code: 404, message: e?.message || "订单不存在", data: null };
+    }
+
+    // 生成可申请售后商品列表（过滤赠品 isGift=1; 已有售后 aftersalesItem!=null 的暂时不显示 -> 当前结构中 aftersalesItem 恒为 null, 预留逻辑）
+    const list = Array.isArray(order.items)
+      ? order.items
+          .filter((it: any) => Number(it.isGift) === 0)
+          .map((it: any) => ({
+            itemId: it.itemId,
+            picThumb: it.picThumb,
+            isGift: it.isGift,
+            productSn: it.productSn,
+            productName: it.productName,
+            price: it.price,
+            quantity: it.quantity,
+            subtotal: it.subtotal,
+            skuData: it.skuData || [],
+            canApplyQuantity: it.quantity, // 后续可减去已申请数量
+          }))
+      : [];
+
     return {
-      code: 200,
-      message: "OK",
+      code: 0,
+      message: "success",
       data: {
-        reason_options: [
-          { label: "不想要了", value: 1 },
-          { label: "商品有问题", value: 2 },
-          { label: "少件/漏发", value: 3 },
-        ],
+        list,
+        order,
       },
     };
   }
