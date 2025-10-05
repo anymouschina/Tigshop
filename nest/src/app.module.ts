@@ -4,7 +4,6 @@ import { MulterModule } from "@nestjs/platform-express";
 import { UserModule } from "src/user/user.module";
 import { ConfigModule } from "./config/config.module";
 import { LoggerModule } from "./common/logger/logger.module";
-// import { ApiModule } from "./api/api.module";
 import { UserCouponModule } from "./user/coupon/coupon.module";
 import { LoginModule } from "./user/login/login.module";
 import { AddressModule } from "./user/address/address.module";

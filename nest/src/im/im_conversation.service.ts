@@ -725,13 +725,120 @@ export class ImConversationService {
 
     if (!conv) return null;
 
-    // 附带最近一条消息
-    const lastMessage = await this.prisma.im_message.findFirst({
-      where: { conversation_id: conv.id },
-      orderBy: [{ id: 'desc' }],
+    // 最近一条有效消息（排除自定义类型，以与列表接口一致）
+    const rawLastMessage = await this.prisma.im_message.findFirst({
+      where: { conversation_id: conv.id, message_type: { not: 'custom' } },
+      orderBy: [{ send_time: 'desc' }, { id: 'desc' }],
     });
 
-    return { ...conv, lastMessage };
+    // 未读消息统计（不区分角色，取全部未读有效消息）
+    const unreadMessageCount = await this.prisma.im_message.count({
+      where: { conversation_id: conv.id, is_read: false, message_type: { not: 'custom' } },
+    });
+
+    // 用户信息
+    let user: any = null;
+    if (conv.user_id) {
+      const u = await this.prisma.user.findUnique({
+        where: { user_id: conv.user_id },
+        select: { user_id: true, username: true, nickname: true, avatar: true },
+      });
+      if (u) {
+        user = {
+          userId: u.user_id,
+          username: u.username,
+          nickname: u.nickname ?? u.username,
+          avatar: u.avatar,
+        };
+      }
+    }
+
+    const fmtTime = (sec?: number | null) => (sec ? new Date(sec * 1000).toISOString().replace('T', ' ').substring(0, 19) : null);
+    const typeText = (t?: string | null) => {
+      const map: Record<string, string> = { text: '文本', image: '图片', custom: '自定义', file: '文件', video: '视频' };
+      return t && map[t] ? map[t] : '文本';
+    };
+    const formatContent = (m: any) => {
+      if (!m) return null;
+      const t = m.message_type || 'text';
+      if (t === 'text') return { messageType: 'text', content: m.content ?? '', pic: '', contentCategory: null, order: null, product: null };
+      if (t === 'image') {
+        let pic = '';
+        try { const ext = m.extend ? JSON.parse(m.extend) : null; pic = (ext && (ext.pic || ext.url)) || m.content || ''; } catch { pic = m.content || ''; }
+        return { messageType: 'image', content: '', pic, contentCategory: null, order: null, product: null };
+      }
+      // custom/其它：尝试解析 extend 或 content JSON
+      let raw: any = null;
+      try {
+        if (m.extend) raw = JSON.parse(m.extend);
+        else if (m.content && (m.content.startsWith('{') || m.content.startsWith('['))) raw = JSON.parse(m.content);
+      } catch {}
+      let contentCategory: string | null = null;
+      let order: any = null;
+      let product: any = null;
+      if (raw && typeof raw === 'object') {
+        const looksLikeOrder = (raw.orderId || raw.order_id) && (raw.orderSn || raw.order_sn);
+        const looksLikeProduct = (raw.productId || raw.product_id) && (raw.productName || raw.product_name || raw.productSn || raw.product_sn);
+        if (looksLikeOrder) {
+          contentCategory = 'order';
+          order = {
+            orderId: raw.orderId ?? raw.order_id ?? null,
+            orderSn: raw.orderSn ?? raw.order_sn ?? '',
+            picUrl: raw.picUrl ?? raw.pic_url ?? '',
+            productName: raw.productName ?? raw.product_name ?? '',
+            productNum: raw.productNum ?? raw.product_num ?? null,
+            totalAmount: raw.totalAmount ?? raw.total_amount ?? null,
+            orderStatusName: raw.orderStatusName ?? raw.order_status_name ?? '',
+          };
+        } else if (looksLikeProduct) {
+          contentCategory = 'product';
+          product = {
+            productId: raw.productId ?? raw.product_id ?? null,
+            picUrl: raw.picUrl ?? raw.pic_url ?? '',
+            productName: raw.productName ?? raw.product_name ?? '',
+            productSn: raw.productSn ?? raw.product_sn ?? '',
+            productPrice: raw.productPrice ?? raw.product_price ?? null,
+          };
+        }
+      }
+      return { messageType: t, content: '', pic: '', contentCategory, order, product };
+    };
+
+    const lastMessage = rawLastMessage ? {
+      messageTypeText: typeText(rawLastMessage.message_type),
+      id: rawLastMessage.id,
+      conversationId: rawLastMessage.conversation_id,
+      content: formatContent(rawLastMessage),
+      messageType: rawLastMessage.message_type,
+      type: rawLastMessage.type === 0 ? 1 : 2,
+      userId: rawLastMessage.user_id ?? null,
+      servantId: rawLastMessage.servant_id ?? null,
+      sendTime: fmtTime(rawLastMessage.send_time),
+      status: rawLastMessage.status ?? 1,
+      extend: rawLastMessage.extend ?? null,
+      pushStatus: rawLastMessage.push_status ?? 0,
+      isRead: (rawLastMessage.is_read ? 1 : 0) as any,
+      shopId: rawLastMessage.shop_id ?? 0,
+      userFrom: rawLastMessage.user_from ?? null,
+    } : null;
+
+    return {
+      id: conv.id,
+      userId: conv.user_id ?? null,
+      lastServantId: conv.last_servant_id ?? 0,
+      addTime: fmtTime(conv.add_time),
+      lastUpdateTime: fmtTime(conv.last_update_time),
+      shopId: conv.shop_id ?? 0,
+      userFrom: conv.user_from ?? null,
+      status: conv.status ?? 0,
+      remark: conv.remark ?? '',
+      summary: conv.summary ?? '',
+      isDelete: conv.is_delete ?? 0,
+      unreadMessageCount,
+      user,
+      lastMessage,
+      shop: null,
+    } as any;
   }
 
   // 待接入会话列表（客服侧）
