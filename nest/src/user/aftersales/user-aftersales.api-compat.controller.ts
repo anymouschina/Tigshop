@@ -28,9 +28,24 @@ export class UserAftersalesApiCompatController {
   @Get("config")
   @ApiOperation({ summary: "售后配置（兼容）" })
   async config() {
-    // 复用退款申请状态作为售后状态配置
-    const data = await this.refundApplyService.getRefundStats();
-    return { code: 200, message: "OK", data };
+    // 与旧 PHP /api/user/aftersales/config 对齐的固定配置
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        aftersaleType: {
+          2: "仅退款",
+          1: "退货/退款",
+        },
+        aftersaleReason: [
+          "多拍/拍错/不喜欢",
+          "未按约定时间发货",
+          "协商一致退款",
+          "地址/电话填错了",
+          "其他",
+        ],
+      },
+    };
   }
 
   // 对齐 PHP：GET /api/user/aftersales/applyData

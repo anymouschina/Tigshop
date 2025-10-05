@@ -95,18 +95,23 @@ export class RefundApplyService {
   }
 
   async create(data: CreateRefundApplyDto) {
-    // 检查订单是否存在
-    const order = await this.prisma.order.findUnique({
-      where: { order_id: data.order_id },
-    });
+    if (!data || data.order_id === undefined || data.order_id === null) {
+      throw new Error("order_id 必填");
+    }
+    if (data.refund_amount === undefined || data.refund_amount === null) {
+      throw new Error("refund_amount 必填");
+    }
 
+    // 检查订单是否存在（schema 中无 order_amount 字段，使用 paid_amount / total_amount）
+    const order = await this.prisma.order.findUnique({ where: { order_id: Number(data.order_id) } });
     if (!order) {
       throw new Error("订单不存在");
     }
 
-    // 检查退款金额不能超过订单金额
-    if (data.refund_amount > order.order_amount) {
-      throw new Error("退款金额不能超过订单金额");
+    // 可退款金额使用已支付金额 paid_amount（或 total_amount); 保守取 paid_amount
+    const maxRefund = Number(order.paid_amount);
+    if (Number(data.refund_amount) > maxRefund) {
+      throw new Error("退款金额不能超过已支付金额");
     }
 
     // 检查是否已有未完成的退款申请
@@ -135,7 +140,8 @@ export class RefundApplyService {
         refund_note: data.refund_note ?? "",
         online_balance: data.online_balance ?? 0,
         offline_balance: data.offline_balance ?? 0,
-        refund_balance: data.refund_balance ?? 0,
+        // 将用户申请金额统一写入 refund_balance（旧系统里可能区分线上/线下，这里先兼容）
+        refund_balance: data.refund_balance ?? data.refund_amount ?? 0,
         is_online: data.is_online ?? 0,
         is_offline: data.is_offline ?? 0,
         is_receive: data.is_receive ?? 0,

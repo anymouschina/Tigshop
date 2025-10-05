@@ -367,6 +367,9 @@ export class MerchantShopService {
    * 选择店铺
    */
   async chooseShop(adminId: number, shopId: number) {
+    if (!shopId || typeof shopId !== "number") {
+      throw new Error("无效的店铺ID");
+    }
     const shop = await this.prisma.shop.findFirst({
       where: {
         shop_id: shopId,
