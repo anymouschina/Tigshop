@@ -462,20 +462,141 @@ export class UserService {
     page: number = 1,
     limit: number = 10,
   ) {
-    const skip = (page - 1) * limit;
+    const safeNum = (v: any, def = 0) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : def;
+    };
+    const pageNum = Math.max(1, safeNum(page, 1));
+    const sizeNum = Math.max(1, Math.min(50, safeNum(limit, 10)));
+    const skip = (pageNum - 1) * sizeNum;
 
-    // 这里需要实现浏览历史功能，暂时返回空列表
-    // 实际应该从浏览历史表或用户的history_product_ids字段获取
+    // 读取用户历史 productId 列表(JSON 数组形式，最新在前)
+    const user = await this.databaseService.user.findFirst({
+      where: { user_id },
+      select: { history_product_ids: true },
+    });
+    let historyIds: number[] = [];
+    if (user?.history_product_ids) {
+      try {
+        const arr = JSON.parse(user.history_product_ids);
+        if (Array.isArray(arr)) {
+          historyIds = arr
+            .map((x) => Number(x))
+            .filter((n) => Number.isFinite(n) && n > 0);
+        }
+      } catch {}
+    }
+
+    if (historyIds.length === 0) {
+      return {
+        status: "success",
+        data: {
+          list: [],
+          pagination: { page: pageNum, limit: sizeNum, total: 0, totalPages: 0 },
+        },
+      };
+    }
+
+    // 截取当前页涉及的 productIds（保持原顺序）
+    const sliceIds = historyIds.slice(skip, skip + sizeNum);
+    if (sliceIds.length === 0) {
+      return {
+        status: "success",
+        data: {
+          list: [],
+          pagination: {
+            page: pageNum,
+            limit: sizeNum,
+            total: historyIds.length,
+            totalPages: Math.ceil(historyIds.length / sizeNum),
+          },
+        },
+      };
+    }
+
+    const products = await this.databaseService.product.findMany({
+      where: { product_id: { in: sliceIds as any } },
+      select: {
+        product_id: true,
+        category_id: true,
+        brand_id: true,
+        product_tsn: true,
+        market_price: true,
+        virtual_sales: true,
+        shipping_tpl_id: true,
+        free_shipping: true,
+        pic_url: true,
+        pic_thumb: true,
+        product_name: true,
+        check_status: true,
+        check_reason: true,
+        shop_id: true,
+        suppliers_id: true,
+        product_type: true,
+        product_sn: true,
+        product_price: true,
+        product_status: true,
+        is_best: true,
+        is_new: true,
+        is_hot: true,
+        product_stock: true,
+        sort_order: true,
+        is_seckill: true,
+      },
+    });
+
+    // 以 historyIds 当前页顺序重排
+    const productMap = new Map(products.map((p) => [p.product_id, p]));
+    const ordered = sliceIds
+      .map((id) => productMap.get(id))
+      .filter((p): p is typeof products[number] => !!p);
+
+    const money = (v: any) => {
+      const n = Number(v || 0);
+      return n.toFixed(2);
+    };
+
+    const list = ordered.map((p) => ({
+      categoryId: p.category_id || 0,
+      brandId: p.brand_id || 0,
+      productTsn: p.product_tsn || "0",
+      marketPrice: money(p.market_price),
+      virtualSales: p.virtual_sales || 0,
+      shippingTplId: p.shipping_tpl_id || 0,
+      freeShipping: p.free_shipping || 0,
+      productId: p.product_id,
+      picUrl: p.pic_url || "",
+      picThumb: p.pic_thumb || "",
+      productName: p.product_name || "",
+      checkStatus: p.check_status || 0,
+      checkReason: p.check_reason || "",
+      shopId: p.shop_id || 0,
+      suppliersId: p.suppliers_id || 0,
+      productType: p.product_type || 0,
+      productSn: p.product_sn || "",
+      productPrice: money(p.product_price),
+      productStatus: p.product_status || 0,
+      isBest: p.is_best || 0,
+      isNew: p.is_new || 0,
+      isHot: p.is_hot || 0,
+      productStock: p.product_stock || 0,
+      sortOrder: p.sort_order || 0,
+      price: money(p.product_price),
+      isSeckill: p.is_seckill || 0,
+      seckillEndTime: "",
+      productSku: [],
+      shop: null,
+    }));
 
     return {
       status: "success",
       data: {
-        list: [],
+        list,
         pagination: {
-          page,
-          limit,
-          total: 0,
-          totalPages: 0,
+          page: pageNum,
+          limit: sizeNum,
+          total: historyIds.length,
+          totalPages: Math.ceil(historyIds.length / sizeNum),
         },
       },
     };
