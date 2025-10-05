@@ -498,24 +498,8 @@ export class UserService {
    * 上传用户头像
    */
   async uploadAvatar(user_id: number, file: any) {
-    if (!file) {
-      throw new BadRequestException("请选择要上传的文件");
-    }
-
-    // 这里应该实现文件上传逻辑，保存到OSS或本地
-    // 暂时返回文件名作为头像URL
-    const avatarUrl = `/uploads/avatar/${file.filename}`;
-
-    await this.databaseService.user.update({
-      where: { user_id },
-      data: { avatar: avatarUrl },
-    });
-
-    return {
-      status: "success",
-      message: "头像上传成功",
-      data: { avatarUrl },
-    };
+    // 为与 PHP /api/user/user/uploadImg 对齐，直接复用 modifyAvatar 的实现与返回结构
+    return this.modifyAvatar(user_id, file);
   }
 
   /**
@@ -552,12 +536,13 @@ export class UserService {
 
       return {
         code: 0,
+        message: "success",
         data: {
-          pic_thumb: avatarUrl, // 使用缩略图
-          pic_url: uploadResult.fileUrl, // 原图
-          pic_name: uploadResult.fileName,
+          picThumb: avatarUrl,              // 缩略图（或原图）
+          picUrl: uploadResult.fileUrl,     // 原图 URL
+          picName: uploadResult.fileName,   // 原始文件名（或唯一名）
+          picId: uploadResult.id || 0,      // 主文件记录ID（若存在）
         },
-        message: "操作成功",
       };
     } catch (error) {
       this.logger.error(`用户 ${user_id} 头像修改失败: ${error.message}`);

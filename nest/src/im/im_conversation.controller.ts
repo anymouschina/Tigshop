@@ -101,10 +101,14 @@ export class ImConversationController {
   // 兼容客户端老路径：message/setRead → 标记已读
   @Post('message/setRead')
   async setRead(@Body() body: any) {
+    const conversationId = body.conversationId ? Number(body.conversationId) : undefined;
+    const messageIds = Array.isArray(body.messageIds) ? body.messageIds.map((v: any) => Number(v)) : undefined;
     const data = await this.service.markRead({
-      conversationId: Number(body.conversationId),
+      conversationId,
       role: body.role === 'servant' ? 'servant' : 'user',
-      messageIds: Array.isArray(body.messageIds) ? body.messageIds.map((v: any) => Number(v)) : undefined,
+      messageIds,
+      shopId: body.shopId ? Number(body.shopId) : 0,
+      userFrom: body.userFrom,
     });
     return { code: 0, message: 'success', data };
   }

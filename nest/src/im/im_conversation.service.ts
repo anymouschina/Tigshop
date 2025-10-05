@@ -35,8 +35,8 @@ export class ImConversationService {
     }
 
     const where: any = { 
-      conversation_id: convId ,
-      message_type: { not: 'custom' }
+      conversation_id: convId 
+      // 不再过滤自定义消息
     };
     let refMessage: any = null;
     if (firstId && firstId > 0) {
@@ -108,45 +108,23 @@ export class ImConversationService {
 
     const formatContent = (m: any) => {
       const t = (m.message_type || 'text') as string;
-      // 统一返回对象结构
       if (t === 'text') {
-        return {
-          messageType: 'text',
-          content: m.content ?? '',
-          pic: null,
-          contentCategory: null,
-          order: null,
-          product: null,
-        };
+        return { messageType: 'text', content: m.content ?? '', pic: null, contentCategory: null, order: null, product: null };
       }
       if (t === 'image') {
-        // 图片放在 pic 字段，保留 content 为空串
-        const ext = (() => {
-          try {
-            return m.extend ? JSON.parse(m.extend) : null;
-          } catch {
-            return null;
-          }
-        })();
+        const ext = (() => { try { return m.extend ? JSON.parse(m.extend) : null; } catch { return null; } })();
         const pic = (ext && (ext.pic || ext.url)) || m.content || '';
-        return {
-          messageType: 'image',
-          content: null,
-          pic: String(pic),
-          contentCategory: null,
-          order: null,
-          product: null,
-        };
+        return { messageType: 'image', content: null, pic: String(pic), contentCategory: null, order: null, product: null };
       }
-      // 其他自定义类型：尽量透传到 extend，同时保持通用字段
-      return {
-        messageType: t,
-        content: '',
-        pic: '',
-        contentCategory: null,
-        order: null,
-        product: null,
-      };
+      // custom / 其它类型：解析 JSON（优先 extend，其次 content）支持嵌套 order/product
+      let raw: any = null;
+      try {
+        if (m.extend) raw = JSON.parse(m.extend);
+        else if (m.content && (String(m.content).startsWith('{') || String(m.content).startsWith('['))) raw = JSON.parse(m.content);
+      } catch {}
+      const order = raw?.order || null;
+      const product = raw?.product || null;
+      return { messageType: t, content: raw?.content ?? '', pic: null, contentCategory: null, order, product };
     };
 
     const records = (recordsRaw || []).map((m) => {
@@ -269,7 +247,7 @@ export class ImConversationService {
     }
 
     // 2) 整理消息内容
-    const messageType = content?.messageType || content?.type || 'text';
+  const messageType = content?.messageType || content?.type || 'text';
     let contentStr = '';
     let extendStr: string | null = null;
 
@@ -282,9 +260,9 @@ export class ImConversationService {
         extendStr = JSON.stringify(content);
         break;
       default:
-        // 自定义（如订单卡片/商品卡片等）直接存入 JSON
+        // 自定义：仅存 content JSON，extend 置空（返回结构中 extend 也应为 null）
         contentStr = JSON.stringify(content ?? {});
-        extendStr = contentStr;
+        extendStr = null;
         break;
     }
 
@@ -299,7 +277,8 @@ export class ImConversationService {
         message_type: messageType,
         type: senderType,
         user_id: conv?.user_id ?? 0,
-  servant_id: role === 'servant' ? (effectiveServantId ?? 0) : 0,
+        // 用户消息也带上当前会话的 last_servant_id，便于前端直接展示
+        servant_id: role === 'servant' ? (effectiveServantId ?? 0) : (conv?.last_servant_id ?? 0),
         send_time: now,
         status: 1,
         extend: extendStr ?? undefined,
@@ -327,54 +306,18 @@ export class ImConversationService {
     };
     const formatContent = (m: any) => {
       const t = (m.message_type || 'text') as string;
-      if (t === 'text') {
-        return { messageType: 'text', content: m.content ?? '', pic: '', contentCategory: null, order: null, product: null };
-      }
+      if (t === 'text') return { messageType: 'text', content: m.content ?? '', pic: '', contentCategory: null, order: null, product: null };
       if (t === 'image') {
         let pic: string | null = null;
-        try {
-          const ext = m.extend ? JSON.parse(m.extend) : null;
-          pic = (ext && (ext.pic || ext.url)) || (m.content ? String(m.content) : null);
-        } catch {
-          pic = m.content ? String(m.content) : null;
-        }
+        try { const ext = m.extend ? JSON.parse(m.extend) : null; pic = (ext && (ext.pic || ext.url)) || (m.content ? String(m.content) : null); } catch { pic = m.content ? String(m.content) : null; }
         return { messageType: 'image', content: '', pic, contentCategory: null, order: null, product: null };
       }
-      // custom 解析（与 listConversations formatContent 保持一致）
+      // custom / 其它：解析嵌套结构 raw.order/raw.product
       let raw: any = null;
-      try {
-        if (m.extend) raw = JSON.parse(m.extend);
-        else if (m.content && (String(m.content).startsWith('{') || String(m.content).startsWith('['))) raw = JSON.parse(m.content);
-      } catch {}
-      let contentCategory: string | null = null;
-      let order: any = null;
-      let product: any = null;
-      if (raw && typeof raw === 'object') {
-        const looksLikeOrder = (raw.orderId || raw.order_id) && (raw.orderSn || raw.order_sn);
-        const looksLikeProduct = (raw.productId || raw.product_id) && (raw.productName || raw.product_name || raw.productSn || raw.product_sn);
-        if (looksLikeOrder) {
-          contentCategory = 'order';
-          order = {
-            orderId: raw.orderId ?? raw.order_id ?? null,
-            orderSn: raw.orderSn ?? raw.order_sn ?? '',
-            picUrl: raw.picUrl ?? raw.pic_url ?? '',
-            productName: raw.productName ?? raw.product_name ?? '',
-            productNum: raw.productNum ?? raw.product_num ?? null,
-            totalAmount: raw.totalAmount ?? raw.total_amount ?? null,
-            orderStatusName: raw.orderStatusName ?? raw.order_status_name ?? '',
-          };
-        } else if (looksLikeProduct) {
-          contentCategory = 'product';
-          product = {
-            productId: raw.productId ?? raw.product_id ?? null,
-            picUrl: raw.picUrl ?? raw.pic_url ?? '',
-            productName: raw.productName ?? raw.product_name ?? '',
-            productSn: raw.productSn ?? raw.product_sn ?? '',
-            productPrice: raw.productPrice ?? raw.product_price ?? null,
-          };
-        }
-      }
-      return { messageType: t, content: '', pic: null, contentCategory, order, product };
+      try { if (m.extend) raw = JSON.parse(m.extend); else if (m.content && (String(m.content).startsWith('{') || String(m.content).startsWith('['))) raw = JSON.parse(m.content); } catch {}
+      const order = raw?.order || null;
+      const product = raw?.product || null;
+      return { messageType: t, content: raw?.content ?? '', pic: null, contentCategory: null, order, product };
     };
 
     // 补充用户与客服信息
@@ -394,7 +337,7 @@ export class ImConversationService {
   servantId: msg.servant_id ?? null,
       sendTime: fmt(msg.send_time),
       status: null,
-      extend: msg.extend ?? null,
+  extend: msg.message_type === 'custom' ? null : (msg.extend ?? null),
       pushStatus: null,
       isRead: msg.is_read ? 1 : 0,
       shopId: msg.shop_id ?? 0,
@@ -657,15 +600,51 @@ export class ImConversationService {
     return conv;
   }
 
-  async markRead(params: { conversationId: number; role?: 'user' | 'servant'; shopId?: number; userFrom?: string; messageIds?: number[] }) {
-    const { conversationId, role = 'user', messageIds } = params;
-    if (!conversationId) throw new Error('缺少 conversationId');
-    const where: any = { conversation_id: conversationId, is_read: false };
-    // 只标记对方的未读
-    where.type = role === 'user' ? 1 : 0;
+  async markRead(params: { conversationId?: number; role?: 'user' | 'servant'; shopId?: number; userFrom?: string; messageIds?: number[] }) {
+    let { conversationId, role = 'user', messageIds, shopId = 0, userFrom } = params;
+
+    // 若缺少 conversationId，尝试根据 messageIds 推断
+    if ((!conversationId || conversationId <= 0) && messageIds && messageIds.length) {
+      const msgs = await this.prisma.im_message.findMany({
+        where: { id: { in: messageIds } },
+        select: { id: true, conversation_id: true },
+      });
+      const convIds = Array.from(new Set(msgs.map(m => m.conversation_id).filter(Boolean))) as number[];
+      if (convIds.length === 1) {
+        conversationId = convIds[0];
+      } else if (convIds.length > 1) {
+        // 跨会话消息：逐个更新，再返回总数
+        let totalUpdated = 0;
+        for (const cid of convIds) {
+          const updated = await this.prisma.im_message.updateMany({
+            where: { conversation_id: cid, is_read: false, type: role === 'user' ? 1 : 0, id: { in: messageIds } },
+            data: { is_read: true },
+          });
+          totalUpdated += updated.count;
+        }
+        return { updated: totalUpdated, conversationId: null, multiConversation: true };
+      }
+    }
+
+    // 再次尝试：根据 (shopId, userFrom) 推断最新会话
+    if ((!conversationId || conversationId <= 0) && userFrom) {
+      const conv = await this.prisma.im_conversation.findFirst({
+        where: { shop_id: shopId, user_from: userFrom, is_delete: 0 },
+        orderBy: [{ last_update_time: 'desc' }, { id: 'desc' }],
+        select: { id: true },
+      });
+      if (conv) conversationId = conv.id;
+    }
+
+    if (!conversationId || conversationId <= 0) {
+      // 不再抛错，返回 0，兼容前端漏传
+      return { updated: 0, conversationId: null };
+    }
+
+    const where: any = { conversation_id: conversationId, is_read: false, type: role === 'user' ? 1 : 0 };
     if (messageIds && messageIds.length) where.id = { in: messageIds };
     const updated = await this.prisma.im_message.updateMany({ where, data: { is_read: true } });
-    return { updated: updated.count };
+    return { updated: updated.count, conversationId };
   }
 
   async markAllRead(params: { conversationId: number; role?: 'user' | 'servant' }) {
