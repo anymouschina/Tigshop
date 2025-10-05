@@ -110,7 +110,52 @@ export class AdminUserWithdrawApplyCompatController {
     const applyId = Number(id);
     if (!applyId) return { code: 1, message: "缺少 id", data: null };
     const item = await this.userWithdrawApplyService.findById(applyId);
-    return { code: 0, message: "success", data: item };
+
+    const mapTime = (sec?: number) => {
+      const s = Number(sec || 0);
+      if (!s) return null; // 详情期望未完成为 null
+      const d = new Date(s * 1000);
+      const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+
+    // 解析账户信息
+    let accountData: any = {};
+    try {
+      if (item.account_data) accountData = JSON.parse(item.account_data);
+    } catch (e) {
+      accountData = {};
+    }
+    if (accountData && typeof accountData === "object") {
+      accountData = {
+        accountName: accountData.accountName ?? accountData.account_name ?? accountData.name ?? null,
+        accountNo: accountData.accountNo ?? accountData.account_no ?? accountData.account ?? null,
+        accountType: Number(accountData.accountType ?? accountData.account_type ?? accountData.type ?? 0) || 0,
+        bankName: accountData.bankName ?? accountData.bank_name ?? accountData.bank ?? null,
+        identity: accountData.identity ?? null,
+      };
+    }
+
+    const statusNum = item.status ? 1 : 0; // Boolean -> 0/1
+    const statusType = statusNum === 0 ? "待处理" : "已完成";
+    const amountNum = Number(
+      typeof item.amount === "string" ? Number(item.amount) : (item.amount?.toNumber ? item.amount.toNumber() : item.amount || 0)
+    );
+
+    const data = {
+      id: item.id,
+      userId: item.user_id,
+      username: item.user?.username || "",
+      amount: Number(amountNum.toFixed(2)),
+      addTime: mapTime(item.add_time),
+      finishedTime: mapTime(item.finished_time),
+      postscript: item.postscript || "",
+      status: statusNum,
+      statusType,
+      accountData,
+    };
+
+    return { code: 0, message: "success", data };
   }
 
   // POST /adminapi/finance/userWithdrawApply/create
