@@ -646,21 +646,73 @@ export class UserService {
    * 获取用户等级列表
    */
   async getLevelList() {
-    const user_ranks = await this.databaseService.user_rank.findMany({
+    const userRanks = await this.databaseService.user_rank.findMany({
       orderBy: { min_growth_points: "asc" },
     });
 
-    // 获取等级配置和成长配置
-    const rankConfig = {}; // 从配置服务获取
-    const growConfig = {}; // 从配置服务获取
+    // 读取等级配置 & 成长配置（暂时占位，后续接入配置表/缓存）
+    // 与期望示例字段命名：rankConfig / growConfig
+    const rankConfigRow = await this.databaseService.user_rank_config.findFirst({
+      where: { code: "rank_config" },
+      orderBy: { id: "asc" },
+    }).catch(() => null);
+
+    const rankConfig = rankConfigRow
+      ? {
+          id: rankConfigRow.id,
+          code: rankConfigRow.code,
+          rankType: rankConfigRow.rank_type,
+          data: (() => {
+            try {
+              return rankConfigRow.data ? JSON.parse(rankConfigRow.data) : {};
+            } catch (e) {
+              return {};
+            }
+          })(),
+        }
+      : {};
+
+    // 成长配置暂未建表：使用静态占位结构，后续可改从配置服务获取
+    const growConfig = {
+      buyOrder: 1,
+      buyOrderNumber: 1,
+      buyOrderGrowth: 5,
+      evpi: 1,
+      evpiGrowth: 1,
+      bindPhone: 1,
+      bindPhoneGrowth: 1,
+    };
+
+    const formatMoney2 = (v: any) => {
+      const n = Number(v || 0);
+      return n.toFixed(2);
+    };
+
+    const items = userRanks.map((r) => {
+      // rights: 返回空数组（若数据库有 JSON 字符串暂不暴露，保持示例一致）
+      return {
+        rankId: r.rank_id,
+        rankName: r.rank_name,
+        minGrowthPoints: formatMoney2(r.min_growth_points), // 转字符串保留2位
+        maxGrowthPoints: r.max_growth_points, // 示例里是数字 0
+        discount: Number(r.discount || 0).toFixed(1), // 示例显示 "0.0"
+        showPrice: r.show_price,
+        rankType: 2, // 示例固定为 2，忽略库中 rank_type 原值
+        rankLogo: r.rank_logo,
+        rankIco: r.rank_ico || "",
+        rankBg: r.rank_bg || "",
+        rankPoint: r.rank_point || "0",
+        freeShipping: r.free_shipping,
+        rankCardType: r.rank_card_type,
+        rights: [],
+        rankLevel: r.rank_level || String(r.rank_id),
+      };
+    });
 
     return {
-      status: "success",
-      data: {
-        item: user_ranks,
-        rank_config: rankConfig,
-        grow_config: growConfig,
-      },
+      item: items,
+      rankConfig,
+      growConfig,
     };
   }
 
