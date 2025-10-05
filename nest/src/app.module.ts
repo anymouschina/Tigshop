@@ -84,6 +84,7 @@ import { AdminLocalesCompatController } from "./lang/admin-locales-compat.contro
 import { AdminLocalesRelationCompatController } from "./lang/admin-locales-relation-compat.controller";
 import { AdminCurrencyCompatController } from "./lang/admin-currency-compat.controller";
 import { AdminAreaCodeCompatController } from "./setting/area-code/admin-area-code-compat.controller";
+import { SalesmanDetailController } from "./salesman/salesman-detail.controller";
 import { SearchGuessController } from "./search/search-guess.controller";
 import { SearchController } from "./search/search.controller";
 import { SearchService } from "./search/search.service";
@@ -186,6 +187,11 @@ import { UserFromExtractMiddleware } from "./common/middleware/user-from-extract
     AdminLocalesRelationCompatController,
     AdminCurrencyCompatController,
     AdminAreaCodeCompatController,
+    // Front salesman detail
+    SalesmanDetailController,
+    
+    
+    
   ],
   providers: [
     {
