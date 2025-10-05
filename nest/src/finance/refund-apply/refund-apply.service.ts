@@ -82,9 +82,13 @@ export class RefundApplyService {
   }
 
   async findOne(id: number) {
+    const numericId = Number(id);
+    if (!numericId || !Number.isInteger(numericId) || numericId <= 0) {
+      throw new Error("无效的退款申请ID");
+    }
     // 兼容传入 id，实际主键为 refund_id
     const refund = await this.prisma.refund_apply.findUnique({
-      where: { refund_id: Number(id) },
+      where: { refund_id: numericId },
     });
 
     if (!refund) {
