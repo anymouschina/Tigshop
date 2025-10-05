@@ -743,11 +743,14 @@ export class UserService {
    * 获取账户金额变动列表
    */
   async getBalanceLogList(user_id: number, query: any) {
-    const page = query.page || 1;
-    const size = query.size || 15;
+    const page = Math.max(1, Number(query.page) || 1);
+    const size = Math.min(100, Math.max(1, Number(query.size) || 15));
     const skip = (page - 1) * size;
-    const sortField = query.sort_field || "log_id";
-    const sortOrder = query.sort_order || "DESC";
+    // 仅允许按 log_id / change_time 排序，避免传无效列
+    const allowSortFields = new Set(["log_id", "change_time"]);
+    const sortField = allowSortFields.has(query.sort_field) ? query.sort_field : "log_id";
+    const sortOrderRaw = String(query.sort_order || query.sortOrder || "desc").toLowerCase();
+    const sortOrder: any = sortOrderRaw === "asc" ? "asc" : "desc";
 
     const [balanceLogs, total] = await Promise.all([
       this.databaseService.user_balance_log.findMany({
@@ -756,15 +759,36 @@ export class UserService {
         skip,
         take: size,
       }),
-      this.databaseService.user_balance_log.count({
-        where: { user_id },
-      }),
+      this.databaseService.user_balance_log.count({ where: { user_id } }),
     ]);
+
+    const toMoney = (v: any) => {
+      if (v == null) return "0.00";
+      if (typeof v === "number") return v.toFixed(2);
+      if (typeof v === "string") return (Number(v) || 0).toFixed(2);
+      if (typeof v === "object" && Array.isArray(v.d)) {
+        try {
+          const digits = (v.d as number[]).join("");
+          const e = v.e as number;
+          const num = Number(digits) * Math.pow(10, e - digits.length + 1);
+          return num.toFixed(2);
+        } catch { return "0.00"; }
+      }
+      return "0.00";
+    };
+    const records = balanceLogs.map((r: any) => ({
+      ...r,
+      balance: toMoney(r.balance),
+      frozen_balance: toMoney(r.frozen_balance),
+      new_balance: toMoney(r.new_balance),
+      new_frozen_balance: toMoney(r.new_frozen_balance),
+      change_time_format: r.change_time ? new Date(r.change_time * 1000).toISOString().slice(0, 19).replace("T", " ") : "",
+    }));
 
     return {
       status: "success",
       data: {
-        records: balanceLogs,
+        records,
         total,
         page,
         size,
