@@ -15,10 +15,11 @@ import {
   UserWithdrawApplyConfigDto,
 } from "./dto/user-withdraw-apply.dto";
 import { PrismaService } from "src/prisma/prisma.service";
+import { ConfigService } from "src/setting/config.service";
 
 @Injectable()
 export class UserWithdrawApplyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly configService: ConfigService) {}
 
   async findAll(queryDto: UserWithdrawApplyQueryDto) {
     const {
@@ -131,6 +132,80 @@ export class UserWithdrawApplyService {
   async create(createDto: CreateUserWithdrawApplyDto) {
     if (createDto.amount <= 0) {
       throw new BadRequestException("提现金额必须大于0");
+    }
+    // 读取提现配置
+    let withdrawalCfg: any = await this.configService.getJsonConfig("withdrawalSettings").catch(() => null);
+    if (!withdrawalCfg || typeof withdrawalCfg !== 'object') {
+      withdrawalCfg = { enabled: true, minAmount: 1, maxAmount: 50000, feeRate: 0, methods: ["alipay","wechat","bank"], dailyLimit: 50000 };
+    }
+    // 兼容字段：withdrawalEnabled 优先，其次 enabled
+    const enabledFlag = withdrawalCfg.withdrawalEnabled !== undefined ? (String(withdrawalCfg.withdrawalEnabled) === '1' || withdrawalCfg.withdrawalEnabled === true) : (withdrawalCfg.enabled !== false);
+    const { minAmount = 1, maxAmount = 50000, dailyLimit = 50000 } = withdrawalCfg;
+    if (!enabledFlag) {
+      throw new BadRequestException("当前提现功能已关闭");
+    }
+    if (createDto.amount < Number(minAmount)) {
+      throw new BadRequestException(`单次最小提现金额为 ${Number(minAmount).toFixed(2)}`);
+    }
+    if (createDto.amount > Number(maxAmount)) {
+      throw new BadRequestException(`单次最大提现金额为 ${Number(maxAmount).toFixed(2)}`);
+    }
+    // 校验允许的收款方式 (accountType 与 withdrawalReceiptMethod/int methods 对应)
+    try {
+      const allowList = withdrawalCfg.withdrawalReceiptMethod || withdrawalCfg.receiptMethods || [];
+      if (Array.isArray(allowList) && allowList.length) {
+        const acctType = Number((createDto.accountData as any)?.accountType || (createDto.accountData as any)?.account_type || (createDto.accountData as any)?.type || 0);
+        if (!allowList.map((v:any)=>Number(v)).includes(acctType)) {
+          throw new BadRequestException("不支持的提现方式");
+        }
+      }
+    } catch (e) {
+      if (e instanceof BadRequestException) throw e;
+    }
+    // 频次限制：withdrawalFrequencyUnit (1=天 2=周 3=月)，withdrawalFrequencyCount 次数
+    const freqCountRaw = withdrawalCfg.withdrawalFrequencyCount ?? withdrawalCfg.frequencyCount;
+    const freqUnitRaw = withdrawalCfg.withdrawalFrequencyUnit ?? withdrawalCfg.frequencyUnit;
+    const freqCount = Number(freqCountRaw || 0);
+    const freqUnit = Number(freqUnitRaw || 0);
+    if (freqCount > 0 && [1,2,3].includes(freqUnit)) {
+      const now = new Date();
+      let periodStart = new Date(now);
+      if (freqUnit === 1) { // day
+        periodStart.setHours(0,0,0,0);
+      } else if (freqUnit === 2) { // week (以周一为起点)
+        const day = periodStart.getDay(); // 0=Sunday
+        const diff = (day === 0 ? 6 : day - 1); // 距离周一的天数
+        periodStart.setHours(0,0,0,0);
+        periodStart.setDate(periodStart.getDate() - diff);
+      } else if (freqUnit === 3) { // month
+        periodStart.setDate(1); periodStart.setHours(0,0,0,0);
+      }
+      const startTs = Math.floor(periodStart.getTime()/1000);
+      const periodCount = await this.prisma.user_withdraw_apply.count({ where: { user_id: createDto.userId, add_time: { gte: startTs } } });
+      if (periodCount >= freqCount) {
+        if (freqUnit === 1) {
+          throw new BadRequestException("今日提现次数已达上限");
+        } else if (freqUnit === 2) {
+          throw new BadRequestException("本周提现次数已达上限");
+        } else if (freqUnit === 3) {
+          throw new BadRequestException("本月提现次数已达上限");
+        } else {
+          throw new BadRequestException("提现次数已达上限");
+        }
+      }
+    }
+    // 统计当日已申请(所有状态)提现总额，限制 dailyLimit（以自然日按本地时间 00:00-23:59）
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
+    const todayStartTs = Math.floor(todayStart.getTime()/1000);
+    const todayEndTs = Math.floor(todayEnd.getTime()/1000);
+    const dailyAgg = await this.prisma.user_withdraw_apply.aggregate({
+      where: { user_id: createDto.userId, add_time: { gte: todayStartTs, lte: todayEndTs } },
+      _sum: { amount: true }
+    });
+    const todayAmount = Number(dailyAgg._sum.amount || 0);
+    if (todayAmount + createDto.amount > Number(dailyLimit)) {
+      throw new BadRequestException(`今日累计提现 ${todayAmount.toFixed(2)}，超出日限额 ${(Number(dailyLimit)).toFixed(2)}`);
     }
     const rawStatus = Number(createDto.status ?? WithdrawStatus.PENDING);
     const completed = rawStatus === (WithdrawStatus.COMPLETED as number);

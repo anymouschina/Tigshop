@@ -111,13 +111,20 @@ export class UserWithdrawApplyApiCompatController {
     const userId = req.user.userId || req.user.user_id || req.user.sub;
     const amount = Number(body.amount || 0);
     const accountData = body.account_data || body.accountData || {};
-    const created = await this.svc.create({
-      userId: Number(userId),
-      amount,
-      accountData,
-      postscript: "",
-      status: 0,
-    } as any);
-    return { code: 0, message: "success", data: created };
+    if (!accountData || (typeof accountData === 'object' && Object.keys(accountData).length === 0)) {
+      return { code: 1, message: '请填写提现账号信息', data: null };
+    }
+    try {
+      await this.svc.create({
+        userId: Number(userId),
+        amount,
+        accountData,
+        postscript: "",
+        status: 0,
+      } as any);
+      return { code: 0, message: 'success', data: true };
+    } catch (e:any) {
+      return { code: 1, message: e?.message || '提现申请失败', data: null };
+    }
   }
 }
