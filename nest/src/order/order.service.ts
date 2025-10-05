@@ -202,12 +202,28 @@ export class OrderService {
     const orderStatus = toNum(orderStatusRaw);
     if (orderStatus !== undefined && orderStatus !== -1) {
       switch (orderStatus) {
-        case 0:
-          where.order_status = 0; break;
-        case 1:
-          where.order_status = 1; break;
-        case 2: // 待收货：处理中/已发货
-          where.order_status = 2; break;
+        case 0: { // 待支付：必须未支付 + 未发货（防止状态未推进的脏数据混入）
+          where.order_status = 0;
+          if (where.pay_status === undefined) where.pay_status = 0;
+          // 仅当未显式传 shippingStatus 时限制未发货
+          if (where.shipping_status === undefined) where.shipping_status = 0;
+          break; }
+        case 1: // 待发货：限定未发货（shipping_status=0）且已确认态（order_status=1）
+          where.order_status = 1;
+          where.shipping_status = 0;
+          break;
+        case 2: { // 待收货：已发货但未完成；兼容部分数据仍停留在 order_status=1 但 shipping_status=1 的情况
+          // 构造 OR 条件： (order_status=2) OR (order_status=1 AND shipping_status=1)
+          const baseAnd: any[] = [];
+          // 把已存在的简单条件（除 order_status / shipping_status 已被逻辑接管）拆出来
+          const { order_status, shipping_status, ...rest } = where;
+          // 重建 where：保留其它条件（user_id 等）+ OR 组合
+          Object.assign(where, rest);
+          where.OR = [
+            { order_status: 2 },
+            { AND: [{ order_status: 1 }, { shipping_status: 1 }] },
+          ];
+          break; }
         case 3: // 已完成
           where.order_status = 5; break;
         case 4: // 已取消
@@ -703,7 +719,7 @@ export class OrderService {
     const shippingTypeName = o.shipping_type_name || "普通快递";
 
     return {
-  orderStatusName: this.getOrderStatusName(o.order_status, o.shipping_status, o.comment_status),
+  orderStatusName: this.getOrderStatusName(o.order_status, o.shipping_status, o.comment_status, o.pay_status),
       userAddress,
       shippingStatusName: this.getShippingStatusName(o.shipping_status),
       payStatusName: this.getPayStatusName(o.pay_status),
@@ -871,12 +887,17 @@ export class OrderService {
     return ext;
   }
 
-  private getOrderStatusName(status: number, shippingStatus?: number, commentStatus?: number) {
+  private getOrderStatusName(status: number, shippingStatus?: number, commentStatus?: number, payStatus?: number) {
     const s = Number(status);
-    // DB:0待支付 1待发货 2已发货(进行中) 3已取消 4无效 5已完成
-    if (s === 0) return "待支付";
-    if (s === 1) return "待发货";
-    if (s === 2) return "待收货"; // 进行中 / 已发货阶段
+    const ship = Number(shippingStatus);
+    const pay = Number(payStatus);
+    // DB:0 待支付/待确认 -> 若已支付(pay>0) 应显示“待发货”
+    if (s === 0) {
+      if (pay > 0) return ship > 0 ? "待收货" : "待发货";
+      return "待支付";
+    }
+    if (s === 1) return ship > 0 ? "待收货" : "待发货";
+    if (s === 2) return ship > 0 ? "待收货" : "待发货"; // 容错：出现发货状态滞后
     if (s === 3) return "已取消";
     if (s === 5) return Number(commentStatus) === 0 ? "待评价" : "已完成";
     return "";
@@ -912,12 +933,13 @@ export class OrderService {
   private buildStepStatus(order: any) {
     const addDesc = this.formatUnixToTime(order.add_time);
     const paid = Number(order.pay_status) > 0;
-    const shipped = Number(order.order_status) === 2 || Number(order.shipping_status) > 0;
+  // 发货判定：以 shipping_status>0 为准，避免仅凭 order_status=2 但 shipping_status=0 时误判
+  const shipped = Number(order.shipping_status) > 0;
     const completed = Number(order.order_status) === 5;
     const steps = [
       { title: "提交订单", description: addDesc },
       { title: paid ? "已支付" : "待支付", description: paid ? this.formatUnixToTime(order.pay_time) : "" },
-      { title: shipped ? "已发货" : Number(order.order_status) === 2 ? "已取消" : "待发货", description: shipped ? this.formatUnixToTime(order.shipping_time) : "" },
+      { title: shipped ? "已发货" : (Number(order.order_status) === 3 ? "已取消" : "待发货"), description: shipped ? this.formatUnixToTime(order.shipping_time) : "" },
     ];
     if (completed) {
       steps.push({ title: Number(order.comment_status) === 0 ? "待评价" : "已完成", description: order.received_time ? this.formatUnixToTime(order.received_time) : "" });
@@ -930,7 +952,8 @@ export class OrderService {
   private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number, commentStatus?: number) {
     const isPendingPay = Number(orderStatus) === 0 && Number(payStatus) === 0;
     const isPaid = Number(payStatus) === 1;
-    const isShipped = Number(orderStatus) === 2 || Number(shippingStatus) === 1;
+  // 只允许 shipping_status>0 时才算已发货，可确认收货
+  const isShipped = Number(shippingStatus) > 0;
     const isCompleted = Number(orderStatus) === 5;
     const isCancelled = Number(orderStatus) === 3;
   const canComment = isCompleted && Number(commentStatus) === 0;
@@ -942,7 +965,7 @@ export class OrderService {
       cancelOrder: isPendingPay,
       delOrder: isCancelled,
       deliver: isPaid && !isShipped,
-      confirmReceipt: isShipped,
+  confirmReceipt: isShipped && !isCompleted && !isCancelled,
       splitOrder: false,
       modifyOrder: !isCompleted && !isCancelled,
       rebuy: false,
