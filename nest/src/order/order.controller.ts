@@ -75,11 +75,12 @@ export class OrderController {
    */
   @Post("confirmReceipt")
   @ApiOperation({ summary: "确认收货" })
-  async confirmReceive(@Request() req, @Body() data: { orderId: number }) {
-    return this.orderService.confirmReceive(
-      Number(data.orderId),
-      req.user.userId,
-    );
+  async confirmReceive(@Request() req, @Body() data: { orderId?: number; id?: number; order_id?: number }) {
+    const oid = Number(data.orderId ?? data.id ?? data.order_id);
+    if (!oid || Number.isNaN(oid)) {
+      return { code: 400, message: "订单ID无效" } as any;
+    }
+    return this.orderService.confirmReceive(oid, req.user.userId);
   }
 
   /**
