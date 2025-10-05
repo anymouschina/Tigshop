@@ -183,7 +183,32 @@ export class ConfigController {
       "kefuPhone",
       "kefuTime",
     ];
-    const data = await this.configService.getConfigsByCodes(keys);
+    const raw = await this.configService.getConfigsByCodes(keys);
+
+    // 需要输出为数字的字段
+    const numericKeys = ["kefuType", "kefuYzfType", "kefuCodeBlank"];
+
+    const data: any = {
+      kefuType: 0,
+      kefuYzfType: 0,
+      kefuYzfSign: "",
+      kefuWorkwxId: "",
+      corpId: "",
+      kefuCode: "",
+      kefuCodeBlank: 0,
+      kefuPhone: "",
+      kefuTime: "",
+    };
+
+    for (const k of Object.keys(raw)) {
+      if (numericKeys.includes(k)) {
+        const n = Number(raw[k]);
+        data[k] = Number.isFinite(n) ? n : 0;
+      } else {
+        data[k] = raw[k];
+      }
+    }
+
     return { code: 0, message: "success", data };
   }
 

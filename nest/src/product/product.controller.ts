@@ -18,6 +18,7 @@ import { CommentService } from "./comment/comment.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { Public } from "../auth/decorators/public.decorator";
 import { CommentStatus } from "./comment/dto/comment.dto";
+import { PrismaService } from "../prisma/prisma.service";
 import {
   GetAvailabilityQueryDto,
   GetBatchAvailabilityQueryDto,
@@ -36,6 +37,8 @@ export class ProductController {
     private readonly productPricingService: ProductPricingService,
     @Inject(forwardRef(() => CommentService))
     private readonly commentService: CommentService,
+    // 注入 PrismaService 支持收藏状态查询
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -237,35 +240,16 @@ export class ProductController {
    */
   @Get("isCollect")
   @ApiOperation({ summary: "收藏状态查询" })
-  async isCollect(@Request() req, @Query() query: { productId: number }) {
+  async isCollect(@Request() req, @Query() query: any) {
     const userId = req?.user?.userId;
-    // 兼容前端可能用 id 或 productId 作为查询参数
-    const productIdRaw: any = (query as any).productId ?? (query as any).id;
+    const productIdRaw = query?.productId ?? query?.id;
     const productId = Number(productIdRaw);
-    if (!userId || !Number.isFinite(productId) || productId <= 0) {
-      return false; // 参数不全时按未收藏处理，保持前端安全回退
-    }
-    // 查询收藏表
-    try {
-      const row = await (this as any).prisma.collect_product.findFirst({
-        where: { user_id: userId, product_id: productId },
-        select: { collect_id: true },
-      });
-      return !!row;
-    } catch (e) {
-      // 若 prisma 未注入（控制器暂未显式注入），尝试通过 request 上下文的 prismaService
-      const prisma = req?.prisma || req?.prismaService || (this as any).prismaService;
-      if (prisma?.collect_product) {
-        try {
-          const row = await prisma.collect_product.findFirst({
-            where: { user_id: userId, product_id: productId },
-            select: { collect_id: true },
-          });
-          return !!row;
-        } catch {}
-      }
-      return false;
-    }
+    if (!userId || !Number.isFinite(productId) || productId <= 0) return false;
+    const row = await this.prisma.collect_product.findFirst({
+      where: { user_id: userId, product_id: productId },
+      select: { collect_id: true },
+    });
+    return !!row;
   }
 
   /**
