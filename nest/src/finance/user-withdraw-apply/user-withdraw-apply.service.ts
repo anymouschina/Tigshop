@@ -132,24 +132,26 @@ export class UserWithdrawApplyService {
     if (createDto.amount <= 0) {
       throw new BadRequestException("提现金额必须大于0");
     }
+    const rawStatus = Number(createDto.status ?? WithdrawStatus.PENDING);
+    const completed = rawStatus === (WithdrawStatus.COMPLETED as number);
+
+    // 将原始状态码写入 account_data.rawStatus 以实现多状态兼容
+    const originAccount = {
+      ...(createDto.accountData || {}),
+      name: createDto.accountData?.name,
+      account: createDto.accountData?.account,
+    } as any;
+    originAccount.rawStatus = rawStatus; // 记录原始状态码
 
     const apply = await this.prisma.user_withdraw_apply.create({
       data: {
         user_id: createDto.userId,
         amount: createDto.amount,
         postscript: createDto.postscript || "",
-        // schema 仅有 account_data 与 Boolean status；额外字段写入 JSON
-        account_data: JSON.stringify({
-          ...(createDto.accountData || {}),
-          name: createDto.accountData?.name,
-          account: createDto.accountData?.account,
-        }),
-        status:
-          Number(createDto.status ?? WithdrawStatus.PENDING) ===
-          (WithdrawStatus.COMPLETED as number)
-            ? true
-            : false,
+        account_data: JSON.stringify(originAccount),
+        status: completed ? true : false,
         add_time: Math.floor(Date.now() / 1000),
+        finished_time: completed ? Math.floor(Date.now() / 1000) : undefined,
       },
     });
 
@@ -175,14 +177,20 @@ export class UserWithdrawApplyService {
     const updateData: any = {};
 
     if (updateDto.status !== undefined) {
-      const toCompleted =
-        Number(updateDto.status) === (WithdrawStatus.COMPLETED as number);
+      const newRawStatus = Number(updateDto.status);
+      const toCompleted = newRawStatus === (WithdrawStatus.COMPLETED as number);
       const wasCompleted = !!apply.status;
       updateData.status = toCompleted ? true : false;
-
       if (toCompleted && !wasCompleted) {
-        // schema 使用 finished_time 保存完成时间
         updateData.finished_time = Math.floor(Date.now() / 1000);
+      }
+      // 合并写回 account_data.rawStatus
+      try {
+        const parsed = apply.account_data ? JSON.parse(apply.account_data) : {};
+        parsed.rawStatus = newRawStatus;
+        updateData.account_data = JSON.stringify(parsed);
+      } catch (e) {
+        updateData.account_data = JSON.stringify({ rawStatus: newRawStatus });
       }
     }
 

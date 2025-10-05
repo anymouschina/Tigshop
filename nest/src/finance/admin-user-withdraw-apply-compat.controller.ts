@@ -138,7 +138,7 @@ export class AdminUserWithdrawApplyCompatController {
 
     const statusNum = item.status ? 1 : 0; // Boolean -> 0/1
     const statusType = statusNum === 0 ? "待处理" : "已完成";
-    const amountNum = Number(
+    const amountNumDetail = Number(
       typeof item.amount === "string" ? Number(item.amount) : (item.amount?.toNumber ? item.amount.toNumber() : item.amount || 0)
     );
 
@@ -146,7 +146,7 @@ export class AdminUserWithdrawApplyCompatController {
       id: item.id,
       userId: item.user_id,
       username: item.user?.username || "",
-      amount: Number(amountNum.toFixed(2)),
+  amount: Number(amountNumDetail.toFixed(2)),
       addTime: mapTime(item.add_time),
       finishedTime: mapTime(item.finished_time),
       postscript: item.postscript || "",
@@ -181,16 +181,165 @@ export class AdminUserWithdrawApplyCompatController {
   async update(@Body() body: any) {
     const id = Number(body.id);
     if (!id) return { code: 1, message: "缺少 id", data: null };
-    const updated = await this.userWithdrawApplyService.update(id, {
-      status: body.status,
-      postscript: body.postscript,
-      applyReply: body.apply_reply ?? body.applyReply,
-      adminRemark: body.admin_remark ?? body.adminRemark,
-      processTime: body.process_time ?? body.processTime,
-      completeTime: body.complete_time ?? body.completeTime,
-      tradeNo: body.trade_no ?? body.tradeNo,
+    // status 语义：0待处理 1已通过(审核通过/冻结) 2已拒绝 3处理中 4已完成(打款成功扣余额) 5已失败
+    const targetStatus = body.status !== undefined ? Number(body.status) : undefined;
+    const prisma: any = (this as any).userWithdrawApplyService.prisma;
+    const apply = await prisma.user_withdraw_apply.findUnique({ where: { id } });
+    if (!apply) return { code: 1, message: "记录不存在", data: null };
+    const user = apply.user_id ? await prisma.user.findUnique({ where: { user_id: apply.user_id } }) : null;
+    if (!user) return { code: 1, message: "用户不存在", data: null };
+
+    // 解析原始 account_data 及 rawStatus
+    let accountDataRaw: any = {};
+    try { accountDataRaw = apply.account_data ? JSON.parse(apply.account_data) : {}; } catch {}
+    const prevRawStatus: number = Number(accountDataRaw.rawStatus ?? (apply.status ? 4 : 0));
+
+    // 不允许重复完成或回退到已完成前状态（简单保护）
+    if (prevRawStatus === 4 && targetStatus && targetStatus !== 4) {
+      return { code: 1, message: "已完成记录禁止回退", data: null };
+    }
+    if (targetStatus === undefined) {
+      return { code: 1, message: "缺少 status", data: null };
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const amountNum = Number(apply.amount);
+
+    // 基础更新数据
+    const updateData: any = {};
+    let needBalanceChange = false;
+    let newBalance = Number(user.balance);
+    let newFrozen = Number(user.frozen_balance || 0);
+
+    // 规则：
+    //  - 申请创建后（0）审核通过到1：冻结余额 (扣减可用 -> 增加冻结) 若尚未冻结
+    //  - 拒绝(2)：若之前冻结过则解冻
+    //  - 处理中(3)：保持冻结状态不变
+    //  - 完成(4)：从冻结扣除并减少冻结余额
+    //  - 失败(5)：解冻冻结余额
+    // 因为 schema 无单独字段区分是否已冻结，这里用 account_data.freezeApplied 标记
+    const freezeApplied = !!accountDataRaw.freezeApplied;
+    if (targetStatus === 1 && !freezeApplied) {
+      if (amountNum > Number(user.balance)) {
+        return { code: 1, message: "余额不足，无法审核通过", data: null };
+      }
+      // 扣可用，增冻结
+      newBalance = Number(user.balance) - amountNum;
+      newFrozen = Number(user.frozen_balance || 0) + amountNum;
+      accountDataRaw.freezeApplied = true;
+      needBalanceChange = true;
+    } else if (targetStatus === 2) { // 拒绝
+      if (freezeApplied) {
+        newBalance = Number(user.balance) + amountNum; // 退回可用
+        newFrozen = Number(user.frozen_balance || 0) - amountNum;
+        accountDataRaw.freezeApplied = false;
+        needBalanceChange = true;
+      }
+    } else if (targetStatus === 4) { // 完成
+      if (!freezeApplied) {
+        // 若未冻结直接完成，需先检查可用余额
+        if (amountNum > Number(user.balance)) {
+          return { code: 1, message: "余额不足，无法完成提现", data: null };
+        }
+        newBalance = Number(user.balance) - amountNum;
+        // 冻结不动（未冻结流程）
+        needBalanceChange = true;
+      } else {
+        // 已冻结 -> 扣冻结
+        newFrozen = Number(user.frozen_balance || 0) - amountNum;
+        // 可用不变
+        needBalanceChange = true;
+        accountDataRaw.freezeApplied = false; // 冻结结束
+      }
+      updateData.finished_time = now;
+    } else if (targetStatus === 5) { // 失败 -> 解冻回可用
+      if (freezeApplied) {
+        newBalance = Number(user.balance) + amountNum;
+        newFrozen = Number(user.frozen_balance || 0) - amountNum;
+        accountDataRaw.freezeApplied = false;
+        needBalanceChange = true;
+      }
+    }
+
+    // 写入原始状态码
+    accountDataRaw.rawStatus = targetStatus;
+    updateData.account_data = JSON.stringify(accountDataRaw);
+    updateData.postscript = body.postscript ?? apply.postscript;
+    updateData.status = targetStatus === 4 ? true : false; // 仅完成为 true
+
+    const updated = await prisma.$transaction(async (tx: any) => {
+      // 更新提现申请
+      const upd = await tx.user_withdraw_apply.update({ where: { id }, data: updateData });
+      // 余额处理
+      if (needBalanceChange) {
+        await tx.user.update({
+          where: { user_id: user.user_id },
+          data: { balance: newBalance, frozen_balance: newFrozen },
+        });
+        // 写入 user_balance_log
+        await tx.user_balance_log.create({
+          data: {
+            user_id: user.user_id,
+            balance: user.balance, // 旧可用
+            frozen_balance: user.frozen_balance || 0,
+            new_balance: newBalance,
+            new_frozen_balance: newFrozen,
+            change_time: now,
+            change_desc: `提现状态变更:${prevRawStatus}->${targetStatus} 金额:${amountNum.toFixed(2)}`,
+            change_type: 0, // 0: 系统
+          },
+        });
+      }
+      return upd;
     });
-    return { code: 0, message: "success", data: updated };
+
+    // 解析 account_data 获取 rawStatus
+    let rawStatus: number | undefined = undefined;
+    try {
+      const parsed = updated.account_data ? JSON.parse(updated.account_data) : {};
+      rawStatus = Number(parsed.rawStatus);
+    } catch {}
+    const actualStatusCode = rawStatus !== undefined && !isNaN(rawStatus) ? rawStatus : (updated.status ? 4 : 0);
+    const statusTypeMap: Record<number, string> = {
+      0: "待处理",
+      1: "已通过",
+      2: "已拒绝",
+      3: "处理中",
+      4: "已完成",
+      5: "已失败",
+    };
+    const mapTime = (sec?: number) => {
+      const s = Number(sec || 0);
+      if (!s) return null;
+      const d = new Date(s * 1000);
+      const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+    const amountNumOut = Number(
+      typeof updated.amount === "string" ? Number(updated.amount) : (updated.amount?.toNumber ? updated.amount.toNumber() : updated.amount || 0)
+    );
+    let accountData: any = {};
+    try { if (updated.account_data) accountData = JSON.parse(updated.account_data); } catch {}
+    accountData = {
+      accountName: accountData.accountName ?? accountData.account_name ?? accountData.name ?? null,
+      accountNo: accountData.accountNo ?? accountData.account_no ?? accountData.account ?? null,
+      accountType: Number(accountData.accountType ?? accountData.account_type ?? accountData.type ?? 0) || 0,
+      bankName: accountData.bankName ?? accountData.bank_name ?? accountData.bank ?? null,
+      identity: accountData.identity ?? null,
+    };
+    const formatted = {
+      id: updated.id,
+      userId: updated.user_id,
+      username: updated.user?.username || "",
+  amount: Number(amountNumOut.toFixed(2)),
+      addTime: mapTime(updated.add_time),
+      finishedTime: mapTime(updated.finished_time),
+      postscript: updated.postscript || "",
+      status: updated.status ? 1 : 0,
+      statusType: statusTypeMap[actualStatusCode] || statusTypeMap[updated.status ? 4 : 0],
+      accountData,
+    };
+    return { code: 0, message: "success", data: formatted };
   }
 
   // POST /adminapi/finance/userWithdrawApply/del
