@@ -74,6 +74,7 @@ import { AdminSalesmanCompatController } from "./salesman/admin-salesman-compat.
 import { AdminSalesmanContentCompatController } from "./salesman/admin-salesman-content-compat.controller";
 import { AdminSalesmanOrderCompatController } from "./salesman/admin-salesman-order-compat.controller";
 import { AdminSalesmanCustomerTransactionCompatController } from "./salesman/admin-salesman-customer-transaction-compat.controller";
+import { AdminSalesmanDetailCompatController } from "./salesman/admin-salesman-detail-compat.controller";
 import { AdminArticleCompatController } from "./content/admin-article-compat.controller";
 import { AdminArticleCategoryCompatController } from "./content/admin-article-category-compat.controller";
 import { AdminShopAccountCompatController } from "./merchant/admin-shop-account-compat.controller";
@@ -181,6 +182,7 @@ import { CommentModule as UserCommentModule } from './user/comment/comment.modul
     AdminSalesmanContentCompatController,
     AdminSalesmanOrderCompatController,
     AdminSalesmanCustomerTransactionCompatController,
+  AdminSalesmanDetailCompatController,
     AdminArticleCompatController,
     AdminArticleCategoryCompatController,
     AdminShopAccountCompatController,
