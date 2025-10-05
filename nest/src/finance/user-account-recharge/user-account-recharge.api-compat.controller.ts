@@ -3,6 +3,7 @@ import { Controller, Get, Query, UseGuards, Request } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { PrismaService } from "src/prisma/prisma.service";
+import { isNumber, isString, isPlainObject } from 'lodash';
 
 @ApiTags("账户资金/充值记录（API兼容）")
 @Controller("api/user")
@@ -49,22 +50,20 @@ export class UserAccountRechargeApiCompatController {
       99: "其他",
     };
 
-    // 金额格式化
-    const toMoney = (v: any) => {
-      if (v == null) return "0.00";
-      if (typeof v === "number") return v.toFixed(2);
-      if (typeof v === "string") return (Number(v) || 0).toFixed(2);
-      if (typeof v === "object" && Array.isArray(v.d)) {
+    // 金额格式化（支持 number / string / Prisma Decimal-like）
+    const toMoney = (v: any): string => {
+      if (v == null) return '0.00';
+      if (isNumber(v)) return v.toFixed(2);
+      if (isString(v)) return (Number(v) || 0).toFixed(2);
+      if (isPlainObject(v) && Array.isArray((v as any).d)) {
         try {
-          const digits = (v.d as number[]).join("");
-          const e = v.e as number;
+          const digits = ((v as any).d as number[]).join('');
+          const e = (v as any).e as number; // exponent
           const num = Number(digits) * Math.pow(10, e - digits.length + 1);
           return num.toFixed(2);
-        } catch {
-          return "0.00";
-        }
+        } catch { return '0.00'; }
       }
-      return "0.00";
+      return '0.00';
     };
 
     // 计算 before_* （使用 new_* 字段逆推，避免依赖当前用户余额的波动）
@@ -80,14 +79,14 @@ export class UserAccountRechargeApiCompatController {
       const balanceRaw = Number(r.balance) || 0;
       const frozenRaw = Number(r.frozen_balance) || 0;
       // new_* 可能为 Decimal 对象
-      const toNum = (v: any) => {
+      const toNum = (v: any): number => {
         if (v == null) return 0;
-        if (typeof v === 'number') return v;
-        if (typeof v === 'string') return Number(v) || 0;
-        if (typeof v === 'object' && Array.isArray(v.d)) {
+        if (isNumber(v)) return v;
+        if (isString(v)) return Number(v) || 0;
+        if (isPlainObject(v) && Array.isArray((v as any).d)) {
           try {
-            const digits = (v.d as number[]).join('');
-            const e = v.e as number;
+            const digits = ((v as any).d as number[]).join('');
+            const e = (v as any).e as number;
             return Number(digits) * Math.pow(10, e - digits.length + 1);
           } catch { return 0; }
         }
@@ -101,15 +100,30 @@ export class UserAccountRechargeApiCompatController {
       const changeTimeFormat = r.change_time
         ? new Date(Number(r.change_time) * 1000).toISOString().slice(0, 19).replace('T', ' ')
         : '';
+      // 回退逻辑：如果 change_type 异常(非1/2)且日志描述尾部包含数值，则用其作为变动金额并归类为减少
+      let effectiveType = changeType;
+      let changeAmountNum = balanceRaw;
+      if (![1,2].includes(effectiveType)) {
+        const desc: string = r.change_desc || '';
+        const m = /([0-9]+(?:\.[0-9]+)?)\s*$/.exec(desc);
+        if (m) {
+          const parsed = Number(m[1]);
+          if (!Number.isNaN(parsed) && parsed > 0) {
+            changeAmountNum = parsed;
+            effectiveType = 2; // 提现相关默认归类为减少
+          }
+        }
+      }
+      const changeTypeName = changeTypeNameMap[effectiveType] || '其他';
       return {
         // 主键/基础字段（驼峰）
         logId: r.log_id,
         userId: r.user_id,
-        changeType,
-        changeTypeName: changeTypeNameMap[changeType] || '其他',
+        changeType: effectiveType,
+        changeTypeName,
         changeDesc: r.change_desc,
         // 本次变动金额（保持正值，无符号）
-        balance: toMoney(balanceRaw),
+        balance: toMoney(changeAmountNum),
         frozenBalance: toMoney(frozenRaw),
         // 变动前
         beforeBalance: toMoney(beforeBalanceNum),
@@ -126,8 +140,19 @@ export class UserAccountRechargeApiCompatController {
         username,
       };
     });
-
-    return { code: 0, message: 'success', data: { records: mapped, total } };
+    // 只保留提现完成：默认过滤掉包含“提现”但不含“完成”的记录；可用 ?showAllWithdraw=1 关闭过滤
+    let finalRecords = mapped;
+    const showAllWithdraw = ["1","true",true].includes(String(query.showAllWithdraw));
+    if (!showAllWithdraw) {
+      finalRecords = mapped.filter(r => {
+        if (!r.changeDesc) return true;
+        if (r.changeDesc.includes('提现')) {
+          return r.changeDesc.includes('完成');
+        }
+        return true;
+      });
+    }
+    return { code: 0, message: 'success', data: { records: finalRecords, total: finalRecords.length } };
   }
 
   /**
@@ -172,23 +197,23 @@ export class UserAccountRechargeApiCompatController {
       }),
     ]);
 
-    const toMoney = (v: any) => {
-      if (v == null) return "0.00";
-      if (typeof v === "number") return v.toFixed(2);
-      if (typeof v === "string") return (Number(v) || 0).toFixed(2);
-      if (typeof v === "object" && Array.isArray(v.d)) {
+    const toMoney = (v: any): string => {
+      if (v == null) return '0.00';
+      if (isNumber(v)) return v.toFixed(2);
+      if (isString(v)) return (Number(v) || 0).toFixed(2);
+      if (isPlainObject(v) && Array.isArray((v as any).d)) {
         try {
-          const digits = (v.d as number[]).join("");
-          const e = v.e as number;
-            const num = Number(digits) * Math.pow(10, e - digits.length + 1);
+          const digits = ((v as any).d as number[]).join('');
+          const e = (v as any).e as number;
+          const num = Number(digits) * Math.pow(10, e - digits.length + 1);
           return num.toFixed(2);
-        } catch { return "0.00"; }
+        } catch { return '0.00'; }
       }
-      return "0.00";
+      return '0.00';
     };
     const formatTime = (ts: any) => (ts ? new Date(Number(ts) * 1000).toISOString().slice(0, 19).replace("T", " ") : "");
 
-    const withdrawMapped = withdrawRows.map((r: any) => ({
+    let withdrawMapped = withdrawRows.map((r: any) => ({
       // 原始时间戳
       rawAddTime: r.add_time,
       // 统一格式化
@@ -200,6 +225,11 @@ export class UserAccountRechargeApiCompatController {
       statusType: withdrawStatusType[Number(r.status)] || "",
       postscript: r.postscript,
     }));
+    // 默认仅保留已完成的提现(status=1)。可通过 ?withdrawAll=1 查看全部
+    const withdrawAll = ["1","true",true].includes(String(query.withdrawAll));
+    if (!withdrawAll) {
+      withdrawMapped = withdrawMapped.filter(r => Number(r.status) === 1);
+    }
     const rechargeMapped = rechargeRows.map((r: any) => ({
       rawAddTime: r.add_time,
       addTime: formatTime(r.add_time),
