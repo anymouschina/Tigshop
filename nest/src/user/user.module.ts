@@ -15,6 +15,7 @@ import { CollectModule } from "./collect/collect.module";
 import { UserCouponModule } from "./coupon/coupon.module";
 import { UserHistoryModule } from "./history/history.module";
 import { UploadModule } from "../upload/upload.module";
+import { CommentModule as UserCommentModule } from "./comment/comment.module"; // 用户评论模块（提供 /api/user/comment/* 兼容路由）
 import { AuthDebugMiddleware } from "../auth/middlewares/auth-debug.middleware";
 import { AdminUserPointsLogCompatController } from "./admin-user-points-log-compat.controller";
 import { AdminFeedbackCompatController } from "./admin-feedback-compat.controller";
@@ -38,6 +39,7 @@ import { AdminUserCompanyCompatController } from "./admin-user-company-compat.co
     UserCouponModule,
     UserHistoryModule,
     UploadModule,
+  UserCommentModule, // 注册用户评论相关路由
   ],
   controllers: [
     UserController,

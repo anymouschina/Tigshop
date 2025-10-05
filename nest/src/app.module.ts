@@ -93,6 +93,8 @@ import { ImModule } from "./im/im.module";
 import { CaseTransformMiddleware } from "./common/middleware/case-transform.middleware";
 import { RequestSourceMiddleware } from "./common/middleware/request-source.middleware";
 import { UserFromExtractMiddleware } from "./common/middleware/user-from-extract.middleware";
+// 用户评论兼容路由模块（为避免与 product/comment 同名冲突，用别名导入）
+import { CommentModule as UserCommentModule } from './user/comment/comment.module';
 
 @Module({
   imports: [
@@ -144,6 +146,7 @@ import { UserFromExtractMiddleware } from "./common/middleware/user-from-extract
     PrintModule,
     CategoryModule,
   ImModule,
+    UserCommentModule, // 直接引入用户评论模块，确保 /api/user/comment/* 路由注册
   ],
   controllers: [
     AppController,

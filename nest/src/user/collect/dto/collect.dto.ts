@@ -81,10 +81,21 @@ export class UpdateCollectDto {
 }
 
 export class DeleteCollectDto {
-  @ApiProperty({ description: "收藏ID" })
-  @IsNotEmpty({ message: "收藏ID不能为空" })
+  @ApiProperty({ description: "收藏ID", required: false })
+  @IsOptional()
   @IsInt({ message: "收藏ID必须为整数" })
-  id: number;
+  id?: number;
+
+  // 兼容：允许直接传商品ID 来取消（当前用户的该商品收藏）
+  @ApiProperty({ description: "商品ID (camelCase 兼容字段)", required: false })
+  @IsOptional()
+  @IsInt({ message: "商品ID必须为整数" })
+  productId?: number;
+
+  @ApiProperty({ description: "商品ID", required: false })
+  @IsOptional()
+  @IsInt({ message: "商品ID必须为整数" })
+  product_id?: number;
 }
 
 export class BatchDeleteCollectDto {
@@ -96,10 +107,17 @@ export class BatchDeleteCollectDto {
 }
 
 export class CollectProductDto {
-  @ApiProperty({ description: "商品ID" })
-  @IsNotEmpty({ message: "商品ID不能为空" })
+  // 兼容前端 camelCase 请求字段 productId
+  @ApiProperty({ description: "商品ID (camelCase 兼容字段)", required: false, example: 347 })
+  @IsOptional()
   @IsInt({ message: "商品ID必须为整数" })
-  product_id: number;
+  productId?: number;
+
+  // 原始 snake_case 字段（老接口或内部调用）
+  @ApiProperty({ description: "商品ID", required: false, example: 347 })
+  @IsOptional()
+  @IsInt({ message: "商品ID必须为整数" })
+  product_id?: number;
 }
 
 export class CheckCollectDto {

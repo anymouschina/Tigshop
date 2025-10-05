@@ -124,7 +124,11 @@ export class CollectService {
     userId: number,
     collectProductDto: CollectProductDto,
   ): Promise<SuccessResponse> {
-    const { product_id } = collectProductDto;
+    // 兼容 product_id 与 productId 两种写法
+    const product_id = (collectProductDto as any).product_id ?? (collectProductDto as any).productId;
+    if (!product_id || isNaN(Number(product_id))) {
+      throw new BadRequestException("商品ID不能为空");
+    }
 
     // 检查商品是否存在
     const product = await (this.databaseService as any).product.findFirst({
@@ -173,25 +177,39 @@ export class CollectService {
     userId: number,
     deleteCollectDto: DeleteCollectDto,
   ): Promise<SuccessResponse> {
-    const { id } = deleteCollectDto;
+    const { id, productId, product_id } = deleteCollectDto as any;
 
-    // 验证收藏是否存在
+    let collectIdToDelete: number | undefined = id;
+
+    // 如果未直接提供收藏ID，尝试通过商品ID查询
+    if (!collectIdToDelete) {
+      const resolvedProductId = productId ?? product_id;
+      if (!resolvedProductId && resolvedProductId !== 0) {
+        throw new NotFoundException("缺少取消收藏所需的参数 (id 或 productId)");
+      }
+      const existingByProduct = await (
+        this.databaseService as any
+      ).collect_product.findFirst({
+        where: { user_id: userId, product_id: resolvedProductId },
+      });
+      if (!existingByProduct) {
+        throw new NotFoundException("收藏不存在");
+      }
+      collectIdToDelete = existingByProduct.collect_id;
+    }
+
+    // 再次校验（防止传入他人收藏ID）
     const existingCollect = await (
       this.databaseService as any
     ).collect_product.findFirst({
-      where: {
-        collect_id: id,
-        user_id: userId,
-      },
+      where: { collect_id: collectIdToDelete, user_id: userId },
     });
-
     if (!existingCollect) {
       throw new NotFoundException("收藏不存在");
     }
 
-    // 删除收藏
     await (this.databaseService as any).collect_product.delete({
-      where: { collect_id: id },
+      where: { collect_id: collectIdToDelete },
     });
 
     return {
