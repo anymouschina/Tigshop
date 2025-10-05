@@ -28,7 +28,8 @@ export class UserWithdrawApplyApiCompatController {
   @ApiOperation({ summary: "提现账号列表（兼容）" })
   async list(@Request() req, @Query() query: any) {
     const userId = req.user.userId || req.user.user_id || req.user.sub;
-    const accountType = Number(query.account_type || 1);
+    // 兼容前端可能使用的驼峰 accountType 参数
+    const accountType = Number(query.account_type ?? query.accountType ?? 1);
     const rows = await (this.prisma as any).user_withdraw_account.findMany({
       where: { user_id: Number(userId), account_type: accountType },
       orderBy: { account_id: "desc" },
