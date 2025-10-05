@@ -181,113 +181,75 @@ export class AdminUserWithdrawApplyCompatController {
   async update(@Body() body: any) {
     const id = Number(body.id);
     if (!id) return { code: 1, message: "缺少 id", data: null };
-    // status 语义：0待处理 1已通过(审核通过/冻结) 2已拒绝 3处理中 4已完成(打款成功扣余额) 5已失败
+    // 与 PHP 版对齐：状态仅使用 0(待处理) 1(处理成功/完成) 2(拒绝)
     const targetStatus = body.status !== undefined ? Number(body.status) : undefined;
+    if (targetStatus === undefined || ![0,1,2].includes(targetStatus)) {
+      return { code: 1, message: "status 不合法(允许 0|1|2)", data: null };
+    }
     const prisma: any = (this as any).userWithdrawApplyService.prisma;
     const apply = await prisma.user_withdraw_apply.findUnique({ where: { id } });
     if (!apply) return { code: 1, message: "记录不存在", data: null };
+    if (apply.status) { // 已完成(布尔 true) 不允许再次修改
+      return { code: 1, message: "该笔提现申请已完成，不能修改", data: null };
+    }
     const user = apply.user_id ? await prisma.user.findUnique({ where: { user_id: apply.user_id } }) : null;
     if (!user) return { code: 1, message: "用户不存在", data: null };
-
-    // 解析原始 account_data 及 rawStatus
-    let accountDataRaw: any = {};
-    try { accountDataRaw = apply.account_data ? JSON.parse(apply.account_data) : {}; } catch {}
-    const prevRawStatus: number = Number(accountDataRaw.rawStatus ?? (apply.status ? 4 : 0));
-
-    // 不允许重复完成或回退到已完成前状态（简单保护）
-    if (prevRawStatus === 4 && targetStatus && targetStatus !== 4) {
-      return { code: 1, message: "已完成记录禁止回退", data: null };
-    }
-    if (targetStatus === undefined) {
-      return { code: 1, message: "缺少 status", data: null };
-    }
 
     const now = Math.floor(Date.now() / 1000);
     const amountNum = Number(apply.amount);
 
-    // 基础更新数据
-    const updateData: any = {};
-    let needBalanceChange = false;
-    let newBalance = Number(user.balance);
-    let newFrozen = Number(user.frozen_balance || 0);
+    // 读取 account_data 中冻结标记
+    let accountDataRaw: any = {}; try { accountDataRaw = apply.account_data ? JSON.parse(apply.account_data) : {}; } catch {}
+    const freezeApplied = !!accountDataRaw.freezeApplied; // 在创建阶段应该已经冻结、扣减余额
 
-    // 规则：
-    //  - 申请创建后（0）审核通过到1：冻结余额 (扣减可用 -> 增加冻结) 若尚未冻结
-    //  - 拒绝(2)：若之前冻结过则解冻
-    //  - 处理中(3)：保持冻结状态不变
-    //  - 完成(4)：从冻结扣除并减少冻结余额
-    //  - 失败(5)：解冻冻结余额
-    // 因为 schema 无单独字段区分是否已冻结，这里用 account_data.freezeApplied 标记
-    const freezeApplied = !!accountDataRaw.freezeApplied;
-    if (targetStatus === 1 && !freezeApplied) {
-      if (amountNum > Number(user.balance)) {
-        return { code: 1, message: "余额不足，无法审核通过", data: null };
-      }
-      // 扣可用，增冻结
-      newBalance = Number(user.balance) - amountNum;
-      newFrozen = Number(user.frozen_balance || 0) + amountNum;
-      accountDataRaw.freezeApplied = true;
-      needBalanceChange = true;
-    } else if (targetStatus === 2) { // 拒绝
-      if (freezeApplied) {
-        newBalance = Number(user.balance) + amountNum; // 退回可用
-        newFrozen = Number(user.frozen_balance || 0) - amountNum;
-        accountDataRaw.freezeApplied = false;
-        needBalanceChange = true;
-      }
-    } else if (targetStatus === 4) { // 完成
-      if (!freezeApplied) {
-        // 若未冻结直接完成，需先检查可用余额
-        if (amountNum > Number(user.balance)) {
-          return { code: 1, message: "余额不足，无法完成提现", data: null };
-        }
-        newBalance = Number(user.balance) - amountNum;
-        // 冻结不动（未冻结流程）
-        needBalanceChange = true;
-      } else {
-        // 已冻结 -> 扣冻结
-        newFrozen = Number(user.frozen_balance || 0) - amountNum;
-        // 可用不变
-        needBalanceChange = true;
-        accountDataRaw.freezeApplied = false; // 冻结结束
-      }
+    // 余额操作策略：
+    //  - status=1 (完成)：扣减冻结 (decFrozenBalance)；
+    //  - status=2 (拒绝)：返还余额 (incBalance) + 扣减冻结 (decFrozenBalance)；
+    // 创建时已做过 incFrozenBalance + decBalance（见 PHP updateUserWithdrawApplyPc 对齐逻辑）
+
+    const updateData: any = { postscript: body.postscript ?? apply.postscript };
+    if (targetStatus === 1) {
       updateData.finished_time = now;
-    } else if (targetStatus === 5) { // 失败 -> 解冻回可用
-      if (freezeApplied) {
-        newBalance = Number(user.balance) + amountNum;
-        newFrozen = Number(user.frozen_balance || 0) - amountNum;
-        accountDataRaw.freezeApplied = false;
-        needBalanceChange = true;
-      }
+      updateData.status = true; // 标记完成
+    } else if (targetStatus === 2) {
+      updateData.status = false; // 拒绝仍为未完成
+    } else {
+      updateData.status = false;
     }
-
-    // 写入原始状态码
     accountDataRaw.rawStatus = targetStatus;
     updateData.account_data = JSON.stringify(accountDataRaw);
-    updateData.postscript = body.postscript ?? apply.postscript;
-    updateData.status = targetStatus === 4 ? true : false; // 仅完成为 true
 
     const updated = await prisma.$transaction(async (tx: any) => {
-      // 更新提现申请
+      // 更新主记录
       const upd = await tx.user_withdraw_apply.update({ where: { id }, data: updateData });
-      // 余额处理
-      if (needBalanceChange) {
-        await tx.user.update({
-          where: { user_id: user.user_id },
-          data: { balance: newBalance, frozen_balance: newFrozen },
-        });
-        // 写入 user_balance_log
+      // 余额相关
+      if (freezeApplied) {
+        if (targetStatus === 1) {
+          // 完成：减冻结
+          await tx.user.update({ where: { user_id: user.user_id }, data: { frozen_balance: (Number(user.frozen_balance || 0) - amountNum) } });
+        } else if (targetStatus === 2) {
+          // 拒绝：返还余额 & 减冻结
+            await tx.user.update({ where: { user_id: user.user_id }, data: {
+              balance: Number(user.balance) + amountNum,
+              frozen_balance: Number(user.frozen_balance || 0) - amountNum,
+            }});
+        }
+      } else if (targetStatus === 2) {
+        // 如果未标记冻结仍拒绝，无需资金操作
+      }
+      // 写余额日志（简单）
+      if (targetStatus === 1 || targetStatus === 2) {
         await tx.user_balance_log.create({
           data: {
             user_id: user.user_id,
-            balance: user.balance, // 旧可用
+            balance: user.balance,
             frozen_balance: user.frozen_balance || 0,
-            new_balance: newBalance,
-            new_frozen_balance: newFrozen,
+            new_balance: targetStatus === 2 ? (Number(user.balance) + amountNum) : user.balance,
+            new_frozen_balance: targetStatus === 1 || targetStatus === 2 ? (Number(user.frozen_balance || 0) - amountNum) : user.frozen_balance || 0,
             change_time: now,
-            change_desc: `提现状态变更:${prevRawStatus}->${targetStatus} 金额:${amountNum.toFixed(2)}`,
-            change_type: 0, // 0: 系统
-          },
+            change_desc: targetStatus === 1 ? `提现完成 扣减冻结 ${amountNum.toFixed(2)}` : `提现拒绝 返还余额 ${amountNum.toFixed(2)}`,
+            change_type: 0,
+          }
         });
       }
       return upd;
@@ -299,15 +261,8 @@ export class AdminUserWithdrawApplyCompatController {
       const parsed = updated.account_data ? JSON.parse(updated.account_data) : {};
       rawStatus = Number(parsed.rawStatus);
     } catch {}
-    const actualStatusCode = rawStatus !== undefined && !isNaN(rawStatus) ? rawStatus : (updated.status ? 4 : 0);
-    const statusTypeMap: Record<number, string> = {
-      0: "待处理",
-      1: "已通过",
-      2: "已拒绝",
-      3: "处理中",
-      4: "已完成",
-      5: "已失败",
-    };
+    const actualStatusCode = rawStatus !== undefined && !isNaN(rawStatus) ? rawStatus : (updated.status ? 1 : 0);
+    const statusTypeMap: Record<number, string> = { 0: "待处理", 1: "已完成", 2: "已拒绝" };
     const mapTime = (sec?: number) => {
       const s = Number(sec || 0);
       if (!s) return null;
@@ -335,8 +290,8 @@ export class AdminUserWithdrawApplyCompatController {
       addTime: mapTime(updated.add_time),
       finishedTime: mapTime(updated.finished_time),
       postscript: updated.postscript || "",
-      status: updated.status ? 1 : 0,
-      statusType: statusTypeMap[actualStatusCode] || statusTypeMap[updated.status ? 4 : 0],
+  status: actualStatusCode, // 与 PHP 输出保持：0/1/2
+  statusType: statusTypeMap[actualStatusCode] || "待处理",
       accountData,
     };
     return { code: 0, message: "success", data: formatted };

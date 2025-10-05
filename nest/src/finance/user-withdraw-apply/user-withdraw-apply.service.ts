@@ -143,16 +143,80 @@ export class UserWithdrawApplyService {
     } as any;
     originAccount.rawStatus = rawStatus; // 记录原始状态码
 
-    const apply = await this.prisma.user_withdraw_apply.create({
-      data: {
-        user_id: createDto.userId,
-        amount: createDto.amount,
-        postscript: createDto.postscript || "",
-        account_data: JSON.stringify(originAccount),
-        status: completed ? true : false,
-        add_time: Math.floor(Date.now() / 1000),
-        finished_time: completed ? Math.floor(Date.now() / 1000) : undefined,
-      },
+    // 读取用户余额，校验
+    const userForBalance = await this.prisma.user.findUnique({ where: { user_id: createDto.userId } });
+    if (!userForBalance) throw new BadRequestException("用户不存在");
+    if (createDto.amount > Number(userForBalance.balance)) {
+      throw new BadRequestException("提现金额大于账户的可用余额");
+    }
+
+    // 冻结与扣减逻辑：创建时即冻结 + 扣可用余额；记录 freezeApplied 标志
+  // 规范账户字段命名，兼容传入的多种 key
+  originAccount.accountName = originAccount.accountName || originAccount.account_name || originAccount.name || null;
+  originAccount.accountNo = originAccount.accountNo || originAccount.account_no || originAccount.account || null;
+  originAccount.accountType = Number(originAccount.accountType ?? originAccount.account_type ?? originAccount.type ?? 0) || 0;
+  originAccount.bankName = originAccount.bankName || originAccount.bank_name || originAccount.bank || null;
+  originAccount.identity = originAccount.identity || null;
+  originAccount.freezeApplied = true;
+
+    const now = Math.floor(Date.now() / 1000);
+    const apply = await this.prisma.$transaction(async (tx) => {
+      const oldBalance = Number(userForBalance.balance);
+      const oldFrozen = Number(userForBalance.frozen_balance || 0);
+      const amount = createDto.amount;
+      const newBalance = oldBalance - amount;
+      const newFrozen = oldFrozen + amount;
+
+      // 先增加冻结（模拟 incFrozenBalance）
+      await tx.user.update({
+        where: { user_id: createDto.userId },
+        data: { frozen_balance: newFrozen },
+      });
+      await tx.user_balance_log.create({
+        data: {
+          user_id: createDto.userId,
+          balance: oldBalance,
+          frozen_balance: oldFrozen,
+          new_balance: oldBalance, // 可用未动
+            new_frozen_balance: newFrozen,
+          change_time: now,
+          change_desc: `提现冻结余额 ${amount.toFixed(2)}`,
+          change_type: 0,
+        },
+      });
+
+      // 再扣除可用（模拟 decBalance）
+      await tx.user.update({
+        where: { user_id: createDto.userId },
+        data: { balance: newBalance },
+      });
+      await tx.user_balance_log.create({
+        data: {
+          user_id: createDto.userId,
+          balance: oldBalance,
+          frozen_balance: newFrozen, // 已冻结后的值
+          new_balance: newBalance,
+          new_frozen_balance: newFrozen,
+          change_time: now,
+          change_desc: `提现扣除余额 ${amount.toFixed(2)}`,
+          change_type: 0,
+        },
+      });
+
+      const created = await tx.user_withdraw_apply.create({
+        data: {
+          user_id: createDto.userId,
+          amount: amount,
+          postscript: createDto.postscript || "",
+          account_data: JSON.stringify(originAccount),
+          status: completed ? true : false,
+          add_time: now,
+          finished_time: completed ? now : undefined,
+        },
+      });
+
+      // TODO: 管理端消息通知（AdminMsgService）如后续实现消息模块，可在此处发布
+      return created;
     });
 
     const user = apply.user_id
