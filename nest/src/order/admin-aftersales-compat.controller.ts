@@ -4,6 +4,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminJwtAuthGuard } from 'src/auth/guards/admin-jwt-auth.guard';
 import { AuthorityGuard } from 'src/auth/guards/authority.guard';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { RefundApplyService } from 'src/finance/refund-apply/refund-apply.service';
+import { PayService } from './pay.service';
 import { Authorities } from 'src/auth/decorators/authority.decorator';
 
 // 状态名称与类型名称映射（依据用户端实现 / 参考给出的示例）
@@ -35,7 +37,11 @@ function formatTime(ts?: any) {
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class AdminAftersalesCompatController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly refundApplyService: RefundApplyService,
+    private readonly payService: PayService,
+  ) {}
 
   /**
    * GET /adminapi/order/aftersales/list
@@ -323,6 +329,70 @@ export class AdminAftersalesCompatController {
     }
 
     const updated = await this.prisma.aftersales.update({ where: { aftersale_id: id }, data });
+
+    // 若本次更新包含退款金额且状态进入已完成(6)并且没有对应 refund_apply，则自动生成退款申请并标记完成
+    try {
+      const finalStatus = data.status !== undefined ? data.status : record.status;
+      if (finalStatus === 6 && (data.refund_amount !== undefined || record.refund_amount)) {
+        const refundAmount = Number(data.refund_amount ?? record.refund_amount ?? 0);
+        if (refundAmount > 0) {
+          // 检查是否已有 refund_apply
+          const existed = await this.prisma.refund_apply.findFirst({ where: { aftersale_id: id } });
+          if (!existed) {
+            await this.refundApplyService.create({
+              order_id: Number(record.order_id || 0),
+              user_id: Number(record.user_id || 0),
+              aftersale_id: id,
+              refund_type: Number(record.aftersale_type || 0),
+              refund_amount: refundAmount,
+              refund_note: '售后单完成自动退款',
+              status: 1, // 审核通过
+              refund_balance: refundAmount,
+              is_online: 1,
+            } as any);
+            // 记录日志
+            await this.prisma.aftersales_log.create({
+              data: {
+                aftersale_id: id,
+                log_info: `系统生成退款申请，金额 ${refundAmount}`,
+                add_time: Math.floor(Date.now()/1000),
+                admin_name: '',
+                refund_money: refundAmount,
+                refund_type: 0,
+                refund_desc: '系统自动创建 refund_apply',
+                user_name: '',
+                return_pic: null,
+              }
+            });
+          }
+          // 微信支付订单自动发起退款
+          const order = await this.prisma.order.findUnique({ where: { order_id: Number(record.order_id) } });
+          if (order && order.pay_type_id === 1 && order.pay_status === 1) {
+            try {
+              await this.payService.requestWechatRefund(order.order_id, refundAmount);
+              // 可记录退款结果日志
+            } catch (e) {
+              // 记录异常日志
+              await this.prisma.aftersales_log.create({
+                data: {
+                  aftersale_id: id,
+                  log_info: `[微信退款] 失败: ${e?.message}`,
+                  add_time: Math.floor(Date.now()/1000),
+                  admin_name: '',
+                  refund_money: refundAmount,
+                  refund_type: 0,
+                  refund_desc: '微信退款失败',
+                  user_name: '',
+                  return_pic: null,
+                }
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // 静默失败，不影响主流程
+    }
 
     // 写日志（若有变更）
     if (logInfoParts.length) {

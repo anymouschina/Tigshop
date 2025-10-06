@@ -764,8 +764,47 @@ export class PayService {
    * 处理微信退款回调
    */
   private async handleWechatRefundNotify(data: any): Promise<any> {
-    // 模拟微信退款回调处理
+    // TODO: 可根据微信回调内容更新退款状态
     return { code: "SUCCESS", message: "OK" };
+  }
+
+  /**
+   * 主动发起微信退款
+   * @param orderId 订单ID
+   * @param refundAmount 退款金额（单位：元）
+   * @param refundSn 退款单号（可选）
+   * @returns 微信退款结果
+   */
+  async requestWechatRefund(orderId: number, refundAmount: number, refundSn?: string): Promise<any> {
+    // 查询订单
+    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    if (!order) throw new HttpException("订单不存在", HttpStatus.NOT_FOUND);
+    if (order.pay_status !== 1) throw new HttpException("订单未支付，无法退款", HttpStatus.BAD_REQUEST);
+    if (order.pay_type_id !== 1) throw new HttpException("非微信支付订单，无法微信退款", HttpStatus.BAD_REQUEST);
+    if (!order.transaction_id) throw new HttpException("缺少微信支付交易号，无法退款", HttpStatus.BAD_REQUEST);
+
+    // 生成退款单号
+    const outRefundNo = refundSn || `R${order.order_sn}_${Date.now()}`;
+    // 金额单位转换：元转分
+    const totalFen = Math.round(Number(order.paid_amount) * 100);
+    const refundFen = Math.round(Number(refundAmount) * 100);
+
+    // 调用微信支付V3退款接口
+    try {
+      const result = await this.wechatPayV3.refund({
+        outTradeNo: order.order_sn,
+        transactionId: order.transaction_id,
+        outRefundNo,
+        total: totalFen,
+        refund: refundFen,
+        reason: "售后退款",
+      });
+      this.logger.log(`[requestWechatRefund] 订单${order.order_sn} 退款${refundAmount}元，微信返回: ${JSON.stringify(result)}`);
+      return result;
+    } catch (e: any) {
+      this.logger.error(`[requestWechatRefund] 订单${order.order_sn} 退款失败: ${e?.message}`);
+      throw new HttpException(`微信退款失败: ${e?.message || e}`, HttpStatus.BAD_GATEWAY);
+    }
   }
 
   /**

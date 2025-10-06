@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException, Inject, forwardRef } from "@nestjs/common";
+import { PayService } from "./pay.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CartService } from "../cart/cart.service";
 
@@ -21,6 +22,7 @@ export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cartService: CartService,
+    @Inject(forwardRef(() => PayService)) private readonly payService: PayService,
   ) {}
 
   /**
@@ -450,9 +452,10 @@ export class OrderService {
     });
     if (!rawOrder) throw new NotFoundException("订单不存在");
 
-    // 仅允许待付款状态（order_status=0 且 pay_status=0）的订单取消
-    if (Number(rawOrder.order_status) !== 0 || Number(rawOrder.pay_status) !== 0) {
-      throw new BadRequestException("只有待付款的订单才能取消");
+    // 允许待付款和待发货订单取消
+    const canCancel = [0, 1].includes(Number(rawOrder.order_status));
+    if (!canCancel) {
+      throw new BadRequestException("只有待付款或待发货的订单才能取消");
     }
 
     const items = await this.prisma.order_item.findMany({ where: { order_id: Number(orderId) } });
@@ -469,9 +472,7 @@ export class OrderService {
         const isGift = Number(it.is_gift || 0) === 1;
 
         if (isGift) {
-          // 赠品按商品维度恢复
           if (productId > 0) {
-            // product 表使用复合主键，不能仅用 product_id 调用 findUnique，这里改为 findFirst
             const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
             if (prod) {
               const oldNum = Number(prod.product_stock || 0);
@@ -484,7 +485,6 @@ export class OrderService {
                   number: quantity,
                   add_time: now,
                   old_number: oldNum,
-                  // type: true 表示入库/增加
                   type: true as any,
                   change_number: quantity,
                   desc: "取消订单恢复库存",
@@ -497,7 +497,6 @@ export class OrderService {
         }
 
         if (skuId > 0) {
-          // 恢复 SKU 库存，同时恢复商品总库存
           const sku = await tx.product_sku.findUnique({ where: { sku_id: skuId }, select: { sku_stock: true, product_id: true } });
           if (sku) {
             const oldSku = Number(sku.sku_stock || 0);
@@ -506,7 +505,6 @@ export class OrderService {
 
             const pId = Number(sku.product_id || productId || 0);
             if (pId > 0) {
-              // 复合主键限制：使用 findFirst 而不是 findUnique
               const prod = await tx.product.findFirst({ where: { product_id: pId }, select: { product_stock: true } });
               if (prod) {
                 const oldProd = Number(prod.product_stock || 0);
@@ -529,8 +527,6 @@ export class OrderService {
             }
           }
         } else if (productId > 0) {
-          // 无规格商品直接恢复商品总库存
-          // 复合主键限制：使用 findFirst 而不是 findUnique
           const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
           if (prod) {
             const oldNum = Number(prod.product_stock || 0);
@@ -558,6 +554,16 @@ export class OrderService {
         where: { order_id: Number(orderId) },
         data: { order_status: 3 }, // 取消 -> DB:3
       });
+
+      // 微信支付订单自动退款
+      if (rawOrder.pay_type_id === 1 && rawOrder.pay_status === 1 && Number(rawOrder.paid_amount) > 0) {
+        try {
+          await this.payService.requestWechatRefund(rawOrder.order_id, Number(rawOrder.paid_amount));
+          // 可记录退款结果日志
+        } catch (e) {
+          // 可记录异常日志
+        }
+      }
     });
 
     // 返回最新详情
