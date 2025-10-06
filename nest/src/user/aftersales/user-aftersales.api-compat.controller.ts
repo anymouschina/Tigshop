@@ -529,8 +529,26 @@ export class UserAftersalesApiCompatController {
   @Get("detailLog")
   @ApiOperation({ summary: "售后日志（兼容）" })
   async detailLog(@Query("id") id: number) {
-    // 占位：实际应查询 refund_log 表，这里先返回空列表
-    return { code: 200, message: "OK", data: [] };
+    const aftersaleId = Number(id);
+    if (!aftersaleId) {
+      return { code: 200, message: "OK", data: [] };
+    }
+    const logs = await this.prisma.aftersales_log.findMany({ where: { aftersale_id: aftersaleId }, orderBy: { log_id: 'asc' } });
+    const data = logs.map(l => ({
+      logId: l.log_id,
+      adminName: l.admin_name || '',
+      aftersalesId: l.aftersale_id || null,
+      returnPic: l.return_pic || null,
+      logInfo: l.log_info,
+      refundDesc: l.refund_desc,
+      refundMoney: Number(l.refund_money || 0),
+      refundType: l.refund_type,
+      userName: l.user_name || '',
+      addTime: this.formatTime(l.add_time),
+      shopId: 0,
+      vendorId: 0,
+    }));
+    return { code: 200, message: "OK", data };
   }
 
   // 对齐 PHP：POST /api/user/aftersales/feedback

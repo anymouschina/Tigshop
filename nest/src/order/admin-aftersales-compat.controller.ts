@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminJwtAuthGuard } from 'src/auth/guards/admin-jwt-auth.guard';
 import { AuthorityGuard } from 'src/auth/guards/authority.guard';
@@ -257,5 +257,42 @@ export class AdminAftersalesCompatController {
     };
 
     return { code: 0, message: 'success', data };
+  }
+
+  /**
+   * POST /adminapi/order/aftersales/record
+   * 兼容：新增售后日志（aftersales_log）与 PHP 行为对齐。
+   * 入参示例：{ aftersaleId, logInfo, returnPic:[] }
+   * 返回：{ code,message,data:true }
+   */
+  @Post('record')
+  @ApiOperation({ summary: '新增售后日志（兼容）' })
+  @Authorities('orderAftersalesManage')
+  async addRecord(@Body() body: any) {
+    const aftersaleId = Number(body.aftersaleId || body.id);
+    if (!aftersaleId) throw new BadRequestException('aftersaleId 必填');
+    const logInfo = (body.logInfo || body.log_info || '').toString();
+    const returnPicInput = body.returnPic || body.return_pic || [];
+    const returnPic = Array.isArray(returnPicInput) ? (returnPicInput.length ? JSON.stringify(returnPicInput) : null) : (typeof returnPicInput === 'string' ? returnPicInput : null);
+
+    const exists = await this.prisma.aftersales.findUnique({ where: { aftersale_id: aftersaleId } });
+    if (!exists) return { code: 1, message: '售后记录不存在', data: null };
+
+    const now = Math.floor(Date.now() / 1000);
+    await this.prisma.aftersales_log.create({
+      data: {
+        aftersale_id: aftersaleId,
+        log_info: logInfo || '操作记录',
+        add_time: now,
+        admin_name: '', // 暂无管理员名称上下文
+        refund_money: 0,
+        refund_type: 0,
+        refund_desc: '',
+        user_name: '',
+        return_pic: returnPic,
+      },
+    });
+
+    return { code: 0, message: 'success', data: true };
   }
 }
