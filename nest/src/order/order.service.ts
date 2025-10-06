@@ -956,22 +956,24 @@ export class OrderService {
   }
 
   private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number, commentStatus?: number) {
-  const isPendingPay = Number(orderStatus) === 0 && Number(payStatus) === 0;
-  // 旧系统里 pay_status=1/2 都表示已支付（2 可能代表已确认），这里统一视为已支付
   const isPaid = Number(payStatus) >= 1;
-  // 只允许 shipping_status>0 时才算已发货，可确认收货
-  const isShipped = Number(shippingStatus) > 0;
-    const isCompleted = Number(orderStatus) === 5;
-    const isCancelled = Number(orderStatus) === 3;
-  const canComment = isCompleted && Number(commentStatus) === 0;
+   const os = Number(orderStatus);
+    const ps = Number(payStatus);
+    const ss = Number(shippingStatus);
+    const isPendingPay = os === 0 && ps === 0; // 待支付
+    const isPaidUnshipped = ps === 1 && ss === 0; // 已支付待发货
+    const isShipped = ss === 1; // 已发货
+    const isCancelled = os === 2; // 已取消
+    const isCompleted = os === 3; // 已完成
     // 售后规则：对齐 admin 端与旧 PHP 行为 —— 只要已支付且未取消即可申请售后（含“待发货”“待收货”“已完成/待评价”阶段）
     const canAftersales = isPaid && !isCancelled;
+    const canComment = isCompleted && Number(commentStatus) === 0;
     return {
       setConfirm: isPendingPay || isPaid,
       toPay: isPendingPay,
       setPaid: isPendingPay,
       setUnpaid: false,
-      cancelOrder: isPendingPay,
+      cancelOrder:  (isPendingPay || isPaidUnshipped) && !isCompleted,
       delOrder: isCancelled,
       deliver: isPaid && !isShipped,
   confirmReceipt: isShipped && !isCompleted && !isCancelled,

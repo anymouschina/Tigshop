@@ -244,7 +244,14 @@ export class AdminOrderCompatService {
       arr.push(it);
       groups.set(k, arr);
     }
-    if (groups.size <= 1) return true; // 不需拆分
+    // 只有分组数大于1才需要拆单，否则不标记 is_store_splited
+    if (groups.size <= 1) {
+      // 单店铺/供应商订单，不需要拆单，不标记 is_store_splited
+      if (order.is_store_splited !== 0) {
+        await this.prisma.order.update({ where: { order_id: orderId }, data: { is_store_splited: 0 } });
+      }
+      return true;
+    }
 
     // 计算各分组小计
     const sum2 = (n: any) => Number(n ?? 0);
