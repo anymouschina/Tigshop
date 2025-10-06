@@ -260,6 +260,93 @@ export class AdminAftersalesCompatController {
   }
 
   /**
+   * POST /adminapi/order/aftersales/update
+   * 更新售后：支持修改 status / refundAmount / reply / returnAddress
+   * 对齐旧 PHP：变更写入对应时间字段，并追加日志
+   * body: { id, status?, refundAmount?, reply?, returnAddress? }
+   */
+  @Post('update')
+  @ApiOperation({ summary: '更新售后（兼容）' })
+  @Authorities('orderAftersalesManage')
+  async update(@Body() body: any) {
+    const id = Number(body.id || body.aftersaleId || body.aftersale_id);
+    if (!id) throw new BadRequestException('id 必填');
+    const record = await this.prisma.aftersales.findUnique({ where: { aftersale_id: id } });
+    if (!record) return { code: 1, message: '记录不存在', data: null };
+
+    const data: any = {};
+    const now = Math.floor(Date.now() / 1000);
+    let logInfoParts: string[] = [];
+
+    if (body.status !== undefined) {
+      const newStatus = Number(body.status);
+      if (newStatus !== record.status) {
+        data.status = newStatus;
+        // 时间字段处理（简化）：
+        // status=1 -> 审核处理中：记录 audit_time
+        // status=5/22 -> 待收货：记录 deal_time（若未记录）
+        // status=6 -> 已完成：记录 final_time
+        // status=7 -> 已取消：记录 final_time
+        if (newStatus === 1) data.audit_time = now;
+        if ([5, 22].includes(newStatus) && !record.deal_time) data.deal_time = now;
+        if ([6, 7].includes(newStatus)) data.final_time = now;
+        logInfoParts.push(`状态 ${record.status} -> ${newStatus}`);
+      }
+    }
+
+    if (body.refundAmount !== undefined || body.refund_amount !== undefined) {
+      const refundAmount = Number(body.refundAmount ?? body.refund_amount);
+      if (!Number.isNaN(refundAmount) && refundAmount !== Number(record.refund_amount)) {
+        data.refund_amount = refundAmount;
+        logInfoParts.push(`退款金额 ${record.refund_amount} -> ${refundAmount}`);
+      }
+    }
+
+    if (body.reply !== undefined) {
+      const reply = body.reply?.toString() || '';
+      if (reply !== record.reply) {
+        data.reply = reply;
+        logInfoParts.push('更新商家回复');
+      }
+    }
+
+    if (body.returnAddress !== undefined || body.return_address !== undefined) {
+      const addr = body.returnAddress ?? body.return_address;
+      if (addr !== record.return_address) {
+        data.return_address = addr || null;
+        logInfoParts.push('更新退货地址');
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      return { code: 0, message: '无变更', data: true };
+    }
+
+    const updated = await this.prisma.aftersales.update({ where: { aftersale_id: id }, data });
+
+    // 写日志（若有变更）
+    if (logInfoParts.length) {
+      try {
+        await this.prisma.aftersales_log.create({
+          data: {
+            aftersale_id: id,
+            log_info: logInfoParts.join('；'),
+            add_time: now,
+            admin_name: '',
+            refund_money: 0,
+            refund_type: 0,
+            refund_desc: logInfoParts.join('；'),
+            user_name: '',
+            return_pic: null,
+          },
+        });
+      } catch {}
+    }
+
+    return { code: 0, message: 'success', data: true };
+  }
+
+  /**
    * POST /adminapi/order/aftersales/record
    * 兼容：新增售后日志（aftersales_log）与 PHP 行为对齐。
    * 入参示例：{ aftersaleId, logInfo, returnPic:[] }
