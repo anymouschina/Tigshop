@@ -98,6 +98,7 @@ import { UserFromExtractMiddleware } from "./common/middleware/user-from-extract
 // 用户评论兼容路由模块（为避免与 product/comment 同名冲突，用别名导入）
 import { CommentModule as UserCommentModule } from './user/comment/comment.module';
 import { UserAccountRechargeApiCompatController } from './finance/user-account-recharge/user-account-recharge.api-compat.controller';
+import { AdminAftersalesCompatController } from './order/admin-aftersales-compat.controller';
 
 @Module({
   imports: [
@@ -195,6 +196,7 @@ import { UserAccountRechargeApiCompatController } from './finance/user-account-r
     AdminAreaCodeCompatController,
   // 用户资金与充值/提现综合记录兼容接口
   UserAccountRechargeApiCompatController,
+    AdminAftersalesCompatController,
     // Front salesman detail
     SalesmanDetailController,
     
