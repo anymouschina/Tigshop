@@ -57,7 +57,7 @@ export class CommonConfigService {
         poweredBy: this.getConfigValue(allConfigs, "poweredBy"),
         categoryDecorateType: this.getConfigValue(
           allConfigs,
-          "categoryDecorateType",
+          "productCategoryDecorateType",
         ),
         canInvoice: this.getConfigBoolean(allConfigs, "canInvoice"),
         invoiceAdded: this.getConfigBoolean(allConfigs, "invoiceAdded"),
@@ -180,7 +180,7 @@ export class CommonConfigService {
         poweredBy: this.getConfigValue(allConfigs, "poweredBy"),
         categoryDecorateType: this.getConfigValue(
           allConfigs,
-          "categoryDecorateType",
+          "productCategoryDecorateType",
         ),
         canInvoice: this.getConfigBoolean(allConfigs, "canInvoice"),
         invoiceAdded: this.getConfigBoolean(allConfigs, "invoiceAdded"),

@@ -743,6 +743,7 @@ export class ConfigService {
     const existingConfig = await this.prisma.config.findFirst({
       where: { biz_code: bizCode },
     });
+    this.logger.debug(`创建新的配置项: ${bizCode} ${value} `, existingConfig);
 
     if (existingConfig) {
       await this.prisma.config.update({
@@ -754,6 +755,7 @@ export class ConfigService {
         },
       });
     } else {
+      this.logger.debug(`创建新的配置项: ${bizCode} ${value}`);
       await this.prisma.config.create({
         data: {
           biz_code: bizCode,
