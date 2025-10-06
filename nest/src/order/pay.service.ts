@@ -793,7 +793,7 @@ export class PayService {
         outRefundNo,
         total: totalFen,
         refund: refundFen,
-        reason: "售后退款",
+        reason: "退款",
       });
     // 调用微信支付V3退款接口
     try {
@@ -801,7 +801,7 @@ export class PayService {
         {
           out_trade_no:  order.order_sn,
           out_refund_no: outRefundNo,
-          reason: '售后退款',
+          reason: '退款',
           amount: {
             refund: refundFen,
             total: totalFen,

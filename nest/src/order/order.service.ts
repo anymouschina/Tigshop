@@ -559,13 +559,7 @@ export class OrderService {
       // 微信支付订单自动退款
       this.logger.debug(`检查订单 ${orderId} 是否需要自动发起微信支付退款`,rawOrder.pay_type_id === 1 && rawOrder.pay_status === 1 && Number(rawOrder.paid_amount) > 0);
       if (rawOrder.pay_type_id === 1 && rawOrder.pay_status === 1 && Number(rawOrder.paid_amount) > 0) {
-        try {
           await this.payService.requestWechatRefund(rawOrder.order_id, Number(rawOrder.paid_amount));
-          // 可记录退款结果日志
-        } catch (e) {
-          // 可记录异常日志
-          this.logger.error(`订单 ${orderId} 自动发起微信支付退款失败: ${e.message || e.toString()}`);
-        }
       }
     });
 

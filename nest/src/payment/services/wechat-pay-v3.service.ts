@@ -321,4 +321,18 @@ export class WechatPayV3Service {
     }
   }
   // 其余接口（如查询、关闭、退款、回调验签等）建议统一通过 wechatpay-node-v3 提供的方法实现
+  async refunds(args){
+    const { appId, mchId, serialNo, notifyUrl, privateKeyPem, publicKeyPem, apiV3Key } = await this.getWechatPaySettings();
+
+    const pay = new Pay({
+      appid: appId,
+      mchid: mchId,
+      // 不显式传 serial_no，交由 SDK 从公钥证书自动推导，避免配置错误导致 SIGN_ERROR
+      publicKey: publicKeyPem ? Buffer.from(publicKeyPem) : undefined,
+      privateKey: Buffer.from(privateKeyPem),
+      key: apiV3Key,
+      userAgent: "tigshop-nest/1.0",
+    } as any);
+    return pay.refunds(args);
+  }
 }
