@@ -271,9 +271,12 @@ export class AdminAftersalesCompatController {
   async addRecord(@Body() body: any) {
     const aftersaleId = Number(body.aftersaleId || body.id);
     if (!aftersaleId) throw new BadRequestException('aftersaleId 必填');
-    const logInfo = (body.logInfo || body.log_info || '').toString();
+    const logInfo = (body.logInfo || body.log_info || body.remark || body.note || body.desc || '').toString();
     const returnPicInput = body.returnPic || body.return_pic || [];
     const returnPic = Array.isArray(returnPicInput) ? (returnPicInput.length ? JSON.stringify(returnPicInput) : null) : (typeof returnPicInput === 'string' ? returnPicInput : null);
+    // refundDesc / desc / refund_desc / remark 兼容
+    let refundDesc = body.refundDesc || body.refund_desc || body.desc || body.remark || '';
+    if (!refundDesc && logInfo) refundDesc = logInfo; // 若未单独提供则回落到 logInfo
 
     const exists = await this.prisma.aftersales.findUnique({ where: { aftersale_id: aftersaleId } });
     if (!exists) return { code: 1, message: '售后记录不存在', data: null };
@@ -287,7 +290,7 @@ export class AdminAftersalesCompatController {
         admin_name: '', // 暂无管理员名称上下文
         refund_money: 0,
         refund_type: 0,
-        refund_desc: '',
+        refund_desc: refundDesc || '',
         user_name: '',
         return_pic: returnPic,
       },

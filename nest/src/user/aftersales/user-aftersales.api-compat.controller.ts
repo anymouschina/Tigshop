@@ -222,6 +222,24 @@ export class UserAftersalesApiCompatController {
         if (aftersaleItemsData.length) {
           await tx.aftersales_item.createMany({ data: aftersaleItemsData });
         }
+        // 创建初始化日志（与旧 PHP 行为对齐）
+        try {
+          const typeName = refund_type == 2 ? '仅退款' : '退货退款';
+          const logInfo = `会员发起了${typeName}: ${refund_reason || ''}`.trim();
+          await tx.aftersales_log.create({
+            data: {
+              aftersale_id: aftersales.aftersale_id,
+              log_info: logInfo,
+              add_time,
+              admin_name: '',
+              refund_money: 0,
+              refund_type: 0,
+              refund_desc: refund_reason || logInfo,
+              user_name: '',
+              return_pic: Array.isArray(body.pics) && body.pics.length ? JSON.stringify(body.pics) : null,
+            }
+          });
+        } catch {}
         return aftersales;
       });
     } catch (e: any) {
