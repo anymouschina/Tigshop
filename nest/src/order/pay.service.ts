@@ -781,17 +781,13 @@ export class PayService {
     if (!order) throw new HttpException("订单不存在", HttpStatus.NOT_FOUND);
     if (order.pay_status !== 1) throw new HttpException("订单未支付，无法退款", HttpStatus.BAD_REQUEST);
     if (order.pay_type_id !== 1) throw new HttpException("非微信支付订单，无法微信退款", HttpStatus.BAD_REQUEST);
-    if (!order.transaction_id) throw new HttpException("缺少微信支付交易号，无法退款", HttpStatus.BAD_REQUEST);
-
+ 
     // 生成退款单号
     const outRefundNo = refundSn || `R${order.order_sn}_${Date.now()}`;
     // 金额单位转换：元转分
     const totalFen = Math.round(Number(order.paid_amount) * 100);
     const refundFen = Math.round(Number(refundAmount) * 100);
-
-    // 调用微信支付V3退款接口
-    try {
-      const result = await this.wechatPayV3.refund({
+    this.logger.log(`[requestWechatRefund] 订单${order.order_sn} 发起退款${refundAmount}元，退款单号${outRefundNo}`,{
         outTradeNo: order.order_sn,
         transactionId: order.transaction_id,
         outRefundNo,
@@ -799,6 +795,19 @@ export class PayService {
         refund: refundFen,
         reason: "售后退款",
       });
+    // 调用微信支付V3退款接口
+    try {
+      const result = await this.wechatPayV3.refunds(
+        {
+          out_trade_no:  order.order_sn,
+          out_refund_no: outRefundNo,
+          reason: '售后退款',
+          amount: {
+            refund: refundFen,
+            total: totalFen,
+            currency: 'CNY',
+          },
+        });
       this.logger.log(`[requestWechatRefund] 订单${order.order_sn} 退款${refundAmount}元，微信返回: ${JSON.stringify(result)}`);
       return result;
     } catch (e: any) {
