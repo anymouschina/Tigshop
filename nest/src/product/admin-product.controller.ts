@@ -438,7 +438,23 @@ export class AdminApiProductController {
   // 商品列表（adminapi）- 映射前端 product/product/list
   @Get("list")
   @ApiOperation({ summary: "获取商品列表（admin）" })
-  async getList(@Query() query: any) {
+  async getList(@Query() query: any, @Req() req: any) {
+    // 如果前端未显式传递 shopId 且 searchShop != 1，则按当前管理员已选择的店铺隔离
+    try {
+      const searchShopFlag = Number(query.searchShop ?? query.search_shop ?? 0) || 0;
+      const explicitShopId = query.shopId ?? query.shop_id;
+      if ((explicitShopId === undefined || explicitShopId === null || explicitShopId === '' ) && searchShopFlag !== 1) {
+        const currentShopId = Number((await this.panel.getUserShopId(req.user?.userId)) || 0) || 0;
+        if (currentShopId > 0) {
+          // 写入统一的 shopId 字段（service 内兼容读取 shopId）
+            query.shopId = currentShopId;
+        }
+      }
+    } catch (e) {
+      // 失败不影响主流程，只记录到控制台（可后续换 logger）
+      // eslint-disable-next-line no-console
+      console.warn('[product.list] attach shopId failed:', e?.message);
+    }
     const result = await this.productService.findAll(query);
 
     // 金额格式化使用统一工具

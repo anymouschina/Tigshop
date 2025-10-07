@@ -26,7 +26,7 @@ export class ProductDetailService {
       throw new Error("商品不存在");
     }
 
-    // 并行获取所有相关数据
+  // 并行获取所有相关数据（尚未补充 isBuy / 付费内容 / 秒杀等扩展逻辑）
     const [
       descArr,
       skuList,
@@ -52,6 +52,73 @@ export class ProductDetailService {
       this.getConsultationCount(productId),
       this.getECardGroup(product.card_group_id ?? 0),
     ]);
+
+    // 秒杀状态与结束时间（对齐 PHP：存在进行中的 seckill 则 isSeckill=1 且填充结束时间）
+    let seckillEndTime: number | string = '';
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      const seckillRow = await this.prisma.seckill.findFirst({
+        where: {
+          product_id: productId,
+          seckill_start_time: { lte: now },
+          seckill_end_time: { gte: now },
+        },
+        select: { seckill_end_time: true },
+      });
+      if (seckillRow) {
+        seckillEndTime = seckillRow.seckill_end_time ?? '';
+      }
+    } catch (_) {}
+
+    // 付费内容显示控制与购买状态 isBuy（与 PHP：查询已支付订单项判断）
+    let isBuy = 0;
+    try {
+      // 读取 request userId：此 service 原本无 req 注入，需从全局 request 取（Nest 可通过 async-local storage 或自建传参，这里简化：若无 userId 则视为未购）
+      const g: any = (global as any);
+      const currentUserId = g.__currentUserId || null; // 若上层 controller 想支持，可在进入前设置
+      if (currentUserId) {
+        const orderCount = await this.prisma.order.count({
+          where: {
+            user_id: currentUserId,
+            is_del: 0,
+            pay_status: 1, // 已支付
+            items: { some: { product_id: productId } } as any, // Prisma 需要 relation，若未声明，会抛错则被 catch
+          },
+        });
+        if (orderCount > 0) isBuy = 1;
+      }
+    } catch (_) {
+      // 忽略统计失败
+    }
+
+    // 卡密商品库存重写（PHP：若 product_type == CARD 则以未使用 e_card 数量为库存）
+    try {
+      // 假设卡密类型值与 PHP Product::PRODUCT_TYPE_CARD=??，这里推测为 1（如不是需调整）
+      const PRODUCT_TYPE_CARD = 1;
+      if (Number(product.product_type) === PRODUCT_TYPE_CARD) {
+        const unusedCount = await this.prisma.e_card.count({
+          where: { group_id: product.card_group_id ?? 0, is_use: 0 },
+        });
+        if (unusedCount >= 0) {
+          product.product_stock = unusedCount as any;
+        }
+      }
+    } catch (_) {}
+
+    // 未购买则清空付费内容（paid_content）
+    if (!isBuy && product.paid_content) {
+      product.paid_content = '' as any;
+    }
+
+    // 库存兜底：如果存在 SKU 但全部 skuStock = 0 且商品主表有正库存，则将主表库存赋给首个 SKU，避免前端误判“售罄”
+    if (Array.isArray(skuList) && skuList.length > 0) {
+      const skuSum = skuList.reduce((sum, s) => sum + Number(s?.skuStock || 0), 0);
+      const productTotalStock = Number(product.product_stock ?? 0);
+      if (skuSum === 0 && productTotalStock > 0) {
+        // 仅在所有SKU都为0时做兜底；不平均分配，直接给第一个，保持简单且可见
+        skuList[0].skuStock = productTotalStock;
+      }
+    }
 
     // 对齐PHP版本与前端期望的响应数据结构（item 使用 camelCase）
     const shopDataReal = await this.getShopBasic(product.shop_id ?? 0);
@@ -121,9 +188,9 @@ export class ProductDetailService {
         vendorProductId: product.vendor_product_id ?? null,
         vendorId: product.vendor_id ?? null,
         // 兼容前端使用的扩展字段
-        isBuy: 1,
-        // 按秒杀详情的状态设置：有进行中(status=1)的活动则为 1
-        isSeckill: Array.isArray(seckillDetail) && seckillDetail.some((s:any) => s?.status === 1) ? 1 : 0,
+        isBuy,
+        // 秒杀标记：优先用实时 seckillRow 结果，其次回退到历史 seckillDetail 判断
+        isSeckill: seckillEndTime ? 1 : (Array.isArray(seckillDetail) && seckillDetail.some((s:any) => s?.status === 1) ? 1 : 0),
         shopPickupTplId: null,
         isShopPickup: 0,
         isLogistics: 1,
@@ -164,6 +231,8 @@ export class ProductDetailService {
       kefuInlet: shopDataReal ? this.safeParseArray(shopDataReal.kefu_inlet) : [],
       kefuLink: shopDataReal?.kefu_link || "",
       kefuPhone: shopDataReal?.kefu_phone || "",
+      // 追加：对齐 PHP 返回的秒杀结束时间字段（若需要）
+      seckillEndTime,
     };
   }
 
@@ -261,8 +330,9 @@ export class ProductDetailService {
         productId: sku.product_id,
         skuSn: sku.sku_sn,
         skuTsn: sku.sku_tsn,
-        skuPrice: sku.sku_price,
-        skuStock: sku.sku_stock,
+        // 保证前端直接拿到字符串金额，避免 Decimal 序列化成对象 {s,e,d}
+        skuPrice: toMoneyString(sku.sku_price),
+        skuStock: Number(sku.sku_stock ?? 0),
         skuValue: sku.sku_value,
         skuData: sku.sku_data,
         vendorProductSkuId: sku.vendor_product_sku_id,

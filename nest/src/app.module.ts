@@ -99,6 +99,7 @@ import { UserFromExtractMiddleware } from "./common/middleware/user-from-extract
 import { CommentModule as UserCommentModule } from './user/comment/comment.module';
 import { UserAccountRechargeApiCompatController } from './finance/user-account-recharge/user-account-recharge.api-compat.controller';
 import { AdminAftersalesCompatController } from './order/admin-aftersales-compat.controller';
+import { ShopController } from './shop/shop.controller';
 
 @Module({
   imports: [
@@ -199,6 +200,8 @@ import { AdminAftersalesCompatController } from './order/admin-aftersales-compat
     AdminAftersalesCompatController,
     // Front salesman detail
     SalesmanDetailController,
+  // Public shop detail controller (user side)
+  ShopController,
     
     
     
