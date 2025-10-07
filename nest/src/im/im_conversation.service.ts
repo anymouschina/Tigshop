@@ -99,8 +99,16 @@ export class ImConversationService {
     const servantMap: Record<number, any> = {};
     for (const s of servants as any[]) servantMap[s.admin_id] = s;
 
-    const fmt = (sec?: number | null) =>
-      sec ? new Date((sec as number) * 1000).toISOString().replace('T', ' ').substring(0, 19) : null;
+    // 时间格式化：默认直接使用本地时间，不做额外偏移；仅当设置 TIMEZONE_OFFSET_MINUTES 时才应用手动偏移
+    const fmt = (sec?: number | null) => {
+      if (!sec) return null;
+      const baseTs = (sec as number) * 1000;
+      const offsetMinutes = process.env.TIMEZONE_OFFSET_MINUTES ? Number(process.env.TIMEZONE_OFFSET_MINUTES) : 0;
+      const ts = baseTs + offsetMinutes * 60 * 1000;
+      const d = new Date(ts);
+      const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
     const typeText = (t?: string | null) => {
       const map: Record<string, string> = { text: '文本', image: '图片', custom: '自定义', file: '文件', video: '视频' };
       return t && map[t] ? map[t] : '文本';
@@ -321,8 +329,15 @@ export class ImConversationService {
       },
     });
 
-    const fmt = (sec?: number | null) =>
-      sec ? new Date((sec as number) * 1000).toISOString().replace('T', ' ').substring(0, 19) : null;
+    const fmt = (sec?: number | null) => {
+      if (!sec) return null;
+      const baseTs = (sec as number) * 1000;
+      const offsetMinutes = process.env.TIMEZONE_OFFSET_MINUTES ? Number(process.env.TIMEZONE_OFFSET_MINUTES) : 0;
+      const ts = baseTs + offsetMinutes * 60 * 1000;
+      const d = new Date(ts);
+      const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
     const typeText = (t?: string | null) => {
       const map: Record<string, string> = { text: '文本', image: '图片', custom: '自定义', file: '文件', video: '视频' };
       return t && map[t] ? map[t] : '文本';
@@ -463,7 +478,15 @@ export class ImConversationService {
       if (u.conversation_id) unreadMap[u.conversation_id] = (unreadMap[u.conversation_id] || 0) + 1;
     }
 
-    const fmtTime = (sec?: number | null) => (sec ? new Date(sec * 1000).toISOString().replace('T', ' ').substring(0, 19) : null);
+    const fmtTime = (sec?: number | null) => {
+      if (!sec) return null;
+      const baseTs = sec * 1000;
+      const offsetMinutes = process.env.TIMEZONE_OFFSET_MINUTES ? Number(process.env.TIMEZONE_OFFSET_MINUTES) : 0;
+      const ts = baseTs + offsetMinutes * 60 * 1000;
+      const d = new Date(ts);
+      const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
     const typeText = (t?: string | null) => {
       const map: Record<string, string> = { text: '文本', image: '图片', custom: '自定义', file: '文件', video: '视频' };
       return t && map[t] ? map[t] : '文本';
