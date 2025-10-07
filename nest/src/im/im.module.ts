@@ -6,10 +6,11 @@ import { ImServantService } from './im_servant.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ImConfigController } from './im_config.controller';
 import { ImConfigService } from './im_config.service';
+import { ImGateway } from './im.gateway';
 
 @Module({
   controllers: [ImConversationController, ImServantController, ImConfigController],
-  providers: [ImConversationService, ImServantService, ImConfigService, PrismaService],
+  providers: [ImConversationService, ImServantService, ImConfigService, PrismaService, ImGateway],
   exports: [ImConversationService, ImServantService, ImConfigService],
 })
 export class ImModule {}

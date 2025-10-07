@@ -7,6 +7,7 @@ import { Transport, MicroserviceOptions } from "@nestjs/microservices";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import * as path from "path";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
+import { WsAdapter } from "./common/ws/ws.adapter";
 
 async function bootstrap() {
   // 统一处理 BigInt 的 JSON 序列化（例如 MySQL COUNT(*)/$queryRaw 返回 BigInt）
@@ -24,6 +25,9 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ["error", "warn", "log", "debug", "verbose"],
   });
+
+  // 注册自定义 ws 适配器（使用 ws 库，而不是 socket.io）
+  app.useWebSocketAdapter(new WsAdapter(app));
 
   // 配置静态资源服务
   const uploadsPath = path.join(process.cwd(), "uploads");
