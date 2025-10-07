@@ -47,6 +47,7 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
 import { StatisticsModule } from "./statistics/statistics.module";
 import { AppController } from "./app.contronller";
+import { ShopContextMiddleware } from './common/shop-context/shop-context.middleware';
 import { AdminUserCompatController } from "./admin/authority/admin-user-compat.controller";
 import { DecorateDiscreteCompatController } from "./decorate/decorate-discrete-compat.controller";
 import { MerchantApplyCompatController } from "./merchant/merchant-apply-compat.controller";
@@ -230,6 +231,7 @@ export class AppModule implements NestModule {
         UserFromExtractMiddleware,
         CaseTransformMiddleware, // 先做一次统一 camelCase
         DualCaseEnrichMiddleware, // 再补齐 snake_case 与 camelCase 双份键
+        ShopContextMiddleware, // 捕获 X-Shop-Id 并建立 AsyncLocalStorage 上下文
       )
       .forRoutes('*');
   }
