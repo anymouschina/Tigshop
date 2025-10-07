@@ -23,7 +23,14 @@ export class AdminOrderCompatController {
   @Get("list")
   @Authorities("order")
   @ApiOperation({ summary: "订单列表（admin 兼容）" })
-  async list(@Query() query: any) {
+  async list(@Query() query: any, @Req() req: any) {
+    // 解析 header X-Shop-Id（优先），兼容 query 中的 shopId / shop_id
+    const headerShopIdRaw = req.headers["x-shop-id"] ?? req.headers["x-shopid"];
+    const resolvedShopId = Number(headerShopIdRaw ?? query.shopId ?? query.shop_id);
+    if (Number.isFinite(resolvedShopId) && resolvedShopId > 0) {
+      // 将解析好的 shopId 写回 query，供 service 使用
+      query.shopId = resolvedShopId;
+    }
     const data = await this.svc.list(query);
     return { code: 0, message: "success", data };
   }
@@ -32,8 +39,8 @@ export class AdminOrderCompatController {
   @Get("order/list")
   @Authorities("order")
   @ApiOperation({ summary: "订单列表（admin 兼容 - PHP 路径别名）" })
-  async listAlias(@Query() query: any) {
-    return this.list(query);
+  async listAlias(@Query() query: any, @Req() req: any) {
+    return this.list(query, req);
   }
 
   @Get("detail")

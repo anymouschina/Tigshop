@@ -72,6 +72,11 @@ export class LogisticsCompanyService {
       where.logistics_id = filter.logistics_id;
     }
 
+    // 店铺隔离：如果传入 shop_id（>0）则按店铺过滤；否则平台可看到全部
+    if (filter.shop_id && Number(filter.shop_id) > 0) {
+      where.shop_id = Number(filter.shop_id);
+    }
+
     return where;
   }
 

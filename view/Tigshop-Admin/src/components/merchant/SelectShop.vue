@@ -57,6 +57,10 @@ const toIndex = async (e:any) => {
     if(e.type == 'vendor'){
         localStorage.setItem("vendorId", String(e.id));
     }
+    if(e.type == 'admin'){
+        localStorage.removeItem("shopId");
+        localStorage.removeItem("vendorId");
+    }
     await _chooseShop({ id: e.id, adminType: localStorage.getItem("adminType") });
     const userStore = useUserStore() as any;
     const configStore = useConfigStore();
