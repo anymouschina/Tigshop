@@ -614,6 +614,9 @@ export class CartService {
    * @returns 更新后的购物车
    */
   async removeItem(userId: number, cartId: number) {
+    if (!Number.isInteger(cartId) || cartId <= 0) {
+      throw new BadRequestException("cartId 无效");
+    }
     const cartItem = await this.prisma.cart.findUnique({
       where: { cart_id: cartId },
     });

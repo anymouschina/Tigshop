@@ -81,6 +81,11 @@ export class AdminApiProductController {
       product_desc,
       product_weight: pickNum(body.productWeight ?? body.product_weight ?? 0, 0),
       product_stock: pickNum(body.productStock ?? body.product_stock ?? 0, 0),
+      virtual_sales: (() => { // 初始虚拟销量（PHP 接口 virtual_sales/d）
+        const v = Number(body.virtualSales ?? body.virtual_sales ?? 0);
+        if (!Number.isFinite(v) || v < 0) return 0;
+        return Math.floor(v);
+      })(),
       shop_category_id: pickNum(body.shopCategoryId ?? body.shop_category_id ?? 0, 0),
       check_status: pickNum(body.checkStatus ?? body.check_status ?? 1, 1),
       check_reason: pickStr(body.checkReason ?? body.check_reason ?? ""),
@@ -100,9 +105,8 @@ export class AdminApiProductController {
       last_update: Math.floor(Date.now() / 1000),
     };
 
-    // === 业务校验（对齐 PHP 并补充用户提出的“原价不能高于现价”需求）===
-    // 说明：用户反馈语句“原价怎么能高于现价”理解为：market_price(原价) 不允许 > product_price(现价)
-    // 若后续确认应为另一逻辑（例如原价需要 >= 现价），只需调整下面条件即可。
+  // === 业务校验 ===
+  // 仅校验：名称必填、售价 > 0、货号唯一（按店铺）。原价 market_price 不作与售价关系校验。
     if (!data.product_name) {
       return { code: 400, message: "商品名称不能为空", data: null };
     }
@@ -288,6 +292,12 @@ export class AdminApiProductController {
       product_desc: product_desc || undefined,
       product_weight: pickNum(body.productWeight ?? body.product_weight),
       product_stock: pickNum(body.productStock ?? body.product_stock),
+      virtual_sales: (() => { // 更新虚拟销量（仅平台端允许修改，店铺端忽略）
+        if (body.virtualSales === undefined && body.virtual_sales === undefined) return undefined;
+        const v = Number(body.virtualSales ?? body.virtual_sales);
+        if (!Number.isFinite(v) || v < 0) return 0;
+        return Math.floor(v);
+      })(),
       shop_category_id: pickNum(body.shopCategoryId ?? body.shop_category_id),
       check_status: pickNum(body.checkStatus ?? body.check_status),
       check_reason: pickStr(body.checkReason ?? body.check_reason),
@@ -302,14 +312,12 @@ export class AdminApiProductController {
     };
 
     // === 更新校验 ===
-    // 若提交了价格则校验
+  // 若提交了价格则校验（仅限制售价>0，不校验 market_price 与售价关系）
     if (data.product_price !== undefined) {
       if (!Number.isFinite(data.product_price) || data.product_price <= 0) {
         return { code: 400, message: "商品价格必须大于0", data: null };
       }
-      if (data.market_price !== undefined && Number.isFinite(data.market_price) && data.market_price > data.product_price) {
-        return { code: 400, message: "原价不能高于现价", data: null };
-      }
+      // 不校验 market_price 与售价的大小关系
     }
     // 名称若提交则非空
     if (data.product_name !== undefined && !data.product_name) {
@@ -331,6 +339,11 @@ export class AdminApiProductController {
     if (data.product_stock !== undefined) {
       if (!Number.isFinite(data.product_stock) || data.product_stock < 0) data.product_stock = 0;
       if (data.product_stock > 65535) data.product_stock = 65535;
+    }
+
+    // 店铺端禁止直接修改虚拟销量，按 PHP updateProduct 逻辑（shop 商品更新时 unset virtual_sales）
+    if (shopId > 0 && data.virtual_sales !== undefined) {
+      delete data.virtual_sales;
     }
 
     if (card_group_id_upd !== undefined) data.card_group_id = card_group_id_upd || 0;

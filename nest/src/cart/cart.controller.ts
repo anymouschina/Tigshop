@@ -245,9 +245,17 @@ export class CartController {
    */
   @Post("removeItem")
   @ApiOperation({ summary: "删除购物车商品" })
-  async removeItem(@Request() req, @Body() data: { cartId: number }) {
-  const userId = resolveRequestUserId(req);
-    return this.cartService.removeItem(userId, Number(data.cartId));
+  async removeItem(@Request() req, @Body() data: any, @Query() query: any = {}) {
+    const userId = resolveRequestUserId(req);
+    // 兼容多种参数命名：cartId | id | cart_id（Body 或 Query）
+    const raw = data?.cartId ?? data?.id ?? data?.cart_id ?? query?.cartId ?? query?.id ?? query?.cart_id;
+    const cartId = Number(raw);
+    if (!Number.isInteger(cartId) || cartId <= 0) {
+      return { code: 400, message: "cartId 参数无效", data: null };
+    }
+    const result = await this.cartService.removeItem(userId, cartId);
+    // 与其他接口保持 { code, message, data }
+    return { code: 0, message: "success", data: result };
   }
 
   /**

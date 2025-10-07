@@ -35,7 +35,7 @@ const setupInterceptors = (instance: any) => {
         (config: AxiosRequestConfig) => {
             // 在发送请求之前做些什么
             config.headers!["Authorization"] = `Bearer ${localStorage.getItem("accessToken")}`;
-            // config.headers!["X-Shop-Id"] = localStorage.getItem("shopId");
+            config.headers!["X-Shop-Id"] = localStorage.getItem("shopId");
             config.headers!["X-Client-Type"] = "admin";
             config.params = formatArguments(config.params);
             return config;
