@@ -100,6 +100,26 @@ export class AdminApiProductController {
       last_update: Math.floor(Date.now() / 1000),
     };
 
+    // === 业务校验（对齐 PHP 并补充用户提出的“原价不能高于现价”需求）===
+    // 说明：用户反馈语句“原价怎么能高于现价”理解为：market_price(原价) 不允许 > product_price(现价)
+    // 若后续确认应为另一逻辑（例如原价需要 >= 现价），只需调整下面条件即可。
+    if (!data.product_name) {
+      return { code: 400, message: "商品名称不能为空", data: null };
+    }
+    if (!Number.isFinite(data.product_price) || data.product_price <= 0) {
+      return { code: 400, message: "商品价格必须大于0", data: null };
+    }
+    // 货号唯一（按店铺维度）；若为空已在上方生成随机 SN
+    if (data.product_sn) {
+      const dup = await this.prisma.product.findFirst({
+        where: { product_sn: data.product_sn, ...(shopId > 0 ? { shop_id: shopId } : {}) },
+        select: { product_id: true },
+      });
+      if (dup) {
+        return { code: 400, message: "货号已存在", data: null };
+      }
+    }
+
     // 服务说明 ID 列表保存为逗号分隔字符串（与现有 detail 取法兼容）
     if (Array.isArray(body.productServiceIds) && body.productServiceIds.length) {
       data.product_service_ids = body.productServiceIds.map((x: any) => String(x)).join(",");
@@ -280,6 +300,38 @@ export class AdminApiProductController {
       fixed_shipping_fee: pickNum(body.fixedShippingFee ?? body.fixed_shipping_fee),
       last_update: Math.floor(Date.now() / 1000),
     };
+
+    // === 更新校验 ===
+    // 若提交了价格则校验
+    if (data.product_price !== undefined) {
+      if (!Number.isFinite(data.product_price) || data.product_price <= 0) {
+        return { code: 400, message: "商品价格必须大于0", data: null };
+      }
+      if (data.market_price !== undefined && Number.isFinite(data.market_price) && data.market_price > data.product_price) {
+        return { code: 400, message: "原价不能高于现价", data: null };
+      }
+    }
+    // 名称若提交则非空
+    if (data.product_name !== undefined && !data.product_name) {
+      return { code: 400, message: "商品名称不能为空", data: null };
+    }
+    // 货号唯一：若提交且改变
+    if (data.product_sn) {
+      const dupSn = await this.prisma.product.findFirst({
+        where: {
+          product_sn: data.product_sn,
+          ...(shopId > 0 ? { shop_id: shopId } : {}),
+          product_id: { not: productId },
+        },
+        select: { product_id: true },
+      });
+      if (dupSn) return { code: 400, message: "货号已存在", data: null };
+    }
+    // clamp 库存（若提交）
+    if (data.product_stock !== undefined) {
+      if (!Number.isFinite(data.product_stock) || data.product_stock < 0) data.product_stock = 0;
+      if (data.product_stock > 65535) data.product_stock = 65535;
+    }
 
     if (card_group_id_upd !== undefined) data.card_group_id = card_group_id_upd || 0;
 
