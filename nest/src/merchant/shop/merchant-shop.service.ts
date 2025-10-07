@@ -458,6 +458,18 @@ export class MerchantShopService {
     return shop;
   }
 
+  /** 清空当前选择店铺 (返回管理后台视角) */
+  async clearCurrentShop(adminId: number) {
+    try {
+      await this.prisma.admin_user.update({
+        where: { admin_id: adminId },
+        data: { shop_id: 0 },
+      });
+    } catch (e) {
+      this.logger.warn(`clearCurrentShop failed: ${e.message}`);
+    }
+  }
+
   /**
    * 员工概览 (staffShow)
    * 返回字段: usingUser, stopUsingUser, residue, adminLog[]
@@ -667,31 +679,74 @@ export class MerchantShopService {
    * 选择店铺
    */
   async chooseShop(adminId: number, shopId: number) {
-    if (!shopId || typeof shopId !== "number") {
-      throw new Error("无效的店铺ID");
-    }
-    const shop = await this.prisma.shop.findFirst({
-      where: {
-        shop_id: shopId,
-        merchant_id: adminId,
-        status: 1,
-      },
-    });
+    // 对齐 PHP 逻辑：
+    // 1. shopId 必须为正整数
+    // 2. 超级管理员 (admin_type = admin) 可选择任意存在的店铺
+    // 3. 非 admin：
+    //    a) 若存在 admin_user_shop 绑定记录则必须在绑定列表中
+    //    b) 否则按 merchant_id (当前账号的 merchant_id) 过滤
+    if (!shopId || isNaN(Number(shopId))) throw new Error("无效的店铺ID");
+    shopId = Number(shopId);
 
-    if (!shop) {
-      throw new Error("店铺不存在或无权限访问");
+    const admin = await this.prisma.admin_user.findUnique({ where: { admin_id: adminId } });
+    if (!admin) throw new Error("管理员不存在");
+
+    // 先取店铺
+    const targetShop = await this.prisma.shop.findUnique({ where: { shop_id: shopId } });
+    if (!targetShop || targetShop.status !== 1) throw new Error("店铺不存在或已关闭");
+
+    let allowed = false;
+    if (admin.admin_type === "admin") {
+      allowed = true; // 超管
+    } else {
+      // 先看是否有绑定关系
+      const relation = await this.prisma.admin_user_shop.findFirst({
+        where: { admin_id: adminId, shop_id: shopId, is_using: 1 },
+      });
+      if (relation) {
+        allowed = true;
+      } else if (admin.merchant_id && targetShop.merchant_id === admin.merchant_id) {
+        allowed = true; // 同一个 merchant
+        // 自动补建绑定（与 PHP 行为保持一致，方便后续 myShop 列出）
+        try {
+          await this.prisma.admin_user_shop.create({
+            data: {
+              admin_id: adminId,
+              user_id: 0,
+              shop_id: shopId,
+              username: admin.username,
+              email: admin.email,
+              is_using: 1,
+              is_admin: 0,
+              add_time: Math.floor(Date.now() / 1000),
+              role_id: admin.role_id || 0,
+            },
+          });
+        } catch (e) {
+          this.logger.debug(`chooseShop create relation ignore: ${e.message}`);
+        }
+      }
     }
 
-    // 更新最后登录时间
+    if (!allowed) throw new Error("店铺不存在或无权限访问");
+
+    // 更新店铺 last_login_time
+    const now = Math.floor(Date.now() / 1000);
     await this.prisma.shop.update({
-      where: {
-        shop_id: shopId,
-      },
-      data: {
-        last_login_time: Math.floor(Date.now() / 1000),
-      },
+      where: { shop_id: shopId },
+      data: { last_login_time: now },
     });
 
-    return shop;
+    // 更新 admin_user 当前选择的 shop_id (PHP 通常会这样做以便后续接口上下文)
+    try {
+      await this.prisma.admin_user.update({
+        where: { admin_id: adminId },
+        data: { shop_id: shopId },
+      });
+    } catch (e) {
+      this.logger.warn(`更新管理员 shop_id 失败: ${e.message}`);
+    }
+
+    return targetShop;
   }
 }

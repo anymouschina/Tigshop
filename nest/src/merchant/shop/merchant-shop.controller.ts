@@ -172,13 +172,25 @@ export class MerchantShopController {
   @Post("choose")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "选择店铺" })
-  async chooseShop(@Body() body: { shopId: number }, @Request() req) {
+  async chooseShop(@Body() body: any, @Request() req) {
     const userId = req.user?.userId;
     if (!userId) {
       throw new Error("用户未登录");
     }
-
-    return this.merchantShopService.chooseShop(userId, body.shopId);
+    // 兼容前端传参 { id, type } 与 { shopId }
+    const shopId = Number(body.shopId ?? body.id);
+    const type = body.type || body.adminType; // 可能字段名
+    if (type === "admin") {
+      // 返回到管理后台，不绑定具体店铺
+      await this.merchantShopService.clearCurrentShop(userId);
+      return { code: 0, message: "success", data: { shopId: 0 } };
+    }
+    if (type === "vendor") {
+      // 供应商暂未实现，先直接返回
+      return { code: 0, message: "success", data: { vendorId: shopId } };
+    }
+    const shop = await this.merchantShopService.chooseShop(userId, shopId);
+    return { code: 0, message: "success", data: { shopId: shop.shop_id } };
   }
 
   /**
