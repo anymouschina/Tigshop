@@ -12,156 +12,343 @@ export class MerchantShopService {
    * 获取商户店铺列表 - 对应PHP的myShop接口
    */
   async getMyShops(adminId: number, query: any = {}) {
+    // 期望返回结构：{ userinfo: {...}, shop: {records:[], total, size, current, pages}, vendor: { ... } }
     const {
       page = 1,
-      size = 20,
-      sortField = "last_login_time",
+      size = 15,
+      sortField = "lastLoginTime",
       sortOrder = "desc",
     } = query;
     const skip = (page - 1) * size;
 
-    this.logger.debug("getMyShops called with:", {
-      adminId,
-      query,
-      page,
-      size,
-      sortField,
-      sortOrder,
-      skip,
+    // 1. 管理员主信息
+    const adminUser = await this.prisma.admin_user.findUnique({
+      where: { admin_id: adminId },
     });
-
-    // 构建排序条件
-    const orderBy: any = {};
-    switch (sortField) {
-      case "lastLoginTime":
-        orderBy.last_login_time = sortOrder;
-        break;
-      case "shopTitle":
-        orderBy.shop_title = sortOrder;
-        break;
-      case "addTime":
-        orderBy.add_time = sortOrder;
-        break;
-      default:
-        orderBy.last_login_time = "desc";
+    if (!adminUser) {
+      throw new Error("管理员不存在");
     }
 
-    // 获取管理员有权限的店铺列表
-    const [adminUserShops, total] = await Promise.all([
-      this.prisma.admin_user_shop.findMany({
-        where: {
-          admin_id: adminId,
-          is_using: 1, // 只返回启用的权限
-        },
-        skip,
-        take: size,
-        orderBy: {
-          add_time: "desc",
-        },
-      }),
-      this.prisma.admin_user_shop.count({
-        where: {
-          admin_id: adminId,
-          is_using: 1,
-        },
-      }),
-    ]);
+    // 解析权限列表（含 all 展开）
+    let authList: string[] = [];
+    if (adminUser.auth_list) {
+      try {
+        const parsed = JSON.parse(adminUser.auth_list);
+        if (Array.isArray(parsed)) authList = parsed.filter(Boolean);
+        else if (typeof parsed === "string") authList = parsed.split(",").filter(Boolean);
+      } catch {
+        authList = adminUser.auth_list.split(",").filter(Boolean);
+      }
+    }
+    if (authList.includes("all")) {
+      const allAuth = await this.prisma.authority.findMany({ select: { authority_sn: true } });
+      const extra = allAuth.map(a => a.authority_sn).filter(Boolean);
+      const merged = new Set<string>([...authList, ...extra]);
+      merged.delete("all"); // 展开后去掉 all 本身
+      authList = Array.from(merged);
+    }
 
-    this.logger.debug("adminUserShops query result:", {
-      adminUserShops: adminUserShops,
-      total,
-      shopIds: adminUserShops.map((aus) => aus.shop_id).filter(Boolean),
+    // 2. 关联店铺（全部 & 分页） — 如果没有 admin_user_shop 关联，兼容 PHP：
+    //    1) 超级管理员(admin_type=admin) 查看全部店铺
+    //    2) 普通商户按自身 merchant_id 查看店铺
+    const shopRelationWhere = { admin_id: adminId, is_using: 1 } as any;
+    let allRelations = await this.prisma.admin_user_shop.findMany({ where: shopRelationWhere });
+    let total = await this.prisma.admin_user_shop.count({ where: shopRelationWhere });
+    let pageRelations = await this.prisma.admin_user_shop.findMany({
+      where: shopRelationWhere,
+      skip,
+      take: size,
+      orderBy: { add_time: "desc" },
     });
 
-    // 获取对应的店铺信息
-    const shopIds = adminUserShops.map((aus) => aus.shop_id).filter(Boolean);
-    const shops = await this.prisma.shop.findMany({
-      where: {
-        shop_id: {
-          in: shopIds,
-        },
-        status: 1, // 只返回启用状态的店铺
-      },
-    });
-
-    this.logger.debug("shops query result:", {
-      shopIds,
-      shops: shops,
-      foundShopsCount: shops.length,
-    });
-
-    // 将店铺信息关联到admin_user_shop记录
-    const validShops = adminUserShops
-      .map((aus) => {
-        const shop = shops.find((s) => s.shop_id === aus.shop_id);
-        return shop ? { ...aus, shop } : null;
-      })
-      .filter(Boolean);
-
-    // 获取管理员信息
-    const adminUser = await this.prisma.admin_user.findUnique({
-      where: {
+    // Fallback: 若无绑定关系
+    let fallbackMode = false;
+    if (total === 0) {
+      fallbackMode = true;
+      let where: any = {};
+      if (adminUser.admin_type === "admin") {
+        // 超级管理员：全部店铺
+        where = {};
+      } else if (adminUser.merchant_id) {
+        // 商户：其 merchant 下所有店铺 (注意 merchant_id 在 shop 中指向 merchant.merchant_id)
+        where = { merchant_id: adminUser.merchant_id };
+      } else {
+        // 无 merchant_id 且非 admin，返回空
+        where = { shop_id: -1 }; // 不命中
+      }
+      const [fallbackTotal, fallbackRecords] = await Promise.all([
+        this.prisma.shop.count({ where }),
+        this.prisma.shop.findMany({
+          where,
+          skip,
+            take: size,
+          orderBy: { shop_id: "desc" },
+        }),
+      ]);
+      total = fallbackTotal;
+      // 合成虚拟的 relation 结构供后续逻辑统一处理
+      allRelations = fallbackRecords.map((s: any) => ({
         admin_id: adminId,
-      },
-      select: {
-        admin_id: true,
-        username: true,
-        email: true,
-        mobile: true,
-        admin_type: true,
-      },
+        shop_id: s.shop_id,
+        is_using: 1,
+        add_time: s.add_time || 0,
+      }));
+      pageRelations = allRelations; // 已经分页
+    }
+
+    const allShopIds = allRelations.map((r: any) => r.shop_id).filter(Boolean);
+    const pageShopIds = pageRelations.map((r: any) => r.shop_id).filter(Boolean);
+    const distinctShopIds = [...new Set(allShopIds)];
+    const pageDistinctShopIds = [...new Set(pageShopIds)];
+
+    const shopsOnPage = pageDistinctShopIds.length
+      ? await this.prisma.shop.findMany({ where: { shop_id: { in: pageDistinctShopIds } } })
+      : [];
+
+    // 需要获取 merchant 数据
+    const merchantIds = [...new Set(shopsOnPage.map((s) => s.merchant_id).filter(Boolean))];
+    const merchants = merchantIds.length
+      ? await this.prisma.merchant.findMany({ where: { merchant_id: { in: merchantIds as any } } })
+      : [];
+    const merchantMap = new Map<number, any>();
+    merchants.forEach((m) => merchantMap.set(m.merchant_id, m));
+
+    // 排序映射
+    const sortFieldMap: Record<string, string> = {
+      lastLoginTime: "last_login_time",
+      shopTitle: "shop_title",
+      addTime: "add_time",
+    };
+    const realSortField = sortFieldMap[sortField] || "last_login_time";
+
+    const sortedShops = [...shopsOnPage].sort((a: any, b: any) => {
+      const av = a[realSortField] || 0;
+      const bv = b[realSortField] || 0;
+      if (sortOrder.toLowerCase() === "asc") return av > bv ? 1 : av < bv ? -1 : 0;
+      return av < bv ? 1 : av > bv ? -1 : 0;
     });
 
-    this.logger.debug("adminUser query result:", {
-      adminUser,
-      adminType: adminUser?.admin_type,
+    // 构建分页 records
+    const shopRecords = sortedShops.map((shop) => {
+      const m = shop.merchant_id ? merchantMap.get(shop.merchant_id) : null;
+      // 解析 merchant 结构中的 JSON 字段
+      let baseData: any = null;
+      let shopData: any = null;
+      let merchantData: any = null;
+      if (m?.base_data) {
+        try { baseData = JSON.parse(m.base_data); } catch { baseData = m.base_data; }
+      }
+      if (m?.shop_data) {
+        try { shopData = JSON.parse(m.shop_data); } catch { shopData = m.shop_data; }
+      }
+      if (m?.merchant_data) {
+        try { merchantData = JSON.parse(m.merchant_data); } catch { merchantData = m.merchant_data; }
+      }
+      const typeText = m ? (m.type ? "个人认证" : "企业认证") : "";
+      return {
+        shop_type: shop.shop_type,
+        store_parent_id: shop.store_parent_id,
+        shop_cover_picture: shop.shop_cover_picture,
+        shop_show_picture: shop.shop_show_picture,
+        description: shop.description || "",
+        status: shop.status,
+        shop_contact_config: shop.shop_contact_config,
+        shop_open_close_config: shop.shop_open_close_config,
+        shop_region_ids: shop.shop_region_ids,
+        shop_region_names: shop.shop_region_names,
+        shop_detailed_address: shop.shop_detailed_address,
+        shop_longitude: shop.shop_longitude,
+        shop_latitude: shop.shop_latitude,
+        shop_tips: shop.shop_tips,
+        add_time: shop.add_time,
+        click_count: shop.click_count || 0,
+        contact_mobile: shop.contact_mobile || "",
+        frozen_money: shop.frozen_money,
+        is_contact_kefu: shop.is_contact_kefu,
+        kefu_inlet: shop.kefu_inlet,
+        kefu_link: shop.kefu_link || "",
+        kefu_phone: shop.kefu_phone || "",
+        kefu_weixin: shop.kefu_weixin || "",
+        merchant_id: shop.merchant_id,
+        shop_id: shop.shop_id,
+        shop_logo: shop.shop_logo,
+        shop_money: shop.shop_money,
+        shop_title: shop.shop_title,
+        status_text: shop.status === 1 ? "开业" : "关闭",
+        merchant: m && {
+          add_time: m.add_time,
+          admin: {
+            admin_id: 1, // 暂无直接关联，保持 PHP 示例结构
+            admin_user_id: null,
+            is_admin: null,
+            merchant_id: null,
+            merchant_user_id: null,
+            user_id: null,
+            username: "admin",
+          },
+          base_data: baseData,
+          company_name: m.company_name || "",
+            corporate_name: m.corporate_name || "",
+          merchant_apply_id: m.merchant_apply_id || 0,
+          merchant_data: merchantData,
+          merchant_id: m.merchant_id,
+          settlement_cycle: m.settlement_cycle,
+          shop_data: shopData,
+          status: m.status,
+          status_text: m.status === 1 ? "正常" : "禁用",
+          type: m.type,
+          type_text: typeText,
+          user_id: m.user_id || 0,
+          user: null,
+          shop_count: null,
+        },
+        admin_user_shop: null,
+        check: false,
+        store_parent_name: null,
+        tips: null,
+        use_shop_category: shop.use_shop_category || 0,
+        shop_show_category: shop.shop_show_category || null,
+      };
     });
 
-    const result = {
-      shops: validShops.map((aus) => ({
-        shop_id: aus.shop.shop_id,
-        shop_title: aus.shop.shop_title,
-        shop_logo: aus.shop.shop_logo,
-        add_time: aus.shop.add_time,
-        last_login_time: aus.shop.last_login_time,
-        status: aus.shop.status,
-        shop_money: aus.shop.shop_money,
-        frozen_money: aus.shop.frozen_money,
-        contact_mobile: aus.shop.contact_mobile,
-        is_admin: aus.is_admin, // 是否为店铺管理员
-        role_id: aus.role_id, // 角色ID
-      })),
-      vendors: [], // 暂时为空，PHP版本中没有此数据
-      userinfo: adminUser
-        ? {
-            id: adminUser.admin_id,
-            username: adminUser.username,
-            email: adminUser.email,
-            mobile: adminUser.mobile,
-            admin_type: adminUser.admin_type,
-            status: 1, // 管理员默认状态
-          }
-        : null,
-      pagination: {
-        page,
-        size,
-        total,
-        totalPages: Math.ceil(total / size),
-      },
+    // 3. userShop & userVendor（与 admin-user.controller 保持一致结构）
+    const fullShops = allShopIds.length
+      ? await this.prisma.shop.findMany({ where: { shop_id: { in: distinctShopIds } } })
+      : [];
+    const fullShopMap = new Map<number, any>();
+    fullShops.forEach((s) => fullShopMap.set(s.shop_id, s));
+    const userShop = allRelations.map((rel: any) => {
+      const s = fullShopMap.get(rel.shop_id);
+      if (!s) return null;
+      return {
+        shop: {
+          shop_type: s.shop_type,
+          store_parent_id: s.store_parent_id,
+          shop_cover_picture: s.shop_cover_picture,
+          shop_show_picture: s.shop_show_picture,
+          description: s.description,
+          status: s.status,
+          shop_contact_config: s.shop_contact_config,
+          shop_open_close_config: s.shop_open_close_config,
+          shop_region_ids: s.shop_region_ids,
+          shop_region_names: s.shop_region_names,
+          shop_detailed_address: s.shop_detailed_address,
+          shop_longitude: s.shop_longitude,
+          shop_latitude: s.shop_latitude,
+          shop_tips: s.shop_tips,
+          add_time: s.add_time,
+          click_count: s.click_count,
+          contact_mobile: s.contact_mobile,
+          frozen_money: s.frozen_money,
+          is_contact_kefu: s.is_contact_kefu,
+          kefu_inlet: s.kefu_inlet,
+          kefu_link: s.kefu_link,
+          kefu_phone: s.kefu_phone,
+          kefu_weixin: s.kefu_weixin,
+          merchant_id: s.merchant_id,
+          shop_id: s.shop_id,
+          shop_logo: s.shop_logo,
+          shop_money: s.shop_money,
+          shop_title: s.shop_title,
+          status_text: s.status === 1 ? "开业" : "关闭",
+          merchant: null,
+          admin_user_shop: null,
+          check: false,
+          store_parent_name: null,
+          tips: null,
+          use_shop_category: s.use_shop_category || 0,
+          shop_show_category: s.shop_show_category || null,
+        },
+      };
+    }).filter(Boolean);
+
+    // 4. 供应商 (vendor) 分页（当前简单返回全部，后续可加分页参数）
+    const vendorRelationWhere = { admin_id: adminId, is_using: 1 };
+    const vendorRelations = await this.prisma.admin_user_vendor.findMany({ where: vendorRelationWhere });
+    const vendorIds = vendorRelations.map((v) => v.vendor_id).filter(Boolean);
+    const vendors = vendorIds.length
+      ? await this.prisma.vendor.findMany({ where: { vendor_id: { in: vendorIds } } })
+      : [];
+    const vendorMap = new Map<number, any>();
+    vendors.forEach((v) => vendorMap.set(v.vendor_id, v));
+    const vendorRecords = vendorRelations.map((rel) => {
+      const v = vendorMap.get(rel.vendor_id);
+      if (!v) return null;
+      return {
+        vendor_id: v.vendor_id,
+        vendor_name: v.vendor_name,
+        vendor_logo: v.vendor_logo,
+        contact_name: v.contact_name,
+        contact_mobile: v.contact_mobile || "",
+        login_account: v.login_account,
+        type: v.type,
+        status: v.status,
+        add_time: v.add_time,
+      };
+    }).filter(Boolean);
+
+    // 构建 userinfo（字段使用 camelCase 形式以避免再次转换）
+    const userinfo: any = {
+      adminId: adminUser.admin_id,
+      username: adminUser.username,
+      adminType: adminUser.admin_type,
+      mobile: adminUser.mobile,
+      avatar: adminUser.avatar,
+      password: adminUser.password,
+      email: adminUser.email,
+      addTime: adminUser.add_time ? adminUser.add_time : null,
+      authList: authList,
+      userId: adminUser.user_id,
+      suppliersId: adminUser.suppliers_id,
+      roleId: adminUser.role_id,
+      roleName: null,
+      merchantId: adminUser.merchant_id,
+      parentId: adminUser.parent_id,
+      menuTag: adminUser.menu_tag || "",
+      orderExport: adminUser.order_export,
+      extra: adminUser.extra || "",
+      shopId: adminUser.shop_id,
+      isUsing: adminUser.is_using,
+      oldPassword: null,
+      pwdConfirm: null,
+      initialPassword: adminUser.initial_password || "",
+      userShop: userShop,
+      userVendor: vendorRelations.map((rel) => {
+        const v = vendorMap.get(rel.vendor_id);
+        if (!v) return null;
+        return {
+          vendor: {
+            vendorId: v.vendor_id,
+            vendorName: v.vendor_name,
+            vendorLogo: v.vendor_logo,
+            contactName: v.contact_name,
+            contactMobile: v.contact_mobile || "",
+            loginAccount: v.login_account,
+            type: v.type,
+            status: v.status,
+            addTime: v.add_time,
+          },
+        };
+      }).filter(Boolean),
     };
 
-    this.logger.debug("getMyShops final result:", {
-      shopsCount: result.shops.length,
-      vendorsCount: result.vendors.length,
-      hasUserInfo: !!result.userinfo,
-      pagination: result.pagination,
-      shops: result.shops.map((s) => ({
-        shop_id: s.shop_id,
-        shop_title: s.shop_title,
-      })),
-    });
+    const shop = {
+      records: shopRecords,
+      total,
+      size,
+      current: page,
+      pages: Math.ceil(total / size),
+    };
 
-    return result;
+    const vendor = {
+      records: [], // 暂未做 vendor 分页返回，与示例一致为空
+      total: 0,
+      size: 10,
+      current: 1,
+      pages: 0,
+    };
+
+    return { code: 0, message: "success", data: { userinfo, shop, vendor } };
   }
 
   /**
@@ -219,21 +406,134 @@ export class MerchantShopService {
    */
   async createShop(adminId: number, shopData: any) {
     const { shopTitle, shopLogo, contactMobile, description } = shopData;
+    const now = Math.floor(Date.now() / 1000);
 
+    // TODO: 若需真正绑定 merchant，可在前端 / 账号体系中先创建 merchant 记录并传入 merchantId
+    // 这里暂时沿用 adminId 作为 merchant_id (与现有数据保持兼容)，后续可迁移
     const shop = await this.prisma.shop.create({
       data: {
         shop_title: shopTitle,
         shop_logo: shopLogo || "",
         contact_mobile: contactMobile || "",
         description: description || "",
-        merchant_id: adminId,
-        add_time: Math.floor(Date.now() / 1000),
+        merchant_id: shopData.merchantId || shopData.merchant_id || null, // 优先显式 merchantId
+        add_time: now,
         status: 1,
-        last_login_time: Math.floor(Date.now() / 1000),
+        last_login_time: now,
       },
     });
 
+    // 若没有 merchantId 传入，且当前 admin 不是超级管理员，则把该 admin 视作其 merchant 拥有者（兼容旧行为）
+    if (!shop.merchant_id) {
+      await this.prisma.shop.update({
+        where: { shop_id: shop.shop_id },
+        data: { merchant_id: adminId },
+      });
+    }
+
+    // 建立 admin_user_shop 关联，避免 myShop 接口缺失
+    try {
+      const existRel = await this.prisma.admin_user_shop.findFirst({
+        where: { admin_id: adminId, shop_id: shop.shop_id },
+      });
+      if (!existRel) {
+        await this.prisma.admin_user_shop.create({
+          data: {
+            admin_id: adminId,
+            user_id: 0,
+            shop_id: shop.shop_id,
+            username: "",
+            email: "",
+            is_using: 1,
+            is_admin: 1,
+            add_time: now,
+            role_id: 0,
+          },
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`createShop relation failed: ${e.message}`);
+    }
+
     return shop;
+  }
+
+  /**
+   * 员工概览 (staffShow)
+   * 返回字段: usingUser, stopUsingUser, residue, adminLog[]
+   * 说明:
+   *  - usingUser: 正在使用的 admin_user 数( is_using = 1 )
+   *  - stopUsingUser: 停用员工数 ( is_using = 0 且非主账号 )
+   *  - residue: 剩余可用名额 (暂缺配置, 先返回 0, 后续可接入套餐/授权表)
+   *  - adminLog: 最近 10 条操作日志 (admin_log), 关联用户名
+   */
+  async staffShow(adminId: number) {
+    // 统计当前商户账号体系下的员工: 通过 merchant_id 反查所有 admin_user
+    const currentAdmin = await this.prisma.admin_user.findUnique({ where: { admin_id: adminId } });
+    if (!currentAdmin) {
+      throw new Error("管理员不存在");
+    }
+
+    const merchantId = currentAdmin.merchant_id || 0;
+    let usingUser = 0;
+    let stopUsingUser = 0;
+
+    if (merchantId) {
+      const allAdminUsers = await this.prisma.admin_user.findMany({ where: { merchant_id: merchantId } });
+      usingUser = allAdminUsers.filter(a => a.is_using === 1).length;
+      // 主账号: parent_id = 0 且自身就是第一管理员; 停用员工不统计主账号
+      stopUsingUser = allAdminUsers.filter(a => a.is_using === 0 && a.parent_id !== 0).length;
+    } else {
+      // 没有 merchant_id 时仅统计自己
+      usingUser = currentAdmin.is_using === 1 ? 1 : 0;
+      stopUsingUser = currentAdmin.is_using === 0 ? 1 : 0;
+    }
+
+    // residue 逻辑: 若有授权上限(例如在 config / license 表), 可在此计算; 目前返回 0
+    const residue = 0;
+
+    // 最近操作日志: 取最近 10 条 admin_log (log_time desc)
+    const logs = await this.prisma.admin_log.findMany({
+      orderBy: { log_time: "desc" },
+      take: 10,
+    });
+
+    // 获取涉及的 user_id -> 取 admin_user.username 作为显示; 如果没有匹配则留空
+    const logUserIds = Array.from(new Set(logs.map(l => l.user_id).filter(id => !!id)));
+    const logAdmins = logUserIds.length
+      ? await this.prisma.admin_user.findMany({ where: { admin_id: { in: logUserIds } } })
+      : [];
+    const adminNameMap = new Map<number, string>();
+    logAdmins.forEach(a => adminNameMap.set(a.admin_id, a.username));
+
+    const adminLog = logs.map(l => ({
+      logId: l.log_id,
+      userId: l.user_id,
+      logInfo: l.log_info,
+      logTime: this.formatUnix(l.log_time),
+      ipAddress: l.ip_address,
+      username: adminNameMap.get(l.user_id) || "",
+    }));
+
+    return { usingUser, stopUsingUser, residue, adminLog };
+  }
+
+  private formatUnix(ts: number | null | undefined) {
+    if (!ts) return "";
+    try {
+      const d = new Date(ts * 1000);
+      const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
+      return (
+        d.getFullYear() +
+        "-" + pad(d.getMonth() + 1) +
+        "-" + pad(d.getDate()) +
+        " " + pad(d.getHours()) +
+        ":" + pad(d.getMinutes()) +
+        ":" + pad(d.getSeconds())
+      );
+    } catch {
+      return "";
+    }
   }
 
   /**

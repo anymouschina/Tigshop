@@ -105,7 +105,11 @@ export class AdminApiProductController {
       data.product_service_ids = body.productServiceIds.map((x: any) => String(x)).join(",");
     }
 
-  const created = await this.prisma.product.create({ data });
+    // clamp 库存，避免超出 SMALLINT UNSIGNED (0~65535)
+    if (data.product_stock < 0) data.product_stock = 0;
+    if (data.product_stock > 65535) data.product_stock = 65535;
+
+    const created = await this.prisma.product.create({ data });
 
     // 图集入库
     if (Array.isArray(body.imgList) && body.imgList.length) {
@@ -192,7 +196,10 @@ export class AdminApiProductController {
         });
       }
       // 汇总库存覆盖主表库存
-      await this.prisma.product.updateMany({ where: { product_id: created.product_id }, data: { product_stock: totalStock } });
+  // 总库存 clamp 再写回
+  if (totalStock < 0) totalStock = 0;
+  if (totalStock > 65535) totalStock = 65535;
+  await this.prisma.product.updateMany({ where: { product_id: created.product_id }, data: { product_stock: totalStock } });
     }
 
     return { code: 0, message: "success", data: { productId: created.product_id } };
@@ -399,8 +406,10 @@ export class AdminApiProductController {
 
       // 汇总库存并回写商品总库存
       const agg = await this.prisma.product_sku.aggregate({ _sum: { sku_stock: true }, where: { product_id: productId } });
-      const totalStock = Number(agg._sum.sku_stock ?? 0) || 0;
-      await this.prisma.product.updateMany({ where: { product_id: productId }, data: { product_stock: totalStock } });
+  let totalStock = Number(agg._sum.sku_stock ?? 0) || 0;
+  if (totalStock < 0) totalStock = 0;
+  if (totalStock > 65535) totalStock = 65535; // SMALLINT UNSIGNED 上限
+  await this.prisma.product.updateMany({ where: { product_id: productId }, data: { product_stock: totalStock } });
     }
 
     // 图集：若传入则简单重建

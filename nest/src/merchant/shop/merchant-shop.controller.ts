@@ -36,6 +36,20 @@ export class MerchantShopController {
   }
 
   /**
+   * 员工概览 - 对应PHP的 staffShow 接口
+   * 前端路径: merchant/shop/staffShow
+   */
+  @Get("staffShow")
+  @ApiOperation({ summary: "员工概览" })
+  async staffShow(@Request() req) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new Error("用户未登录");
+    }
+    return this.merchantShopService.staffShow(userId);
+  }
+
+  /**
    * 管理后台-店铺列表（表格） 对应前端 merchant/shop/list
    */
   @Get("list")
