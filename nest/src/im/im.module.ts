@@ -11,6 +11,6 @@ import { ImGateway } from './im.gateway';
 @Module({
   controllers: [ImConversationController, ImServantController, ImConfigController],
   providers: [ImConversationService, ImServantService, ImConfigService, PrismaService, ImGateway],
-  exports: [ImConversationService, ImServantService, ImConfigService],
+  exports: [ImConversationService, ImServantService, ImConfigService, ImGateway],
 })
 export class ImModule {}

@@ -102,6 +102,144 @@ export class OrderCheckService {
   ) {}
 
   /**
+   * 构建 deliveryOption：对齐 PHP 返回示例，默认 deliveryType=3
+   * 仅包含已勾选的商品；补充必要的商品字段（若需要更完整可再扩展）
+   */
+  async buildDeliveryOption(cartList: CheckoutShop[]) {
+    if (!Array.isArray(cartList) || cartList.length === 0) {
+      return { deliveryType: 3, deliveryProducts: [], pickupProducts: [] };
+    }
+    const selectedItems: any[] = [];
+    for (const shop of cartList) {
+      for (const ci of (shop.carts || [])) {
+        if (this.isCartItemChecked(ci)) selectedItems.push(ci);
+      }
+    }
+    if (!selectedItems.length) {
+      return { deliveryType: 3, deliveryProducts: [], pickupProducts: [] };
+    }
+    const productIds = Array.from(new Set(selectedItems.map(i => Number(i.productId))).values()).filter(n => n>0);
+    const productRows = productIds.length ? await this.prisma.product.findMany({
+      where: { product_id: { in: productIds } },
+      select: {
+        product_id: true,
+        product_name: true,
+        product_sn: true,
+        product_price: true,
+        market_price: true,
+        shipping_tpl_id: true,
+        product_status: true,
+        product_type: true,
+        category_id: true,
+        brand_id: true,
+        shop_id: true,
+        product_weight: true,
+        product_desc: true,
+        product_brief: true,
+        add_time: true,
+        sort_order: true,
+        is_best: true,
+        is_new: true,
+        is_hot: true,
+        last_update: true,
+        give_integral: true,
+        rank_integral: true,
+        virtual_sales: true,
+        limit_number: true,
+        product_service_ids: true,
+        prepay_price: true,
+        card_group_id: true,
+        virtual_sample: true,
+        paid_content: true,
+        no_shipping: true,
+        fixed_shipping_type: true,
+        fixed_shipping_fee: true,
+        vendor_product_id: true,
+        vendor_id: true,
+      }
+    }) : [];
+    const pMap = new Map<number, any>();
+    for (const p of productRows) pMap.set(p.product_id, p);
+    const deliveryProducts = selectedItems.map(it => {
+      const p = pMap.get(Number(it.productId)) || {};
+      return {
+        productId: Number(it.productId),
+        productName: p.product_name || it.productName || "",
+        productSn: p.product_sn || it.productSn || "",
+        productTsn: null,
+        productStock: Number(it.stock ?? p.product_stock ?? 0),
+        productPrice: Number(p.product_price ?? it.productPrice ?? it.price ?? 0),
+        marketPrice: Number(p.market_price ?? it.marketPrice ?? 0),
+        shippingTplId: Number(it.shippingTplId ?? p.shipping_tpl_id ?? 0),
+        productStatus: Number(p.product_status ?? it.productStatus ?? 1),
+        productType: Number(p.product_type ?? it.productType ?? 1),
+        categoryId: Number(p.category_id ?? it.categoryId ?? 0),
+        brandId: Number(p.brand_id ?? it.brandId ?? 0),
+        shopId: Number(p.shop_id ?? it.shopId ?? 0),
+        keywords: "",
+        shopCategoryId: 0,
+        checkStatus: 1,
+        checkReason: "",
+        clickCount: 0,
+        productWeight: Number(p.product_weight ?? it.productWeight ?? 0),
+        isPromote: 0,
+        isPromoteActivity: 0,
+        promotePrice: 0,
+        promoteStartDate: 0,
+        promoteEndDate: 0,
+        seckillMaxNum: 0,
+        productBrief: p.product_brief || "",
+        productDesc: p.product_desc || "",
+        picUrl: it.picThumb || "",
+        picThumb: it.picThumb || "",
+        picOriginal: it.picThumb || "",
+        commentTag: null,
+        freeShipping: Number(it.freeShipping ?? 0),
+        integral: 0,
+        addTime: Number(p.add_time ?? 0),
+        sortOrder: Number(p.sort_order ?? 100),
+        storeSortOrder: Number(p.sort_order ?? 100),
+        isDelete: 0,
+        isBest: Number(p.is_best ?? 0),
+        isNew: Number(p.is_new ?? 0),
+        isHot: Number(p.is_hot ?? 0),
+        lastUpdate: Number(p.last_update ?? 0),
+        remark: "",
+        giveIntegral: Number(p.give_integral ?? -1),
+        rankIntegral: Number(p.rank_integral ?? -1),
+        suppliersId: null,
+        virtualSales: Number(p.virtual_sales ?? 0),
+        limitNumber: Number(p.limit_number ?? 0),
+        productCare: null,
+        productRelated: null,
+        productServiceIds: p.product_service_ids || "",
+        isSupportReturn: 0,
+        isSupportCod: 0,
+        productVideo: null,
+        prepayPrice: Number(p.prepay_price ?? 0),
+        cardGroupId: Number(p.card_group_id ?? 0),
+        virtualSample: p.virtual_sample || "",
+        paidContent: p.paid_content || "",
+        noShipping: Number(p.no_shipping ?? it.noShipping ?? 0),
+        fixedShippingType: Number(p.fixed_shipping_type ?? it.fixedShippingType ?? 2),
+        fixedShippingFee: Number(p.fixed_shipping_fee ?? it.fixedShippingFee ?? 0),
+        isShopPickup: 0,
+        shopPickupTplId: null,
+        vendorProductId: Number(p.vendor_product_id ?? 0) || null,
+        vendorId: Number(p.vendor_id ?? 0) || null,
+        storeProductName: null,
+        storeProductPrice: null,
+        storeProductStatus: null,
+        storeProductStock: null,
+        storeCardGroupId: null,
+        isLogistics: 1,
+        isShopDelivery: 0,
+      };
+    });
+    return { deliveryType: 3, deliveryProducts, pickupProducts: [] };
+  }
+
+  /**
    * 当客户端为微信时校验用户是否已绑定 openid（对齐 PHP：UserAuthorizeService::checkUserIsAuthorize）
    * 未绑定时抛出业务码 5002
    */
@@ -423,12 +561,25 @@ export class OrderCheckService {
       ? this.checkoutParams.shipping_type
       : [];
 
-    const grouped = new Map<number, { shippingTypeId: number; shippingTypeName: string }>();
+    const grouped = new Map<
+      number,
+      { shippingTypeId: number; shippingTypeName: string }
+    >();
+
+    // 尝试读取配置中的默认物流名称（失败则回退）
+    let defaultName = "普通快递";
+    try {
+      const cfg = await this.settingConfig.getConfig("defaultLogisticsName");
+      if (cfg) defaultName = String(cfg);
+    } catch (e) {
+      // ignore
+    }
 
     for (const entry of shippingTypeParam) {
       const shopId = Number(
         entry?.shopId ?? entry?.shop_id ?? entry?.storeId ?? entry?.store_id ?? 0,
       );
+      if (!Number.isFinite(shopId) || shopId <= 0) continue;
 
       const shippingTypeId = Number(
         entry?.shippingTypeId ??
@@ -437,53 +588,59 @@ export class OrderCheckService {
           entry?.id ??
           1,
       );
-
       const shippingTypeName =
         entry?.shippingTypeName ??
         entry?.shipping_type_name ??
         entry?.name ??
-        "普通快递";
-
-      if (!Number.isFinite(shopId)) {
-        continue;
-      }
-
+        defaultName;
       grouped.set(shopId, {
         shippingTypeId: Number.isFinite(shippingTypeId) ? shippingTypeId : 1,
         shippingTypeName,
       });
     }
 
-    if (grouped.size === 0) {
-      grouped.set(0, { shippingTypeId: 1, shippingTypeName: "普通快递" });
-
-      const hintedShopId = Number(
-        this.checkoutParams?.shopId ??
-          this.checkoutParams?.shop_id ??
-          this.checkoutParams?.storeId ??
-          this.checkoutParams?.store_id ??
-          1,
-      );
-
-      if (Number.isFinite(hintedShopId) && !grouped.has(hintedShopId)) {
-        grouped.set(hintedShopId, {
-          shippingTypeId: 1,
-          shippingTypeName: "普通快递",
-        });
+    // 基于购物车中出现的店铺补齐默认配送方式
+    const userId = Number(this.checkoutParams?.user_id ?? 0);
+    const effectiveFlowType = Number(
+      flowType ?? this.checkoutParams?.flow_type ?? 1,
+    );
+    if (userId > 0) {
+      try {
+        const cartData = await this.getStoreCarts(userId, effectiveFlowType);
+        for (const shop of cartData.carts) {
+          const shopId = Number(shop?.shopId ?? 0);
+          if (!shopId) continue;
+            // 仅当该店不是全部虚拟商品 (noShipping==1 表示无需物流，仍可以不给配送方式)；
+            // 这里仍然补上，保持与 PHP 行为一致（始终至少返回一条）。
+          if (!grouped.has(shopId)) {
+            grouped.set(shopId, {
+              shippingTypeId: 1,
+              shippingTypeName: defaultName,
+            });
+          }
+        }
+      } catch (e) {
+        // 忽略购物车读取失败，继续使用已有数据
       }
     }
 
-    const sorted = Array.from(grouped.entries()).sort(
-      ([a], [b]) => Number(a) - Number(b),
-    );
+    // 如果仍然为空，返回一个占位（shopId=0），前端可忽略
+    if (grouped.size === 0) {
+      grouped.set(0, { shippingTypeId: 1, shippingTypeName: defaultName });
+    }
 
-    return sorted.map(([shopId, info]) => [
-      {
-        typeId: info.shippingTypeId,
-        shopId,
-        typeName: info.shippingTypeName,
-      },
-    ]);
+    // 转换为对象映射：{ [shopId]: [{ shippingTypeId, shopId, shippingTypeName }] }
+    const result: Record<string, any[]> = {};
+    for (const [shopId, info] of grouped.entries()) {
+      result[String(shopId)] = [
+        {
+          shippingTypeId: info.shippingTypeId,
+          shopId,
+          shippingTypeName: info.shippingTypeName,
+        },
+      ];
+    }
+    return result;
   }
 
   /**
@@ -514,8 +671,9 @@ export class OrderCheckService {
     );
     const discounts = this.roundCurrency(totals.discounts ?? 0);
     const discountAfter = this.roundCurrency(productAmount - discounts);
-
-    const shippingFeeResult = this.calculateShippingFee(shops);
+    // userId 提前获取（仅用于可用积分等后续计算）
+    const userId = Number(this.checkoutParams?.user_id ?? 0);
+    const shippingFeeResult = await this.calculateShippingFee(shops);
     const shippingFee = shippingFeeResult.total;
     const storeShippingFeeList: number[] = [];
     const storeShippingFeeMap: Record<string, number> = {};
@@ -531,7 +689,6 @@ export class OrderCheckService {
       storeShippingFeeList.push(this.roundCurrency(fee));
     }
 
-    const userId = Number(this.checkoutParams?.user_id ?? 0);
     const availablePoints = userId > 0
       ? await this.calculateAvailablePoints(productAmount, userId)
       : 0;
@@ -561,11 +718,14 @@ export class OrderCheckService {
 
     const unpaidAmount = this.roundCurrency(Math.max(totalAmount - balance, 0));
 
+    // 构建配送选项（对齐 PHP 返回结构但保持驼峰）
+    const deliveryOption = await this.buildDeliveryOption(shops);
+
     return {
       productAmount,
       checkedCount: totals.checkedCount ?? 0,
       discounts,
-      discountAfter,
+      discountAfter, // 若需要对齐 PHP 在无折扣时返回 null，可在此加: discountAfter: discounts>0?discountAfter:null
       totalCount: totals.totalCount ?? totals.checkedCount ?? 0,
       discountCouponAmount: couponAmount,
       discountDiscountAmount: discountAmount,
@@ -589,6 +749,7 @@ export class OrderCheckService {
         ? this.checkoutParams.use_coupon_ids
         : [],
       balance,
+      deliveryOption,
     };
   }
 
@@ -1721,33 +1882,182 @@ export class OrderCheckService {
     return lodashSumBy(carts, (item) => this.toNumber(item?.serviceFee ?? 0));
   }
 
-  private calculateShippingFee(shops: CheckoutShop[]): ShippingFeeResult {
+  private async calculateShippingFee(shops: CheckoutShop[]): Promise<ShippingFeeResult> {
+    // NOTE: 为保持与 PHP 行为一致，整合三层逻辑：
+    // 1. 跳过全虚拟 / 全包邮组
+    // 2. 固定运费 (fixedShippingFee > 0) 直接叠加
+    // 3. 模板运费：按 shop -> shipping_tpl_id 聚合 count / weight，按所选配送方式 shipping_type 匹配模板行，再计算（件/重量）增量费用
     const perShop = new Map<number, number>();
-    let total = 0;
-
     if (!Array.isArray(shops) || shops.length === 0) {
       return { total: 0, storeShippingFee: perShop };
     }
+
+    // 预处理：收集所有涉及的模板 ID 与需要的配送类型（shipping_type 选中）
+    const templateIdSet = new Set<number>();
+    const shopSelectedType = new Map<number, number>(); // shopId -> typeId
+    // 获取用户提交的 shipping_type 选择（保存在 this.checkoutParams.shipping_type）
+    for (const sel of (this.checkoutParams?.shipping_type || [])) {
+      if (sel && typeof sel.shopId === "number") {
+        shopSelectedType.set(Number(sel.shopId), Number(sel.typeId || sel.type_id || sel.typeID || 0));
+      }
+    }
+
+    // 聚合结构：shopId -> tplId -> { count, weight, freeSkip }
+    const aggregate: Record<number, Record<number, { count: number; weight: number; fee: number }>> = {};
 
     for (const shop of shops) {
       const shopId = Number(shop?.shopId ?? 0);
       if (!perShop.has(shopId)) perShop.set(shopId, 0);
       const freeShippingAll = (shop as any)?.freeShippingAll === 1;
-      if (Number(shop?.noShipping ?? 0) === 1) continue; // 全虚拟
-      if (freeShippingAll) continue; // 全部包邮实体，无需计费
+      if (Number(shop?.noShipping ?? 0) === 1 || freeShippingAll) {
+        // 全虚拟或全包邮，跳过；仍保留 perShop=0
+        continue;
+      }
 
+      // 固定运费先加
       const fixed = this.toNumber(shop?.fixedShippingFee ?? 0);
       if (fixed > 0) {
         perShop.set(shopId, this.roundCurrency((perShop.get(shopId) ?? 0) + fixed));
+        continue; // 有固定运费时，按当前实现直接覆盖，不再走模板聚合（如需叠加可移除此 continue）
+      }
+
+      // 模板聚合
+      for (const cartItem of (shop?.carts || [])) {
+        const isChecked = this.isCartItemChecked(cartItem);
+        if (!isChecked) continue; // 只对选中项计费
+        const freeShipping = Number(cartItem?.freeShipping ?? cartItem?.free_shipping ?? 0) === 1;
+        const tplIdRaw = Number(cartItem?.shippingTplId ?? cartItem?.shipping_tpl_id ?? 0);
+        const tplId = tplIdRaw > 0 ? tplIdRaw : 0; // 0 也允许，用于找默认模板
+        templateIdSet.add(tplId);
+        if (!aggregate[shopId]) aggregate[shopId] = {};
+        if (!aggregate[shopId][tplId]) {
+          aggregate[shopId][tplId] = { count: 0, weight: 0, fee: 0 };
+        }
+        if (!freeShipping) {
+          // 不统计包邮商品
+            const qty = this.toNumber(cartItem?.quantity ?? 0);
+            const weight = this.toNumber(cartItem?.productWeight ?? cartItem?.product_weight ?? 0) * qty;
+            aggregate[shopId][tplId].count += qty;
+            aggregate[shopId][tplId].weight += weight;
+        }
       }
     }
 
-    for (const fee of perShop.values()) {
-      total += fee;
+    // 若没有需要模板计费的内容，直接汇总返回
+    if (Object.keys(aggregate).length === 0) {
+      let simpleTotal = 0;
+      for (const v of perShop.values()) simpleTotal += v;
+      return { total: this.roundCurrency(simpleTotal), storeShippingFee: perShop };
     }
-    total = this.roundCurrency(total);
 
-    return { total, storeShippingFee: perShop };
+    // 查询所需模板行 shipping_tpl_info（一次性取出）
+    // 选中配送方式：shipping_type_id = shopSelectedType[shopId]；若为空则默认 1
+    // 这里简化：一次性查询所有相关 tplId 与所有可能 typeId（收集）
+    const uniqueTypeIds = new Set<number>();
+    for (const [sid, tid] of shopSelectedType.entries()) uniqueTypeIds.add(tid || 0);
+    if (uniqueTypeIds.size === 0) uniqueTypeIds.add(0);
+
+    // 取全部涉及 tpl 的所有 info 行（后续用内存过滤）
+    const tplIdsArray = Array.from(templateIdSet.values());
+    const infoRows: any[] = tplIdsArray.length
+      ? await (this.prisma as any).$queryRawUnsafe(
+          `SELECT id, shipping_type_id, shipping_tpl_id, is_free, is_default, region_data, start_number, start_price, add_number, add_price, pricing_type, free_price
+           FROM \`shipping_tpl_info\`
+           WHERE shipping_tpl_id IN (${tplIdsArray.map(() => '?').join(',')})
+           LIMIT 10000`,
+          ...tplIdsArray,
+        )
+      : [];
+
+    // region id 链：从 checkoutParams/address 推导；简单起见，仅使用用户地址 regionIds（已在 earlier 逻辑中应该获取），若没有就空
+    // 这里做一个兜底：尝试获取用户默认地址 regionIds；若不可得则 regionIds=[]
+    let regionIds: number[] = [];
+    try {
+      if (this.checkoutParams?.address_id) {
+        const addr = await this.prisma.user_address.findFirst({
+          where: { address_id: this.checkoutParams.address_id },
+          select: { province: true, city: true, district: true },
+        });
+        if (addr) {
+          regionIds = [addr.province, addr.city, addr.district].filter((x) => Number(x) > 0) as number[];
+        }
+      }
+    } catch {}
+
+    const pickRegionMatch = (rows: any[], typeId: number, tplId: number) => {
+      const subset = rows.filter((r) => Number(r.shipping_tpl_id) === tplId && Number(r.shipping_type_id) === typeId);
+      if (!subset.length) return null;
+      let fallback: any = null;
+      for (const r of subset) {
+        if (Number(r.is_default) === 1) fallback = r;
+      }
+      // 逐行匹配区域；region_data 可能是 JSON，需解析 areaRegions
+      for (const r of subset) {
+        if (!r.region_data) continue;
+        try {
+          const parsed = typeof r.region_data === 'string' ? JSON.parse(r.region_data) : r.region_data;
+          const areaRegions: number[] = parsed?.areaRegions || parsed?.area_regions || [];
+          if (Array.isArray(areaRegions) && areaRegions.some((rid) => regionIds.includes(Number(rid)))) {
+            return r; // 优先区域匹配
+          }
+        } catch {}
+      }
+      return fallback || subset[0];
+    };
+
+    // 计算模板费用
+    for (const [shopIdStr, tplMap] of Object.entries(aggregate)) {
+      const shopId = Number(shopIdStr);
+      if (!tplMap) continue;
+      const typeId = shopSelectedType.get(shopId) || 0; // 0 代表默认普通快递，PHP 中常用 1，这里保持 0->1 兼容
+      const effTypeId = typeId || 1;
+      for (const [tplIdStr, agg] of Object.entries(tplMap)) {
+        const tplId = Number(tplIdStr);
+        // 匹配模板 info 行
+        const tplInfo = pickRegionMatch(infoRows, effTypeId, tplId);
+        if (!tplInfo) continue; // 没有规则 -> 视为 0
+
+        const startPrice = this.toNumber(tplInfo.start_price ?? 0);
+        const startNumber = this.toNumber(tplInfo.start_number ?? 0);
+        const addNumber = this.toNumber(tplInfo.add_number ?? 0);
+        const addPrice = this.toNumber(tplInfo.add_price ?? 0);
+        const pricingType = this.toNumber(tplInfo.pricing_type ?? 1); // 1=件,2=重量
+        const isFree = Number(tplInfo.is_free ?? 0) === 1;
+        const freePrice = this.toNumber(tplInfo.free_price ?? 0); // 满额包邮
+
+        let fee = 0;
+        if (agg.count <= 0 && agg.weight <= 0) {
+          fee = 0;
+        } else if (isFree || (this.toNumber((shops as any)?.productAmount ?? 0) >= freePrice && freePrice > 0)) {
+          fee = 0;
+        } else {
+          fee = startPrice;
+          if (pricingType === 1) {
+            // 按件
+            const remain = agg.count - startNumber;
+            if (remain > 0 && addNumber > 0 && addPrice > 0) {
+              const blocks = Math.trunc(remain / addNumber); // 不四舍五入
+              fee += blocks * addPrice;
+            }
+          } else if (pricingType === 2) {
+            // 按重量
+            const remainW = agg.weight - startNumber;
+            if (remainW > 0 && addNumber > 0 && addPrice > 0) {
+              const blocks = Math.trunc(remainW / addNumber) + 1; // PHP 逻辑 +1
+              fee += blocks * addPrice;
+            }
+          }
+        }
+        if (fee > 0) {
+          perShop.set(shopId, this.roundCurrency((perShop.get(shopId) ?? 0) + fee));
+        }
+      }
+    }
+
+    // 汇总 total
+    let total = 0;
+    for (const v of perShop.values()) total += v;
+    return { total: this.roundCurrency(total), storeShippingFee: perShop };
   }
 
   private recalculateTotals(shops: CheckoutShop[]): CheckoutTotals {

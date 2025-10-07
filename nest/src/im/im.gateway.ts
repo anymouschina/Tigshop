@@ -135,6 +135,22 @@ export class ImGateway
     this.send(client, EVENT_PONG, { ts: Date.now() });
   }
 
+  // 对外公开用于 HTTP 调用的推送方法
+  public pushMessage(message: any) {
+    const payload = { event: EVENT_MESSAGE, data: message };
+    const raw = JSON.stringify(payload);
+    this.server?.clients?.forEach?.((ws: WebSocket) => {
+      try {
+        if (ws.readyState !== ws.OPEN) return;
+        const ctx = this.contexts.get(ws);
+        if (!ctx) return;
+        if (ctx.role === 'admin' || ctx.userId === message.userId) {
+          ws.send(raw);
+        }
+      } catch {}
+    });
+  }
+
   private broadcastMessage(message: any, sourceCtx: SessionContext) {
     const payload = { event: EVENT_MESSAGE, data: message };
     const raw = JSON.stringify(payload);

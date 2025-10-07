@@ -112,6 +112,7 @@ export class OrderCheckController {
       availablePoints,
       couponList,
       tmplIds,
+      deliveryOption,
     ] = await Promise.all([
       this.orderCheckService.getAddressList(userId),
       this.orderCheckService.getAvailablePaymentType(),
@@ -126,6 +127,7 @@ export class OrderCheckController {
         selectUserCouponIds,
       ),
       this.orderCheckService.getMiniProgramTemplateIds(),
+      this.orderCheckService.buildDeliveryOption(builtCart?.cartList ?? []),
     ]);
 
     const shippingSelections = Array.isArray(params.shipping_type)
@@ -182,6 +184,7 @@ export class OrderCheckController {
         selectUserCouponIds,
         productExtra: params.product_extra,
       },
+      deliveryOption,
     };
 
     return result;
@@ -266,6 +269,7 @@ export class OrderCheckController {
       total,
       availablePoints,
       addressList,
+      deliveryOption: await this.orderCheckService.buildDeliveryOption(cartList),
     };
 
     return result;
@@ -415,6 +419,7 @@ export class OrderCheckController {
       cartList: normalizedCartList,
       availablePoints: await this.orderCheckService.getOrderAvailablePoints(),
       total: await this.orderCheckService.getTotalFee(builtCartList),
+      deliveryOption: await this.orderCheckService.buildDeliveryOption(normalizedCartList),
     };
   }
 

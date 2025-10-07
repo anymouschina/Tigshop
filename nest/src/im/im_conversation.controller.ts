@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query, Req, Logger, UseGuards } from '@nestjs/common';
 import { ImConversationService } from './im_conversation.service';
+import { ImGateway } from './im.gateway';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { HybridImAuthGuard } from 'src/auth/guards/hybrid-im-auth.guard';
 
@@ -9,7 +10,7 @@ import { HybridImAuthGuard } from 'src/auth/guards/hybrid-im-auth.guard';
 @UseGuards(HybridImAuthGuard)
 export class ImConversationController {
   private readonly logger = new Logger(ImConversationController.name);
-  constructor(private service: ImConversationService) {}
+  constructor(private service: ImConversationService, private gateway: ImGateway) {}
 
   @Get('message/list')
   async getMessageList(
@@ -95,6 +96,8 @@ export class ImConversationController {
       orderId: body.orderId ? Number(body.orderId) : undefined,
       content: body.content,
     });
+    // HTTP 发送后主动推送到 WebSocket 在线客户端
+    try { this.gateway.pushMessage(data); } catch (e) { this.logger.error('push ws message failed', e as any); }
     return { code: 0, message: 'success', data };
   }
 
