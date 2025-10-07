@@ -679,16 +679,28 @@ export class AdminApiProductController {
     )) as Array<{ tpl_id: number; tpl_name: string }>;
 
     // 运费模板（shipping_tpl 在 Prisma 中被忽略，使用原生 SQL）
-    const shippingTplSql = `
+    // 兼容 PHP 逻辑：当指定 shopId 时，返回该店铺专属 + 全局(shop_id=0) 模板；未指定则返回全部（不建议巨量数据时使用）
+    // 排序：优先 is_default，其次 shop_id（当前店铺优先，再全局），最后 id 倒序
+    let shippingTplSql = `
       SELECT shipping_tpl_id, shipping_tpl_name, shipping_time, is_free, pricing_type, is_default, shop_id
-      FROM ` + "`shipping_tpl`" + `
-      ${shopId > 0 ? "WHERE shop_id = ?" : ""}
-      ORDER BY shipping_tpl_id DESC
+      FROM \`shipping_tpl\`
+    `;
+    const shippingParams: any[] = [];
+    if (shopId > 0) {
+      shippingTplSql += `WHERE (shop_id = ? OR shop_id = 0)`;
+      shippingParams.push(shopId);
+    }
+    shippingTplSql += `
+      ORDER BY is_default DESC,
+               CASE WHEN shop_id = ? THEN 0 WHEN shop_id = 0 THEN 1 ELSE 2 END,
+               shipping_tpl_id DESC
       LIMIT 1000
     `;
+    // 为了在排序 CASE 中识别当前店铺，需要再 push 一次 shopId；若未指定 shopId 则用 0 兜底
+    shippingParams.push(shopId > 0 ? shopId : 0);
     const shipping_tpl_list: any[] = await (this.prisma as any).$queryRawUnsafe(
       shippingTplSql,
-      ...(shopId > 0 ? [shopId] : []),
+      ...shippingParams,
     );
 
     // 服务说明

@@ -7,11 +7,24 @@ import { Server } from 'ws';
 
 export class WsAdapter implements WebSocketAdapter {
   private readonly logger = new Logger(WsAdapter.name);
+  private httpServer: any;
   constructor(private app: INestApplicationContext) {}
 
+  setHttpServer(server: any) {
+    this.httpServer = server;
+  }
+
   create(port: number, options: any = {}): any {
-    const server = new Server({ port, ...options });
-    this.logger.log(`WS Server started on port ${port}`);
+    // 如果已有 HTTP server，则复用并挂载到 /ws 路径；否则按独立端口启动
+    if (this.httpServer) {
+      const path = options?.path || '/ws';
+      const server = new Server({ server: this.httpServer, path, ...options });
+      this.logger.log(`WS Server attached to existing HTTP server on path ${path}`);
+      return server;
+    }
+    const listenPort = options?.port || port || 0;
+    const server = new Server({ port: listenPort, ...options });
+    this.logger.log(`WS Server started standalone on port ${listenPort}`);
     return server;
   }
 

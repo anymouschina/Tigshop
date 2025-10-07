@@ -26,8 +26,10 @@ async function bootstrap() {
     logger: ["error", "warn", "log", "debug", "verbose"],
   });
 
-  // 注册自定义 ws 适配器（使用 ws 库，而不是 socket.io）
-  app.useWebSocketAdapter(new WsAdapter(app));
+  // 注册自定义 ws 适配器（使用 ws 库，而不是 socket.io），复用 HTTP server
+  const wsAdapter = new WsAdapter(app);
+  // 先暂存，稍后在 listen 之后 httpServer 还未 ready，使用 getHttpServer 即可
+  app.useWebSocketAdapter(wsAdapter);
 
   // 配置静态资源服务
   const uploadsPath = path.join(process.cwd(), "uploads");
@@ -108,6 +110,17 @@ async function bootstrap() {
 
   // 启动HTTP服务
   await app.listen(Config.PORT);
+  // 绑定 http server 给 ws adapter 以便在 /ws 路径复用端口
+  try {
+    const httpServer = app.getHttpServer();
+    wsAdapter.setHttpServer(httpServer);
+    // 触发实例化（若 gateway 尚未触发 create）
+    try {
+      (wsAdapter as any).create(0, { path: '/ws' });
+    } catch {}
+  } catch (e) {
+    logger.error('Attach http server to ws adapter failed', e as any);
+  }
   logger.log(`HTTP server is running on port ${Config.PORT}`);
   logger.log(
     `Swagger documentation is available at http://localhost:${Config.PORT}/api-docs`,
