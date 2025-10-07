@@ -592,22 +592,74 @@ export class MerchantShopService {
   /**
    * 获取当前店铺详情
    */
-  async getCurrentShopDetail(adminId: number) {
-    // 获取商户的第一个店铺
-    const shop = await this.prisma.shop.findFirst({
-      where: {
-        merchant_id: adminId,
-        status: 1,
-      },
-      orderBy: {
-        add_time: "asc",
-      },
-    });
+  async getCurrentShopDetail(adminId: number, explicitShopId?: number) {
+    // 读取管理员基础信息与权限
+    const adminUser = await this.prisma.admin_user.findUnique({ where: { admin_id: adminId } });
+    if (!adminUser) throw new Error("管理员不存在");
 
-    if (!shop) {
-      throw new Error("暂无可用店铺");
+    // 解析 auth_list（可能为 JSON / 逗号分隔），展开 all
+    let authList: string[] = [];
+    if (adminUser.auth_list) {
+      try {
+        const parsed = JSON.parse(adminUser.auth_list);
+        if (Array.isArray(parsed)) authList = parsed.filter(Boolean);
+        else if (typeof parsed === 'string') authList = parsed.split(',').filter(Boolean);
+      } catch {
+        authList = adminUser.auth_list.split(',').filter(Boolean);
+      }
+    }
+    if (authList.includes('all')) {
+      const allAuth = await this.prisma.authority.findMany({ select: { authority_sn: true } });
+      const merged = new Set<string>([...authList, ...allAuth.map(a => a.authority_sn).filter(Boolean)]);
+      merged.delete('all');
+      authList = Array.from(merged);
     }
 
+    // 判断是否超级管理员：条件任一成立
+    const isSuperAdmin = (
+      adminUser.admin_type === 'admin' ||
+      authList.length > 0 && authList.includes('systemManage') || // 示例：可按需要调整权限标识
+      authList.length > 0 && authList.length > 100 // 粗糙判定：权限极多
+    );
+
+    // 如果提供了 explicitShopId：优先尝试按权限读取
+    if (explicitShopId) {
+      let canAccess = false;
+      if (isSuperAdmin) {
+        canAccess = true;
+      } else {
+        // 1) 绑定关系 admin_user_shop
+        const bind = await this.prisma.admin_user_shop.findFirst({ where: { admin_id: adminId, shop_id: explicitShopId } });
+        if (bind) canAccess = true;
+        // 2) 作为其 merchant 下店铺 (adminUser.merchant_id) 可访问
+        if (!canAccess && adminUser.merchant_id) {
+          const shopOne = await this.prisma.shop.findFirst({ where: { shop_id: explicitShopId, merchant_id: adminUser.merchant_id } });
+          if (shopOne) canAccess = true;
+        }
+      }
+      if (!canAccess) throw new Error('无权访问该店铺');
+      const shop = await this.prisma.shop.findFirst({ where: { shop_id: explicitShopId } });
+      if (shop) return shop;
+      // 若明确指定但不存在
+      throw new Error('店铺不存在');
+    }
+
+    // 未指定 shopId：按优先级查找
+    // 1) 若超级管理员：直接取最早（与原逻辑一致）
+    let baseWhere: any = { status: 1 };
+    if (!isSuperAdmin) {
+      if (adminUser.merchant_id) baseWhere.merchant_id = adminUser.merchant_id;
+      else {
+        // 退化策略：尝试通过绑定关系推导 shop_id 列表
+        const rels = await this.prisma.admin_user_shop.findMany({ where: { admin_id: adminId }, select: { shop_id: true } });
+        const ids = rels.map(r => r.shop_id).filter(Boolean);
+        if (ids.length === 0) throw new Error('暂无可用店铺');
+        baseWhere.shop_id = { in: ids };
+      }
+    }
+
+    const shop = await this.prisma.shop.findFirst({ where: baseWhere, orderBy: { add_time: 'asc' } });
+    if (!shop) throw new Error('暂无可用店铺');
     return shop;
   }
 

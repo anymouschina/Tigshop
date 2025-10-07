@@ -260,11 +260,12 @@ export class MerchantShopController {
   @ApiOperation({ summary: "获取当前店铺详情" })
   async getCurrentShopDetail(@Request() req) {
     const userId = req.user?.userId;
-    if (!userId) {
-      throw new Error("用户未登录");
-    }
-
-    return this.merchantShopService.getCurrentShopDetail(userId);
+    if (!userId) throw new Error("用户未登录");
+    // 兼容前端通过 header x-shop-id 传入店铺
+    const rawHeaderShopId = req.headers?.['x-shop-id'] ?? req.headers?.['x-shopid'];
+    const headerShopId = Number(rawHeaderShopId);
+    const shopId = Number.isFinite(headerShopId) && headerShopId > 0 ? headerShopId : undefined;
+    return this.merchantShopService.getCurrentShopDetail(userId, shopId);
   }
 
   /**
