@@ -167,19 +167,25 @@ export class ImGateway
       }
   const payload = { type: EVENT_MESSAGE, data: [message] };
   const raw = JSON.stringify(payload);
-      const targetUserId = Number(message?.userId ?? 0) || 0;
+      // message.type: 按 service 约定 user 发出的=1, servant 发出的=2
+      const senderType = Number(message?.type); // 1 用户消息 -> 推给管理员; 2 客服消息 -> 推给对应用户
+      const targetUserId = Number(message?.userId ?? 0) || 0; // 会话用户 id
       let delivered = 0;
       (srv.clients || []).forEach?.((ws: WebSocket) => {
         try {
           if (ws.readyState !== ws.OPEN) return;
           const ctx = this.contexts.get(ws);
           if (!ctx) return;
-          // 广播条件：1) 管理员；2) userId 匹配；3) 若消息没有 userId（0），则全部用户+管理员
-          if (
-            ctx.role === 'admin' ||
-            (targetUserId > 0 && ctx.userId === targetUserId) ||
-            (targetUserId === 0 && ctx.role === 'user')
-          ) {
+          // 只发给对端：
+          // 客服消息 (senderType=2) -> 目标用户 (ctx.role=user && ctx.userId=targetUserId)
+          // 用户消息 (senderType=1) -> 管理员 (ctx.role=admin)
+          let match = false;
+          if (senderType === 2) {
+            if (ctx.role === 'user' && targetUserId > 0 && ctx.userId === targetUserId) match = true;
+          } else if (senderType === 1) {
+            if (ctx.role === 'admin') match = true;
+          }
+          if (match) {
             ws.send(raw);
             delivered++;
           }
@@ -187,9 +193,7 @@ export class ImGateway
           this.logger.warn(`pushMessage send error: ${(e as any)?.message}`);
         }
       });
-      this.logger.log(
-        `pushMessage broadcast event=message id=${message?.id} userId=${targetUserId} delivered=${delivered} clients=${(srv.clients && (srv.clients as any).size) || 0}`,
-      );
+      this.logger.log(`pushMessage broadcast event=message id=${message?.id} senderType=${senderType} targetUserId=${targetUserId} delivered=${delivered} clients=${(srv.clients && (srv.clients as any).size) || 0}`);
     } catch (e) {
       this.logger.error('pushMessage fatal error', e as any);
     }
@@ -199,12 +203,18 @@ export class ImGateway
     // 与 pushMessage 一致格式
     const payload = { type: EVENT_MESSAGE, data: [message] };
     const raw = JSON.stringify(payload);
+    const senderType = Number(message?.type); // 1 用户->管理员, 2 客服->用户
+    const targetUserId = Number(message?.userId ?? 0) || 0;
     this.server.clients.forEach((ws) => {
       if (ws.readyState !== ws.OPEN) return;
       const ctx = this.contexts.get(ws);
       if (!ctx) return;
-      if (ctx.role === 'admin' || ctx.userId === message.userId) {
-        try { ws.send(raw); } catch {}
+      if (senderType === 1) {
+        // 用户消息给管理员
+        if (ctx.role === 'admin') { try { ws.send(raw); } catch {} }
+      } else if (senderType === 2) {
+        // 客服消息给对应用户
+        if (ctx.role === 'user' && targetUserId > 0 && ctx.userId === targetUserId) { try { ws.send(raw); } catch {} }
       }
     });
   }

@@ -83,6 +83,10 @@ export class ImConversationController {
       if (tokenUser.userId) normalizedUserId = Number(tokenUser.userId);
       else if (body.userId) normalizedUserId = Number(body.userId); // 兜底（匿名兼容）
     } else if (!body.conversationId && body.userId) {
+      // 新建会话时允许指定用户
+      normalizedUserId = Number(body.userId);
+    } else if (role === 'servant' && body.conversationId && body.userId) {
+      // 已有会话但可能还未绑定 user（user_id=0），允许客服补写指定用户，service 内部只在会话当前 user_id=0 时生效
       normalizedUserId = Number(body.userId);
     }
 

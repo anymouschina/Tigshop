@@ -239,6 +239,29 @@ export class ImConversationService {
 
     if (!convId) throw new Error('缺少会话信息');
 
+    // 若是客服发送且会话当前没有绑定用户（user_id=0）且参数提供 userId，则补回会话用户，便于后续广播给该用户
+    if (role === 'servant' && userId && conv && (conv as any).user_id === 0) {
+      try {
+        await this.prisma.im_conversation.update({
+          where: { id: convId },
+          data: { user_id: userId },
+        });
+        (conv as any).user_id = userId;
+      } catch (e) {
+        this.logger.warn(`补写会话 user_id 失败 convId=${convId} userId=${userId}: ${(e as any)?.message}`);
+      }
+    }
+
+    // 若会话尚未绑定用户 (user_id=0) 且外部传入 userId，则补绑定
+    if (conv && conv.user_id === 0 && userId && userId > 0) {
+      try {
+        await this.prisma.im_conversation.update({ where: { id: conv.id }, data: { user_id: userId } });
+        conv.user_id = userId;
+      } catch (e) {
+        this.logger.warn(`bind userId to conversation failed convId=${conv.id} userId=${userId}: ${(e as any)?.message}`);
+      }
+    }
+
     // 若为客服消息但未明确 servantId，尝试从会话最近客服回填
     let effectiveServantId = servantId;
     if (role === 'servant' && (!effectiveServantId || effectiveServantId === 0)) {
@@ -276,7 +299,7 @@ export class ImConversationService {
         content: contentStr,
         message_type: messageType,
         type: senderType,
-        user_id: conv?.user_id ?? 0,
+        user_id: conv?.user_id ?? 0, // 经过上面补写后可获得真实 userId
         // 用户消息也带上当前会话的 last_servant_id，便于前端直接展示
         servant_id: role === 'servant' ? (effectiveServantId ?? 0) : (conv?.last_servant_id ?? 0),
         send_time: now,
