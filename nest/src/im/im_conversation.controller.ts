@@ -97,13 +97,24 @@ export class ImConversationController {
       content: body.content,
     });
     // HTTP 发送后主动推送到 WebSocket 在线客户端
-    try { this.gateway.pushMessage(data); } catch (e) { this.logger.error('push ws message failed', e as any); }
+    try {
+      // 优先使用单例，避免因 DI 创建副本实例导致没有客户端
+      const gw = (ImGateway.instance || this.gateway) as ImGateway | undefined;
+      if (!gw || typeof gw.pushMessage !== 'function') {
+        this.logger.warn('No ImGateway instance available to push message');
+      } else {
+        gw.pushMessage(data);
+        this.logger.debug(`push ws message success id=${data?.id}`);
+      }
+    } catch (e) {
+      this.logger.error(`push ws message failed id=${data?.id}: ${(e as any)?.message}`);
+    }
     return { code: 0, message: 'success', data };
   }
 
   // 兼容客户端老路径：message/setRead → 标记已读
   @Post('message/setRead')
-  async setRead(@Body() body: any) {
+  async setRead(@Body() body: any, @Req() req: any) {
     const conversationId = body.conversationId ? Number(body.conversationId) : undefined;
     const messageIds = Array.isArray(body.messageIds) ? body.messageIds.map((v: any) => Number(v)) : undefined;
     const data = await this.service.markRead({
@@ -113,6 +124,26 @@ export class ImConversationController {
       shopId: body.shopId ? Number(body.shopId) : 0,
       userFrom: body.userFrom,
     });
+    // 推送 read 事件
+    try {
+      const gw: ImGateway | undefined = (ImGateway.instance || (this as any).gateway) as ImGateway | undefined;
+      const now = new Date();
+      const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+      const time = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      if (gw && typeof gw.pushReadEvent === 'function') {
+        gw.pushReadEvent({
+          conversationId: conversationId ?? null,
+          shopId: body.shopId ? Number(body.shopId) : 0,
+          userId: (req?.user?.role === 'admin' ? body.userId : (req?.user?.userId)) || undefined,
+          servantId: (req?.user?.role === 'admin' || req?.user?.isAdmin) ? (req?.user?.userId || req?.user?.adminId) : undefined,
+          time,
+        });
+      } else {
+        this.logger.warn('No ImGateway instance available to push read event');
+      }
+    } catch (e) {
+      this.logger.error(`push read event failed: ${(e as any)?.message}`);
+    }
     return { code: 0, message: 'success', data };
   }
 
@@ -335,5 +366,17 @@ export class ImConversationController {
   async deleteConversation(@Body() body: any) {
     const data = await this.service.deleteConversation({ conversationId: Number(body.conversationId) });
     return { code: 0, message: 'success', data };
+  }
+
+  // 调试：查看当前 WebSocket 连接统计
+  @Get('debug/wsStats')
+  async wsStats() {
+    const gw: any = ImGateway.instance;
+    const stats = {
+      hasInstance: !!gw,
+      serverReady: !!gw?.server,
+      clientSize: gw?.server?.clients ? (gw.server.clients.size || 0) : 0,
+    };
+    return { code: 0, message: 'success', data: stats };
   }
 }

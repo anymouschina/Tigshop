@@ -42,6 +42,8 @@ interface SessionContext {
 export class ImGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
+  // 静态单例引用，确保 HTTP 层拿到的就是实际承载连接的实例
+  static instance: ImGateway | null = null;
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(ImGateway.name);
   // 保存客户端上下文
@@ -54,6 +56,14 @@ export class ImGateway
 
   afterInit(): void {
     this.logger.log('IM WebSocket Gateway initialized');
+    ImGateway.instance = this; // 初始化时设置单例引用
+    // 周期性输出客户端数量，便于排查没有连接的情况
+    setInterval(() => {
+      try {
+        const size = (this.server?.clients && (this.server.clients as any).size) || 0;
+        this.logger.debug(`WS clients heartbeat size=${size}`);
+      } catch {}
+    }, 30000).unref?.();
   }
 
   handleConnection(client: WebSocket, req: any): void {
@@ -61,6 +71,7 @@ export class ImGateway
       const url = new URL(req.url, `ws://${req.headers.host}`);
       const token = url.searchParams.get('token') || undefined;
       const platform = url.searchParams.get('platform') || undefined;
+      this.logger.debug(`WS connection incoming path=${url.pathname} token=${token ? 'yes' : 'no'} platform=${platform || ''}`);
       if (token) {
         this.authenticate(client, token, platform);
       } else {
@@ -91,6 +102,7 @@ export class ImGateway
       const ctx: SessionContext = { userId: userId || 0, adminId, role, shopId: 0, token, platform };
       this.contexts.set(client, ctx);
       this.send(client, EVENT_AUTH_OK, { role, userId: ctx.userId, adminId: ctx.adminId });
+      this.logger.log(`Client authenticated role=${role} userId=${ctx.userId} adminId=${ctx.adminId} totalClients=${(this.server?.clients && (this.server.clients as any).size) || 0}`);
     } catch (e) {
       this.send(client, EVENT_AUTH_ERROR, { message: 'invalid token' });
       client.close();
@@ -135,40 +147,96 @@ export class ImGateway
     this.send(client, EVENT_PONG, { ts: Date.now() });
   }
 
+  // 兼容前端发送 {type:'heartBeat'} 的心跳，直接回 echo
+  @SubscribeMessage('heartBeat')
+  onHeartBeat(@ConnectedSocket() client: WebSocket) {
+    try { client.send(JSON.stringify({ type: 'heartBeat', data: { ts: Date.now() } })); } catch {}
+  }
+
   // 对外公开用于 HTTP 调用的推送方法
   public pushMessage(message: any) {
-    const payload = { event: EVENT_MESSAGE, data: message };
-    const raw = JSON.stringify(payload);
-    this.server?.clients?.forEach?.((ws: WebSocket) => {
-      try {
-        if (ws.readyState !== ws.OPEN) return;
-        const ctx = this.contexts.get(ws);
-        if (!ctx) return;
-        if (ctx.role === 'admin' || ctx.userId === message.userId) {
-          ws.send(raw);
+    try {
+      // 若当前实例没有 server 但存在单例且单例不同，使用单例转发
+      if ((!this.server || !(this.server as any).clients) && ImGateway.instance && ImGateway.instance !== this) {
+        return ImGateway.instance.pushMessage(message);
+      }
+      const srv = this.server;
+      if (!srv) {
+        this.logger.warn('pushMessage aborted: server not ready');
+        return;
+      }
+  const payload = { type: EVENT_MESSAGE, data: [message] };
+  const raw = JSON.stringify(payload);
+      const targetUserId = Number(message?.userId ?? 0) || 0;
+      let delivered = 0;
+      (srv.clients || []).forEach?.((ws: WebSocket) => {
+        try {
+          if (ws.readyState !== ws.OPEN) return;
+          const ctx = this.contexts.get(ws);
+          if (!ctx) return;
+          // 广播条件：1) 管理员；2) userId 匹配；3) 若消息没有 userId（0），则全部用户+管理员
+          if (
+            ctx.role === 'admin' ||
+            (targetUserId > 0 && ctx.userId === targetUserId) ||
+            (targetUserId === 0 && ctx.role === 'user')
+          ) {
+            ws.send(raw);
+            delivered++;
+          }
+        } catch (e) {
+          this.logger.warn(`pushMessage send error: ${(e as any)?.message}`);
         }
-      } catch {}
-    });
+      });
+      this.logger.log(
+        `pushMessage broadcast event=message id=${message?.id} userId=${targetUserId} delivered=${delivered} clients=${(srv.clients && (srv.clients as any).size) || 0}`,
+      );
+    } catch (e) {
+      this.logger.error('pushMessage fatal error', e as any);
+    }
   }
 
   private broadcastMessage(message: any, sourceCtx: SessionContext) {
-    const payload = { event: EVENT_MESSAGE, data: message };
+    // 与 pushMessage 一致格式
+    const payload = { type: EVENT_MESSAGE, data: [message] };
     const raw = JSON.stringify(payload);
     this.server.clients.forEach((ws) => {
-      if (ws.readyState === ws.OPEN) {
-        const ctx = this.contexts.get(ws);
-        if (!ctx) return;
-        // 简单广播策略：同平台客服与同用户 或 所有管理员
-        if (ctx.role === 'admin' || ctx.userId === message.userId) {
-          ws.send(raw);
-        }
+      if (ws.readyState !== ws.OPEN) return;
+      const ctx = this.contexts.get(ws);
+      if (!ctx) return;
+      if (ctx.role === 'admin' || ctx.userId === message.userId) {
+        try { ws.send(raw); } catch {}
       }
     });
   }
 
+  // 广播已读事件 (type: 'read')
+  public pushReadEvent(info: { conversationId?: number | null; shopId?: number; userId?: number; servantId?: number; time?: string }) {
+    try {
+      if ((!this.server || !(this.server as any).clients) && ImGateway.instance && ImGateway.instance !== this) {
+        return ImGateway.instance.pushReadEvent(info);
+      }
+      const srv = this.server;
+      if (!srv) return;
+      const payload = { type: 'read', data: [info] };
+      const raw = JSON.stringify(payload);
+      (srv.clients || []).forEach?.((ws: WebSocket) => {
+        if (ws.readyState !== ws.OPEN) return;
+        // 已读事件：只通知管理员与对应用户
+        const ctx = this.contexts.get(ws);
+        if (!ctx) return;
+        if (ctx.role === 'admin' || (info.userId && ctx.userId === info.userId)) {
+          try { ws.send(raw); } catch {}
+        }
+      });
+    } catch (e) {
+      this.logger.warn('pushReadEvent error', e as any);
+    }
+  }
+
   private send(client: WebSocket, event: string, data: any) {
     try {
-      client.send(JSON.stringify({ event, data }));
+      // 兼容：同时提供 event 与 type，前端只监听其一也能工作
+      client.send(JSON.stringify({ event, type: event, data }));
     } catch {}
   }
 }

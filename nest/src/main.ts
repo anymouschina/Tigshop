@@ -8,6 +8,7 @@ import { NestExpressApplication } from "@nestjs/platform-express";
 import * as path from "path";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { WsAdapter } from "./common/ws/ws.adapter";
+import { ImGateway } from "./im/im.gateway";
 
 async function bootstrap() {
   // 统一处理 BigInt 的 JSON 序列化（例如 MySQL COUNT(*)/$queryRaw 返回 BigInt）
@@ -26,9 +27,18 @@ async function bootstrap() {
     logger: ["error", "warn", "log", "debug", "verbose"],
   });
 
-  // 注册自定义 ws 适配器（使用 ws 库，而不是 socket.io），复用 HTTP server
+  // 注册自定义 ws 适配器（使用 ws 库，而不是 socket.io），复用同一个 HTTP server
+  // 注意：之前的实现是先注册 adapter 再在 listen 之后 setHttpServer 并“重绑” gateway.server。
+  // 这种方式导致重建的 ws Server 没有绑定 Nest 的 connection/message 处理逻辑，contexts 为空，从而 delivered=0。
+  // 这里改为：在 useWebSocketAdapter 之前就注入 httpServer（NestFactory.create 已创建 httpServer），
+  // 使得 Gateway 初始 create 时直接复用同一个 HTTP server，无需后续手动替换。
   const wsAdapter = new WsAdapter(app);
-  // 先暂存，稍后在 listen 之后 httpServer 还未 ready，使用 getHttpServer 即可
+  try {
+    wsAdapter.setHttpServer(app.getHttpServer());
+  } catch (e) {
+    // 理论上此处应该总是成功；若失败仍然继续，后续 listen 后不会再做重绑，避免重复 server
+    new Logger('Application').warn('Pre-binding httpServer to WsAdapter failed (will fallback standalone): ' + (e as any)?.message);
+  }
   app.useWebSocketAdapter(wsAdapter);
 
   // 配置静态资源服务
@@ -108,19 +118,8 @@ async function bootstrap() {
   await app.startAllMicroservices();
   logger.log(`Microservice is running on Redis at ${redisHost}:${redisPort}`);
 
-  // 启动HTTP服务
+  // 启动HTTP服务（Gateway 已经基于同一个 httpServer 创建 ws server）
   await app.listen(Config.PORT);
-  // 绑定 http server 给 ws adapter 以便在 /ws 路径复用端口
-  try {
-    const httpServer = app.getHttpServer();
-    wsAdapter.setHttpServer(httpServer);
-    // 触发实例化（若 gateway 尚未触发 create）
-    try {
-      (wsAdapter as any).create(0, { path: '/ws' });
-    } catch {}
-  } catch (e) {
-    logger.error('Attach http server to ws adapter failed', e as any);
-  }
   logger.log(`HTTP server is running on port ${Config.PORT}`);
   logger.log(
     `Swagger documentation is available at http://localhost:${Config.PORT}/api-docs`,
