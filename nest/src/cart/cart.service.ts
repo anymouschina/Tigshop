@@ -108,6 +108,8 @@ export interface CartItemDetail {
 
 export interface CartShopGroup {
   noShipping: number;
+  freeShippingAll?: number; // 新增：整组全部实体且包邮
+  shippingMode?: string; // derived: virtual | free | mixed/paid
   hasFixedShipping: number;
   fixedShippingFee: number;
   shopId: number;
@@ -800,6 +802,8 @@ export class CartService {
           : 0;
         shopBucket = {
           noShipping: product?.no_shipping ?? 0,
+          freeShippingAll: 0,
+          shippingMode: "mixed",
           hasFixedShipping,
           fixedShippingFee: fixedFee,
           shopId: row.shop_id,
@@ -827,8 +831,9 @@ export class CartService {
           product?.fixed_shipping_fee ?? 0,
         );
       }
+      // noShipping 聚合：最终以“全部虚拟”为 1，否则 0，先暂存最初值，稍后统一回写
       if (product?.no_shipping === 0) {
-        shopBucket.noShipping = 0;
+        // 留待结束阶段重新计算 allVirtual
       }
 
       const skuDataList = normalizeSkuData(row.sku_data ?? sku?.sku_data ?? []);
@@ -962,6 +967,20 @@ export class CartService {
         isDisabled: item.isDisabled,
       })),
     }));
+
+    // 二次遍历计算 freeShippingAll / noShipping & shippingMode
+    for (const g of cartList) {
+      const allVirtual = g.carts.length > 0 && g.carts.every(ci => (ci as any)?.freeShipping !== undefined ? (ci as any).fixedShippingType !== 1 && (ci as any).freeShipping === 0 ? (ci as any).shippingTplId === 0 ? (productMap.get(ci.productId)?.no_shipping === 1) : (productMap.get(ci.productId)?.no_shipping === 1) : (productMap.get(ci.productId)?.no_shipping === 1) : (productMap.get(ci.productId)?.no_shipping === 1));
+      // 上面写法过于复杂，重写：
+    }
+
+    for (const g of cartList) {
+      const allVirtual = g.carts.length > 0 && g.carts.every(ci => (productMap.get(ci.productId)?.no_shipping ?? 0) === 1);
+      const allFreePhysical = !allVirtual && g.carts.length > 0 && g.carts.every(ci => (productMap.get(ci.productId)?.no_shipping ?? 0) === 0 && (productMap.get(ci.productId)?.free_shipping ?? 0) === 1);
+      g.noShipping = allVirtual ? 1 : 0;
+      g.freeShippingAll = allFreePhysical ? 1 : 0;
+      g.shippingMode = allVirtual ? "virtual" : (allFreePhysical ? "free" : "mixed");
+    }
 
     const total = {
       productAmount: totalAccumulator.productAmount,

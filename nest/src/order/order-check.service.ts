@@ -32,6 +32,8 @@ type CheckoutParams = {
 
 type CheckoutShop = {
   noShipping: number;
+  freeShippingAll?: number;
+  shippingMode?: string;
   hasFixedShipping: number;
   fixedShippingFee: number;
   shopId: number;
@@ -1730,7 +1732,9 @@ export class OrderCheckService {
     for (const shop of shops) {
       const shopId = Number(shop?.shopId ?? 0);
       if (!perShop.has(shopId)) perShop.set(shopId, 0);
-      if (Number(shop?.noShipping ?? 0) === 1) continue;
+      const freeShippingAll = (shop as any)?.freeShippingAll === 1;
+      if (Number(shop?.noShipping ?? 0) === 1) continue; // 全虚拟
+      if (freeShippingAll) continue; // 全部包邮实体，无需计费
 
       const fixed = this.toNumber(shop?.fixedShippingFee ?? 0);
       if (fixed > 0) {
