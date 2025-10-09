@@ -534,15 +534,13 @@
                 "pagePath": "pages/index/index"
             },
         {
-                "path": "pages/productCate/index",
-                "style": {}
+                "pagePath": "pages/productCate/index"
             },
             {
                 "pagePath": "pages/cart/index"
             },
                  {
-            "path": "pages/user/index",
-            "style": {}
+            "pagePath": "pages/user/index"
         }
         ]
     },
