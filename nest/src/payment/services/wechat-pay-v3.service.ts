@@ -104,17 +104,27 @@ export class WechatPayV3Service {
       }
     }
 
-    // 推导 notifyUrl
+  // 推导 notifyUrl：以配置的 wechatServerUrl 作为域名（必须含 http/https），拼接 /order/pay/notify/wechat
     if (!notifyUrl) {
       const map = await this.settingConfig.getConfigsByCodes(["wechatServerUrl"]);
-      const base = map?.wechatServerUrl || "";
-      if (base) {
-        notifyUrl = `${base.replace(/\/$/, "")}/api/order/pay/notify`;
+      const base = (map?.wechatServerUrl || "").trim();
+      if (base && /^https?:\/\//i.test(base)) {
+        notifyUrl = base.replace(/\/$/, "") + "/order/pay/notify/wechat";
       }
     }
-    // 最终兜底默认（无需配置）
+    // 最终兜底默认（仍提供但建议显式配置）
     if (!notifyUrl) {
-      notifyUrl = "https://beqlee.icu/api/order/pay/notify";
+      notifyUrl = "https://beqlee.icu/order/pay/notify/wechat";
+    }
+
+    // 微信官方校验正则当前不接受 querystring，这里剥离 ? 之后的部分。
+    const originalNotify = notifyUrl;
+    if (notifyUrl.includes("?")) {
+      notifyUrl = notifyUrl.split("?")[0];
+      this.logger.warn(`移除 notifyUrl 中的查询参数: 原=${originalNotify} 现=${notifyUrl}`);
+    }
+    if (notifyUrl.includes("#")) {
+      notifyUrl = notifyUrl.split("#")[0];
     }
 
   const isAbsoluteHttp = (u: string) => /^https?:\/\//i.test(u || "");
@@ -136,8 +146,8 @@ export class WechatPayV3Service {
 
     // 回调地址非必填（若商户平台已配置默认回调），但若提供则需是 http(s) 完整地址
     if (notifyUrl && !isAbsoluteHttp(notifyUrl)) {
-      this.logger.warn(`无效的微信支付回调地址: ${notifyUrl}，将回退到默认 https://beqlee.icu/api/order/pay/notify`);
-      notifyUrl = "https://beqlee.icu/api/order/pay/notify";
+      this.logger.warn(`无效的微信支付回调地址: ${notifyUrl}，将回退到默认 https://domain.beqlee.icu/order/pay/notify/wechat (请在 wechatPaySettings.notifyUrl 或 wechatServerUrl 正确配置完整 https:// 域名)`);
+      notifyUrl = "https://domain.beqlee.icu/order/pay/notify/wechat"; // 占位域名，务必替换
     }
 
     // 计算证书内序列号用于对比（便于排查配置错误）

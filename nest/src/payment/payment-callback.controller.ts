@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Controller, Post, Body, Query, Headers } from "@nestjs/common";
+import { Controller, Post, Body, Query, Headers, Param } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { PayService } from "../order/pay.service";
 import { Public } from "../auth/decorators/public.decorator";
@@ -15,18 +15,16 @@ import { Public } from "../auth/decorators/public.decorator";
 @Controller("order/pay")
 export class PaymentCallbackController {
   constructor(private readonly payService: PayService) {}
-
-  @Post("notify")
+  // 支持路径方式：/order/pay/notify/wechat  (避免微信不允许 notify_url 携带查询参数)
+  @Post("notify/:payCode")
   @Public()
-  @ApiOperation({ summary: "支付结果回调 (WeChat/Alipay 等)" })
-  async notify(
-    @Query("payCode") payCode: string = "wechat",
+  @ApiOperation({ summary: "支付结果回调 (Path 版本)" })
+  async notifyByPath(
+    @Param("payCode") payCode: string = "wechat",
     @Body() body: any,
     @Headers() headers: Record<string, any>,
   ) {
-    // 透传 headers 供微信 v3 回调签名/解密（如果后续需要）
     const res = await this.payService.handleNotify(payCode || "wechat", body, headers);
-    // 按微信 v3 规范返回 JSON {code:SUCCESS} 即可；其它渠道也接受
     return res;
   }
 

@@ -48,17 +48,9 @@ export class PaymentController {
     );
   }
 
-  /**
-   * 支付回调 - 对齐PHP版本 order/pay/notify
-   */
-  @Post("notify")
-  @ApiOperation({ summary: "支付回调" })
-  async handlePaymentCallback(
-    @Headers("x-payment-sn") paymentSn: string,
-    @Body() callbackData: any,
-  ) {
-    return this.paymentService.handlePaymentCallback(paymentSn, callbackData);
-  }
+  // 原先在此定义的受 JWT 保护的 /order/pay/notify 回调已移除。
+  // 现在的支付平台异步通知由无需鉴权的 PaymentCallbackController 处理
+  // (见 payment-callback.controller.ts)，避免与外部回调冲突导致 401。
 
   /**
    * 申请退款 - 对齐PHP版本 order/pay/refund

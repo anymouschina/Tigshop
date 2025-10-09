@@ -20,11 +20,11 @@ async function bootstrap() {
   }
   // 创建全局日志实例
   const logger = new Logger("Application");
-  logger.debug(1111);
+  // logger.debug(1111);
   // 设置日志级别
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: ["error", "warn", "log", "debug", "verbose"],
+    logger: process.env.NODE_ENV === "development" ? ["error", "warn", "log", "debug", "verbose"] : ["error", "warn", "log"],
   });
 
   // 注册自定义 ws 适配器（使用 ws 库，而不是 socket.io），复用同一个 HTTP server
