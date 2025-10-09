@@ -270,11 +270,30 @@ export class LoginService {
    * 设置登录状态
    */
   private async setLogin(userId: number, clientIp: string) {
+    // 规范化 IP 以适配数据库 VarChar(15) (仅存储 IPv4)，避免修改表结构：
+    // 1) 提取 X-Forwarded-For 第一段 2) 去除 ::ffff: 前缀 3) 仅保留 IPv4 格式 4) 超出则置空
+    let raw = clientIp || "";
+    if (raw.includes(",")) raw = raw.split(",")[0];
+    raw = raw.trim();
+    if (/^::ffff:/i.test(raw)) raw = raw.replace(/^::ffff:/i, "");
+    if (raw === "::1") raw = "127.0.0.1"; // 本地 IPv6 回环映射
+    // 匹配第一个 IPv4
+    const ipv4Match = raw.match(/\b(\d{1,3}(?:\.\d{1,3}){3})\b/);
+    let ip = ipv4Match ? ipv4Match[1] : "";
+    // 基础校验：段值 0-255
+    if (ip) {
+      const ok = ip.split('.').every(seg => {
+        const n = Number(seg);
+        return n >= 0 && n <= 255;
+      });
+      if (!ok) ip = "";
+    }
+    if (ip.length > 15) ip = ""; // 防御性：IPv4 最大 15 (255.255.255.255)
     await this.prisma.user.update({
       where: { user_id: userId },
       data: {
         last_login: Math.floor(Date.now() / 1000),
-        last_ip: clientIp || "",
+        last_ip: ip,
       },
     });
   }
