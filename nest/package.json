@@ -40,7 +40,6 @@
     "@nestjs/serve-static": "^5.0.3",
     "@nestjs/swagger": "^7.3.1",
     "@nestjs/websockets": "^11.1.6",
-    "@openai/codex": "^0.42.0",
     "@prisma/client": "^5.15.1",
     "@types/handlebars": "^4.0.40",
     "@types/nodemailer": "^6.4.19",
