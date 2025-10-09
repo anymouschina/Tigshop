@@ -153,7 +153,7 @@ const mobileAreaCode = ref("86");
 
 const [formState, reset] = useResettableRef({
     mobile: "",
-    mobileCode: "",
+    mobileCode: "000000",
     password: "",
     registType: "",
     email: "",
