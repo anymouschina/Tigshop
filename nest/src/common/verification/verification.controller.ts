@@ -129,14 +129,14 @@ export class VerificationController {
 }
 
 @ApiTags("公共验证码")
-@Controller("api/common/verification")
+@Controller(["api/common/verification", "adminapi/common/verification"]) // 支持前端 /api 与 /adminapi 两种前缀
 export class PublicVerificationController {
   private readonly logger = new Logger(PublicVerificationController.name);
   constructor(private readonly captchaService: CaptchaService) {}
 
   @ApiOperation({ summary: "获取滑块验证码" })
   @Post("captcha")
-  async captcha(@Body() body: { captchaType?: string }) {
+  async captcha(@Body() body: { captchaType?: string } = {}) {
     const captchaResult = await this.captchaService.generateCaptcha();
 
     // PHP项目只返回data部分，code和message由中间件处理
@@ -145,11 +145,24 @@ export class PublicVerificationController {
       originalImageBase64: captchaResult.originalImageBase64,
       secretKey: captchaResult.secretKey,
       token: captchaResult.token,
+      imageUrl: captchaResult.imageUrl,
+      width: captchaResult.width,
+      height: captchaResult.height,
+      blockSize: captchaResult.blockSize,
+      offsetX: captchaResult.offsetX,
+      offsetY: captchaResult.offsetY,
     };
   }
 
+  // 单独的 GET 版本 (部分场景下多装饰器合并未正确注册 GET, 显式再提供一个方法)
+  @ApiOperation({ summary: "获取滑块验证码(GET)" })
+  @Get("captcha")
+  async captchaGet(@Query() query: { captchaType?: string }) {
+    return this.captcha({ captchaType: query?.captchaType });
+  }
+
   @ApiOperation({ summary: "验证滑块验证码" })
-  @Post("verify")
+  @Post(["verify", "check"]) // 兼容旧路径 /check
   async verify(
     @Body()
     body: {

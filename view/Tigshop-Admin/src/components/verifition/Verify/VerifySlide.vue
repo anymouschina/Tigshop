@@ -8,10 +8,14 @@
                     height: setSize.imgHeight
                 }"
             >
-                <a-spin :spinning="!backImgBase" :style="'width:100%;padding-top:39px'">
-                    <img v-if="backImgBase" :src="'data:image/png;base64,' + backImgBase" alt="" style="width: 100%; height: 100%; display: block" />
+                <a-spin :spinning="!backgroundReady" :style="'width:100%;padding-top:39px'">
+                    <template v-if="backgroundReady">
+                        <img v-if="useBase64" :src="'data:image/png;base64,' + backImgBase" alt="" style="width: 100%; height: 100%; display: block" />
+                        <div v-else class="pure-bg" :style="bgStyle"></div>
+                        <div v-if="!useBase64" class="pure-hole" :style="holeStyle"></div>
+                    </template>
                 </a-spin>
-                <div v-if="backImgBase" class="verify-refresh" @click="refresh" v-show="showRefresh"><i class="iconfont icon-refresh"></i></div>
+                <div v-if="backgroundReady" class="verify-refresh" @click="refresh" v-show="showRefresh"><i class="iconfont icon-refresh"></i></div>
                 <transition name="tips">
                     <span :class="'verify-tips ' + (tipWords ? 'show ' : '') + (passFlag ? 'suc-bg' : 'err-bg')" v-if="1">{{ tipWords }}</span>
                 </transition>
@@ -62,11 +66,12 @@
                         }"
                     >
                         <img
-                            v-if="blockBackImgBase"
+                            v-if="useBase64 && blockBackImgBase"
                             :src="'data:image/png;base64,' + blockBackImgBase"
                             alt=""
                             style="width: 100%; height: 100%; display: block; -webkit-user-drag: none"
                         />
+                        <div v-else class="pure-piece" :style="pieceStyle"></div>
                     </div>
                 </div>
             </div>
@@ -139,8 +144,13 @@ export default {
         const { proxy } = getCurrentInstance();
         let secretKey = ref(""), //后端返回的ase加密秘钥
             passFlag = ref(""), //是否通过的标识
-            backImgBase = ref(""), //验证码背景图片
-            blockBackImgBase = ref(""), //验证滑块的背景图片
+            backImgBase = ref(""), // base64 背景
+            blockBackImgBase = ref(""), // base64 滑块
+            imageUrl = ref(""), // 远程图片 URL
+            offsetX = ref(0),
+            offsetY = ref(0),
+            blockSizeVal = ref(50),
+            useBase64 = ref(true),
             backToken = ref(""), //后端返回的唯一token值
             startMoveTime = ref(""), //移动开始的时间
             endMovetime = ref(""), //移动结束的时间
@@ -373,8 +383,18 @@ export default {
                 data: data
             })
                 .then((result) => {
-                    backImgBase.value = result.originalImageBase64;
-                    blockBackImgBase.value = result.jigsawImageBase64;
+                    const v = result.originalImageBase64;
+                    if (/^https?:\/\//.test(v)) {
+                        useBase64.value = false;
+                        imageUrl.value = v;
+                        blockSizeVal.value = result.blockSize || 50;
+                        offsetY.value = result.offsetY || 0;
+                        offsetX.value = result.offsetX || 0;
+                    } else {
+                        useBase64.value = true;
+                        backImgBase.value = v;
+                        blockBackImgBase.value = result.jigsawImageBase64;
+                    }
                     backToken.value = result.token;
                     secretKey.value = result.secretKey;
                 })
@@ -382,6 +402,42 @@ export default {
                     tipWords.value = error.message;
                 });
         }
+        const backgroundReady = computed(()=> useBase64.value ? !!backImgBase.value : !!imageUrl.value);
+        const bgStyle = computed(()=>({
+            width:'100%',height:'100%',position:'absolute',left:0,top:0,
+            backgroundImage:`url(${imageUrl.value})`,
+            backgroundSize: `${setSize.imgWidth} ${setSize.imgHeight}`,
+            backgroundPosition:'center',
+            borderRadius:'3px'
+        }));
+        const holeStyle = computed(()=>({
+            position:'absolute',
+            left: offsetX.value + 'px',
+            top: offsetY.value + 'px',
+            width: blockSizeVal.value + 'px',
+            height: blockSizeVal.value + 'px',
+            background:'rgba(255,255,255,0.35)',
+            border:'2px dashed rgba(255,255,255,0.95)',
+            boxShadow:'0 0 4px rgba(0,0,0,0.35) inset, 0 0 3px rgba(0,0,0,0.3)',
+            boxSizing:'border-box',
+            zIndex:2,
+            backdropFilter:'blur(1px)'
+        }));
+        const pieceStyle = computed(()=>({
+            position:'absolute',
+            width: blockSizeVal.value + 'px',
+            height: blockSizeVal.value + 'px',
+            top: offsetY.value + 'px',
+            left: '0px',
+            transform: moveBlockLeft.value ? `translateX(${moveBlockLeft.value})` : 'translateX(0)',
+            backgroundImage:`url(${imageUrl.value})`,
+            backgroundSize: `${setSize.imgWidth} ${setSize.imgHeight}`,
+            backgroundPosition: `-${offsetX.value}px -${offsetY.value}px`,
+            boxShadow:'0 0 3px rgba(0,0,0,0.45)',
+            border:'1px solid rgba(255,255,255,0.9)',
+            borderRadius:'2px',
+            zIndex:3
+        }));
         return {
             secretKey, //后端返回的ase加密秘钥
             passFlag, //是否通过的标识
@@ -412,8 +468,19 @@ export default {
             transitionWidth,
             barArea,
             refresh,
-            start
+            start,
+            imageUrl,
+            useBase64,
+            backgroundReady,
+            bgStyle,
+            holeStyle,
+            pieceStyle
         };
     }
 };
 </script>
+<style scoped>
+.pure-bg, .pure-hole, .pure-piece { user-select:none; }
+.pure-hole { pointer-events:none; }
+.pure-piece { pointer-events:none; }
+</style>
