@@ -8,6 +8,9 @@
             }
         },
         {
+            "path":"pages/user/index"
+        },
+        {
             "path": "pages/search/index",
             "style": {}
         },
@@ -533,15 +536,12 @@
             {
                 "pagePath": "pages/index/index"
             },
-        {
+            {
                 "pagePath": "pages/productCate/index"
             },
             {
                 "pagePath": "pages/cart/index"
-            },
-                 {
-            "pagePath": "pages/user/index"
-        }
+            }
         ]
     },
     "globalStyle": {
