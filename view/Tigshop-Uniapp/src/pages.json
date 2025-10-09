@@ -533,9 +533,17 @@
             {
                 "pagePath": "pages/index/index"
             },
+        {
+                "path": "pages/productCate/index",
+                "style": {}
+            },
             {
                 "pagePath": "pages/cart/index"
-            }
+            },
+                 {
+            "path": "pages/user/index",
+            "style": {}
+        }
         ]
     },
     "globalStyle": {

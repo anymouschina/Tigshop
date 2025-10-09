@@ -138,6 +138,7 @@ export const redirect = (redirect: redirectOptions) => {
     }
     mode = mode;
     const tabBar = getTabbarPages();
+    console.log(tabBar,'tabBar',tabBar.includes(url),url)
     tabBar.includes(url) && (mode = "switchTab");
     mode != "switchTab" && param && Object.keys(param).length && (url += uni.$u.queryParams(param));
     switch (mode) {
