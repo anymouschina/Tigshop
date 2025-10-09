@@ -9,7 +9,6 @@ import { ConfigService } from "@nestjs/config";
 import * as path from "path";
 import * as fs from "fs";
 import * as crypto from "crypto";
-import * as sharp from "sharp";
 import { UploadDto, UploadType } from "./dto/upload.dto";
 import { StorageStrategy } from "./interfaces/storage-strategy.interface";
 import { StorageStrategyFactory } from "./storage-strategy.factory";
@@ -59,23 +58,8 @@ export class UploadService {
     return `${randomName}${ext}`;
   }
 
-  private async generateThumbnail(
-    originalPath: string,
-    thumbnailPath: string,
-    width: number = 200,
-    height: number = 200,
-  ): Promise<void> {
-    try {
-      await sharp(originalPath)
-        .resize(width, height, {
-          fit: "cover",
-          position: "center",
-        })
-        .toFile(thumbnailPath);
-    } catch (error) {
-      throw new BadRequestException(`缩略图生成失败: ${error.message}`);
-    }
-  }
+  // 已废弃: 之前使用 sharp 的直接缩略图函数；保留占位以说明迁移
+  // private async generateThumbnail(...) {}
 
   private generateThumbnailFilename(
     originalFilename: string,
@@ -174,49 +158,66 @@ export class UploadService {
       let thumbnailUrl = null;
       let thumbnailRecord = null;
 
-      // 如果是用户头像，生成缩略图
-  if (options?.generateThumbnail && uploadDto.type === UploadType.USER) {
-        const thumbWidth = options.thumbnailWidth || 200;
-        const thumbHeight = options.thumbnailHeight || 200;
-        const thumbFilename = this.generateThumbnailFilename(
-          filename,
-          thumbWidth,
-          thumbHeight,
-        );
-        const thumbRelativePath = path.join(category, thumbFilename);
+      // 如果是用户头像，尝试生成缩略图（支持通过环境变量 DISABLE_THUMBNAIL=1 禁用，且不再强制依赖 sharp）
+      if (
+        !process.env.DISABLE_THUMBNAIL &&
+        options?.generateThumbnail &&
+        uploadDto.type === UploadType.USER
+      ) {
+        try {
+          const thumbWidth = options.thumbnailWidth || 200;
+          const thumbHeight = options.thumbnailHeight || 200;
+          const thumbFilename = this.generateThumbnailFilename(
+            filename,
+            thumbWidth,
+            thumbHeight,
+          );
+          const thumbRelativePath = path.join(category, thumbFilename);
 
-        // 生成缩略图
-        const thumbnailBuffer = await sharp(file.buffer)
-          .resize(thumbWidth, thumbHeight, {
-            fit: "cover",
-            position: "center",
-          })
-          .toBuffer();
+          // 动态导入 sharp，避免在未安装或生产裁剪场景下崩溃
+          const sharpModule = await import('sharp').catch(() => null);
+          if (sharpModule && sharpModule.default) {
+            const thumbnailBuffer = await sharpModule
+              .default(file.buffer)
+              .resize(thumbWidth, thumbHeight, {
+                fit: 'cover',
+                position: 'center',
+              })
+              .toBuffer();
 
-        // 上传缩略图到存储策略
-        thumbnailUrl = await this.storageStrategy.uploadFile(
-          thumbnailBuffer,
-          thumbRelativePath,
-          file.mimetype,
-        );
+            thumbnailUrl = await this.storageStrategy.uploadFile(
+              thumbnailBuffer,
+              thumbRelativePath,
+              file.mimetype,
+            );
 
-        // 创建缩略图数据库记录（若 upload 模型可用）
-        if ((this.prisma as any)?.upload?.create) {
-          thumbnailRecord = await (this.prisma as any).upload.create({
-            data: {
-              file_name: `thumb_${file.originalname}`,
-              file_path: thumbRelativePath,
-              file_url: thumbnailUrl,
-              file_size: thumbnailBuffer.length,
-              file_type: file.mimetype,
-              category,
-              type: uploadDto.type,
-              related_id: uploadDto.relatedId,
-              description: `${uploadDto.description}_thumbnail`,
-              status: 1,
-              user_id: userId,
-            },
-          });
+            if ((this.prisma as any)?.upload?.create) {
+              thumbnailRecord = await (this.prisma as any).upload.create({
+                data: {
+                  file_name: `thumb_${file.originalname}`,
+                  file_path: thumbRelativePath,
+                  file_url: thumbnailUrl,
+                  file_size: thumbnailBuffer.length,
+                  file_type: file.mimetype,
+                  category,
+                  type: uploadDto.type,
+                  related_id: uploadDto.relatedId,
+                  description: `${uploadDto.description}_thumbnail`,
+                  status: 1,
+                  user_id: userId,
+                },
+              });
+            }
+          } else {
+            // 未安装 sharp 或导入失败，静默跳过
+            if (process.env.DEBUG_THUMBNAIL) {
+              console.warn('[UploadService] sharp 未可用，跳过缩略图生成');
+            }
+          }
+        } catch (err) {
+          if (process.env.DEBUG_THUMBNAIL) {
+            console.warn('[UploadService] 生成缩略图失败，已忽略:', err?.message);
+          }
         }
       }
 
