@@ -399,12 +399,19 @@ export class PayService {
 
     // 获取用户OpenID（微信支付需要）
   let openid = "";
-    if (
-      code &&
-      ["wechat", "yabanpay_wechat", "yunpay_wechat"].includes(payType)
-    ) {
-      openid = await this.getWechatOpenId(code);
-      this.logger.debug(`[createPayment] fetched openid=${openid ? (openid as any).slice(0,6)+"***" : ""}`);
+    if (code && ["wechat", "yabanpay_wechat", "yunpay_wechat"].includes(payType)) {
+      try {
+        const ctLower = (clientType || "").toLowerCase();
+        // mini/mp 走小程序 jscode2session，其余尝试公众号 OAuth openid
+        if (ctLower.includes("mini") || ctLower.includes("mp")) {
+          openid = await this.getWechatMiniOpenId(code);
+        } else {
+          openid = await this.getWechatOfficialAccountOpenId(code);
+        }
+        this.logger.debug(`[createPayment] fetched openid=${openid ? (openid as any).slice(0,6)+"***" : ""}`);
+      } catch (e) {
+        this.logger.warn(`[createPayment] 获取 openid 失败 code=${code} msg=${(e as any)?.message}`);
+      }
     }
 
     // 创建支付参数
@@ -433,13 +440,10 @@ export class PayService {
   let payInfoRaw: any;
       if (["wechat", "yabanpay_wechat", "yunpay_wechat"].includes(payType)) {
         const ct = (clientType || "").toLowerCase();
-        if (ct.includes("mini") || ct.includes("mp")) {
-          // 使用微信 v3 JSAPI 统一下单
-          if (!openid) {
-            throw new HttpException("缺少 openid", HttpStatus.BAD_REQUEST);
-          }
+        // 规则：只要拿到了 openid 就优先走 JSAPI（含小程序 & 公众号内置浏览器）
+        if (openid) {
           const cfgSnap = await this.wechatPayV3.getConfigDebugSnapshot();
-          this.logger.debug(`[createPayment] wechat v3 cfg=${JSON.stringify(cfgSnap)}`);
+            this.logger.debug(`[createPayment] wechat v3 cfg=${JSON.stringify(cfgSnap)} env=${ct}`);
           const prepay = await this.wechatPayV3.unifiedOrderJsapi({
             outTradeNo: String(payParams.order_sn),
             description: `订单${payParams.order_sn}`,
@@ -452,7 +456,7 @@ export class PayService {
             prepay.prepay_id,
           );
         } else {
-          // 非小程序，退回到第三方网关/URL（仍用旧 mock 行为的兜底生成 weixin://）
+          // 兜底：无 openid 继续旧逻辑（H5 / 第三方聚合）
           payInfoRaw = await this.callThirdPartyPay(payParams, payType);
         }
       } else {
@@ -476,7 +480,7 @@ export class PayService {
         case "yabanpay_wechat":
         case "yunpay_wechat":
           // 小程序返回 JSAPI 所需参数；H5 返回 URL；其余平台保持兜底 URL
-          if (ct.includes("mini") || ct.includes("mp")) {
+          if (openid) { // 只要走了 JSAPI 预下单，就返回 JSAPI 参数
             // 统一字段并保证 timeStamp 为字符串
             const ts = payInfoRaw.timeStamp ?? payInfoRaw.timestamp ?? Math.floor(Date.now() / 1000);
             payInfo = {
@@ -484,7 +488,7 @@ export class PayService {
               timeStamp: String(ts),
               nonceStr: payInfoRaw.nonceStr || payInfoRaw.noncestr || "",
               package: payInfoRaw.package || payInfoRaw.prepayId || "",
-              signType: payInfoRaw.signType || "MD5",
+              signType: payInfoRaw.signType || "RSA",
               paySign: payInfoRaw.paySign || payInfoRaw.sign || "",
             };
           } else {
@@ -747,6 +751,35 @@ export class PayService {
   private async getWechatPayAppId(): Promise<string | undefined> {
     const payCfg = (await this.settingConfig.getJsonConfig("wechatPaySettings")) || {};
     return payCfg.wechatMiniProgramAppId || payCfg.appId || payCfg.wechatPayAppId || payCfg.appid;
+  }
+
+  // 兼容旧命名：用于小程序 openid
+  private async getWechatMiniOpenId(code: string): Promise<string> {
+    return this.getWechatOpenId(code);
+  }
+
+  // 公众号网页 openid：若未配置公众号 appid/secret 或暂未实现 OAuth 换取，则返回空字符串让流程走 H5 fallback
+  private async getWechatOfficialAccountOpenId(code: string): Promise<string> {
+    const payCfg = (await this.settingConfig.getJsonConfig('wechatPaySettings')) || {};
+    const mpAppId = payCfg.wechatOfficialAccountAppId || payCfg.officialAccountAppId || payCfg.mpAppId || payCfg.appId;
+    const mpSecret = payCfg.wechatOfficialAccountSecret || payCfg.officialAccountSecret || payCfg.mpSecret || payCfg.appSecret;
+    if (!mpAppId || !mpSecret) {
+      this.logger.debug('[wechat-jsapi] 缺少公众号 appId/secret，跳过获取 openid');
+      return '';
+    }
+    // 网页授权 code 交换
+    const url = `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${encodeURIComponent(mpAppId)}&secret=${encodeURIComponent(mpSecret)}&code=${encodeURIComponent(code)}&grant_type=authorization_code`;
+    try {
+      const resp = await axios.get(url, { timeout: 8000 });
+      const data = resp.data || {};
+      if (data.errcode) {
+        this.logger.warn('[wechat-jsapi] 公众号换 openid 失败: ' + JSON.stringify(data));
+        return '';
+      }
+      return data.openid || '';
+    } catch (e: any) {
+      this.logger.warn('[wechat-jsapi] 公众号 openid 请求异常: ' + (e?.message || '')); return '';
+    }
   }
 
   private async exchangeCodeForOpenid(appId: string, secret: string, code: string): Promise<string> {

@@ -148,22 +148,34 @@ export class OrderCheckController {
         }))
       : [];
 
-    // 兼容 storeShippingType 可能不是二维数组或无 flat 方法的情况
-    let normalizedShipping: any[] = [];
-    if (Array.isArray(storeShippingType)) {
-      if (typeof (storeShippingType as any).flat === 'function') {
-        normalizedShipping = (storeShippingType as any).flat();
-      } else {
-        // 手动降一维（只处理一层）
+    // 兼容 storeShippingType 结构（可能是：一维/二维数组、含 list/data 的对象、或异常类型）并避免使用 .flat()
+    const buildNormalizedShipping = (): any[] => {
+      const out: any[] = [];
+      if (!storeShippingType) return out;
+      // 数组：可能已是一维或二维
+      if (Array.isArray(storeShippingType)) {
         for (const seg of storeShippingType) {
-          if (Array.isArray(seg)) normalizedShipping.push(...seg); else normalizedShipping.push(seg);
+          if (!seg) continue;
+          if (Array.isArray(seg)) {
+            for (const inner of seg) { if (inner) out.push(inner); }
+          } else {
+            out.push(seg);
+          }
         }
+        return out;
       }
-    } else if (storeShippingType && Array.isArray((storeShippingType as any).list)) {
-      normalizedShipping = (storeShippingType as any).list;
-    } else if (storeShippingType && Array.isArray((storeShippingType as any).data)) {
-      normalizedShipping = (storeShippingType as any).data;
-    }
+      // 对象：常见字段 list / data
+      if (Array.isArray((storeShippingType as any).list)) {
+        for (const item of (storeShippingType as any).list) { if (item) out.push(item); }
+        return out;
+      }
+      if (Array.isArray((storeShippingType as any).data)) {
+        for (const item of (storeShippingType as any).data) { if (item) out.push(item); }
+        return out;
+      }
+      return out;
+    };
+    const normalizedShipping = buildNormalizedShipping();
 
     const fallbackSelections = shippingSelections.length > 0
       ? shippingSelections
