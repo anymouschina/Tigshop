@@ -11,8 +11,187 @@ export class PayService {
     private prisma: PrismaService,
     private settingConfig: SettingConfigService,
     private wechatPayV3: WechatPayV3Service,
-  ) {}
-  private readonly logger = new Logger(PayService.name);
+    ) {
+      this.logger = new Logger(PayService.name);
+    }
+    private readonly logger: Logger;
+    // 允许被外部注入的 Redis（为避免循环引用这里只做可选注入）
+    private pendingKey = "pay:wechat:pending"; // zset: member=order_sn score=过期时间戳(秒)
+    private enqueueLua = `-- KEYS[1]=zset, ARGV[1]=member, ARGV[2]=score
+  redis.call('ZADD', KEYS[1], 'NX', ARGV[2], ARGV[1]); return 1;`;
+    // 无 Redis 回退：内存级队列 (仅单进程有效)
+    private memoryQueue: Map<string, { nextTs: number; attempt: number }> = new Map();
+    private memoryAttempt: Map<string, number> = new Map();
+    // 仅在运行时按需加载 redisService（避免硬依赖）
+    private get redis() {
+      try {
+        const anyGlobal = (global as any);
+        return anyGlobal.__app?.get?.(require('../redis/redis.service').RedisService);
+      } catch {
+        return null;
+      }
+    }
+
+    private getBackoffArray(): number[] { return [8,20,40,80,160,300,600,1200,2400,3600,5400,7200]; }
+    private getBackoffDelay(attempt: number) { const arr = this.getBackoffArray(); return arr[Math.min(Math.max(1,attempt)-1, arr.length-1)]; }
+    private async queueWechatOrder(orderSn: string, attempt=1) {
+      const r=this.redis;
+      const delay = this.getBackoffDelay(attempt);
+      const nextTs = Math.floor(Date.now()/1000)+delay;
+      if(!r) {
+        // 内存队列回退
+        const existing = this.memoryQueue.get(orderSn);
+        if (!existing || existing.attempt < attempt) {
+          this.memoryQueue.set(orderSn, { nextTs, attempt });
+          this.memoryAttempt.set(orderSn, attempt);
+          this.logger.debug(`[ACTIVE-RECONCILE][MEM] enqueue orderSn=${orderSn} attempt=${attempt} delay=${delay}s`);
+        }
+        return;
+      }
+      try {
+        const cli: any=(r as any).redis||(r as any).client||(r as any);
+        await cli.eval(this.enqueueLua,1,this.pendingKey,orderSn,nextTs);
+        this.logger.debug(`[ACTIVE-RECONCILE][REDIS] enqueue orderSn=${orderSn} attempt=${attempt} delay=${delay}s`);
+      } catch(e){ this.logger.warn(`队列加入失败 orderSn=${orderSn}: ${(e as Error).message}`);} }
+
+    /** 定时轮询：在模块被首次使用后懒启动一个 interval（不使用 @Cron 避免引入额外依赖） */
+    private reconciliationStarted = false;
+    private startReconciliationLoop() {
+      if (this.reconciliationStarted) return;
+      this.reconciliationStarted = true;
+      const r = this.redis; 
+      if (!r) {
+        this.logger.warn('[ACTIVE-RECONCILE] 未检测到 Redis，启用内存补单队列（仅当前进程有效，建议尽快部署 Redis 以支持多实例与持久化）。');
+      }
+      const cli: any = r ? ((r as any).redis || (r as any).client || (r as any)) : null;
+      const loop = async () => {
+        try {
+          const now = Math.floor(Date.now() / 1000);
+          if (cli) {
+            const members: string[] = await cli.zrangebyscore(this.pendingKey, 0, now, 'LIMIT', 0, 20);
+            for (const orderSn of members || []) {
+              await cli.zrem(this.pendingKey, orderSn);
+              await this.activeQueryAndReconcile(orderSn);
+            }
+          } else {
+            // 内存队列处理
+            const due: string[] = [];
+            for (const [sn, meta] of this.memoryQueue.entries()) {
+              if (meta.nextTs <= now) due.push(sn);
+              if (due.length >= 20) break;
+            }
+            for (const sn of due) {
+              const meta = this.memoryQueue.get(sn);
+              if (!meta) continue;
+              this.memoryQueue.delete(sn); // 出队
+              await this.activeQueryAndReconcile(sn, meta.attempt);
+            }
+          }
+        } catch (e) {
+          this.logger.warn(`主动补单轮询异常: ${(e as Error).message}`);
+        }
+      };
+      setInterval(loop, 5 * 1000); // 主流程：5 秒扫描
+    }
+
+    /** 主动请求微信查询交易状态并补单（真实 v3 查询 + 指数回退重试） */
+    private async activeQueryAndReconcile(orderSn: string, presetAttempt?: number) {
+      try {
+        const order = await this.prisma.order.findFirst({ where: { order_sn: orderSn } });
+        if (!order) return;
+        if (order.pay_status === 1) return; // 已支付
+        const r = this.redis; // 获取 attempt
+        let attempt = 0;
+        if (presetAttempt != null) {
+          attempt = presetAttempt;
+        } else if (r) {
+          try {
+            const cli: any = (r as any).redis || (r as any).client || (r as any);
+            const key = `pay:wechat:attempt:${orderSn}`;
+            const a = await cli.get(key);
+            attempt = a ? Number(a) || 0 : 0;
+          } catch {}
+        } else {
+          attempt = this.memoryAttempt.get(orderSn) || 0;
+        }
+
+        // 调用真实查询
+        const query = await this.wechatPayV3.queryTransactionByOutTradeNo(orderSn);
+        if (!query) {
+          // 查询失败：按网络错误处理，回退重试
+            await this.scheduleRetry(orderSn, attempt + 1, 'query-null');
+          return;
+        }
+        const state = query.trade_state;
+        switch (state) {
+          case 'SUCCESS': {
+            const wxTotal = Number(query?.amount?.total);
+            const expected = Math.round(Number(order.unpaid_amount || 0) * 100);
+            if (expected > 0 && wxTotal !== expected) {
+              this.logger.error(`[ACTIVE-RECONCILE] 金额不匹配 orderSn=${orderSn} wx=${wxTotal} expected=${expected}`);
+              await this.scheduleRetry(orderSn, attempt + 1, 'amount-mismatch');
+              return;
+            }
+            await this.reconcileWechatOrderPaidByOutTradeNo(orderSn, Number(order.unpaid_amount || 0));
+            try {
+              const r2 = this.redis;
+              if (r2) {
+                const cli: any = (r2 as any).redis || (r2 as any).client || r2;
+                await cli.del(`pay:wechat:attempt:${orderSn}`);
+                await cli.zrem(this.pendingKey, orderSn);
+              } else {
+                this.memoryAttempt.delete(orderSn);
+                this.memoryQueue.delete(orderSn);
+              }
+            } catch {}
+            this.logger.log(`[ACTIVE-RECONCILE] SUCCESS 补单完成 orderSn=${orderSn}`);
+            return; }
+          case 'NOTPAY':
+          case 'USERPAYING':
+            await this.scheduleRetry(orderSn, attempt + 1, state);
+            return;
+          case 'CLOSED':
+          case 'REVOKED':
+          case 'PAYERROR':
+            this.logger.warn(`[ACTIVE-RECONCILE] 终止 state=${state} orderSn=${orderSn}`);
+            return; // 不再重试
+          default:
+            await this.scheduleRetry(orderSn, attempt + 1, state || 'UNKNOWN');
+            return;
+        }
+      } catch (e) {
+        this.logger.warn(`[ACTIVE-RECONCILE] 异常 orderSn=${orderSn}: ${(e as Error).message}`);
+      }
+    }
+
+    /** 计算回退重试并入队 */
+    private async scheduleRetry(orderSn: string, attempt: number, reason: string) {
+      const r = this.redis;
+      if (attempt > 12) { // 上限扩展 12 次
+        this.logger.warn(`[ACTIVE-RECONCILE] 达到最大重试 attempt=${attempt} orderSn=${orderSn} reason=${reason}`);
+        return;
+      }
+      try {
+        const delay = this.getBackoffDelay(attempt);
+        if (r) {
+            const cli: any = (r as any).redis || (r as any).client || (r as any);
+            const key = `pay:wechat:attempt:${orderSn}`;
+            await cli.set(key, String(attempt), 'EX', 60 * 60 * 12);
+            const score = Math.floor(Date.now()/1000) + delay;
+            await cli.zadd(this.pendingKey, score, orderSn);
+            this.logger.debug(`[ACTIVE-RECONCILE][REDIS] retry scheduled orderSn=${orderSn} attempt=${attempt} delay=${delay}s reason=${reason}`);
+        } else {
+            // 内存回退
+            this.memoryAttempt.set(orderSn, attempt);
+            const nextTs = Math.floor(Date.now()/1000) + delay;
+            this.memoryQueue.set(orderSn, { nextTs, attempt });
+            this.logger.debug(`[ACTIVE-RECONCILE][MEM] retry scheduled orderSn=${orderSn} attempt=${attempt} delay=${delay}s reason=${reason}`);
+        }
+      } catch (e) {
+        this.logger.warn(`[ACTIVE-RECONCILE] scheduleRetry 失败 orderSn=${orderSn}: ${(e as Error).message}`);
+      }
+    }
+  // (已在构造函数初始化 logger，避免重复)
 
   /**
    * 获取订单支付信息
@@ -220,6 +399,11 @@ export class PayService {
     // 创建支付日志
   const payLogId = await this.createPayLog(payParams);
   (payParams as any).paylog_id = payLogId;
+    // 若是微信类支付，加入主动补单队列并启动轮询
+    if (["wechat", "yabanpay_wechat", "yunpay_wechat"].includes(payType)) {
+      this.queueWechatOrder(payParams.order_sn, 1).catch(()=>{});
+      this.startReconciliationLoop();
+    }
 
     // 调用第三方支付
     try {
@@ -322,6 +506,36 @@ export class PayService {
         (error as any)?.message || "支付失败",
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  /** 前端“我已支付”加速接口 */
+  async accelerate(orderSn: string, userId: number) {
+    const order = await this.prisma.order.findFirst({ where: { order_sn: orderSn, user_id: userId } });
+    if (!order) throw new HttpException('订单不存在', HttpStatus.NOT_FOUND);
+    if (order.pay_status === 1) return { accelerated: false, reason: 'PAID' };
+    const r = this.redis; 
+    if (!r) {
+      // 内存回退：直接重新入队最近一次重试（2s 后）
+      const attempt = (this.memoryAttempt.get(orderSn) || 0) + 1;
+      const nextTs = Math.floor(Date.now()/1000)+2;
+      this.memoryAttempt.set(orderSn, attempt);
+      this.memoryQueue.set(orderSn, { nextTs, attempt });
+      this.logger.debug(`[ACTIVE-RECONCILE][MEM] accelerate orderSn=${orderSn}`);
+      return { accelerated: true, mode: 'MEM' };
+    }
+    try {
+      const cli: any = (r as any).redis || (r as any).client || (r as any);
+      const throttleKey = `pay:wechat:accelerate:throttle:${orderSn}`;
+      if (await cli.exists(throttleKey)) return { accelerated: false, reason: 'THROTTLED' };
+      await cli.set(throttleKey, '1', 'EX', 10);
+      const score = Math.floor(Date.now()/1000) + 2;
+      await cli.zadd(this.pendingKey, score, orderSn);
+      this.logger.debug(`[ACTIVE-RECONCILE] accelerate orderSn=${orderSn}`);
+      return { accelerated: true };
+    } catch (e) {
+      this.logger.warn(`[ACTIVE-RECONCILE] accelerate failed orderSn=${orderSn}: ${(e as Error).message}`);
+      return { accelerated: false, reason: 'ERROR' };
     }
   }
 

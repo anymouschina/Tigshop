@@ -26,6 +26,7 @@ export class PaymentCallbackController {
     @Body() body: any,
     @Headers() headers: Record<string, any>,
   ) {
+    console.log(`[PAY-NOTIFY] hit path notify payCode=${payCode} bodyKeys=${Object.keys(body||{}).slice(0,10).join(',')}`);
     this.logger.warn(`[PaymentCallback] notifyByPath called with payCode=${payCode}`);
     const res = await this.payService.handleNotify(payCode || "wechat", body, headers);
     return res;
@@ -38,6 +39,7 @@ export class PaymentCallbackController {
     @Query("payCode") payCode: string = "wechat",
     @Body() body: any,
   ) {
+    console.log(`[PAY-REFUND-NOTIFY] hit refund payCode=${payCode} bodyKeys=${Object.keys(body||{}).slice(0,10).join(',')}`);
     const res = await this.payService.handleRefundNotify(payCode || "wechat", body);
     return res;
   }

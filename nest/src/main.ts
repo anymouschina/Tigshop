@@ -54,6 +54,31 @@ async function bootstrap() {
     Logger.overrideLogger(["error"]); // 只保留 error 日志
   }
 
+  // 在生产环境追加一个最小化 HTTP 路由访问日志（不依赖 Nest Logger，避免被 overrideLogger 过滤）
+  if (process.env.NODE_ENV === "production") {
+    app.use((req: any, res: any, next: any) => {
+      const start = Date.now();
+      res.on("finish", () => {
+        // 仅记录应用接口路由，跳过静态资源与常见噪声
+        const url: string = req.originalUrl || req.url || "";
+        if (
+          url.startsWith("/uploads/") ||
+          url.startsWith("/favicon") ||
+          url.startsWith("/robots.txt") ||
+          url.startsWith("/static/")
+        ) {
+          return;
+        }
+        // 控制输出格式：METHOD path status time
+        // 使用 console.log 直接输出，不走 Nest Logger 级别过滤
+        console.log(
+          `[ROUTE] ${req.method} ${url} ${res.statusCode} - ${Date.now() - start}ms`,
+        );
+      });
+      next();
+    });
+  }
+
   app.useStaticAssets(publicPath, {
     prefix: "/",
   });

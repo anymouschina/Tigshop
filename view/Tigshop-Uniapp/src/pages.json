@@ -8,9 +8,6 @@
             }
         },
         {
-            "path":"pages/user/index"
-        },
-        {
             "path": "pages/search/index",
             "style": {}
         },

@@ -52,7 +52,19 @@ export class PayController {
     if (!orderId || isNaN(orderId)) {
       throw new HttpException("参数缺失", HttpStatus.BAD_REQUEST);
     }
-
+    // 补单闭环：在拉取支付日志前尝试主动查询一次（非阻塞重试逻辑，单次直查）
+    try {
+      await this.payService['activeQueryAndReconcile']?.( // 访问私有方法（已 @ts-nocheck）
+        // 通过 orderId 先拿到 order_sn，再用 order_sn 主动查询
+        await (async () => {
+          const order = await (this.payService as any).prisma.order.findUnique({ where: { order_id: orderId }, select: { order_sn: true, pay_status: true } });
+          if (order && order.pay_status !== 1) return order.order_sn;
+          return null;
+        })()
+      );
+    } catch (e) {
+      // 忽略主动查询异常，保持接口幂等
+    }
     const payLog = await this.payService.getPayLogByOrderId(orderId);
     // PHP 返回 data 为 null，但前端期望余额支付场景回显 []
     // 这里对齐前端期望：若无记录，返回 []，否则返回对象
@@ -103,6 +115,22 @@ export class PayController {
     }
 
     return this.payService.createPayment(userId, Number(id), String(type), code, clientType);
+  }
+
+  /**
+   * 加速主动查询（用户点击“我已支付”触发）
+   */
+  @Post("order/pay/accelerate")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "加速主动查询(我已支付)" })
+  async accelerate(@Request() req, @Body() body: { orderSn: string }) {
+    const userId = Number(req.user?.userId || 0);
+    const orderSn = String(body?.orderSn || "").trim();
+    if (!orderSn) {
+      throw new HttpException("orderSn 缺失", HttpStatus.BAD_REQUEST);
+    }
+    return this.payService.accelerate(orderSn, userId);
   }
 
   /**
