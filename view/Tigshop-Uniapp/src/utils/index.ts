@@ -138,9 +138,19 @@ export const redirect = (redirect: redirectOptions) => {
     }
     mode = mode;
     const tabBar = getTabbarPages();
-    console.log(tabBar,'tabBar',tabBar.includes(url),url)
     tabBar.includes(url) && (mode = "switchTab");
     mode != "switchTab" && param && Object.keys(param).length && (url += uni.$u.queryParams(param));
+    // 页面栈保护：navigateTo 堆栈超过 5 层改为 redirectTo（微信小程序 webview 限 10，预留安全余量）
+    const pages = getCurrentPages();
+    if (mode === 'navigateTo' && pages.length >= 5) {
+        mode = 'redirectTo';
+    }
+    // 同一路由（不含参数）重复跳转拦截（非 reLaunch/switchTab 场景）
+    if (!["reLaunch","switchTab"].includes(mode)) {
+        const baseTarget = url.split('?')[0].replace(/^\//,'');
+        const topRoute = pages.length ? pages[pages.length-1].route : '';
+        if (topRoute === baseTarget) return; // 已在当前页面，无需重复跳
+    }
     switch (mode) {
         case "switchTab":
             uni.switchTab({
@@ -275,7 +285,8 @@ export const currRoute = () => {
 export const currFullPath = () => {
     const pages = getCurrentPages();
     const route = pages[pages.length - 1];
-    return route ? route.$page.fullPath : "";
+    // 某些平台 (ts 类型声明中) PageInstance 未声明 $page，访问需断言并做可选链
+    return route ? (route as any).$page?.fullPath || (route as any).route || "" : "";
 };
 
 /**
