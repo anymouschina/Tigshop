@@ -188,7 +188,7 @@ export class WechatPayV3Service {
     }
 
     if (serialNo && derivedSerial && serialNo !== derivedSerial) {
-      this.logger.warn(`配置中的 serialNo(${serialNo.slice(0,8)}***) 与证书内序列号(${derivedSerial.slice(0,8)}***) 不一致，将优先使用证书序列号进行签名。`);
+      this.logger.warn(`配置中的 serialNo(${serialNo.slice(0,8)}***) 与证书内序列号(${derivedSerial.slice(0,8)}***) 不一致，将强制使用证书序列号进行所有签名。`);
     }
 
     const snapshot = {
@@ -203,7 +203,8 @@ export class WechatPayV3Service {
     };
     this.logger.debug(`[wechatPaySettings] 加载完成: ${JSON.stringify(snapshot)}`);
 
-    const settings = { appId, mchId, serialNo, notifyUrl, privateKeyPem, publicKeyPem, apiBase, apiV3Key, spMchId, subMchId, subAppId } as any;
+  const effectiveSerial = derivedSerial || serialNo; // 实际用于签名/请求头的序列号
+  const settings = { appId, mchId, serialNo, derivedSerial, effectiveSerial, notifyUrl, privateKeyPem, publicKeyPem, apiBase, apiV3Key, spMchId, subMchId, subAppId } as any;
     this.cachedSettings = settings;
     this.cachedAt = Date.now();
     return settings;
@@ -390,7 +391,7 @@ export class WechatPayV3Service {
 
   /** 通用签名并请求 (仅内部辅助, 简化关单/自定义 API 调用) */
   private async signedRequest(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', urlPath: string, bodyObj?: any, timeout = 8000) {
-    const { mchId, serialNo, privateKeyPem, apiBase } = await this.getWechatPaySettings();
+  const { mchId, serialNo, derivedSerial, privateKeyPem, apiBase } = await this.getWechatPaySettings();
     const url = (apiBase || 'https://api.mch.weixin.qq.com') + urlPath;
     const nonceStr = crypto.randomBytes(16).toString('hex');
     const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -406,7 +407,8 @@ export class WechatPayV3Service {
       this.logger.error(`生成签名失败(${method} ${urlPath}): ${(e as Error).message}`);
       throw new HttpException('微信请求签名失败', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    const auth = `WECHATPAY2-SHA256-RSA2048 mchid="${mchId}",serial_no="${serialNo || ''}",nonce_str="${nonceStr}",timestamp="${timestamp}",signature="${signature}"`;
+  const headerSerial = derivedSerial || serialNo || '';
+  const auth = `WECHATPAY2-SHA256-RSA2048 mchid="${mchId}",serial_no="${headerSerial}",nonce_str="${nonceStr}",timestamp="${timestamp}",signature="${signature}"`;
     try {
       const resp = await axios.request({
         url,
@@ -477,36 +479,52 @@ export class WechatPayV3Service {
    */
   async queryTransactionByOutTradeNo(outTradeNo: string): Promise<any | null> {
     if (!outTradeNo) return null;
-    const { mchId, serialNo, privateKeyPem, apiBase } = await this.getWechatPaySettings();
-    // 构造请求
-    const urlPath = `/v3/pay/transactions/out-trade-no/${outTradeNo}?mchid=${mchId}`;
-    const url = (apiBase || "https://api.mch.weixin.qq.com") + urlPath;
-    const nonceStr = crypto.randomBytes(16).toString("hex");
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const message = `GET\n${urlPath}\n${timestamp}\n${nonceStr}\n\n`;
-    let signature = "";
+    const { appId, mchId, privateKeyPem, publicKeyPem, apiV3Key, spMchId, subMchId } = await this.getWechatPaySettings();
+    const isServiceProvider = !!spMchId || !!subMchId;
+    const pay = new Pay({
+      appid: appId,
+      mchid: mchId,
+      publicKey: publicKeyPem ? Buffer.from(publicKeyPem) : undefined,
+      privateKey: Buffer.from(privateKeyPem),
+      key: apiV3Key,
+      userAgent: 'tigshop-nest/1.0',
+    } as any);
     try {
-      const sign = crypto.createSign("RSA-SHA256");
-      sign.update(message);
-      sign.end();
-      signature = sign.sign(privateKeyPem, "base64");
-    } catch (e) {
-      this.logger.error(`生成微信支付查询签名失败: ${(e as Error).message}`);
+      let result: any;
+      if (isServiceProvider) {
+        // SDK 方法命名：partner_transactions_out_trade_no（与官方路径 /v3/pay/partner/transactions/out-trade-no 对应）
+        if (!subMchId) {
+          this.logger.warn(`[wechat-query] 服务商模式查询缺少 sub_mchid，尝试仍按直连查询 out_trade_no=${outTradeNo}`);
+        }
+        if (typeof (pay as any).partner_transactions_out_trade_no === 'function') {
+          result = await (pay as any).partner_transactions_out_trade_no({
+            out_trade_no: outTradeNo,
+            sp_mchid: spMchId || mchId,
+            sub_mchid: subMchId || '',
+          });
+        } else {
+          this.logger.debug('[wechat-query] SDK 未找到 partner_transactions_out_trade_no 方法，将回退自签请求；可用方法: ' + Object.keys(pay).filter(k=>k.includes('partner')||k.includes('trans')).slice(0,20).join(','));
+          // 兼容：若 SDK 版本未提供该快捷方法，降级到手写路径
+          return await this.signedRequest('GET', `/v3/pay/partner/transactions/out-trade-no/${outTradeNo}?sp_mchid=${spMchId || mchId}&sub_mchid=${subMchId || ''}`);
+        }
+      } else {
+        if (typeof (pay as any).transactions_out_trade_no === 'function') {
+          result = await (pay as any).transactions_out_trade_no({
+            out_trade_no: outTradeNo,
+            mchid: mchId,
+          });
+        } else {
+          this.logger.debug('[wechat-query] SDK 未找到 transactions_out_trade_no 方法，将回退自签请求；可用方法: ' + Object.keys(pay).filter(k=>k.includes('trans')).slice(0,20).join(','));
+          return await this.signedRequest('GET', `/v3/pay/transactions/out-trade-no/${outTradeNo}?mchid=${mchId}`);
+        }
+      }
+      if (result?.status >= 200 && result?.status < 300) {
+        return result.data;
+      }
+      this.logger.warn(`[wechat-query] 非 2xx 响应 out_trade_no=${outTradeNo} status=${result?.status} body=${JSON.stringify(result)}`);
       return null;
-    }
-    const auth = `WECHATPAY2-SHA256-RSA2048 mchid="${mchId}",serial_no="${serialNo || ''}",nonce_str="${nonceStr}",timestamp="${timestamp}",signature="${signature}"`;
-    try {
-      const resp = await axios.get(url, {
-        timeout: 8000,
-        headers: {
-          Authorization: auth,
-          Accept: "application/json",
-          'User-Agent': 'tigshop-nest/1.0',
-        },
-      });
-      return resp.data;
     } catch (e) {
-      this.logger.warn(`微信订单查询失败 out_trade_no=${outTradeNo}: ${(e as Error).message}`);
+      this.logger.warn(`[wechat-query] 查询失败 out_trade_no=${outTradeNo}: ${(e as Error).message}`);
       return null;
     }
   }

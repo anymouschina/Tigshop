@@ -140,10 +140,15 @@ export const redirect = (redirect: redirectOptions) => {
     const tabBar = getTabbarPages();
     tabBar.includes(url) && (mode = "switchTab");
     mode != "switchTab" && param && Object.keys(param).length && (url += uni.$u.queryParams(param));
-    // 页面栈保护：navigateTo 堆栈超过 5 层改为 redirectTo（微信小程序 webview 限 10，预留安全余量）
+    // 页面栈保护：navigateTo 时若页面栈>=5，直接清空（reLaunch）再进入目标；
+    // 若目标是 tabBar 仍使用 switchTab。
     const pages = getCurrentPages();
     if (mode === 'navigateTo' && pages.length >= 5) {
-        mode = 'redirectTo';
+        if (tabBar.includes(url)) {
+            mode = 'switchTab';
+        } else {
+            mode = 'reLaunch';
+        }
     }
     // 同一路由（不含参数）重复跳转拦截（非 reLaunch/switchTab 场景）
     if (!["reLaunch","switchTab"].includes(mode)) {

@@ -305,10 +305,33 @@ export class PayService {
    */
   async getPayLogByOrderId(orderId: number) {
     const oid = Number(orderId);
+    // 先查询订单，若未支付且为微信支付则主动向微信查询一次
+    let order = await this.prisma.order.findUnique({ where: { order_id: oid } });
+    if (order && order.pay_status !== 1 && order.pay_type_id === 1) {
+      try {
+        const wx = await this.wechatPayV3.queryTransactionByOutTradeNo(order.order_sn);
+        this.logger.warn(`[GET-PAY-LOG][ACTIVE-QUERY] queried wechat orderSn=${order.order_sn} result=${JSON.stringify(wx)}`);
+        if (wx && wx.trade_state === 'SUCCESS') {
+          // 金额校验（单位：分）
+            const wxTotalFen = Number(wx?.amount?.total);
+            const unpaid = Number(order.unpaid_amount || 0);
+            const expectedFen = Math.round(unpaid * 100);
+            if (expectedFen > 0 && wxTotalFen && wxTotalFen !== expectedFen) {
+              this.logger.error(`[GET-PAY-LOG][ACTIVE-QUERY] 金额不匹配 orderSn=${order.order_sn} wx=${wxTotalFen} expected=${expectedFen}`);
+            } else {
+              await this.reconcileWechatOrderPaidByOutTradeNo(order.order_sn, unpaid);
+              // 补单后刷新订单引用
+              order = await this.prisma.order.findUnique({ where: { order_id: oid } });
+            }
+        }
+      } catch (e) {
+        this.logger.debug(`[GET-PAY-LOG][ACTIVE-QUERY] 查询微信失败 orderId=${oid}: ${(e as Error).message}`);
+      }
+    }
+    // 返回最新的已支付日志
     const log = await this.prisma.paylog.findFirst({
-      // 与 PHP 行为对齐：仅返回已支付的日志记录
       where: { order_id: oid, pay_status: 1 as any },
-      orderBy: { add_time: "desc" },
+      orderBy: { add_time: 'desc' },
     });
     return log ? this.mapPayLogCamel(log) : null;
   }

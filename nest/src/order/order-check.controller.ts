@@ -148,14 +148,30 @@ export class OrderCheckController {
         }))
       : [];
 
-    const fallbackSelections =
-      shippingSelections.length > 0
-        ? shippingSelections
-        : storeShippingType.flat().map((item: any) => ({
-            typeId: item?.typeId ?? 1,
-            shopId: item?.shopId ?? 0,
-            typeName: item?.typeName ?? "普通快递",
-          }));
+    // 兼容 storeShippingType 可能不是二维数组或无 flat 方法的情况
+    let normalizedShipping: any[] = [];
+    if (Array.isArray(storeShippingType)) {
+      if (typeof (storeShippingType as any).flat === 'function') {
+        normalizedShipping = (storeShippingType as any).flat();
+      } else {
+        // 手动降一维（只处理一层）
+        for (const seg of storeShippingType) {
+          if (Array.isArray(seg)) normalizedShipping.push(...seg); else normalizedShipping.push(seg);
+        }
+      }
+    } else if (storeShippingType && Array.isArray((storeShippingType as any).list)) {
+      normalizedShipping = (storeShippingType as any).list;
+    } else if (storeShippingType && Array.isArray((storeShippingType as any).data)) {
+      normalizedShipping = (storeShippingType as any).data;
+    }
+
+    const fallbackSelections = shippingSelections.length > 0
+      ? shippingSelections
+      : normalizedShipping.map((item: any) => ({
+          typeId: item?.typeId ?? item?.shippingTypeId ?? 1,
+          shopId: item?.shopId ?? item?.shop_id ?? 0,
+          typeName: item?.typeName ?? item?.shippingTypeName ?? '普通快递',
+        }));
 
     const cartList = builtCart?.cartList ?? [];
 
