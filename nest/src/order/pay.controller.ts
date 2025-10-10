@@ -108,23 +108,6 @@ export class PayController {
   /**
    * 支付回调 - 对齐PHP版本 order/Pay/notify
    */
-  @Post("order/pay/notify")
-  @Public()
-  @ApiOperation({ summary: "支付回调" })
-  async notify(@Body() body: any, @Query() query: { payCode?: string }, @Request() req: any) {
-    const payCode = query.payCode || body.payCode;
-    const headers = req?.headers || {};
-    return this.payService.handleNotify(payCode, body, headers);
-  }
-
-  /**
-   * 退款回调 - 对齐PHP版本 order/Pay/refundNotify
-   */
-  @Post("order/pay/refundNotify")
-  @Public()
-  @ApiOperation({ summary: "退款回调" })
-  async refundNotify(@Body() body: any, @Query() query: { pay_code?: string }) {
-    const payCode = query.pay_code || body.pay_code;
-    return this.payService.handleRefundNotify(payCode, body);
-  }
+  // 回调路由已迁移到独立的 PaymentCallbackController（免鉴权 + 兼容多前缀）
+  // 此处不再重复定义，避免冲突与装饰器导入遗漏导致的运行时错误。
 }
