@@ -140,21 +140,61 @@ export const redirect = (redirect: redirectOptions) => {
     const tabBar = getTabbarPages();
     tabBar.includes(url) && (mode = "switchTab");
     mode != "switchTab" && param && Object.keys(param).length && (url += uni.$u.queryParams(param));
-    // 页面栈保护：navigateTo 时若页面栈>=5，直接清空（reLaunch）再进入目标；
-    // 若目标是 tabBar 仍使用 switchTab。
     const pages = getCurrentPages();
+    const baseTarget = url.split('?')[0].replace(/^\//,'');
+    // 若当前已在目标路由，直接返回
+    if (pages.length && pages[pages.length-1].route === baseTarget) return;
+    // 路由栈裁剪：如果目标路由已在栈中（任一层），将栈回退到该路由的上一层，再重新 navigateTo 目标（获得新实例）
+    if (!tabBar.includes(url)) { // tabBar 走 switchTab，无需此逻辑
+        const lastIndex = [...pages].reverse().findIndex(p => p.route === baseTarget);
+        if (lastIndex !== -1) {
+            // 还原为自顶向下的 index
+            const realIndex = pages.length - 1 - lastIndex;
+            if (realIndex < pages.length - 1) { // 目标不在栈顶，执行裁剪
+                if (realIndex === 0) {
+                    // 目标是根页：直接 reLaunch 以获得全新实例
+                    uni.reLaunch({
+                        url,
+                        success: () => { success && success(); },
+                        fail: () => { fail && fail(); },
+                        complete: () => { complete && complete(); }
+                    });
+                    return;
+                } else {
+                    const delta = pages.length - realIndex; // 回退到目标上一层
+                    uni.navigateBack({
+                        delta,
+                        success: () => {
+                            // 回退成功后再进入目标，形成“上一层 -> 新目标”栈结构
+                            uni.navigateTo({
+                                url,
+                                success: () => { success && success(); },
+                                fail: () => { fail && fail(); },
+                                complete: () => { complete && complete(); }
+                            });
+                        },
+                        fail: () => {
+                            // 回退失败则兜底直接重进（避免卡死）
+                            uni.reLaunch({
+                                url,
+                                success: () => { success && success(); },
+                                fail: () => { fail && fail(); },
+                                complete: () => { complete && complete(); }
+                            });
+                        }
+                    });
+                    return;
+                }
+            }
+        }
+    }
+    // 页面栈保护：navigateTo 时若页面栈>=5，直接清空（reLaunch）再进入目标；若目标是 tabBar 仍使用 switchTab。
     if (mode === 'navigateTo' && pages.length >= 5) {
         if (tabBar.includes(url)) {
             mode = 'switchTab';
         } else {
             mode = 'reLaunch';
         }
-    }
-    // 同一路由（不含参数）重复跳转拦截（非 reLaunch/switchTab 场景）
-    if (!["reLaunch","switchTab"].includes(mode)) {
-        const baseTarget = url.split('?')[0].replace(/^\//,'');
-        const topRoute = pages.length ? pages[pages.length-1].route : '';
-        if (topRoute === baseTarget) return; // 已在当前页面，无需重复跳
     }
     switch (mode) {
         case "switchTab":
