@@ -1218,10 +1218,64 @@ export class CartService {
    * @returns 购物车商品数量
    */
   async getCartCount(userId: number) {
-    const count = await this.prisma.cart.count({
+    // 获取所有购物车项（所有类型，与 PHP 一致不区分 is_checked）
+    const cartRows = await this.prisma.cart.findMany({
       where: { user_id: userId },
+      select: {
+        cart_id: true,
+        product_id: true,
+        sku_id: true,
+        quantity: true,
+        is_checked: true,
+        type: true,
+      },
     });
+    if (cartRows.length === 0) return 0;
 
-    return count;
+    // 预取产品信息
+    const productIds = [...new Set(cartRows.map(r => r.product_id))];
+    const products = await this.prisma.product.findMany({
+      where: { product_id: { in: productIds } },
+      select: { product_id: true, product_status: true, product_stock: true },
+    });
+    const productMap = new Map<number, { product_status: number; product_stock: number }>();
+    for (const p of products) {
+      productMap.set(p.product_id, { product_status: p.product_status ?? 0, product_stock: p.product_stock ?? 0 });
+    }
+
+    // 预取 SKU 信息
+    const skuIds = [...new Set(cartRows.map(r => r.sku_id).filter(id => !!id))] as number[];
+    let skuMap = new Map<number, { sku_stock: number }>();
+    if (skuIds.length > 0) {
+      const skus = await this.prisma.product_sku.findMany({
+        where: { sku_id: { in: skuIds } },
+        select: { sku_id: true, sku_stock: true },
+      });
+      skuMap = new Map(skus.map(s => [s.sku_id, { sku_stock: s.sku_stock ?? 0 }]));
+    }
+
+    let totalCount = 0;
+    const needUncheck: number[] = [];
+    for (const row of cartRows) {
+      totalCount += row.quantity;
+      const product = productMap.get(row.product_id);
+      const productStatus = product?.product_status ?? 0;
+      // 计算库存：若有 sku 则用 sku_stock，否则用 product_stock
+      const stock = (row.sku_id ? skuMap.get(row.sku_id)?.sku_stock : product?.product_stock) ?? 0;
+      const isDisabled = stock <= 0 || productStatus === 0;
+      if (isDisabled && row.is_checked === 1) {
+        needUncheck.push(row.cart_id);
+      }
+    }
+
+    if (needUncheck.length > 0) {
+      // 仅重置需要取消选中的条目
+      await this.prisma.cart.updateMany({
+        where: { cart_id: { in: needUncheck } },
+        data: { is_checked: 0, update_time: Math.floor(Date.now() / 1000) },
+      });
+    }
+
+    return totalCount;
   }
 }
