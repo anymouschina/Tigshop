@@ -84,19 +84,69 @@ export class AdminDecorateCompatController {
   @ApiOperation({ summary: "装修详情（兼容）" })
   @Authorities("pcDecorateManage", "mobileDecorateManage")
   async detail(@Req() req: any, @Query() q: any) {
-    const id = this.num(q.id, 0);
-    let record = null;
+    // 参数对齐 PHP：id 优先；若 id=0 再根据 decorate_type,parent_id,locale_id 查询
+    let id = this.num(q.id, 0);
+    const decorate_type = this.num(q.decorate_type ?? q.decorateType ?? 1, 1);
+    const parent_id = this.num(q.parent_id ?? q.parentId ?? 0, 0);
+    const locale_id = this.num(q.locale_id ?? q.localeId ?? 0, 0);
+    const { shopId = 0 } = (await this.panel.validateUserAndGetShopId(req)) || { shopId: 0 };
+
     if (!id) {
-      const decorate_type = this.num(q.decorate_type || q.decorateType || 1);
-      const parent_id = this.num(q.parent_id || 0, 0);
-      const locale_id = this.num(q.locale_id || 0, 0);
-      const { shopId = 0 } = (await this.panel.validateUserAndGetShopId(req)) || { shopId: 0 };
-      record = await this.prisma.decorate.findFirst({
+      const found = await this.prisma.decorate.findFirst({
         where: { decorate_type, parent_id, locale_id, shop_id: shopId },
+        select: { decorate_id: true },
       });
-    } else {
+      if (found) id = found.decorate_id;
+    }
+
+    let record: any = null;
+    if (id) {
       record = await this.prisma.decorate.findUnique({ where: { decorate_id: id } });
     }
+
+    if (record) {
+      // 取子节点：parent_id = 当前 decorate_id
+      const childrenRaw = await this.prisma.decorate.findMany({
+        where: { parent_id: record.decorate_id, decorate_type: record.decorate_type, shop_id: record.shop_id },
+        select: {
+          decorate_id: true,
+          decorate_title: true,
+          locale_id: true,
+          parent_id: true,
+          decorate_type: true,
+          status: true,
+          is_home: true,
+          update_time: true,
+          data: true,
+          draft_data: true,
+        },
+        orderBy: [{ decorate_id: "asc" }],
+      });
+
+      const parseJson = (val: any) => {
+        if (val == null || val === "") return val; // PHP 若为空多为 ''
+        if (typeof val !== "string") return val;
+        try {
+          return JSON.parse(val);
+        } catch {
+          return val;
+        }
+      };
+
+      const normalizeNode = (n: any) => ({
+        ...n,
+        status: n.status ? 1 : 0,
+        is_home: n.is_home ? 1 : 0,
+        data: parseJson(n.data),
+        draft_data: parseJson(n.draft_data),
+        // bindLocaleName 占位（PHP with children.bindLocaleName）
+        bindLocaleName: `locale_${n.locale_id}`,
+      });
+
+      record = normalizeNode(record);
+      record.children = childrenRaw.map((c) => normalizeNode(c));
+    }
+
     return { code: 0, message: "success", data: record };
   }
 
