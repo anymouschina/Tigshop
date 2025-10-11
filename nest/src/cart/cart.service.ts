@@ -378,7 +378,7 @@ export class CartService {
     productId: number,
     quantity: number = 1,
     skuId: number = 0,
-    options?: { type?: number; salesmanId?: number; extraAttrIds?: string | number[] },
+    options?: { type?: number; salesmanId?: number; extraAttrIds?: string | number[]; isQuick?: boolean },
   ) {
     // 入参兜底校验，避免 NaN/无效值导致 Prisma where 报错
     const pid = Number(productId);
@@ -438,20 +438,93 @@ export class CartService {
       },
     });
 
+    const isQuick = options?.isQuick === true;
+    if (isQuick) {
+      // 立即购买：取消同类型购物车其它商品的选中状态（与 PHP 逻辑一致）
+      await this.prisma.cart.updateMany({
+        where: { user_id: userId, type: cartType },
+        data: { is_checked: 0 },
+      });
+    }
+
     let cartItem;
 
     if (existingItem) {
-      // 更新数量
-      const newQuantity = existingItem.quantity + qty;
-      if (newQuantity > stock) {
+      // 与 PHP: 若 is_quick 不累加，只用本次数量；否则累加旧数量
+      const finalQuantity = isQuick ? qty : existingItem.quantity + qty;
+      if (finalQuantity > stock) {
         throw new BadRequestException("库存不足");
+      }
+
+      // 重新获取定价/图片数据（模拟 PHP 删除后新建的刷新行为）
+      const productData = await this.prisma.product.findFirst({
+        where: { product_id: pid },
+        select: {
+          product_sn: true,
+          pic_thumb: true,
+          shop_id: true,
+          market_price: true,
+          product_price: true,
+          product_type: true,
+        },
+      });
+
+      let marketPrice = 0;
+      let originalPrice = 0;
+      let skuDataStr: string | null = null;
+      let skuPicThumb: string | null = null;
+      if (sid > 0) {
+        const sku = await this.prisma.product_sku.findUnique({ where: { sku_id: sid } });
+        if (sku) {
+          skuDataStr = sku.sku_data ?? null;
+          marketPrice = Number(productData?.market_price ?? 0);
+          const skuPriceNum = Number(sku.sku_price ?? 0);
+          originalPrice = skuPriceNum > 0 ? skuPriceNum : Number(product.product_price ?? 0);
+        }
+      } else {
+        marketPrice = Number(product.market_price ?? 0);
+        originalPrice = Number(product.product_price ?? 0);
+      }
+
+      // extra attrs 若传则刷新，否则保持原有
+      let extraSkuDataPayload: any[] | undefined = undefined;
+      const rawExtra = options?.extraAttrIds;
+      if (rawExtra !== undefined && rawExtra !== null) {
+        let attrIds: number[] = [];
+        if (Array.isArray(rawExtra)) {
+          attrIds = rawExtra.map(v => Number(v)).filter(v => Number.isInteger(v) && v > 0);
+        } else if (typeof rawExtra === 'string') {
+          attrIds = rawExtra.split(',').map(s => Number(s.trim())).filter(v => Number.isInteger(v) && v > 0);
+        }
+        if (attrIds.length > 0) {
+          const attrs = await this.prisma.product_attributes.findMany({ where: { attributes_id: { in: attrIds } } });
+            if (attrs && attrs.length > 0) {
+              extraSkuDataPayload = attrs.map(attr => ({
+                attributesId: attr.attributes_id,
+                productId: attr.product_id,
+                attrType: attr.attr_type,
+                attrName: attr.attr_name ?? '',
+                attrValue: attr.attr_value ?? '',
+                attrPrice: formatDecimal(attr.attr_price ?? 0),
+                attrColor: attr.attr_color ?? '',
+                attrPic: attr.attr_pic ?? '',
+                attrPicThumb: attr.attr_pic_thumb ?? '',
+              }));
+            }
+        }
       }
 
       cartItem = await this.prisma.cart.update({
         where: { cart_id: existingItem.cart_id },
         data: {
-          quantity: newQuantity,
+          quantity: finalQuantity,
+          is_checked: 1,
           update_time: Math.floor(Date.now() / 1000),
+          // 刷新关键字段
+          market_price: marketPrice,
+          original_price: originalPrice,
+          sku_data: skuDataStr ?? existingItem.sku_data ?? undefined,
+          extra_sku_data: extraSkuDataPayload ? JSON.stringify(extraSkuDataPayload) : existingItem.extra_sku_data,
         },
       });
     } else {

@@ -90,6 +90,7 @@ export class CartController {
       type: typeNum > 0 ? typeNum : 1,
       salesmanId,
       extraAttrIds,
+      isQuick,
     });
     // PHP 返回 { item: true, flow_type }
     return { item: !!result, flow_type: typeNum > 0 ? typeNum : 1 };
