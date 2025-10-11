@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { Injectable, HttpException, HttpStatus, Logger } from "@nestjs/common";
+import { resolveClientType } from "../../common/utils/client-type.util";
 import { PrismaService } from "../../prisma/prisma.service";
 import { JwtService } from "@nestjs/jwt";
 import { CaptchaService } from "../../auth/services/captcha.service";
@@ -22,21 +23,7 @@ export class LoginService {
    * 获取客户端类型
    */
   getClientType(req: any): string {
-    const userAgent = req.headers["user-agent"] || "";
-    if (
-      userAgent.includes("MiniProgram") ||
-      userAgent.includes("miniProgram")
-    ) {
-      return "miniProgram";
-    } else if (userAgent.includes("MicroMessenger")) {
-      return "wechat";
-    } else if (
-      userAgent.includes("Windows") ||
-      userAgent.includes("Macintosh")
-    ) {
-      return "pc";
-    }
-    return "mobile";
+    return resolveClientType(req) || 'h5';
   }
 
   /**

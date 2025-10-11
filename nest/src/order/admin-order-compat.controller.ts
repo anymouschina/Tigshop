@@ -306,7 +306,7 @@ export class AdminOrderCompatController {
       logisticsId: body.logisticsId ?? body.logistics_id,
       logisticsName: body.logisticsName ?? body.logistics_name,
       shippingStatus: body.shippingStatus ?? body.shipping_status,
-    }, req?.user?.username);
+    }, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 
@@ -321,7 +321,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "订单收货（占位）" })
   async confirmReceipt(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.confirmReceipt(id, body.shippingStatus ?? body.shipping_status, req?.user?.username);
+    await this.svc.confirmReceipt(id, body.shippingStatus ?? body.shipping_status, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 
@@ -336,7 +336,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "修改收货人信息（占位）" })
   async modifyConsignee(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.modifyConsignee(id, body, req?.user?.username);
+    await this.svc.modifyConsignee(id, body, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 
@@ -351,7 +351,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "修改配送信息（占位）" })
   async modifyShipping(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.modifyShipping(id, body, req?.user?.username);
+    await this.svc.modifyShipping(id, body, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 
@@ -366,7 +366,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "修改订单金额（占位）" })
   async modifyMoney(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.modifyMoney(id, body, req?.user?.username);
+    await this.svc.modifyMoney(id, body, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 
@@ -381,7 +381,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "取消订单（占位）" })
   async cancelOrder(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.cancelOrder(id, body.reason ?? body.remark, body.orderStatus ?? body.order_status, req?.user?.username);
+    await this.svc.cancelOrder(id, body.reason ?? body.remark, body.orderStatus ?? body.order_status, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 
@@ -396,7 +396,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "设置为已确认（占位）" })
   async setConfirm(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.setConfirm(id, body.orderStatus ?? body.order_status, req?.user?.username);
+    await this.svc.setConfirm(id, body.orderStatus ?? body.order_status, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 
@@ -411,7 +411,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "订单软删除（占位）" })
   async delOrder(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.delOrder(id, req?.user?.username);
+    await this.svc.delOrder(id, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 
@@ -442,7 +442,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "设置为已支付（占位）" })
   async setPaid(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.setPaid(id, body.payStatus ?? body.pay_status, req?.user?.username);
+    await this.svc.setPaid(id, body.payStatus ?? body.pay_status, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 
@@ -457,7 +457,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "修改商品信息（占位）" })
   async modifyProduct(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.modifyProduct(id, body, req?.user?.username);
+    await this.svc.modifyProduct(id, body, req?.user?.username); // modifyProduct 内部后续可扩展 adminId
     return { code: 0, message: "success" };
   }
 
@@ -487,7 +487,7 @@ export class AdminOrderCompatController {
   @ApiOperation({ summary: "设置商家备注（占位）" })
   async setAdminNote(@Body() body: any, @Req() req: any) {
     const id = Number(body.id ?? body.orderId);
-    await this.svc.setAdminNote(id, body.note ?? body.adminNote ?? body.admin_note, req?.user?.username);
+    await this.svc.setAdminNote(id, body.note ?? body.adminNote ?? body.admin_note, req?.user?.username, req?.user?.userId ?? req?.user?.adminId);
     return { code: 0, message: "success" };
   }
 

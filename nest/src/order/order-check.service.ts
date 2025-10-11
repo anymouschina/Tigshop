@@ -1348,6 +1348,8 @@ export class OrderCheckService {
     // 5) 开启事务：写入订单、订单商品、券使用、扣积分/余额、清除购物车
     const result = await this.prisma.$transaction(async (tx) => {
       // 5.1 创建订单
+      // 解析客户端来源，对齐 PHP \utils\Util::getClientType()
+      const clientType = this.detectClientType();
       const order = await tx.order.create({
         data: {
           order_sn: orderSn,
@@ -1380,7 +1382,7 @@ export class OrderCheckService {
           unpaid_amount: totals.unpaidAmount,
           paid_amount: 0,
           order_extension: "",
-          order_source: "app",
+          order_source: clientType,
           address_data: JSON.stringify({
             addressId: addr.address_id,
             consignee: addr.consignee,
@@ -1607,6 +1609,14 @@ export class OrderCheckService {
       order_id: result.order_id,
       unpaid_amount: Number(totals.unpaidAmount ?? 0),
     };
+  }
+
+  // 根据请求上下文推断客户端类型（需在 controller 调用前注入 request 到 checkoutParams._req 或者在构造器中传入）
+  private detectClientType(): string {
+    const req: any = (this as any).request || this.checkoutParams?._req;
+    // 复用公共解析
+    const { resolveClientType } = require('../common/utils/../../common/utils/client-type.util');
+    return resolveClientType(req) || 'h5';
   }
 
   /**

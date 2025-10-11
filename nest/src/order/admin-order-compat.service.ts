@@ -962,7 +962,7 @@ export class AdminOrderCompatService {
   }
 
   // ---------- 订单操作实现（基础版本，支持传入目标状态，默认常用值） ----------
-  async deliver(orderId: number, data: { trackingNo?: string; logisticsId?: any; logisticsName?: string; shippingStatus?: any }, adminName?: string) {
+  async deliver(orderId: number, data: { trackingNo?: string; logisticsId?: any; logisticsName?: string; shippingStatus?: any }, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
     const now = Math.floor(Date.now() / 1000);
@@ -977,11 +977,11 @@ export class AdminOrderCompatService {
         shipping_status,
       },
     });
-    await this.addLog(orderId, `发货：物流=${data?.logisticsName ?? order.logistics_name} 单号=${data?.trackingNo ?? order.tracking_no}`, adminName);
+    await this.addLog(orderId, `发货：物流=${data?.logisticsName ?? order.logistics_name} 单号=${data?.trackingNo ?? order.tracking_no}`, adminName, adminId);
     return true;
   }
 
-  async confirmReceipt(orderId: number, shippingStatus?: any, adminName?: string) {
+  async confirmReceipt(orderId: number, shippingStatus?: any, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
     const now = Math.floor(Date.now() / 1000);
@@ -1004,21 +1004,21 @@ export class AdminOrderCompatService {
         received_time: now,
       },
     });
-    await this.addLog(orderId, "确认收货，订单已完成", adminName);
+    await this.addLog(orderId, "确认收货，订单已完成", adminName, adminId);
     return true;
   }
 
-  async setPaid(orderId: number, payStatus?: any, adminName?: string) {
+  async setPaid(orderId: number, payStatus?: any, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
     const now = Math.floor(Date.now() / 1000);
     const status = payStatus != null ? Number(payStatus) : 1; // 默认 1=已支付
     await this.prisma.order.update({ where: { order_id: orderId }, data: { pay_status: status, pay_time: now } });
-    await this.addLog(orderId, "设置已支付", adminName);
+    await this.addLog(orderId, "设置已支付", adminName, adminId);
     return true;
   }
 
-  async cancelOrder(orderId: number, reason?: string, orderStatus?: any, adminName?: string) {
+  async cancelOrder(orderId: number, reason?: string, orderStatus?: any, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
 
@@ -1091,28 +1091,28 @@ export class AdminOrderCompatService {
       await this.prisma.order.update({ where: { order_id: orderId }, data: { order_status: status } });
     }
 
-    await this.addLog(orderId, `取消订单${reason ? `：${reason}` : ""}`, adminName);
+    await this.addLog(orderId, `取消订单${reason ? `：${reason}` : ""}`, adminName, adminId);
     return true;
   }
 
-  async setConfirm(orderId: number, orderStatus?: any, adminName?: string) {
+  async setConfirm(orderId: number, orderStatus?: any, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
     const status = orderStatus != null ? Number(orderStatus) : 1; // 默认 1=已确认
     await this.prisma.order.update({ where: { order_id: orderId }, data: { order_status: status } });
-    await this.addLog(orderId, "设置已确认", adminName);
+    await this.addLog(orderId, "设置已确认", adminName, adminId);
     return true;
   }
 
-  async delOrder(orderId: number, adminName?: string) {
+  async delOrder(orderId: number, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
     await this.prisma.order.update({ where: { order_id: orderId }, data: { is_del: 1 } });
-    await this.addLog(orderId, "删除订单（软删）", adminName);
+    await this.addLog(orderId, "删除订单（软删）", adminName, adminId);
     return true;
   }
 
-  async modifyMoney(orderId: number, patch: Record<string, any>, adminName?: string) {
+  async modifyMoney(orderId: number, patch: Record<string, any>, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
     const numericKeys = [
@@ -1125,11 +1125,11 @@ export class AdminOrderCompatService {
     }
     if (Object.keys(data).length === 0) throw new BadRequestException("未提供可变更金额字段");
     await this.prisma.order.update({ where: { order_id: orderId }, data });
-    await this.addLog(orderId, `修改金额：${JSON.stringify(data)}`, adminName);
+    await this.addLog(orderId, `修改金额：${JSON.stringify(data)}`, adminName, adminId);
     return true;
   }
 
-  async modifyConsignee(orderId: number, patch: Record<string, any>, adminName?: string) {
+  async modifyConsignee(orderId: number, patch: Record<string, any>, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
     const data: any = {};
@@ -1147,11 +1147,11 @@ export class AdminOrderCompatService {
     }
     if (Object.keys(data).length === 0) throw new BadRequestException("未提供修改项");
     await this.prisma.order.update({ where: { order_id: orderId }, data });
-    await this.addLog(orderId, `修改收货信息`, adminName);
+    await this.addLog(orderId, `修改收货信息`, adminName, adminId);
     return true;
   }
 
-  async modifyShipping(orderId: number, patch: Record<string, any>, adminName?: string) {
+  async modifyShipping(orderId: number, patch: Record<string, any>, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
     const data: any = {};
@@ -1170,13 +1170,13 @@ export class AdminOrderCompatService {
     if (patch.shippingStatus != null) data.shipping_status = Number(patch.shippingStatus);
     if (Object.keys(data).length === 0) throw new BadRequestException("未提供修改项");
     await this.prisma.order.update({ where: { order_id: orderId }, data });
-    await this.addLog(orderId, `修改配送信息`, adminName);
+    await this.addLog(orderId, `修改配送信息`, adminName, adminId);
     return true;
   }
 
-  async setAdminNote(orderId: number, note: string, adminName?: string) {
+  async setAdminNote(orderId: number, note: string, adminName?: string, adminId?: number) {
     await this.prisma.order.update({ where: { order_id: orderId }, data: { admin_note: note ?? "" } });
-    await this.addLog(orderId, `设置商家备注`, adminName);
+    await this.addLog(orderId, `设置商家备注`, adminName, adminId);
     return true;
   }
 
