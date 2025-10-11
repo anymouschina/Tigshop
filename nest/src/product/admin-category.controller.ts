@@ -196,7 +196,19 @@ export class AdminApiCategoryController {
   async updateField(@Body() body: any) {
     const id = Number(body.id);
     const field = this.mapFieldCamelToSnake(String(body.field));
-    const value = body.value;
+    // 兼容前端可能传 val 或 value，两种都支持
+    let value = body.value ?? body.val;
+    // 针对部分需要数值的字段进行数值化
+    const numericFields = new Set([
+      "sort_order",
+      "parent_id",
+      "is_hot",
+      "is_show",
+    ]);
+    if (numericFields.has(field)) {
+      value = value === '' || value === null || value === undefined ? 0 : Number(value);
+      if (Number.isNaN(value)) value = 0;
+    }
     await this.categoryService.updateField(id, field, value);
     return { code: 0, message: "success" };
   }

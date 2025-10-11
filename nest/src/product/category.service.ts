@@ -231,7 +231,8 @@ export class CategoryService {
     if (data.category_name !== undefined)
       updateData.category_name = data.category_name;
     if (data.short_name !== undefined) updateData.short_name = data.short_name;
-    if (data.parent_id !== undefined) updateData.parent_id = data.parent_id;
+    if (data.parent_id !== undefined)
+      updateData.parent_id = this.normalizeInt(data.parent_id);
     if (data.category_pic !== undefined)
       updateData.category_pic = data.category_pic;
     if (data.category_ico !== undefined)
@@ -244,9 +245,12 @@ export class CategoryService {
     if (data.keywords !== undefined) updateData.keywords = data.keywords;
     if (data.category_desc !== undefined)
       updateData.category_desc = data.category_desc;
-    if (data.is_hot !== undefined) updateData.is_hot = data.is_hot;
-    if (data.is_show !== undefined) updateData.is_show = data.is_show;
-    if (data.sort_order !== undefined) updateData.sort_order = data.sort_order;
+    if (data.is_hot !== undefined)
+      updateData.is_hot = this.normalizeInt(data.is_hot);
+    if (data.is_show !== undefined)
+      updateData.is_show = this.normalizeInt(data.is_show);
+    if (data.sort_order !== undefined)
+      updateData.sort_order = this.normalizeInt(data.sort_order);
 
     const result = await this.prisma.category.update({
       where: { category_id: id },
@@ -310,6 +314,22 @@ export class CategoryService {
       }
     }
 
+    // 数值字段强制转换，防止传入字符串导致 Prisma 校验失败
+    const numericFields = new Set([
+      "sort_order",
+      "parent_id",
+      "is_hot",
+      "is_show",
+    ]);
+    if (numericFields.has(field)) {
+      if (value === '' || value === null || value === undefined) {
+        value = 0;
+      } else {
+        const coerced = Number(value);
+        value = Number.isNaN(coerced) ? 0 : coerced;
+      }
+    }
+
     const result = await this.prisma.category.update({
       where: { category_id: id },
       data: {
@@ -318,6 +338,12 @@ export class CategoryService {
     });
 
     return !!result;
+  }
+
+  private normalizeInt(raw: any): number {
+    if (raw === '' || raw === null || raw === undefined) return 0;
+    const n = Number(raw);
+    return Number.isNaN(n) ? 0 : Math.trunc(n);
   }
 
   async delete(id: number): Promise<boolean> {

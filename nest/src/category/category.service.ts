@@ -15,6 +15,7 @@ export type CategoryTreeNode = {
   parent_id: number;
   category_name: string;
   category_pic?: string;
+  sort_order?: number; // 透出原始排序，方便前端或调试验证
   children?: CategoryTreeNode[];
 };
 
@@ -302,47 +303,57 @@ export class CategoryService {
   }
 
   private async catList(categoryId = 0): Promise<CategoryTreeNode[]> {
-    const categories = await this.prisma.category.findMany({
-      where: {
-        is_show: 1,
-      },
-      orderBy: [
-        { parent_id: "asc" },
-        { sort_order: "asc" },
-        { category_id: "asc" },
-      ],
+    // 读取全部显示分类
+    const raw = await this.prisma.category.findMany({
+      where: { is_show: 1 },
       select: {
         category_id: true,
         category_name: true,
         parent_id: true,
         category_pic: true,
+        sort_order: true,
       },
     });
+    if (!raw.length) return [];
 
-    const grouped = new Map<number, CategoryTreeNode[]>();
-    categories.forEach((item) => {
-      const node: CategoryTreeNode = {
-        category_id: item.category_id,
-        parent_id: item.parent_id ?? 0,
-        category_name: this.lang(item.category_name),
-        category_pic: item.category_pic || "",
-      };
-
-      if (!grouped.has(node.parent_id)) {
-        grouped.set(node.parent_id, []);
-      }
-      grouped.get(node.parent_id)?.push(node);
+    // 按 PHP 逻辑：同级内按照 sort_order 正序，其次 category_id 正序
+    raw.sort((a, b) => {
+      const so = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+      if (so !== 0) return so;
+      return a.category_id - b.category_id;
     });
 
-    const buildTree = (parentId: number): CategoryTreeNode[] => {
-      const children = grouped.get(parentId) || [];
-      return children.map((child) => ({
-        ...child,
-        children: buildTree(child.category_id),
+    // 按 parent_id 分组
+    const grouped = new Map<number, any[]>();
+    for (const row of raw) {
+      const pid = row.parent_id ?? 0;
+      if (!grouped.has(pid)) grouped.set(pid, []);
+      grouped.get(pid)!.push(row);
+    }
+
+    const build = (pid: number): CategoryTreeNode[] => {
+      const list = grouped.get(pid) || [];
+      // 同级再次保证排序（虽然 raw 全局排过，但防御式）
+      list.sort((a, b) => {
+        const so = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+        if (so !== 0) return so;
+        return a.category_id - b.category_id;
+      });
+      return list.map((c) => ({
+        category_id: c.category_id,
+        parent_id: c.parent_id ?? 0,
+        category_name: this.lang(c.category_name),
+        category_pic: c.category_pic || "",
+        sort_order: c.sort_order ?? 0,
+        children: build(c.category_id),
       }));
     };
 
-    return buildTree(categoryId);
+    // 如果 categoryId=0，直接返回 0 层节点列表（不包一层 root）
+    if (categoryId === 0) {
+      return build(0);
+    }
+    return build(categoryId);
   }
 
   private async getRelatedCategoryList(categoryId: number, size: number) {

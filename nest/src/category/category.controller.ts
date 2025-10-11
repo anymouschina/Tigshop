@@ -41,7 +41,19 @@ export class CategoryController {
   @ApiOperation({ summary: "根据上级获得指定分类" })
   async list(@Query("id") id: string): Promise<CategoryTreeNode[]> {
     const categoryId = Number(id) || 0;
-    return this.categoryService.getCategoryList(categoryId);
+    const data = await this.categoryService.getCategoryList(categoryId);
+    const toCamel = (nodes: CategoryTreeNode[]): any[] =>
+      (nodes || []).map((n) => ({
+        categoryId: n.category_id,
+        categoryName: n.category_name,
+        parentId: n.parent_id,
+        categoryPic: n.category_pic || "",
+        sortOrder: n.sort_order ?? 0,
+        ...(n.children && n.children.length
+          ? { children: toCamel(n.children) }
+          : {}),
+      }));
+    return toCamel(data) as any;
   }
 
   /**
@@ -58,6 +70,7 @@ export class CategoryController {
         categoryName: n.category_name,
         parentId: n.parent_id,
         categoryPic: n.category_pic || "",
+        sortOrder: n.sort_order ?? 0,
         ...(n.children && n.children.length
           ? { children: toCamel(n.children) }
           : {}),
