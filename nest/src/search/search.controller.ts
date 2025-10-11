@@ -17,7 +17,6 @@ import { Public } from "../auth/decorators/public.decorator";
 @ApiTags("Search Management")
 @Controller("api/search/search")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
@@ -225,6 +224,7 @@ export class SearchController {
    * 保存搜索历史
    */
   @Post("history")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "保存搜索历史" })
   async saveSearchHistory(
     @Request() req,
@@ -246,6 +246,7 @@ export class SearchController {
    * 获取搜索历史
    */
   @Get("history")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "获取搜索历史" })
   async getSearchHistory(@Request() req, @Query("limit") limit?: number) {
     const history = await this.searchService.getSearchHistory(
@@ -267,6 +268,7 @@ export class SearchController {
    * 删除搜索历史
    */
   @Delete("history")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "删除搜索历史" })
   async deleteSearchHistory(@Request() req, @Query("query") query?: string) {
     await this.searchService.deleteSearchHistory(req.user.userId, query);
@@ -281,6 +283,7 @@ export class SearchController {
    * 重建搜索索引
    */
   @Post("reindex")
+  @Public()
   @ApiOperation({ summary: "重建搜索索引" })
   async rebuildIndex(@Body() data: { type?: string }) {
     const type = data.type || "all";
@@ -296,6 +299,7 @@ export class SearchController {
    * 清除搜索缓存
    */
   @Post("clearCache")
+  @Public()
   @ApiOperation({ summary: "清除搜索缓存" })
   async clearCache() {
     await this.searchService.clearCache();

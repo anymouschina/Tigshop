@@ -29,7 +29,6 @@ import {
 @ApiTags("Product Management")
 @Controller("api/product/product")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
@@ -45,6 +44,7 @@ export class ProductController {
    * 获取商品列表 - 对齐PHP版本 product/product/list
    */
   @Get("list")
+  @Public()
   @ApiOperation({ summary: "获取商品列表" })
   async getProductList(@Query() query: any) {
     return this.productService.findAll(query);
@@ -122,6 +122,7 @@ export class ProductController {
    * 获取评论列表 - 对齐PHP版本 product/product/getCommentList
    */
   @Get("getCommentList")
+  @Public()
   @ApiOperation({ summary: "获取评论列表" })
   async getCommentList(
     @Query() query: { id: number; page?: number; size?: number },
@@ -163,6 +164,7 @@ export class ProductController {
    * 获取商品促销信息 - 对齐PHP版本 product/product/promotion
    */
   @Post("promotion")
+  @Public()
   @ApiOperation({ summary: "获取商品促销信息" })
   async getPromotion(@Body() data: any) {
     return this.productService.getProductsPromotion(data);
@@ -205,6 +207,7 @@ export class ProductController {
    * 批量获取商品价格 - 对齐PHP版本 product/product/getPriceInBatches
    */
   @Post("getPriceInBatches")
+  @Public()
   @ApiOperation({ summary: "批量获取商品价格" })
   async getPriceInBatches(@Body() body: GetPriceInBatchesBodyDto) {
     const items = Array.isArray(body?.products) ? body.products : [];
@@ -218,6 +221,7 @@ export class ProductController {
    * 获取商品优惠券 - 对齐PHP版本 product/product/getCoupon
    */
   @Get("getCoupon")
+  @Public()
   @ApiOperation({ summary: "获取商品可用优惠券" })
   async getProductCoupon(@Query() query: { id: number }) {
     // 简化实现，返回优惠券信息
@@ -239,6 +243,7 @@ export class ProductController {
    * 收藏状态查询 - 对齐PHP版本 product/product/isCollect
    */
   @Get("isCollect")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "收藏状态查询" })
   async isCollect(@Request() req, @Query() query: any) {
     const userId = req?.user?.userId;
@@ -256,6 +261,7 @@ export class ProductController {
    * 添加到购物车 - 对齐PHP版本 product/product/addToCart
    */
   @Post("addToCart")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "添加到购物车" })
   async addToCart(
     @Request() req,
