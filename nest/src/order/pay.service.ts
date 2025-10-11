@@ -456,8 +456,23 @@ export class PayService {
             prepay.prepay_id,
           );
         } else {
-          // 兜底：无 openid 继续旧逻辑（H5 / 第三方聚合）
-          payInfoRaw = await this.callThirdPartyPay(payParams, payType);
+          // 无 openid：区分 PC/Web 场景尝试走 Native (扫码)；否则兜底第三方
+          if (ct.includes('pc') || (ct.includes('web') && !ct.includes('mini') && !ct.includes('mp'))) {
+            try {
+              const native = await this.wechatPayV3.unifiedOrderNative({
+                outTradeNo: String(payParams.order_sn),
+                description: `订单${payParams.order_sn}`,
+                total: Number(payParams.unpaid_amount || 0),
+              });
+              this.logger.debug(`[createPayment] native order ok code_url=${(native.code_url || '').slice(0,16)}***`);
+              payInfoRaw = { codeUrl: native.code_url };
+            } catch (e) {
+              this.logger.warn(`[createPayment] native order fallback error: ${(e as any)?.message}; use thirdParty`);
+              payInfoRaw = await this.callThirdPartyPay(payParams, payType);
+            }
+          } else {
+            payInfoRaw = await this.callThirdPartyPay(payParams, payType);
+          }
         }
       } else {
         payInfoRaw = await this.callThirdPartyPay(payParams, payType);
@@ -480,7 +495,7 @@ export class PayService {
         case "yabanpay_wechat":
         case "yunpay_wechat":
           // 小程序返回 JSAPI 所需参数；H5 返回 URL；其余平台保持兜底 URL
-          if (openid) { // 只要走了 JSAPI 预下单，就返回 JSAPI 参数
+          if (openid) { // JSAPI 参数
             // 统一字段并保证 timeStamp 为字符串
             const ts = payInfoRaw.timeStamp ?? payInfoRaw.timestamp ?? Math.floor(Date.now() / 1000);
             payInfo = {
@@ -491,6 +506,8 @@ export class PayService {
               signType: payInfoRaw.signType || "RSA",
               paySign: payInfoRaw.paySign || payInfoRaw.sign || "",
             };
+          } else if (payInfoRaw.codeUrl || payInfoRaw.code_url) { // Native 扫码
+            payInfo = { codeUrl: payInfoRaw.codeUrl || payInfoRaw.code_url };
           } else {
             // 对 H5 返回一个可唤起/跳转的 URL；若上游无返回，则以 weixin 协议兜底，避免 mock 域名
             const pr = (payParams as any).paylog_id || payParams.order_sn || Date.now();
