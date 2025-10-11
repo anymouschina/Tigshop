@@ -42,6 +42,7 @@ export class AdminOrderCompatService {
       payStatus: "pay_status",
       orderStatus: "order_status",
       shippingStatus: "shipping_status",
+      orderSource: "order_source",
     };
     const sortCol = sortMap[sortField] || "add_time";
 
@@ -518,8 +519,16 @@ export class AdminOrderCompatService {
     const shippingStatus = query.shippingStatus ?? query.shipping_status;
     const startTime = query.startTime ?? query.start_time;
     const endTime = query.endTime ?? query.end_time;
+    const orderSource = query.orderSource ?? query.order_source; // 新增: 来源过滤
+    const isDelParam = query.isDel ?? query.is_del; // 新增: 是否包含已删除
     const ids = this.parseIdsParam(query.ids ?? query.rangeIds ?? query.orderIds);
-    const where: any = { is_del: 0 };
+    // 默认只查未删除(is_del=0)，当 isDel=-1/all 时查询全部，当 isDel=1 时只看已删除
+    const where: any = {};
+    if (isDelParam === undefined || isDelParam === "" || String(isDelParam) === "0") {
+      where.is_del = 0;
+    } else if (String(isDelParam) === "1") {
+      where.is_del = 1;
+    } // -1/all 不加 is_del 过滤
     if (ids.length) where.order_id = { in: ids };
     if (keyword) {
       where.OR = [
@@ -535,6 +544,10 @@ export class AdminOrderCompatService {
       const from = startTime ? Math.floor(new Date(startTime).getTime() / 1000) : undefined;
       const to = endTime ? Math.floor(new Date(endTime).getTime() / 1000) : undefined;
       where.add_time = { ...(from !== undefined && { gte: from }), ...(to !== undefined && { lte: to }) };
+    }
+    if (orderSource && orderSource !== 'all' && orderSource !== '-1') {
+      // 仅当明确指明来源且不是 all/-1 时才过滤
+      where.order_source = String(orderSource);
     }
     return where;
   }
