@@ -180,24 +180,63 @@ export class AdminOrderCompatService {
     return true;
   }
 
-  async getLogs(orderId: number, page = 1, size = 15) {
+  async getLogs(orderId: number, page = 1, size = 15, opts?: { keyword?: string }) {
     const skip = (page - 1) * size;
-    const where = { order_id: orderId } as any;
+    const where: any = { };
+    if (orderId) where.order_id = orderId;
+    if (opts?.keyword) {
+      where.description = { contains: opts.keyword };
+    }
     const [records, total] = await Promise.all([
       this.prisma.order_log.findMany({ where, orderBy: { log_id: "desc" }, skip, take: size }),
       this.prisma.order_log.count({ where }),
     ]);
-    return { records, total, size, current: page, pages: Math.max(1, Math.ceil((total || 0) / size)) };
+
+    // 为 operator 补充用户名（模仿 PHP accessor: admin 优先，其次 user）
+    // 收集需要查询的 admin_id / user_id
+    const adminIds = Array.from(new Set(records.map(r => r.admin_id).filter((id: number) => id > 0)));
+    const userIds = Array.from(new Set(records.map(r => r.user_id).filter((id: number) => id > 0)));
+    const [adminUsers, users] = await Promise.all([
+      adminIds.length ? this.prisma.admin_user.findMany({ where: { admin_id: { in: adminIds } }, select: { admin_id: true, username: true } }) : Promise.resolve([]),
+      userIds.length ? this.prisma.user.findMany({ where: { user_id: { in: userIds } }, select: { user_id: true, username: true } }) : Promise.resolve([]),
+    ]);
+    const adminMap = new Map(adminUsers.map(u => [u.admin_id, u.username]));
+    const userMap = new Map(users.map(u => [u.user_id, u.username]));
+
+    // 映射为与 PHP 输出一致的字段
+    const mapped = records.map((r: any) => {
+      let operator: string | null = null;
+      if (r.admin_id > 0) operator = adminMap.get(r.admin_id) || null;
+      else if (r.user_id > 0) operator = userMap.get(r.user_id) || null;
+      return {
+        logId: r.log_id,
+        orderId: r.order_id,
+        orderSn: r.order_sn,
+        operator,
+        adminId: r.admin_id,
+        userId: r.user_id,
+        description: r.description || "",
+        logTime: this.formatUnixToTime(r.log_time),
+        shopId: r.shop_id,
+      };
+    });
+    return { records: mapped, total, size, current: page, pages: Math.max(1, Math.ceil((total || 0) / size)) };
   }
 
-  async addLog(orderId: number, content: string, adminName?: string) {
+  async addLog(orderId: number, content: string, adminName?: string, adminId?: number) {
     const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
     if (!order) throw new NotFoundException("订单不存在");
+    // 如果没有显式传入 adminId，则根据 adminName 反查（一次查询，避免滥用）
+    let resolvedAdminId = adminId || 0;
+    if (!resolvedAdminId && adminName) {
+      const adm = await this.prisma.admin_user.findFirst({ where: { username: adminName }, select: { admin_id: true } });
+      if (adm) resolvedAdminId = adm.admin_id;
+    }
     await this.prisma.order_log.create({
       data: {
         order_id: orderId,
         order_sn: order.order_sn,
-        admin_id: 0,
+        admin_id: resolvedAdminId,
         user_id: order.user_id,
         description: content || "",
         log_time: Math.floor(Date.now() / 1000),

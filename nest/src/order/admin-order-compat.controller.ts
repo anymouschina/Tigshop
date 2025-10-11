@@ -82,10 +82,11 @@ export class AdminOrderCompatController {
   @Authorities("order")
   @ApiOperation({ summary: "订单日志列表（admin 兼容）" })
   async logList(@Query() query: any) {
-    const id = Number(query.id ?? query.orderId);
+    const id = Number(query.id ?? query.orderId ?? query.order_id);
     const page = Number(query.page) || 1;
     const size = Number(query.size) || 15;
-    const data = await this.svc.getLogs(id, page, size);
+    const keyword = query.keyword ? String(query.keyword) : undefined;
+    const data = await this.svc.getLogs(id, page, size, { keyword });
     return { code: 0, message: "success", data };
   }
 
@@ -109,10 +110,20 @@ export class AdminOrderCompatController {
   @Authorities("order")
   @ApiOperation({ summary: "新增订单日志（admin 兼容）" })
   async logCreate(@Body() body: any, @Req() req: any) {
-    const id = Number(body.id ?? body.orderId);
-    const content = String(body.content ?? body.remark ?? "");
+    let id = Number(body.id ?? body.orderId);
+    // 若未直接提供 ID 但提供 orderSn，则尝试解析
+    if ((!id || !Number.isFinite(id)) && body.orderSn) {
+      try {
+        const found = await this.svc.prisma.order.findUnique({ where: { order_sn: String(body.orderSn) } });
+        if (found) id = Number(found.order_id);
+      } catch {}
+    }
+    // 兼容字段：description / desc / logInfo / log_info / remark / content
+    const rawContent = body.content ?? body.remark ?? body.description ?? body.desc ?? body.logInfo ?? body.log_info;
+    const content = String(rawContent ?? "").trim();
     const adminName = req?.user?.username ?? "admin";
-    await this.svc.addLog(id, content, adminName);
+    const adminId = req?.user?.userId ?? 0;
+    await this.svc.addLog(id, content, adminName, adminId);
     return { code: 0, message: "success" };
   }
 
