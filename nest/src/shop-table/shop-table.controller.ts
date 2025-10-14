@@ -1,16 +1,18 @@
 // @ts-nocheck
-import { Body, Controller, Get, Param, Post, Put, Delete, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Delete, Query, UseGuards, Res } from '@nestjs/common';
 import { ShopTableService } from './shop-table.service';
 import { CreateShopTableDto, UpdateShopTableDto } from './dto/shop-table.dto';
 import { AdminJwtAuthGuard } from 'src/auth/guards/admin-jwt-auth.guard';
 import { AuthorityGuard } from 'src/auth/guards/authority.guard';
 import { Authorities } from 'src/auth/decorators/authority.decorator';
+import { WechatService } from 'src/wechat/wechat.service';
+import { Response } from 'express';
 
 // 命名遵循现有 admin 兼容风格：路径前缀 adminapi/...  & 类名 *CompatController
 @Controller('adminapi/shopTable')
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class AdminShopTableCompatController {
-  constructor(private readonly service: ShopTableService) {}
+  constructor(private readonly service: ShopTableService, private readonly wechat: WechatService) {}
 
   // POST /adminapi/shopTable/create
   @Post('create')
@@ -43,4 +45,57 @@ export class AdminShopTableCompatController {
     const data = await this.service.remove(Number(id));
     return { code: 0, message: 'success', data };
   }
+
+  // GET /adminapi/shopTable/qrcode?id=1 或 ?key=STxxxx  返回二维码图片
+  @Get('qrcode')
+  @Authorities('shopTableManage')
+  async qrcodeAuth(@Query('id') id: number, @Query('key') key: string, @Res() res: Response) {
+    let table;
+    if (id) {
+      table = await this.service.detail(Number(id));
+    } else if (key) {
+      table = await this.service.findByQr(key);
+    }
+    if (!table) {
+      return res.status(404).json({ code: 404, message: '桌号不存在或未匹配', data: null });
+    }
+    if (!table.qr_code_key) {
+      return res.status(404).json({ code: 404, message: '桌号暂无二维码Key', data: null });
+    }
+    const page = 'pages/dine/index';
+    const scene = `t=${table.qr_code_key}`;
+    const buf = await this.wechat.generateMiniProgramQrCode(page, scene);
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.send(buf);
+  }
 }
+
+// 公开二维码（供前台或未登录场景直接访问，不走权限守卫）
+@Controller('qrcode')
+export class PublicQrcodeController {
+  constructor(private readonly service: ShopTableService, private readonly wechat: WechatService) {}
+
+  // GET /qrcode/table?id=1  或 /qrcode/table?key=STXXXX  -> 直接输出二维码图片
+  @Get('table')
+  async publicTable(@Query('id') id:number, @Query('key') key:string, @Res() res:Response){
+    let table;
+    if (id) {
+      table = await this.service.detail(Number(id));
+    } else if (key) {
+      table = await this.service.findByQr(key);
+    }
+    if(!table){
+      return res.status(404).json({ code:404, message:'桌号不存在或未匹配' });
+    }
+    if(!table.qr_code_key){
+      return res.status(404).json({ code:404, message:'桌号暂无二维码Key' });
+    }
+    const page = 'pages/dine/index';
+    const scene = `t=${table.qr_code_key}`;
+    const buf = await this.wechat.generateMiniProgramQrCode(page, scene);
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(buf);
+  }
+}
+
