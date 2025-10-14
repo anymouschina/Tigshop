@@ -101,6 +101,7 @@ import { CommentModule as UserCommentModule } from './user/comment/comment.modul
 import { UserAccountRechargeApiCompatController } from './finance/user-account-recharge/user-account-recharge.api-compat.controller';
 import { AdminAftersalesCompatController } from './order/admin-aftersales-compat.controller';
 import { ShopController } from './shop/shop.controller';
+import { ShopTableModule } from './shop-table/shop-table.module';
 
 @Module({
   imports: [
@@ -153,6 +154,7 @@ import { ShopController } from './shop/shop.controller';
     CategoryModule,
   ImModule,
     UserCommentModule, // 直接引入用户评论模块，确保 /api/user/comment/* 路由注册
+    ShopTableModule,
   ],
   controllers: [
     AppController,

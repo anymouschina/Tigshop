@@ -1062,6 +1062,10 @@ model order {
   order_type          Int?     @default(1) @db.TinyInt
   mark                Int?     @default(0) @db.TinyInt
   vendor_id           Int?
+  // === Dine-in / Takeout minimal additional fields ===
+  table_no            String?  @db.VarChar(32)              // 堂食桌号（外带为空）
+  pickup_day          Int?     @db.UnsignedInt              // 业务日期 YYYYMMDD（堂食/外带）
+  pickup_no           Int?     @db.UnsignedMediumInt        // 当日序号（展示与排序共用）
 
   @@index([add_time], map: "add_time")
   @@index([vendor_id], map: "idx_vendor_id")
@@ -1075,6 +1079,26 @@ model order {
   @@index([shipping_status], map: "shipping_status")
   @@index([shop_id], map: "store_id")
   @@index([user_id], map: "user_id")
+  @@index([shop_id, table_no], map: "idx_order_shop_table_no")
+  @@index([shop_id, pickup_day, pickup_no], map: "idx_order_shop_pickup_queue")
+  @@unique([shop_id, pickup_day, pickup_no], map: "uniq_shop_day_pickup_no")
+}
+
+// 门店桌位表：shop 的下级资源
+model shop_table {
+  id          Int     @id @default(autoincrement()) @db.UnsignedInt
+  shop_id     Int     @db.UnsignedMediumInt
+  table_no    String  @db.VarChar(32)
+  qr_code_key String? @db.VarChar(64)
+  status      Int     @default(1) @db.UnsignedTinyInt   // 1=ACTIVE 0=DISABLED
+  capacity    Int?    @db.UnsignedSmallInt
+  area        String? @db.VarChar(32)
+  sort        Int?    @default(0)
+  add_time    Int?    @default(0) @db.UnsignedInt
+  update_time Int?    @default(0) @db.UnsignedInt
+
+  @@unique([shop_id, table_no], map: "uniq_shop_table_no")
+  @@index([shop_id], map: "idx_shop_table_shop")
 }
 
 model order_amount_detail {

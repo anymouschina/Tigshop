@@ -524,6 +524,18 @@
                 }
             ]
         }
+        ,
+        {
+            "root": "pages/dine",
+            "pages": [
+                { "path": "scan-entry" },
+                { "path": "menu" },
+                { "path": "confirm" },
+                { "path": "progress" },
+                { "path": "queue" },
+                { "path": "append" }
+            ]
+        }
     ],
     "requiredPrivateInfos": ["chooseLocation", "chooseAddress"],
     "tabBar": {

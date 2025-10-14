@@ -104,24 +104,24 @@ export class AuthorityController {
     };
 
     // 根据管理员类型过滤 - 基于PHP逻辑
-    if (adminUser.admin_type === 1 || adminUser.admin_type === "admin") {
-      // 超级管理员可以看到admin和shop类型的权限
-      where.admin_type = {
-        in: ["admin", "shop"],
-      };
+    // if (adminUser.admin_type === 1 || adminUser.admin_type === "admin") {
+    //   // 超级管理员可以看到admin和shop类型的权限
+    //   where.admin_type = {
+    //     in: ["admin", "shop"],
+    //   };
 
-      // 超级管理员有所有权限，不需要按authority_sn过滤
-    } else {
-      // 其他类型的管理员看到对应类型的权限
-      where.admin_type = adminUser.admin_type;
+    //   // 超级管理员有所有权限，不需要按authority_sn过滤
+    // } else {
+    //   // 其他类型的管理员看到对应类型的权限
+    //   where.admin_type = adminUser.admin_type;
 
-      // 如果有权限列表且不是'all'，则按权限过滤
-      if (authList.length > 0 && !authList.includes("all")) {
-        where.authority_sn = {
-          in: authList,
-        };
-      }
-    }
+    //   // 如果有权限列表且不是'all'，则按权限过滤
+    //   if (authList.length > 0 && !authList.includes("all")) {
+    //     where.authority_sn = {
+    //       in: authList,
+    //     };
+    //   }
+    // }
 
     // 根据 type 参数决定返回结构
     if (type === "0") {

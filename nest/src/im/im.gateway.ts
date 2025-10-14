@@ -23,6 +23,8 @@ const EVENT_SEND = 'send';
 const EVENT_MESSAGE = 'message';
 const EVENT_PING = 'ping';
 const EVENT_PONG = 'pong';
+// 新增：堂食/外带订单事件统一类型
+const EVENT_DINE_ORDER = 'dine_order';
 
 type ClientRole = 'admin' | 'user' | 'guest';
 
@@ -196,6 +198,37 @@ export class ImGateway
       this.logger.log(`pushMessage broadcast event=message id=${message?.id} senderType=${senderType} targetUserId=${targetUserId} delivered=${delivered} clients=${(srv.clients && (srv.clients as any).size) || 0}`);
     } catch (e) {
       this.logger.error('pushMessage fatal error', e as any);
+    }
+  }
+
+  // 新增：推送堂食/外带订单事件
+  // payload 结构建议：{ kind, orderId, rootOrderId?, shopId, userId, serviceState, dineScene, tableNo, pickupNo, orderType, ts }
+  public pushDineEvent(ev: any) {
+    try {
+      if ((!this.server || !(this.server as any).clients) && ImGateway.instance && ImGateway.instance !== this) {
+        return (ImGateway.instance as any).pushDineEvent(ev);
+      }
+      const srv = this.server;
+      if (!srv) return;
+      const raw = JSON.stringify({ type: EVENT_DINE_ORDER, data: [ev] });
+      let delivered = 0;
+      (srv.clients || []).forEach?.((ws: WebSocket) => {
+        try {
+          if (ws.readyState !== ws.OPEN) return;
+          const ctx = this.contexts.get(ws);
+            if (!ctx) return;
+            // 广播给全部管理员 & 订单所属用户
+            if (ctx.role === 'admin' || (ev.userId && ctx.role === 'user' && ctx.userId === Number(ev.userId))) {
+              ws.send(raw);
+              delivered++;
+            }
+        } catch (e) {
+          this.logger.warn(`pushDineEvent send error: ${(e as any)?.message}`);
+        }
+      });
+      this.logger.log(`pushDineEvent kind=${ev?.kind} orderId=${ev?.orderId} delivered=${delivered}`);
+    } catch (e) {
+      this.logger.warn('pushDineEvent fatal', e as any);
     }
   }
 
