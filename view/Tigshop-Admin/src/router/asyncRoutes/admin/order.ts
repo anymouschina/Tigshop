@@ -15,7 +15,7 @@ export default {
                     name: "orderManage",
                     meta: { title: "全部订单" },
                     component: () => import("@/views/order/order/List.vue")
-                },
+                        },
                 {
                     path: "deliverlist",
                     name: "deliverManage",
@@ -56,7 +56,13 @@ export default {
                             name: "dineMonitor",
                             meta: { title: "堂食生产看板" },
                             component: () => import("@/views/order/dine/Monitor.vue")
-                        }
+                        },
+                        {
+                            path: "table",
+                            name: "shopTableManage",
+                            meta: { title: "桌号管理" },
+                            component: () => import("@/views/order/dine/TableManage.vue")
+                        },
                     ]
                 },
         {

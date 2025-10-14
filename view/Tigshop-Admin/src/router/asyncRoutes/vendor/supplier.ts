@@ -12,6 +12,33 @@ export default {
             meta: { title: "概览" },
             component: () => import("@/views/vendor/panel/Index.vue")
         },
+            // 点餐管理分组（堂食/外带）
+                {
+                    path: "",
+                    name: "dineManagement",
+                    meta: { title: "点餐管理" },
+                    redirect: "/order/dine/queue",
+                    children: [
+                        {
+                            path: "queue",
+                            name: "dineQueue",
+                            meta: { title: "堂食/外带叫号" },
+                            component: () => import("@/views/order/dine/Queue.vue")
+                        },
+                        {
+                            path: "monitor",
+                            name: "dineMonitor",
+                            meta: { title: "堂食生产看板" },
+                            component: () => import("@/views/order/dine/Monitor.vue")
+                        },
+                        {
+                            path: "table",
+                            name: "shopTableManage",
+                            meta: { title: "桌号管理" },
+                            component: () => import("@/views/order/dine/TableManage.vue")
+                        },
+                    ]
+                },
         {
             path: "",
             name: "orderManagement",
