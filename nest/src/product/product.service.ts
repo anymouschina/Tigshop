@@ -94,6 +94,7 @@ export class ProductService {
       sortField = "productId",
       sortOrder = "desc",
       ids,
+      useShopCategory, // 新增：指定 categoryId 代表店铺分类 (shop_category_id)
     } = queryDto;
 
     const skip = (page - 1) * size;
@@ -120,7 +121,12 @@ export class ProductService {
     }
 
     if (categoryId) {
-      where.category_id = Number(categoryId);
+      if (useShopCategory && (queryDto.shopId !== undefined)) {
+        // 店铺分类过滤
+        where.shop_category_id = Number(categoryId);
+      } else {
+        where.category_id = Number(categoryId);
+      }
     }
 
     if (brandId) {

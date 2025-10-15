@@ -83,9 +83,10 @@ const showCatLevel = ref(0);
 const getAllCategory = async () => {
   partAllLoading.value = true;
   try {
-    // 当前接口不支持按店铺筛选，后续可改造为 getDineCategoryAll(shopId)
-    const result = await getCategoryAll();
-    cateList.value = result || [];
+    // 如果后端返回 { list, source, fallback } 结构，做兼容处理
+    const result:any = await getCategoryAll();
+    const list = Array.isArray(result) ? result : (result?.list || []);
+    cateList.value = list;
   } catch (err) { console.error(err); }
 };
 
@@ -104,7 +105,12 @@ const getHotCatList = async () => {
 function emitSelectCategory(cat:any){ emit('select-category', cat); }
 
 // 允许无 shopId 也加载；若后端提供定制接口，在这里切换
-watch(()=> props.shopId, (v)=> { if(v!== undefined){ getAllCategory(); getHotCatList(); } }, { immediate:true });
+watch(()=> props.shopId, async (v)=> {
+  if(v !== undefined){
+    await getAllCategory();
+    await getHotCatList();
+  }
+}, { immediate:true });
 </script>
 <style lang="scss" scoped>
 /* 基于原 styleOneCate 精简，保留样式 */

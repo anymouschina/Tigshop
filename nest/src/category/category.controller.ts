@@ -1,13 +1,18 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, Param } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, Param, Req } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { CategoryService, CategoryTreeNode } from "./category.service";
 import { Public } from "../auth/decorators/public.decorator";
+import { Request } from "express";
+import { ShopProductCategoryService } from "src/merchant/shop-product-category/shop-product-category.service";
 
 @ApiTags("Product Category")
 @Controller("api")
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(
+    private readonly categoryService: CategoryService,
+    private readonly shopCatService: ShopProductCategoryService,
+  ) {}
 
   /**
    * 获取当前分类的父级分类 - 对齐PHP版本 category/Category/parentTree
@@ -39,9 +44,14 @@ export class CategoryController {
   @Get("category/category/list")
   @Public()
   @ApiOperation({ summary: "根据上级获得指定分类" })
-  async list(@Query("id") id: string): Promise<CategoryTreeNode[]> {
+  async list(@Query("id") id: string, @Query("shopId") shopIdQ: string, @Req() req: Request): Promise<any> {
     const categoryId = Number(id) || 0;
-    const data = await this.categoryService.getCategoryList(categoryId);
+    // Extract shopId from query or header (header: X-Shop-Id), allow 0
+    const headerValRaw = (req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any]) as any;
+    const headerVal = headerValRaw !== undefined ? Number(headerValRaw) : undefined;
+    const resolvedShopId = shopIdQ !== undefined && shopIdQ !== null && shopIdQ !== '' ? Number(shopIdQ) : headerVal;
+
+    // Helper to camel-case
     const toCamel = (nodes: CategoryTreeNode[]): any[] =>
       (nodes || []).map((n) => ({
         categoryId: n.category_id,
@@ -49,11 +59,53 @@ export class CategoryController {
         parentId: n.parent_id,
         categoryPic: n.category_pic || "",
         sortOrder: n.sort_order ?? 0,
-        ...(n.children && n.children.length
-          ? { children: toCamel(n.children) }
-          : {}),
+        ...(n.children && n.children.length ? { children: toCamel(n.children) } : {}),
       }));
-    return toCamel(data) as any;
+
+    // If no shopId provided, fallback to original global behaviour
+    if (resolvedShopId === undefined || isNaN(resolvedShopId)) {
+      const data = await this.categoryService.getCategoryList(categoryId);
+      return toCamel(data);
+    }
+
+    // Fetch full shop tree first
+    const shopTree = await this.shopCatService.getAll(resolvedShopId);
+    const mapShopNode = (n: any): CategoryTreeNode => ({
+      category_id: n.category_id,
+      parent_id: n.parent_id,
+      category_name: n.category_name,
+      category_pic: n.category_pic || '',
+      sort_order: n.sort_order ?? 0,
+      children: (n.children || []).map(mapShopNode),
+    });
+    const shopTreeMapped: CategoryTreeNode[] = shopTree.map(mapShopNode);
+
+    // Slice by parent if categoryId > 0
+    let targetList: CategoryTreeNode[];
+    if (categoryId === 0) {
+      targetList = shopTreeMapped.filter((n) => (n.parent_id ?? 0) === 0);
+    } else {
+      targetList = shopTreeMapped.filter((n) => n.parent_id === categoryId);
+      // If we need recursive children, they are already attached as children.
+    }
+
+    let source: 'shop' | 'global' = 'shop';
+    let fallback = false;
+
+    if (!targetList.length) {
+      // Fallback to global
+      const data = await this.categoryService.getCategoryList(categoryId);
+      targetList = data;
+      source = 'global';
+      fallback = true;
+    }
+
+    return {
+      source,
+      fallback,
+      shopId: resolvedShopId,
+      list: toCamel(targetList),
+    };
   }
 
   /**
@@ -62,8 +114,11 @@ export class CategoryController {
   @Get("category/category/all")
   @Public()
   @ApiOperation({ summary: "获取所有分类" })
-  async all(): Promise<CategoryTreeNode[]> {
-    const data = await this.categoryService.getAllCategories();
+  async all(@Query("shopId") shopIdQ: string, @Req() req: Request): Promise<any> {
+    const headerValRaw = (req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any]) as any;
+    const headerVal = headerValRaw !== undefined ? Number(headerValRaw) : undefined;
+    const resolvedShopId = shopIdQ !== undefined && shopIdQ !== null && shopIdQ !== '' ? Number(shopIdQ) : headerVal;
+
     const toCamel = (nodes: CategoryTreeNode[]): any[] =>
       (nodes || []).map((n) => ({
         categoryId: n.category_id,
@@ -71,11 +126,33 @@ export class CategoryController {
         parentId: n.parent_id,
         categoryPic: n.category_pic || "",
         sortOrder: n.sort_order ?? 0,
-        ...(n.children && n.children.length
-          ? { children: toCamel(n.children) }
-          : {}),
+        ...(n.children && n.children.length ? { children: toCamel(n.children) } : {}),
       }));
-    return toCamel(data);
+
+    if (resolvedShopId === undefined || isNaN(resolvedShopId)) {
+      const data = await this.categoryService.getAllCategories();
+      return { source: 'global', fallback: false, list: toCamel(data) };
+    }
+
+    const shopTree = await this.shopCatService.getAll(resolvedShopId);
+    const mapShopNode = (n: any): CategoryTreeNode => ({
+      category_id: n.category_id,
+      parent_id: n.parent_id,
+      category_name: n.category_name,
+      category_pic: n.category_pic || '',
+      sort_order: n.sort_order ?? 0,
+      children: (n.children || []).map(mapShopNode),
+    });
+    let tree = shopTree.map(mapShopNode);
+    let source: 'shop' | 'global' = 'shop';
+    let fallback = false;
+    if (!tree.length) {
+      const data = await this.categoryService.getAllCategories();
+      tree = data;
+      source = 'global';
+      fallback = true;
+    }
+    return { source, fallback, shopId: resolvedShopId, list: toCamel(tree) };
   }
 
   /**

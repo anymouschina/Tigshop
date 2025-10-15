@@ -36,7 +36,13 @@ const menuList = defineModel<filterSeleted[]>('menuList', { default:[] });
 const scrollLeft = ref(0);
 
 async function getMenu(id:number){
-  try { const result = await getCategoryList(id); menuList.value = [{ categoryId:0, categoryName: t('全部商品') } as any, ...result]; emit('change'); scrollLeft.value = 0; } catch(e){ console.error(e);} }
+  try {
+    const result:any = await getCategoryList(id);
+    const list = Array.isArray(result) ? result : (result?.list || []);
+    menuList.value = [{ categoryId:0, categoryName: t('全部商品') } as any, ...list];
+    emit('change');
+    scrollLeft.value = 0;
+  } catch(e){ console.error(e);} }
 
 function handleClick(id:number){ if(id===internalSubCurrent.value) return; internalSubCurrent.value = id; emit('change'); }
 function handleScroll(e:any){ scrollLeft.value = e.detail.scrollLeft; }

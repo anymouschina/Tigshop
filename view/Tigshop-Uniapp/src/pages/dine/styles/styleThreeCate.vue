@@ -11,14 +11,14 @@
               <scroll-view :scroll-y="true" class="list-scroll" @scrolltolower="reachBottom">
                 <view class="product-list">
                   <view v-for="item in list" :key="item.productId" class="product-item">
-                    <view class="item-left" @click="emitDetail(item.productId)">
+                    <view class="item-left" @click="emitDetail(Number(item.productId || 0))">
                       <tig-lazy-image :src="item.picThumb" />
                       <template v-if="item.productStock == 0 || item.productStatus == 0">
                         <view class="product-status-box"><view class="outsale">{{ $t(item.productStock == 0 ? '已售罄' : '已下架') }}</view></view>
                       </template>
                     </view>
                     <view class="item-right">
-                      <view class="item-right-title line2" @click="emitDetail(item.productId)">{{ item.productName }}</view>
+                      <view class="item-right-title line2" @click="emitDetail(Number(item.productId || 0))">{{ item.productName }}</view>
                       <view class="item-right-price">
                         <format-price :decimals-style="{ fontSize:'24rpx', fontWeight:'bold' }" :currency-style="{ fontSize:'23rpx', fontWeight:'bold' }" :font-style="{ fontSize:'32rpx' }" :price-data="item.productPrice" />
                       </view>
@@ -56,7 +56,8 @@ const emit = defineEmits<{ (e:'buy', item:any):void; (e:'detail', id:number):voi
 const currentCateId = ref(0);
 const subCurrentCateId = ref(0);
 const menuList = ref<filterSeleted[]>([]);
-const params = reactive({ categoryId:0, page:1, size:10, shopId: props.shopId });
+// 传递 useShopCategory=1 以指示后端使用 shop_category_id 过滤
+const params = reactive({ categoryId:0, page:1, size:10, shopId: props.shopId, useShopCategory:1 });
 const { data:list, getList, reachBottom, isLoading, total } = useList<GetProductFilterResult>(getCateProduct, { params, path:{ dataKey:'records' }, needReachBottom:false });
 
 function handleChange(){ list.value = []; params.page=1; params.categoryId = subCurrentCateId.value===0? currentCateId.value : subCurrentCateId.value; getList(); }

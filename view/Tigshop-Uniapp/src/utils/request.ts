@@ -72,6 +72,24 @@ export const setIsInit = (value: boolean) => {
     isIniting = value;
 };
 
+function extractDineShopId(): number | null {
+    try {
+        const pages = getCurrentPages();
+        if (!pages || !pages.length) return null;
+        const cur: any = pages[pages.length - 1];
+        const route: string = cur?.route || cur?.__route__ || '';
+        if (!route || route.indexOf('pages/dine/') !== 0) return null; // 仅 dine 目录自动注入
+        const opts: any = cur?.options || cur?.$page?.options || {};
+        const raw = opts.shopId ?? opts.shopid;
+        if (raw === undefined) return null;
+        const n = Number(raw);
+        if (Number.isFinite(n) && n >= 0) return n;
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+
 export default function request<T extends ResponseData>(config: RequestConfig): Promise<T["data"]> {
     const i18nStore = useI18nStore();
     const configStore = useConfigStore();
@@ -96,7 +114,20 @@ export default function request<T extends ResponseData>(config: RequestConfig): 
         "X-Locale-Code": isOverseas() ? i18nStore.langCode || uni.getLocale() : "",
         Secret: getSecret()
     };
-    const data = method === "GET" ? formatArguments(config.params) : config.data;
+    let data: any = method === "GET" ? formatArguments(config.params) : config.data;
+
+    // dine 页面自动附加 shopId 头与查询参数
+    const dineShopId = extractDineShopId();
+    if (dineShopId !== null) {
+        (header as any)["X-Shop-Id"] = dineShopId;
+        if (method === "GET") {
+            if (!data || typeof data !== 'object') data = {};
+            if (data.shopId === undefined) data.shopId = dineShopId;
+        } else if (data && typeof data === 'object' && data.shopId === undefined) {
+            // POST 也可透传，避免后端需要 shopId 的场景
+            data.shopId = dineShopId;
+        }
+    }
 
     if (config.cancelPrevious && config.requestKey) {
         const previousRequest = activeRequests.get(config.requestKey);

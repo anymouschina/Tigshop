@@ -40,7 +40,8 @@ const currentCateId = ref(0);
 const subCurrentCateId = ref(0);
 const menuList = ref<filterSeleted[]>([]);
 
-const params = reactive({ categoryId: 0, page: 1, size: 10, shopId: props.shopId });
+// 添加 useShopCategory=1 让后端以 shop_category_id 过滤商品
+const params = reactive({ categoryId: 0, page: 1, size: 10, shopId: props.shopId, useShopCategory: 1 });
 
 const { data: list, getList, reachBottom, isLoading, total } = useList(getCateProduct, { params, path:{ dataKey:'records' }, needReachBottom:false });
 

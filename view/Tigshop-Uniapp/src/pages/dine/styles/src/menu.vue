@@ -1,9 +1,7 @@
 <template>
   <view class="menu-content">
     <scroll-view scroll-y="true" class="menu-scroll">
-      <template v-for="(item,index) in menuList" :key="item.categoryId">
-        <view class="menu-item" :class="{ active: internalCurrent===item.categoryId }" @click="handleClick(item.categoryId)">{{ item.categoryName }}</view>
-      </template>
+      <view v-for="item in menuList" :key="item.categoryId" class="menu-item" :class="{ active: internalCurrent===item.categoryId }" @click="handleClick(item.categoryId)">{{ item.categoryName }}</view>
     </scroll-view>
   </view>
 </template>
@@ -19,7 +17,15 @@ const internalCurrent = ref(props.currentCateId || 0);
 const menuList = shallowRef<filterSeleted[]>([]);
 
 async function getMenuList(){
-  try { const result = await getCategoryList(0); menuList.value = result; if(result?.length && !internalCurrent.value){ internalCurrent.value = result[0].categoryId; emit('change', internalCurrent.value); } } catch(e){ console.error(e);} }
+  try {
+    const result:any = await getCategoryList(0);
+    const list = Array.isArray(result) ? result : (result?.list || []);
+    menuList.value = list;
+    if(list?.length && !internalCurrent.value){
+      internalCurrent.value = list[0].categoryId;
+      emit('change', internalCurrent.value);
+    }
+  } catch(e){ console.error(e);} }
 getMenuList();
 
 function handleClick(id:number){ if(id===internalCurrent.value) return; internalCurrent.value = id; emit('change', id); emit('update:currentCateId', id); }
