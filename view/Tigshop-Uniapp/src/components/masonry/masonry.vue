@@ -200,7 +200,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(["callback"]);
+const emit = defineEmits(["callback","select"]);
 
 const getCallback = () => {
     emit("callback");
@@ -316,6 +316,8 @@ const handleBuy = (item: any) => {
     }
     item.isCheck = true;
     currentItem.value = item;
+    // 额外向外层抛出选择事件（堂食点餐用来加入临时购物车）
+    try { emit('select', item); } catch(e){}
 };
 const loadEnd = () => {
     specificationRef.value.handleShowPopup();

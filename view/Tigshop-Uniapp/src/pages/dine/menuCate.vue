@@ -13,13 +13,23 @@
         <styleOneCate :shop-id="shopId" :table-no="tableNo" />
       </template>
       <template v-if="decorateType === '2'">
-        <styleTwoCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo" />
+        <styleTwoCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo" @select-product="handleProductSelect" />
       </template>
       <template v-if="decorateType === '3'">
         <styleThreeCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo" />
       </template>
       <!-- 底部购物车条组件 -->
-      <DineCartBar :count="cartCount" :amount="totalAmount" @confirm="toConfirm" />
+      <DineCartBar :count="cartCount" :amount="totalAmount" @confirm="toConfirm" @showCart="showPopup=true" />
+      <DineCartPopup
+        :show="showPopup"
+        :items="cart"
+        @update:show="v=>showPopup=v"
+        @inc="inc"
+        @dec="dec"
+        @remove="removeLine"
+        @clear="clearCart"
+        @confirm="toConfirm"
+      />
     </template>
   </tig-layout>
 </template>
@@ -33,7 +43,10 @@ import styleOneCate from './styles/styleOneCate.vue';
 import styleTwoCate from './styles/styleTwoCate.vue';
 // @ts-ignore
 import styleThreeCate from './styles/styleThreeCate.vue';
+// @ts-ignore script setup 默认导出
 import DineCartBar from './components/DineCartBar.vue';
+// @ts-ignore script setup 默认导出
+import DineCartPopup from './components/DineCartPopup.vue';
 import { useConfigStore } from '../../store/config';
 import { useTabbarStore } from '../../store/tabbar';
 
@@ -55,7 +68,9 @@ const decorateType = computed(()=> {
 });
 
 // 简易本地购物车（后续可与全局共享或服务端同步）
-const cart = ref<{productId:number; qty:number; price:number}[]>([]);
+interface CartLine { productId:number; qty:number; price:number; productName?:string; pic?:string; picUrl?:string; picThumb?:string }
+const cart = ref<CartLine[]>([]);
+const showPopup = ref(false);
 const cartCount = computed(()=> cart.value.reduce((s,i)=>s+i.qty,0));
 const totalAmount = computed(()=> (cart.value.reduce((s,i)=> s + i.price*i.qty,0)/100).toFixed(2));
 
@@ -80,6 +95,20 @@ function toConfirm(){
   const items = cart.value.map(i=>`${i.productId}:${i.qty}`).join(',');
   uni.navigateTo({ url:`/pages/dine/confirm?shopId=${shopId.value}&table=${tableNo.value}&type=${orderType.value}&pc=${peopleCount.value}&items=${items}` });
 }
+
+// 商品选择（来自子组件）
+function handleProductSelect(p:any){
+  const pid = p.productId || p.id;
+  if(!pid) return;
+  const price = p.price || p.discountsPrice || p.salePrice || p.minPrice || 0;
+  let line = cart.value.find(l=> l.productId===pid);
+  if(!line){ line = { productId:pid, qty:0, price, productName:p.productName||p.name, pic:p.pic||p.picUrl||p.picThumb, picUrl:p.picUrl, picThumb:p.picThumb }; cart.value.push(line); }
+  line.qty++;
+}
+function inc(id:number){ const line = cart.value.find(l=>l.productId===id); if(line){ line.qty++; } }
+function dec(id:number){ const line = cart.value.find(l=>l.productId===id); if(line){ line.qty--; if(line.qty<=0){ cart.value = cart.value.filter(l=> l.productId!==id); } } }
+function removeLine(id:number){ cart.value = cart.value.filter(l=> l.productId!==id); }
+function clearCart(){ cart.value = []; }
 
 const cateHeight = computed(()=> {
   const screenH = (configStore as any).windowInfo?.screenHeight || 0;

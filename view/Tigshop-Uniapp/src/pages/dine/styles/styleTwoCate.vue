@@ -24,6 +24,7 @@
   </view>
 </template>
 <script lang="ts" setup>
+// @ts-nocheck
 import { computed, reactive, ref, watch } from 'vue';
 import menuBox from '@/pages/dine/styles/src/menu.vue';
 import selectCate from '@/pages/dine/styles/src/selectCate.vue';
@@ -32,6 +33,9 @@ import { getCateProduct } from '@/api/home/home';
 import { useList } from '@/hooks';
 import { staticResource } from '@/utils';
 import type { filterSeleted } from '@/types/productCate/productCate';
+// 复用已创建的底部购物车条
+// @ts-ignore 底部购物车条组件（script setup 默认导出）
+// （点餐父页面集中管理购物车与弹窗）
 
 const props = defineProps<{ height?: string | number; shopId?: number; tableNo?: string }>();
 const emit = defineEmits<{ (e:'select-product', product:any):void }>();
@@ -68,7 +72,7 @@ page { background-color:#fff !important; }
 .scroll-box { height: v-bind('height'); overflow: hidden; }
 .content-box { height: 100%; width:100%; display:flex; }
 .content-box .side { width:90px; height:100%; background-color:#f7f7f7; }
-.content-box .list-box { width:calc(100% - 90px); height:100%; }
+.content-box .list-box { width:calc(100% - 90px); height:100%; padding-bottom:160rpx; /* 预留底部购物车空间 */ }
 .content-box .list-box .list-content { height: calc(100% - 100rpx); }
 .content-box .list-box .list-content .list-scroll { height:100%; }
 .content-box .list-box .list-content .empty-box { display:flex; align-items:center; justify-content:center; height:100%; width:100%; }
