@@ -62,7 +62,8 @@ export class AdminShopTableCompatController {
     if (!table.qr_code_key) {
       return res.status(404).json({ code: 404, message: '桌号暂无二维码Key', data: null });
     }
-    const page = 'pages/dine/index';
+  // 允许通过环境变量覆盖小程序落地页（解决某些构建尚未注册新页面导致的“页面未找到”问题）
+  const page = process.env.DINE_QR_PAGE || 'pages/dine/index';
     const scene = `t=${table.qr_code_key}`;
   const envVersion = (env==='trial'||env==='develop') ? env : 'release';
   const buf = await this.wechat.generateMiniProgramQrCode(page, scene, 430, envVersion);
@@ -91,7 +92,7 @@ export class PublicQrcodeController {
     if(!table.qr_code_key){
       return res.status(404).json({ code:404, message:'桌号暂无二维码Key' });
     }
-    const page = 'pages/dine/index';
+  const page = process.env.DINE_QR_PAGE || 'pages/dine/index';
     const scene = `t=${table.qr_code_key}`;
   const envVersion = (env==='trial'||env==='develop') ? env : 'release';
   const buf = await this.wechat.generateMiniProgramQrCode(page, scene, 430, envVersion);

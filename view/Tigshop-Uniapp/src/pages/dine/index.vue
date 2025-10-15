@@ -31,6 +31,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+// 复用全局 request 基础域名，避免首次进入小程序时 storage 尚未写入导致 base 为空
+// @ts-ignore
+import { baseUrl } from '@/utils/request';
 
 interface TableInfo { id:number; shopId:number; tableNo:string; area?:string; capacity?:number; qrCodeKey:string }
 const stage = ref<'loading'|'ready'|'error'>('loading');
@@ -40,6 +43,7 @@ let sceneKey = '';
 const peopleCount = ref(1);
 
 onLoad((query:any)=> {
+  logOnLoad('index', query);
   // 微信扫码进入时 query.scene 可能包含 t=XXXX
   // 管理端生成二维码时 scene = t=<qr_code_key>
   if(query.scene){
@@ -56,31 +60,60 @@ onLoad((query:any)=> {
 
 function resolveTable(){
   stage.value='loading';
-  // 兼容 uni-app 小程序环境下获取后端根地址：优先 storage，其次全局配置
-  // 可在启动时将后端地址写入 BASE_API
-  const base = uni.getStorageSync('BASE_API') || (globalThis as any).VUE_APP_BASE_API || ''; 
-  uni.request({
-    url: base + '/qrcode/table/resolve',
-    method: 'GET',
-    data: { key: sceneKey },
-    success(res){
-      const data:any = res.data;
-      if(data && data.code===0){
-        tableInfo.value = data.data;
-        stage.value = 'ready';
-      } else {
-        stage.value='error';
-        errorMsg.value = data?.message || '桌号无效';
+  const origin = (baseUrl||'').replace(/\/$/,'');
+  // 按优先级尝试两条路径：1) 无前缀（现有 /qrcode 路由） 2) 带 /api 前缀（兼容未来网关或反向代理统一前缀场景）
+  const paths = ['/qrcode/table/resolve','/api/qrcode/table/resolve'];
+  let tried = 0;
+  const tryNext = ()=>{
+    if(tried>=paths.length){ stage.value='error'; if(!errorMsg.value) errorMsg.value='网络异常，请稍后再试'; return; }
+    const p = paths[tried++];
+    const url = origin + p + `?key=${encodeURIComponent(sceneKey)}`;
+    console.log('[DINE][index] resolving table url=', url);
+    uni.request({
+      url,
+      method: 'GET',
+      success(res){
+        const data:any = res.data;
+        if(data && data.code===0){
+          tableInfo.value = data.data;
+          stage.value = 'ready';
+        } else {
+          // 若第一条路径 404/400，再试下一条；其他错误直接显示
+            if((res.statusCode===404 || res.statusCode===400) && tried<paths.length){
+              console.warn('[DINE][index] first path failed status', res.statusCode, 'try next');
+              tryNext();
+              return;
+            }
+            stage.value='error';
+            errorMsg.value = data?.message || '桌号无效';
+        }
+      },
+      fail(err){
+        console.error('[DINE][index] resolve request fail', err);
+        if(tried<paths.length){ tryNext(); return; }
+        stage.value='error'; errorMsg.value='网络异常，请稍后再试';
       }
-    },
-    fail(){ stage.value='error'; errorMsg.value='网络异常，请稍后再试'; },
-  });
+    });
+  };
+  tryNext();
 }
 
 function retry(){ resolveTable(); }
 
 function goMenu(orderType:2|3){
   uni.redirectTo({ url: `/pages/dine/menu?shopId=${tableInfo.value.shopId}&table=${tableInfo.value.tableNo}&type=${orderType}&pc=${peopleCount.value}` });
+}
+
+function logOnLoad(tag:string, q:any){
+  try {
+    const pages = getCurrentPages();
+    const cur:any = pages[pages.length-1];
+    const route = cur?.route || cur?.__route__ || '';
+    const fullPath = cur?.$page?.fullPath || '';
+    console.log(`[DINE][${tag}] onLoad route="${route}" fullPath="${fullPath}" query=`, q);
+  } catch(e){
+    console.log(`[DINE][${tag}] onLoad (no pages API) query=`, q);
+  }
 }
 </script>
 <style scoped lang="scss">

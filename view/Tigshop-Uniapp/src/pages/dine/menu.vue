@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import { onLoad } from '@dcloudio/uni-app';
 import { ref, computed } from 'vue';
+
 // @ts-ignore 别名在构建配置里存在
 import { imageFormat } from '@/utils/format';
 // @ts-ignore 同上
@@ -49,6 +50,7 @@ const products = ref<ProductBrief[]>([]);
 const cart = ref<CartItem[]>([]);
 
 onLoad((q:any)=>{ 
+  logOnLoad('menu', q);
   shopId.value=Number(q.shopId); 
   tableNo.value=q.table||''; 
   const t = Number(q.type); 
@@ -62,7 +64,8 @@ async function fetchProducts(){
   loading.value = true;
   try {
     // 直接调用公开商品列表接口，可根据需要增加分类/分页
-    const res:any = await request({ url:'api/product/product/list', method:'GET', params:{ shopId: shopId.value, page:1, size:50 } });
+  // 注意：request 会自动在前面拼接 VITE_API_PREFIX (默认 /api/)，这里不要再写前缀，防止出现 /api/api/...
+  const res:any = await request({ url:'/product/product/list', method:'GET', params:{ shopId: shopId.value, page:1, size:50 } });
     const list = res?.data?.records || res?.records || res?.data || [];
     products.value = list.map((p:any)=>({
       productId: p.productId || p.id,
@@ -91,6 +94,17 @@ function toConfirm(){
   uni.navigateTo({ url:`/pages/dine/confirm?shopId=${shopId.value}&table=${tableNo.value}&type=${orderType.value}&pc=${peopleCount.value}&items=${items}` });
 }
 function preview(url?:string){ if(!url) return; uni.previewImage({ urls:[imageFormat(url)] }); }
+function logOnLoad(tag:string, q:any){
+  try {
+    const pages = getCurrentPages();
+    const cur:any = pages[pages.length-1];
+    const route = cur?.route || cur?.__route__ || '';
+    const fullPath = cur?.$page?.fullPath || '';
+    console.log(`[DINE][${tag}] onLoad route="${route}" fullPath="${fullPath}" query=`, q);
+  } catch(e){
+    console.log(`[DINE][${tag}] onLoad (no pages API) query=`, q);
+  }
+}
 </script>
 <style scoped lang="scss">
 .menu-wrapper { display:flex; flex-direction:column; height:100vh; }

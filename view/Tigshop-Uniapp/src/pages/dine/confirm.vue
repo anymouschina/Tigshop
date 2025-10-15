@@ -17,6 +17,7 @@ const peopleCount = ref<number>(1);
 const remark = ref('');
 const submitting = ref(false);
 onLoad((q:any)=>{ 
+  logOnLoad('confirm', q);
   shopId.value=Number(q.shopId); 
   tableNo.value=q.table||''; 
   const t = Number(q.type); orderType.value = (t===3?3:2); 
@@ -29,9 +30,22 @@ async function submit(){
   submitting.value = true;
   try{
     const idem = Date.now().toString()+Math.random();
-  const res = await dineCreate({ orderType: orderType.value, tableNo: tableNo.value, peopleCount: peopleCount.value, remark: remark.value, items: cart.value.map(c=>({ productId:c.id, quantity:c.quantity })) }, shopId.value, idem);
+    const payload = { orderType: orderType.value, tableNo: tableNo.value, peopleCount: peopleCount.value, remark: remark.value, items: cart.value.map(c=>({ productId:c.id, quantity:c.quantity })) };
+    console.log('[DINE][confirm] submit payload=', payload, 'shopId=', shopId.value);
+    const res = await dineCreate(payload, shopId.value, idem);
     uni.redirectTo({ url:`/pages/dine/progress?orderId=${res.data.orderId}` });
   } finally { submitting.value = false; }
+}
+function logOnLoad(tag:string, q:any){
+  try {
+    const pages = getCurrentPages();
+    const cur:any = pages[pages.length-1];
+    const route = cur?.route || cur?.__route__ || '';
+    const fullPath = cur?.$page?.fullPath || '';
+    console.log(`[DINE][${tag}] onLoad route="${route}" fullPath="${fullPath}" query=`, q);
+  } catch(e){
+    console.log(`[DINE][${tag}] onLoad (no pages API) query=`, q);
+  }
 }
 </script>
 <style scoped>.page{padding:24rpx}</style>
