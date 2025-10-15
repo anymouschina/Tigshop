@@ -1,13 +1,13 @@
 <template>
   <view>
-    <tig-navbar :title="navTitle" :show-left="false" />
+    <tig-navbar :title="navTitle" :show-left="true" />
     <view class="scroll-box">
       <view class="content-box">
         <view class="side">
           <menuBox :current-cate-id="currentCateId" @update:current-cate-id="val => (currentCateId = val, handleChange())" @change="handleMenuChange" />
         </view>
         <view class="list-box">
-          <selectCate :menu-list="menuList" :sub-current-cate-id="subCurrentCateId" :current-cate-id="currentCateId" @update:sub-current-cate-id="val => (subCurrentCateId = val, handleChange())" @change="handleChange" />
+          <!-- <selectCate :menu-list="menuList" :sub-current-cate-id="subCurrentCateId" :current-cate-id="currentCateId" @update:sub-current-cate-id="val => (subCurrentCateId = val, handleChange())" @change="handleChange" /> -->
           <view class="list-content">
             <template v-if="!isLoading && total > 0">
               <scroll-view :scroll-y="true" class="list-scroll" @scrolltolower="reachBottom">

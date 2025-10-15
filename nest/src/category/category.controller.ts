@@ -83,10 +83,22 @@ export class CategoryController {
     // Slice by parent if categoryId > 0
     let targetList: CategoryTreeNode[];
     if (categoryId === 0) {
+      // roots
       targetList = shopTreeMapped.filter((n) => (n.parent_id ?? 0) === 0);
     } else {
-      targetList = shopTreeMapped.filter((n) => n.parent_id === categoryId);
-      // If we need recursive children, they are already attached as children.
+      // Need to locate the node in the whole tree, not only root level.
+      const findNode = (nodes: CategoryTreeNode[], id: number): CategoryTreeNode | null => {
+        for (const n of nodes) {
+          if (n.category_id === id) return n;
+          if (n.children && n.children.length) {
+            const found = findNode(n.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      const node = findNode(shopTreeMapped, categoryId);
+      targetList = node ? (node.children || []) : [];
     }
 
     let source: 'shop' | 'global' = 'shop';

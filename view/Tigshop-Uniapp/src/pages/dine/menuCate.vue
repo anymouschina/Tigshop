@@ -18,11 +18,8 @@
       <template v-if="decorateType === '3'">
         <styleThreeCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo" />
       </template>
-      <!-- 底部结算条（点餐购物车）-->
-      <view class="dine-cart-bar" v-if="cartCount>0" @click="toConfirm">
-        <view class="info">已选 {{ cartCount }} 件 - ¥ {{ totalAmount }}</view>
-        <view class="go">去下单</view>
-      </view>
+      <!-- 底部购物车条组件 -->
+      <DineCartBar :count="cartCount" :amount="totalAmount" @confirm="toConfirm" />
     </template>
   </tig-layout>
 </template>
@@ -30,9 +27,13 @@
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 // 使用默认导入保证 Vue 正确识别组件（script setup 会自动注册）
+// @ts-ignore 这些旧组件未显式 export default，通过 SFC 编译仍可使用
 import styleOneCate from './styles/styleOneCate.vue';
+// @ts-ignore
 import styleTwoCate from './styles/styleTwoCate.vue';
+// @ts-ignore
 import styleThreeCate from './styles/styleThreeCate.vue';
+import DineCartBar from './components/DineCartBar.vue';
 import { useConfigStore } from '../../store/config';
 import { useTabbarStore } from '../../store/tabbar';
 
@@ -75,6 +76,7 @@ function init(){
 }
 
 function toConfirm(){
+  if(cartCount.value===0) return;
   const items = cart.value.map(i=>`${i.productId}:${i.qty}`).join(',');
   uni.navigateTo({ url:`/pages/dine/confirm?shopId=${shopId.value}&table=${tableNo.value}&type=${orderType.value}&pc=${peopleCount.value}&items=${items}` });
 }
@@ -97,6 +99,5 @@ function logOnLoad(tag:string,q:any){
 <style scoped lang="scss">
 .loading, .error { padding:80rpx; text-align:center; color:#888; }
 .retry { margin-top:20rpx; background:#fff; border:1px solid #ddd; padding:16rpx 40rpx; border-radius:40rpx; }
-.dine-cart-bar { position:fixed; left:0; right:0; bottom:0; background:#222; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:20rpx 32rpx; font-size:28rpx; z-index:20; }
-.dine-cart-bar .go { background:#ff6a00; padding:18rpx 42rpx; border-radius:50rpx; font-weight:600; }
+/* 移除旧的 .dine-cart-bar 样式，底部由组件提供 */
 </style>

@@ -22,16 +22,15 @@
           </view>
         </view>
       </scroll-view>
-      <view class="cart-bar" v-if="cart.length">
-        <view class="summary">已选 {{ totalCount }} 件，合计 ¥ {{ totalAmount }}</view>
-        <button class="checkout" :disabled="!cart.length" @click="toConfirm">去确认</button>
-      </view>
+      <DineCartBar :count="totalCount" :amount="totalAmount" @confirm="toConfirm" />
     </view>
   </tig-layout>
 </template>
 <script setup lang="ts">
 import { onLoad } from '@dcloudio/uni-app';
 import { ref, computed } from 'vue';
+// @ts-ignore 新建组件默认导出
+import DineCartBar from './components/DineCartBar.vue';
 
 // @ts-ignore 别名在构建配置里存在
 import { imageFormat } from '@/utils/format';
@@ -120,7 +119,5 @@ function logOnLoad(tag:string, q:any){
 .qty-box { display:flex; align-items:center; gap:12rpx; }
 .qty-box button { width:56rpx; height:56rpx; text-align:center; line-height:56rpx; border-radius:50%; background:#f6f6f6; border:none; font-size:36rpx; }
 .qty-box .q { min-width:40rpx; text-align:center; font-size:28rpx; }
-.cart-bar { position:fixed; left:0; right:0; bottom:0; background:#fff; box-shadow:0 -4rpx 16rpx rgba(0,0,0,0.06); padding:20rpx 28rpx; display:flex; justify-content:space-between; align-items:center; }
-.summary { font-size:26rpx; color:#333; }
-.checkout { background:#ff5a00; color:#fff; padding:20rpx 42rpx; border-radius:50rpx; font-size:30rpx; font-weight:600; border:none; }
+/* 旧 .cart-bar 样式移除，使用统一 DineCartBar 组件 */
 </style>
