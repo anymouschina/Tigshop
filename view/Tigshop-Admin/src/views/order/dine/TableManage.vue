@@ -2,37 +2,35 @@
   <div class="container">
     <div class="content_wrapper">
       <div class="lyecs-table-list-warp">
-        <!-- 筛选区域 -->
+        <!-- 筛选区域 (与订单列表结构对齐) -->
         <div class="list-table-tool lyecs-search-warp">
-          <el-form :inline="true" :model="search" class="filter-form" @submit.prevent>
-            <div class="advanced-search-warp list-table-tool-row">
-              <div class="simple-form-warp">
-                <div class="simple-form-field">
-                  <div class="form-group">
-                    <label class="control-label"><span>桌号：</span></label>
-                    <div class="control-container">
-                      <el-input v-model="search.keyword" placeholder="输入桌号" clearable @keyup.enter="onSearch" />
-                    </div>
-                  </div>
-                </div>
-                <div class="simple-form-field">
-                  <div class="form-group">
-                    <label class="control-label"><span>区域：</span></label>
-                    <div class="control-container">
-                      <el-input v-model="search.area" placeholder="区域" clearable @keyup.enter="onSearch" />
-                    </div>
-                  </div>
-                </div>
-                <div class="simple-form-field">
-                  <label class="control-label"></label>
+          <div class="advanced-search-warp list-table-tool-row">
+            <div class="simple-form-warp">
+              <div class="simple-form-field">
+                <div class="form-group">
+                  <label class="control-label"><span>桌号：</span></label>
                   <div class="control-container">
-                    <el-button type="primary" @click="onSearch">搜索</el-button>
-                    <el-button @click="resetFilter">重置</el-button>
+                    <el-input v-model="search.keyword" placeholder="输入桌号" clearable @keyup.enter="onSearch" />
                   </div>
                 </div>
               </div>
+              <div class="simple-form-field">
+                <div class="form-group">
+                  <label class="control-label"><span>区域：</span></label>
+                  <div class="control-container">
+                    <el-input v-model="search.area" placeholder="区域" clearable @keyup.enter="onSearch" />
+                  </div>
+                </div>
+              </div>
+              <div class="simple-form-field">
+                <label class="control-label"></label>
+                <div class="control-container">
+                  <el-button type="primary" plain @click="onSearch">搜索</el-button>
+                  <el-button plain @click="resetFilter">重置</el-button>
+                </div>
+              </div>
             </div>
-          </el-form>
+          </div>
         </div>
 
         <!-- 工具栏 -->
@@ -47,38 +45,50 @@
         </div>
 
         <!-- 表格 -->
-  <el-table :data="filtered" border stripe size="small" v-loading="loading" class="table-content" :row-key="rowKey" empty-text="暂无数据">
-          <el-table-column prop="id" label="ID" width="70" align="center" />
-          <el-table-column prop="tableNo" label="桌号" width="140" />
+        <div class="table-container">
+          <div v-if="loading" class="table-loading-holder"><a-spin /></div>
+          <el-table
+            v-else
+            :data="filtered"
+            border
+            stripe
+            size="small"
+            class="table-content"
+            :row-key="rowKey"
+            empty-text="暂无数据"
+          >
+            <el-table-column prop="id" label="ID" width="70" align="center" />
+            <el-table-column prop="tableNo" label="桌号" width="140" />
             <el-table-column prop="area" label="区域" width="140">
               <template #default="{ row }">
                 <span>{{ row.area || '-' }}</span>
               </template>
             </el-table-column>
-          <el-table-column prop="capacity" label="容量" width="90" align="center">
-            <template #default="{ row }">
-              <el-tag v-if="row.capacity" size="small">{{ row.capacity }}</el-tag>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="二维码Key" min-width="220">
-            <template #default="{ row }">
-              <div class="qr-key-cell">
-                <span class="qr-key-text" v-if="row.qrCodeKey">{{ row.qrCodeKey }}</span>
-                <span v-else class="muted">未生成</span>
-                <el-button link type="primary" size="small" @click="copyKey(row)" v-if="row.qrCodeKey">复制</el-button>
-                <el-button link type="primary" size="small" @click="regenKey(row)">重置</el-button>
-                <el-button link type="primary" size="small" @click="showQr(row)">二维码</el-button>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="150" fixed="right">
-            <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-              <el-button link type="danger" size="small" @click="remove(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+            <el-table-column prop="capacity" label="容量" width="90" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.capacity" size="small">{{ row.capacity }}</el-tag>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="二维码Key" min-width="220">
+              <template #default="{ row }">
+                <div class="qr-key-cell">
+                  <span class="qr-key-text" v-if="row.qrCodeKey">{{ row.qrCodeKey }}</span>
+                  <span v-else class="muted">未生成</span>
+                  <el-button link type="primary" size="small" @click="copyKey(row)" v-if="row.qrCodeKey">复制</el-button>
+                  <el-button link type="primary" size="small" @click="regenKey(row)">重置</el-button>
+                  <el-button link type="primary" size="small" @click="showQr(row)">二维码</el-button>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="150" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+                <el-button link type="danger" size="small" @click="remove(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </div>
     </div>
     <el-dialog v-model="modalVisible" :title="editingId? '编辑桌号' : '新增桌号'" width="520px" @close="resetForm">
@@ -112,6 +122,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import "@/style/css/list.less";
 import { ref, reactive, onMounted, computed } from 'vue';
 import { listShopTable, createShopTable, updateShopTable, deleteShopTable, buildPublicTableQrcodeUrl } from './api/shopTable';
 import { message, Modal } from 'ant-design-vue';
@@ -225,9 +236,11 @@ function rowKey(row:ShopTable){ return row.id; }
 </script>
 <style scoped>
 /* 样式优化 */
-.toolbar-row { margin:10px 0 14px; }
+.toolbar-row { margin:8px 0 12px; }
 .total-text { color:#666; font-size:12px; }
-.table-content { margin-top: 4px; }
+.table-container { position:relative; min-height:260px; }
+.table-loading-holder { display:flex; align-items:center; justify-content:center; height:260px; }
+.table-content { margin-top: 0; }
 .qr-key-cell { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
 .qr-key-text { font-family:monospace; background:#f6f6f6; padding:2px 6px; border-radius:4px; }
 .muted { color:#bbb; }
