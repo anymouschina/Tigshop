@@ -528,6 +528,7 @@
         {
             "root": "pages/dine",
             "pages": [
+                { "path": "index" },
                 { "path": "scan-entry" },
                 { "path": "menu" },
                 { "path": "confirm" },

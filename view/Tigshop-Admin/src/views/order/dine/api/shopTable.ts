@@ -37,10 +37,18 @@ export async function fetchShopTableQrcode(id?:number, key?:string):Promise<stri
 }
 
 // 若仍需要拼接公开 URL（前端不请求二进制，直接 img src 加载），可使用此帮助函数
-export function buildPublicTableQrcodeUrl(id?:number, key?:string){
+export function buildPublicTableQrcodeUrl(id?:number, key?:string, envVersion: 'release'|'trial'|'develop'='release'){
   const { VITE_BASE_URL } = (import.meta as any).env;
+  const envParam = envVersion && envVersion!=='release' ? `&env=${envVersion}` : '';
   if(key){
-    return `${VITE_BASE_URL}/qrcode/table?key=${encodeURIComponent(key)}`;
+    return `${VITE_BASE_URL}/qrcode/table?key=${encodeURIComponent(key)}${envParam}`;
   }
-  return `${VITE_BASE_URL}/qrcode/table?id=${id}`;
+  return `${VITE_BASE_URL}/qrcode/table?id=${id}${envParam}`;
+}
+
+export function buildProtectedTableQrcodeUrl(id?:number, key?:string, envVersion: 'release'|'trial'|'develop'='release'){
+  const { VITE_BASE_URL, VITE_REQUEST_URL_PREFIX } = (import.meta as any).env;
+  const envParam = envVersion && envVersion!=='release' ? `&env=${envVersion}` : '';
+  const query = key ? `key=${encodeURIComponent(key)}` : `id=${id}`;
+  return `${VITE_BASE_URL}${VITE_REQUEST_URL_PREFIX}/shopTable/qrcode?${query}${envParam}`;
 }

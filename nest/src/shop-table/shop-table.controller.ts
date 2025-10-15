@@ -49,7 +49,7 @@ export class AdminShopTableCompatController {
   // GET /adminapi/shopTable/qrcode?id=1 或 ?key=STxxxx  返回二维码图片
   @Get('qrcode')
   @Authorities('shopTableManage')
-  async qrcodeAuth(@Query('id') id: number, @Query('key') key: string, @Res() res: Response) {
+  async qrcodeAuth(@Query('id') id: number, @Query('key') key: string, @Query('env') env: string, @Res() res: Response) {
     let table;
     if (id) {
       table = await this.service.detail(Number(id));
@@ -64,7 +64,8 @@ export class AdminShopTableCompatController {
     }
     const page = 'pages/dine/index';
     const scene = `t=${table.qr_code_key}`;
-    const buf = await this.wechat.generateMiniProgramQrCode(page, scene);
+  const envVersion = (env==='trial'||env==='develop') ? env : 'release';
+  const buf = await this.wechat.generateMiniProgramQrCode(page, scene, 430, envVersion);
     res.setHeader('Content-Type', 'image/jpeg');
     res.send(buf);
   }
@@ -77,7 +78,7 @@ export class PublicQrcodeController {
 
   // GET /qrcode/table?id=1  或 /qrcode/table?key=STXXXX  -> 直接输出二维码图片
   @Get('table')
-  async publicTable(@Query('id') id:number, @Query('key') key:string, @Res() res:Response){
+  async publicTable(@Query('id') id:number, @Query('key') key:string, @Query('env') env:string, @Res() res:Response){
     let table;
     if (id) {
       table = await this.service.detail(Number(id));
@@ -92,10 +93,35 @@ export class PublicQrcodeController {
     }
     const page = 'pages/dine/index';
     const scene = `t=${table.qr_code_key}`;
-    const buf = await this.wechat.generateMiniProgramQrCode(page, scene);
+  const envVersion = (env==='trial'||env==='develop') ? env : 'release';
+  const buf = await this.wechat.generateMiniProgramQrCode(page, scene, 430, envVersion);
     res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.send(buf);
+  }
+
+  // GET /qrcode/table/resolve?key=STXXXX  -> 返回桌号及店铺信息（小程序扫码后跳转使用）
+  @Get('table/resolve')
+  async resolve(@Query('key') key: string, @Res() res: Response) {
+    if(!key){
+      return res.status(400).json({ code:400, message:'缺少参数 key' });
+    }
+    const table = await this.service.findByQr(key);
+    if(!table){
+      return res.status(404).json({ code:404, message:'未找到匹配桌号' });
+    }
+    return res.json({
+      code: 0,
+      message: 'success',
+      data: {
+        id: table.id,
+        shopId: table.shop_id,
+        tableNo: table.table_no,
+        area: table.area,
+        capacity: table.capacity,
+        qrCodeKey: table.qr_code_key
+      }
+    });
   }
 }
 

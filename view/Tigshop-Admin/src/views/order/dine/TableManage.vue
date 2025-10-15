@@ -39,6 +39,12 @@
             <el-space>
               <el-button type="primary" @click="openCreate">新增桌号</el-button>
               <el-button @click="fetchList" :loading="loading">刷新</el-button>
+              <el-select v-model="qrEnv" size="small" style="width:140px" placeholder="二维码版本">
+                <el-option label="线上版" value="release" />
+                <el-option label="体验版" value="trial" />
+                <el-option label="开发版" value="develop" />
+              </el-select>
+              <span style="font-size:12px;color:#888">小程序二维码环境</span>
               <span v-if="records.length" class="total-text">共 {{ records.length }} 个</span>
             </el-space>
           </div>
@@ -140,6 +146,7 @@ const search = reactive({ keyword:'', area:'' });
 const qrVisible = ref(false);
 const qrUrl = ref('');
 const qrLoading = ref(false);
+const qrEnv = ref<'release'|'trial'|'develop'>('release');
 // 假设从 localStorage 获取当前店铺 ID
 const shopId = Number(localStorage.getItem('shopId')) || 0;
 
@@ -222,7 +229,7 @@ function showQr(r:ShopTable){
   qrVisible.value = true;
   qrLoading.value = true;
   // 直接构建图片 URL
-  qrUrl.value = buildPublicTableQrcodeUrl(r.id);
+  qrUrl.value = buildPublicTableQrcodeUrl(r.id, undefined, qrEnv.value);
   // 简单等待图片加载完成（可选改进：监听 img load 事件）
   setTimeout(()=>{ qrLoading.value = false; }, 400);
 }
