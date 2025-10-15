@@ -1,8 +1,9 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { ShopProductCategoryService } from "./shop-product-category.service";
+import { Request } from "express";
 
 @ApiTags("Admin API - 店铺商品分类(兼容路径)")
 @Controller("adminapi/merchant/shopProductCategory")
@@ -13,16 +14,20 @@ export class ShopProductCategoryController {
 
   @Get("list")
   @ApiOperation({ summary: "获取店铺商品分类列表（admin）" })
-  async list(@Query() query: any) {
+  async list(@Query() query: any, @Req() req: Request) {
     const page = Number(query.page) || 1;
     const size = Number(query.size) || 15;
+    // 优先 query.shopId 其次 Header X-Shop-Id；若都无则默认 0
+    const headerShop = req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any];
+    const headerVal = headerShop !== undefined ? Number(headerShop) : undefined;
+    const shopId = query.shopId !== undefined ? Number(query.shopId) : (headerVal !== undefined ? headerVal : 0);
     const filter = {
       page,
       size,
       keyword: query.keyword ?? "",
       parent_id: query.parentId !== undefined ? Number(query.parentId) : undefined,
       is_show: query.isShow !== undefined && query.isShow !== "" ? Number(query.isShow) : undefined,
-      shop_id: query.shopId ? Number(query.shopId) : undefined,
+      shop_id: shopId,
     };
     const { records, total } = await this.svc.list(filter);
     return {
@@ -45,8 +50,11 @@ export class ShopProductCategoryController {
 
   @Get("getAllCategory")
   @ApiOperation({ summary: "获取店铺商品分类树（admin）" })
-  async getAllCategory(@Query("shopId") shopId?: string) {
-    const tree = await this.svc.getAll(shopId ? Number(shopId) : undefined);
+  async getAllCategory(@Query("shopId") shopId: string, @Req() req: Request) {
+    const headerShop = req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any];
+    const parsedHeader = headerShop !== undefined ? Number(headerShop) : undefined;
+    const resolved = shopId !== undefined ? Number(shopId) : (parsedHeader !== undefined ? parsedHeader : 0);
+    const tree = await this.svc.getAll(resolved);
     const mapNode = (n: any): any => ({
       categoryId: n.category_id,
       parentId: n.parent_id,
@@ -60,13 +68,16 @@ export class ShopProductCategoryController {
 
   @Post("create")
   @ApiOperation({ summary: "创建店铺商品分类（admin）" })
-  async create(@Body() body: any) {
+  async create(@Body() body: any, @Req() req: Request) {
+    const headerShop = req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any];
+    const headerVal = headerShop !== undefined ? Number(headerShop) : undefined;
+    const resolvedShopId = body.shopId !== undefined ? Number(body.shopId) : (headerVal !== undefined ? headerVal : 0);
     const data = {
       category_name: body.categoryName,
       parent_id: body.parentId ? Number(body.parentId) : 0,
       sort_order: body.sortOrder ?? 50,
       is_show: body.isShow ?? 1,
-      shop_id: body.shopId ? Number(body.shopId) : 0,
+      shop_id: resolvedShopId,
     };
     const created = await this.svc.create(data);
     return { code: 0, message: "success", data: { categoryId: created.category_id } };

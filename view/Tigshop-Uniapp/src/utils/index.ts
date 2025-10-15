@@ -37,8 +37,9 @@ export const isJsonString = (str: string): boolean => {
  * @param str
  * @returns
  */
-export function isUrl(str: string): boolean {
-    return str.indexOf("http://") != -1 || str.indexOf("https://") != -1;
+export function isUrl(str: any): boolean {
+    if (typeof str !== 'string') return false;
+    return str.indexOf('http://') !== -1 || str.indexOf('https://') !== -1;
 }
 
 /**
@@ -426,14 +427,24 @@ export function getDownloadFileInfo(url: string): Promise<UniApp.DownloadSuccess
  * @param path
  * @returns
  */
-export function staticResource(path: string, type = "images"): string {
-    if (isUrl(path)) {
-        return path;
-    } else if (isUrl(import.meta.env.VITE_STATIC_RESOURCE)) {
-        return `${import.meta.env.VITE_STATIC_RESOURCE}/${type}/${path}`;
-    } else {
-        return `${import.meta.env.VITE_API_URL || location.origin}/${import.meta.env.VITE_STATIC_RESOURCE}/${type}/${path}`;
+export function staticResource(path: any, type = 'images'): string {
+    // 兼容空 / null / 旧数据；返回透明占位 1x1 gif，避免布局塌陷或列表高度计算异常
+    if (!path) return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+    if (isUrl(path)) return path;
+    const rawStaticBase: any = (import.meta as any).env?.VITE_STATIC_RESOURCE;
+    const apiBase = (import.meta as any).env?.VITE_API_URL || (typeof location !== 'undefined' ? location.origin : '');
+
+    const trimEnd = (s: string) => s.replace(/\/+$/,'');
+    const trimBoth = (s: string) => s.replace(/^\/+/, '').replace(/\/+$/,'');
+
+    // 若配置直接是完整 URL
+    if (rawStaticBase && isUrl(rawStaticBase)) {
+        return `${trimEnd(rawStaticBase)}/${type}/${path}`;
     }
+
+    // rawStaticBase 可能为空或是相对目录，例如 'static/mini'
+    const staticBase = rawStaticBase ? trimBoth(String(rawStaticBase)) : 'static';
+    return `${trimEnd(apiBase)}/${staticBase}/${type}/${path}`;
 }
 
 export const maskNumber = (num: number | string) => {

@@ -101,7 +101,8 @@ function resolveTable(){
 function retry(){ resolveTable(); }
 
 function goMenu(orderType:2|3){
-  uni.redirectTo({ url: `/pages/dine/menu?shopId=${tableInfo.value.shopId}&table=${tableInfo.value.tableNo}&type=${orderType}&pc=${peopleCount.value}` });
+  // 跳转到分类布局版点餐页面（新的菜单界面）
+  uni.redirectTo({ url: `/pages/dine/menuCate?shopId=${tableInfo.value.shopId}&table=${tableInfo.value.tableNo}&type=${orderType}&pc=${peopleCount.value}` });
 }
 
 function logOnLoad(tag:string, q:any){

@@ -17,7 +17,8 @@ export class ShopProductCategoryService {
     if (filter.is_show !== undefined && filter.is_show !== -1) {
       where.is_show = Number(filter.is_show);
     }
-    if (filter.shop_id !== undefined && filter.shop_id > 0) {
+    if (filter.shop_id !== undefined && filter.shop_id !== null) {
+      // 允许 0 作为有效店铺（公共或主平台店铺）
       where.shop_id = Number(filter.shop_id);
     }
     return where;
@@ -41,7 +42,7 @@ export class ShopProductCategoryService {
 
   async getAll(shopId?: number) {
     const where: any = {};
-    if (shopId) where.shop_id = Number(shopId);
+    if (shopId !== undefined && shopId !== null) where.shop_id = Number(shopId);
     const rows = await this.prisma.shop_product_category.findMany({
       where,
       orderBy: [{ parent_id: "asc" }, { sort_order: "asc" }, { category_id: "asc" }],

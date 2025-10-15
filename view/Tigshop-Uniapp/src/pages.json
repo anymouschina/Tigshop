@@ -531,6 +531,7 @@
                 { "path": "index" },
                 { "path": "scan-entry" },
                 { "path": "menu" },
+                { "path": "menuCate" },
                 { "path": "confirm" },
                 { "path": "progress" },
                 { "path": "queue" },

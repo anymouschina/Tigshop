@@ -33,13 +33,15 @@ interface ResponseData {
     data: any;
 }
 
+// 统一声明 baseUrl，避免重复声明冲突
+let baseUrlTmp: string | undefined;
 // #ifdef H5
-export const baseUrl = import.meta.env.VITE_API_URL || location.origin;
+baseUrlTmp = import.meta.env.VITE_API_URL || location.origin;
 // #endif
-
 // #ifndef H5
-export const baseUrl = import.meta.env.VITE_API_URL;
+baseUrlTmp = import.meta.env.VITE_API_URL;
 // #endif
+export const baseUrl = baseUrlTmp || '';
 
 // 存储活跃的请求，键为请求标识，值为请求任务
 const activeRequests: Map<string, UniApp.RequestTask> = new Map();
@@ -75,8 +77,17 @@ export default function request<T extends ResponseData>(config: RequestConfig): 
     const configStore = useConfigStore();
     config.noSkipLogin = config.noSkipLogin || false;
     const method = (config.method || "GET").toUpperCase();
-    const prefix = config.prefix || import.meta.env.VITE_API_PREFIX;
-    const url = `${baseUrl}${prefix}${config.url}`;
+    // 统一前缀与路径，避免出现 /api//xxx 或 /apiapi 情况
+    let prefix = (config.prefix || import.meta.env.VITE_API_PREFIX || '').trim();
+    let pathPart = (config.url || '').trim();
+    // 规范 prefix 以单个结尾 /
+    if (prefix && !prefix.startsWith('/')) prefix = '/' + prefix;
+    if (prefix.endsWith('//')) prefix = prefix.replace(/\/+/g, '/');
+    if (!prefix.endsWith('/')) prefix += '/';
+    // 去掉路径开头多余 /
+    pathPart = pathPart.replace(/^\/+/, '');
+    // 拼接并再次折叠多余 /
+    const url = `${baseUrl}${prefix}${pathPart}`.replace(/([^:])\/+/g, (m, g1) => g1 + '/');
 
     const header = {
         Authorization: "Bearer " + (uni.getStorageSync("token") ? uni.getStorageSync("token") : null),

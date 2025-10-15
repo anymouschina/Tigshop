@@ -1,24 +1,32 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards, Req, Logger } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { CategoryService } from "./category.service";
+import { ShopProductCategoryService } from "src/merchant/shop-product-category/shop-product-category.service";
+import { Request } from "express";
 
 @ApiTags("Admin API - 商品分类管理(兼容路径)")
 @Controller("adminapi/product/category")
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard)
 export class AdminApiCategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  private logger = new Logger(AdminApiCategoryController.name);
+  constructor(
+    private readonly categoryService: CategoryService,
+    private readonly shopProductCategoryService: ShopProductCategoryService,
+  ) {}
 
   /**
    * 兼容前端 product/category/getAllCategory
    */
   @Get("getAllCategory")
   @ApiOperation({ summary: "获取所有商品分类（admin）" })
-  async getAllCategory(@Query() query: any) {
-    // 返回树形结构并对齐前端期望的字段
-    const tree = await this.categoryService.getAllCategoryTree();
+  async getAllCategory(@Query() query: any, @Req() req: Request) {
+    // 优先级：query.shopId > Header(X-Shop-Id)；没有则返回全局分类
+    const headerShop = req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any];
+    const parsedHeader = headerShop !== undefined ? Number(headerShop) : 0;
+    const shopId = query.shopId ? Number(query.shopId) : parsedHeader;
 
     const mapNode = (n: any): any => ({
       categoryId: n.category_id,
@@ -27,14 +35,28 @@ export class AdminApiCategoryController {
       sortOrder: n.sort_order,
       isShow: n.is_show,
       categoryPic: n.category_pic,
-      // 仅当存在子级时返回 children 字段，避免多余空数组影响部分前端判断
       ...(n.children && n.children.length
         ? { children: n.children.map((c: any) => mapNode(c)) }
         : {}),
     });
 
+    // 如果指定了店铺则使用店铺分类表（shop_product_category），否则全局分类
+    if (shopId && shopId > 0) {
+      const shopTree = await this.shopProductCategoryService.getAll(shopId);
+      this.logger.debug(`[ADMIN Category] shopId=${shopId} shopTreeSize=${(shopTree || []).length}`);
+      const mapped = (shopTree || []).map((n: any) => mapNode(n));
+      this.logger.debug(`[ADMIN Category] shopId=${shopId} shopTreeSize=${mapped.length}`);
+      if (mapped.length > 0) {
+        return { code: 0, message: 'success', data: mapped };
+      }
+      // 如果店铺分类为空，回退到全局分类，避免前端出现空白
+      // eslint-disable-next-line no-console
+      console.log(`[ADMIN Category] shopId=${shopId} has no shop-specific categories, fallback to global categories`);
+    }
+
+    const tree = await this.categoryService.getAllCategoryTree();
     const mappedTree = (tree || []).map((n: any) => mapNode(n));
-    return { code: 0, message: "success", data: mappedTree };
+    return { code: 0, message: 'success', data: mappedTree };
   }
 
   /**

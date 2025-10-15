@@ -32,6 +32,7 @@ import { PanelModule } from "src/panel/panel.module";
 import { AdminProductBatchCompatService } from "./admin-product-batch-compat.service";
 import { ProductServicesModule } from "./product-services/product-services.module";
 import { ProductPricingService } from "./pricing/product-pricing.service";
+import { ShopProductCategoryModule } from "src/merchant/shop-product-category/shop-product-category.module";
 
 @Module({
   imports: [
@@ -42,7 +43,9 @@ import { ProductPricingService } from "./pricing/product-pricing.service";
     PriceInquiryModule,
     ProductAttributesTplModule,
     ProductServicesModule,
-    PanelModule,
+  PanelModule,
+  // 为 admin 兼容分类接口提供店铺分类服务（支持 X-Shop-Id 过滤）
+  ShopProductCategoryModule,
   ],
   controllers: [
     ProductController,

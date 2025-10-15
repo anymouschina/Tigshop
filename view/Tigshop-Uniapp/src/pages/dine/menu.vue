@@ -65,7 +65,7 @@ async function fetchProducts(){
   try {
     // 直接调用公开商品列表接口，可根据需要增加分类/分页
   // 注意：request 会自动在前面拼接 VITE_API_PREFIX (默认 /api/)，这里不要再写前缀，防止出现 /api/api/...
-  const res:any = await request({ url:'/product/product/list', method:'GET', params:{ shopId: shopId.value, page:1, size:50 } });
+  const res:any = await request({ url:'product/product/list', method:'GET', params:{ shopId: shopId.value, page:1, size:50 } });
     const list = res?.data?.records || res?.records || res?.data || [];
     products.value = list.map((p:any)=>({
       productId: p.productId || p.id,
