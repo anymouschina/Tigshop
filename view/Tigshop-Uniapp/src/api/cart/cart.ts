@@ -28,11 +28,18 @@ export const clearCart = () => {
         method: "post"
     });
 };
-export const removeCartItemData = (data: removeCartItemDataParams) => {
+export const removeCartItemData = (data: removeCartItemDataParams & { shopId?: number }) => {
+    // 兼容后端对单删/批量删参数差异：
+    // 单个使用 cartId，批量使用 cartIds
+    const payload: any = { ...data };
+    if (Array.isArray(data.cartIds) && data.cartIds.length === 1) {
+        payload.cartId = data.cartIds[0];
+        delete payload.cartIds;
+    }
     return request({
         url: "cart/cart/removeItem",
         method: "post",
-        data
+        data: payload
     });
 };
 export const asyncGetCartCount = () => {

@@ -1,11 +1,20 @@
 <template>
   <tig-layout title="扫码点餐" :bg="'#f5f5f5'">
+    <!-- Scan call-to-action -->
+    <view class="scan-card">
+      <view class="scan-icon"><text class="iconfont-h5 icon-erweima" /></view>
+      <view class="scan-title">扫一扫桌码</view>
+      <view class="scan-sub">将相机对准桌贴二维码</view>
+      <tig-button class="scan-btn" :custom-style="{ height: '88rpx', 'border-radius': '28rpx', 'font-size': '30rpx' }" @click="handleScan">立即扫码</tig-button>
+    </view>
     <view class="entry" v-if="stage==='loading'">
       <view class="loading-text">正在识别桌号...</view>
     </view>
     <view class="entry" v-else-if="stage==='error'">
       <view class="error-text">{{ errorMsg }}</view>
-      <button class="retry" @click="retry">重试</button>
+      <tig-button class="retry" plain :custom-style="{ 'border-radius': '16rpx', height: '80rpx' }" @click="retry">重试</tig-button>
+      <view class="retry-tip">或重新扫码</view>
+      <tig-button class="scan-btn minor" :custom-style="{ height: '80rpx', 'border-radius': '20rpx' }" @click="handleScan">重新扫码</tig-button>
     </view>
     <view class="entry" v-else>
       <view class="table-box">
@@ -21,8 +30,8 @@
         </view>
         <view class="tips">请选择商品开始点单</view>
         <view class="actions">
-          <button class="primary" @click="goMenu(2)">堂食点单</button>
-          <button class="outline" @click="goMenu(3)">打包外带</button>
+          <tig-button class="primary" :custom-style="{ 'border-radius': '50rpx', height: '88rpx', 'font-size': '30rpx' }" @click="goMenu(2)">堂食点单</tig-button>
+          <tig-button class="outline" plain :custom-style="{ 'border-radius': '50rpx', height: '88rpx', 'font-size': '30rpx' }" @click="goMenu(3)">打包外带</tig-button>
         </view>
       </view>
     </view>
@@ -100,6 +109,76 @@ function resolveTable(){
 
 function retry(){ resolveTable(); }
 
+function handleScan(){
+  const extractKey = (payload:any): string => {
+    try {
+      // 1) 优先从 path 的 scene 中解析（WX_CODE 常见）
+      const path = payload?.path as string;
+      if (path && path.includes('scene=')) {
+        const sceneMatch = path.match(/[?&#]scene=([^&#]+)/);
+        if (sceneMatch && sceneMatch[1]) {
+          const sceneDecoded = decodeURIComponent(sceneMatch[1]); // e.g. "t=ST55761EB"
+          const tMatch = sceneDecoded.match(/(?:^|[?&#])t=([A-Za-z0-9_-]+)/);
+          if (tMatch) return tMatch[1];
+        }
+      }
+
+      // 2) 从 result 解析 URL 或纯 key
+      let raw = String(payload?.result || '');
+      if (/%[0-9A-Fa-f]{2}/.test(raw)) {
+        try { raw = decodeURIComponent(raw); } catch(_) {}
+      }
+      let m = raw.match(/[?&#]t=([A-Za-z0-9_-]+)/);
+      if (m) return m[1];
+      m = raw.match(/(?:scene=)?t=([A-Za-z0-9_-]+)/);
+      if (m) return m[1];
+      if (/^[A-Za-z0-9_-]{6,}$/.test(raw)) return raw;
+
+      // 3) 尝试从 rawData 解析（部分平台 base64/ISO8859-1）
+      let rd = payload?.rawData ? String(payload.rawData) : '';
+      if (rd) {
+        // 简单判断 base64
+        if (/^[A-Za-z0-9+/=]+$/.test(rd)) {
+          try {
+            // @ts-ignore atob 在 H5 可用；小程序不可用时会抛错，catch 即可
+            const decoded = atob(rd);
+            let s = decoded;
+            if (/%[0-9A-Fa-f]{2}/.test(s)) { try { s = decodeURIComponent(s); } catch(_) {} }
+            let mm = s.match(/[?&#]t=([A-Za-z0-9_-]+)/);
+            if (mm) return mm[1];
+            mm = s.match(/(?:scene=)?t=([A-Za-z0-9_-]+)/);
+            if (mm) return mm[1];
+            if (/^[A-Za-z0-9_-]{6,}$/.test(s)) return s;
+          } catch(_) {}
+        } else {
+          // 非 base64，当普通字符串尝试
+          let s = rd;
+          if (/%[0-9A-Fa-f]{2}/.test(s)) { try { s = decodeURIComponent(s); } catch(_) {} }
+          let mm = s.match(/[?&#]t=([A-Za-z0-9_-]+)/);
+          if (mm) return mm[1];
+          mm = s.match(/(?:scene=)?t=([A-Za-z0-9_-]+)/);
+          if (mm) return mm[1];
+        }
+      }
+    } catch(_) {}
+    return '';
+  };
+
+  uni.scanCode({
+    onlyFromCamera: true,
+    scanType: ['qrCode','barCode','datamatrix','pdf417'],
+    success(res){
+      const key = extractKey(res);
+      if(!key){ uni.showToast({ title:'未识别到有效桌码', icon:'none' }); return; }
+      sceneKey = key;
+      resolveTable();
+    },
+    fail(){
+      uni.showToast({ title:'已取消扫码', icon:'none' });
+    }
+  });
+}
+
 function goMenu(orderType:2|3){
   // 跳转到分类布局版点餐页面（新的菜单界面）
   uni.redirectTo({ url: `/pages/dine/menuCate?shopId=${tableInfo.value.shopId}&table=${tableInfo.value.tableNo}&type=${orderType}&pc=${peopleCount.value}` });
@@ -118,10 +197,29 @@ function logOnLoad(tag:string, q:any){
 }
 </script>
 <style scoped lang="scss">
+.scan-card {
+  margin: 28rpx 28rpx 0;
+  padding: 36rpx 28rpx 40rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  box-shadow: 0 12rpx 30rpx rgba(0,0,0,0.06);
+  text-align: center;
+}
+.scan-icon {
+  width: 120rpx; height: 120rpx; margin: 10rpx auto 8rpx;
+  border-radius: 28rpx; background: #f4f5f7;
+  display:flex; align-items:center; justify-content:center;
+  .iconfont-h5 { font-size: 56rpx; color:#1c1c1e; opacity:0.86; }
+}
+.scan-title { font-size:34rpx; font-weight:600; color:#111; margin-top: 8rpx; }
+.scan-sub { font-size:24rpx; color:#8e8e93; margin: 6rpx 0 18rpx; }
+.scan-btn { width:70%; margin: 0 auto; background: var(--general,#1c1c1e); color:#fff; }
+.scan-btn.minor { width:60%; background:#1c1c1e; color:#fff; }
 .entry { padding:40rpx; }
 .loading-text { color:#888; font-size:28rpx; }
-.error-text { color:#ff4d4f; font-size:28rpx; margin-bottom:40rpx; }
-.retry { background:#fff;border:1px solid #ddd; padding:16rpx 32rpx; border-radius:8rpx; }
+.error-text { color:#ff4d4f; font-size:28rpx; margin-bottom:20rpx; text-align:center; }
+.retry { width: 50%; margin: 0 auto; }
+.retry-tip { text-align:center; color:#999; font-size:24rpx; margin: 16rpx 0 8rpx; }
 .table-box { background:#fff; padding:48rpx 40rpx 60rpx; border-radius:24rpx; text-align:center; box-shadow:0 8rpx 24rpx rgba(0,0,0,0.04); }
 .table-no { font-size:48rpx; font-weight:600; color:#333; }
 .table-area { margin-top:12rpx; font-size:26rpx; color:#666; }
@@ -133,7 +231,6 @@ function logOnLoad(tag:string, q:any){
 .pc-val { min-width:40rpx; text-align:center; font-weight:600; }
 .tips { margin-top:28rpx; font-size:26rpx; color:#999; }
 .actions { display:flex; gap:32rpx; justify-content:center; margin-top:54rpx; }
-button { line-height:1; }
-.primary { background: var(--general,#ff5500); color:#fff; padding:26rpx 48rpx; font-size:30rpx; border:none; border-radius:50rpx; font-weight:600; }
-.outline { background:#fff; color: var(--general,#ff5500); padding:26rpx 48rpx; font-size:30rpx; border:2rpx solid var(--general,#ff5500); border-radius:50rpx; font-weight:600; }
+.primary { width: 40%; }
+.outline { width: 40%; }
 </style>

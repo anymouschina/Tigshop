@@ -23,7 +23,7 @@
       <DineCartPopup
         :show="showPopup"
         :items="cart"
-        @update:show="v=>{ showPopup=v;refreshCart(); }"
+        @update:show="v=>{ showPopup=v; if(!v) refreshCart(); }"
         @inc="inc"
         @dec="dec"
         @remove="removeLine"
@@ -78,7 +78,7 @@ const totalAmount = computed(()=> (cart.value.reduce((s,i)=> s + i.price*i.qty,0
 
 onLoad((q:any)=>{
   try { logOnLoad('menuCate', q); } catch(e){}
-  console.log('[DINE][menuCate] decorateType resolved =', decorateType.value);
+  console.log('[DINE][menuCate] decorateType resolved =', decorateType.value,q);
   shopId.value = Number(q.shopId)||0;
   tableNo.value = q.table||'';
   const t = Number(q.type); orderType.value = (t===3?3:2);
@@ -90,6 +90,8 @@ function init(){
   if(!shopId.value){ mode.value='error'; errorMsg.value='缺少店铺ID'; return; }
   // 目前无需额外接口，直接进入 ready；后续可在此按 shopId 拉取分类装修配置 / 启用的风格等
   mode.value='ready';
+  // 页面进入后首次同步购物车
+  refreshCart();
 }
 
 function toConfirm(){
@@ -176,8 +178,7 @@ async function clearCart(){
 }
 // 勾选功能在扫码点餐场景不需要，已移除
 
-// 页面进入后首次同步购物车
-refreshCart();
+
 
 const cateHeight = computed(()=> {
   const screenH = (configStore as any).windowInfo?.screenHeight || 0;
