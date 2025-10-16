@@ -270,22 +270,33 @@ export class OrderService {
       where.order_sn = { contains: String(keyword) } as any;
     }
 
-    const [orders, total] = await Promise.all([
+    // 仅分页查询父订单；子订单用于聚合展示，单独追加查询，避免出现拆分单直接出现在列表
+    const whereParent = { ...where, parent_order_id: 0 } as any;
+    const [parentOrders, total] = await Promise.all([
       this.prisma.order.findMany({
-        where,
+        where: whereParent,
         skip,
         take: sizeNum,
         orderBy: { add_time: "desc" },
       }),
-      this.prisma.order.count({ where }),
+      this.prisma.order.count({ where: whereParent }),
     ]);
+
+    const parentIds = parentOrders.map((o: any) => Number(o.order_id));
+    const childOrders = parentIds.length
+      ? await this.prisma.order.findMany({
+          where: { parent_order_id: { in: parentIds as any } },
+        })
+      : [];
+    const orders = [...parentOrders, ...childOrders];
 
     // 批量查询关联数据（使用原始表名，无 Prisma 关系）
     const orderIds = orders.map((o: any) => o.order_id);
-    const userIds = Array.from(new Set(orders.map((o: any) => o.user_id)));
+    // 用户映射只需父订单的归属用户即可
+    const userIds = Array.from(new Set(parentOrders.map((o: any) => o.user_id)));
     const shopIds = Array.from(
       new Set(
-        orders
+        parentOrders
           .map((o: any) => o.shop_id)
           .filter((id: number) => Number(id) > 0),
       ),
@@ -322,9 +333,9 @@ export class OrderService {
             },
           })
         : Promise.resolve([]),
-      orderIds.length
+      parentIds.length
         ? this.prisma.paylog.findMany({
-            where: { order_id: { in: orderIds } },
+            where: { order_id: { in: parentIds as any } },
             select: {
               order_id: true,
               pay_sn: true,
