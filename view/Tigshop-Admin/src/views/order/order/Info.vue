@@ -28,11 +28,11 @@
                         :params="{ id: formState.orderId, preOrderStatus: formState.preOrderStatus }"
                         isDrawer
                         path="order/order/src/ChangeStatus"
-                        title="取消发货"
+                        :title="isDine ? '取消取餐' : '取消发货'"
                         width="600px"
                         @okCallback="updateDataWithList"
                     >
-                        <el-button bg class="buttonColor" size="small" text type="primary"> 取消发货 </el-button>
+                        <el-button bg class="buttonColor" size="small" text type="primary"> {{ isDine ? '取消取餐' : '取消发货' }} </el-button>
                     </DialogForm>
                 </div>
                 <!--                <el-button v-if="formState.availableActions.setConfirm" bg class="buttonColor" size="small" text type="primary" @click="setConfirm">-->
@@ -65,13 +65,13 @@
                 <DialogForm
                     v-if="(formState.availableActions.deliver && adminType == 'admin' && !formState.vendorId) || (formState.availableActions.deliver  && adminType == 'vendor')"
                     :params="{ act: 'detail', id: formState.orderId }"
-                    :title="'订单发货 ' + formState.orderSn"
+                    :title="(isDine ? '订单取餐 ' : '订单发货 ') + formState.orderSn"
                     isDrawer
                     path="order/order/src/ToShip"
                     width="900px"
                     @okCallback="updateDataWithList"
                 >
-                    <el-button bg size="small" text type="danger"> 去发货 </el-button>
+                    <el-button bg size="small" text type="danger"> {{ isDine ? '完成取餐' : '去发货' }} </el-button>
                 </DialogForm>
                 <el-button v-if="formState.availableActions.confirmReceipt" bg size="small" text type="primary" @click="onReceiptClick"> 确认已收货 </el-button>
                 <el-button v-if="formState.availableActions.splitOrder" bg size="small" text type="danger" @click="onSplitClick">
@@ -184,7 +184,7 @@
                 </div>
                 <div class="card-title">
                     <div class="min-title">
-                        配送信息
+                        {{ isDine ? '堂食信息' : '配送信息' }}
                         <DialogForm
                             v-if="!isParent"
                             :params="{ act: 'detail', id: formState.orderId }"
@@ -202,15 +202,25 @@
                     </div>
                     <ul>
                         <li class="card-li">
-                            配送方式：<span class="li-info">{{ formState.shippingTypeName }}</span>
+                            <template v-if="isDine">
+                                用餐方式：<span class="li-info">堂食（无需配送）</span>
+                            </template>
+                            <template v-else>
+                                配送方式：<span class="li-info">{{ formState.shippingTypeName }}</span>
+                            </template>
                         </li>
                         <li class="card-li">
-                            发货时间：<span class="li-info">{{ formState.shippingTime ? formState.shippingTime : "--" }}</span>
+                            <template v-if="isDine">
+                                取餐时间：<span class="li-info">{{ formState.shippingTime ? formState.shippingTime : "--" }}</span>
+                            </template>
+                            <template v-else>
+                                发货时间：<span class="li-info">{{ formState.shippingTime ? formState.shippingTime : "--" }}</span>
+                            </template>
                         </li>
-                        <li class="card-li">
+                        <li class="card-li" v-if="!isDine">
                             物流名称：<span class="li-info">{{ formState.logisticsName ? formState.logisticsName : "--" }}</span>
                         </li>
-                        <li class="card-li">
+                        <li class="card-li" v-if="!isDine">
                             发货单号：<span class="li-info">{{ formState.trackingNo ? formState.trackingNo : "--" }}</span>
                         </li>
                     </ul>
@@ -362,7 +372,7 @@
     <a-spin :spinning="loading" style="width: 100%; margin-top: 100px" />
 </template>
 <script lang="ts" setup>
-import { onMounted, ref, shallowRef, reactive } from "vue";
+import { onMounted, ref, shallowRef, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import { message, Steps, Modal } from "ant-design-vue";
 import { OrderFormState } from "@/types/order/order.d";
@@ -441,6 +451,10 @@ const fetchOrder = async () => {
         loading.value = false;
     }
 };
+// 堂食订单识别
+const isDine = computed(() => {
+    return (formState.value as any)?.orderExtension?.dine?.isDine === 1;
+});
 
 const setConfirm = async () => {
     try {

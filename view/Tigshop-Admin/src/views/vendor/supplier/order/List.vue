@@ -407,7 +407,7 @@
                                                 green: item.orderStatus === 5
                                             }"
                                         >
-                                            {{ item.orderStatusName }}
+                                            {{ isStorefront(item) && item.orderStatus === 1 ? '待制作' : item.orderStatusName }}
                                         </span>
                                     </td>
                                     <td v-if="index == 0" :rowspan="item.items.length">
@@ -440,14 +440,14 @@
 
                                             <DialogForm
                                                 :params="{ act: 'detail', id: item.orderId }"
-                                                :title="'订单发货 ' + item.orderSn"
+                                                :title="(isStorefront(item) ? '订单取餐 ' : '订单发货 ') + item.orderSn"
                                                 isDrawer
                                                 path="order/order/src/ToShip"
                                                 width="900px"
                                                 @okCallback="loadFilter"
                                                 v-if="item.availableActions.deliver"
                                             >
-                                                <el-button bg size="small" text type="danger"> 去发货 </el-button>
+                                                <el-button bg size="small" text type="danger"> {{ isStorefront(item) ? '完成取餐' : '去发货' }} </el-button>
                                                 <!-- <el-button bg class="buttonColor mr10" size="small" text type="primary"> 去发货</el-button> -->
                                             </DialogForm>
                                             <el-button
@@ -458,7 +458,7 @@
                                                 type="danger"
                                                 @click="onReceiptClick(item.orderId)"
                                             >
-                                                确认收货
+                                                {{ isStorefront(item) ? '制作完成' : '确认收货' }}
                                             </el-button>
                                         </div>
                                     </td>
@@ -671,6 +671,13 @@ const onSearchSubmit = () => {
 };
 const openPage = (href: string) => {
     window.open(href, "_blank");
+};
+// 门店订单识别（堂食/自取）
+const isStorefront = (item: any) => {
+    const dine = item?.orderExtension?.dine?.isDine === 1;
+    const typeName = (item?.shippingTypeName || '') as string;
+    const isPickup = /自[提取]|到店|门店自提/.test(typeName);
+    return dine || isPickup;
 };
 const onDelClick = (id: any) => {
     Modal.confirm({

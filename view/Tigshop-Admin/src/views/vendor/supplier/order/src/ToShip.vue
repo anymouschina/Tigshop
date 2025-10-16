@@ -82,7 +82,7 @@
     </div>
 </template>
 <script lang="ts" setup>
-import { computed, onMounted, ref, shallowRef } from "vue";
+import { computed, onMounted, ref, shallowRef, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { message, Modal } from "ant-design-vue";
 import type { OrderToShipFormState } from "@/types/order/order.d";
@@ -131,6 +131,22 @@ const fetchOrder = async () => {
             formState.value.items.forEach((item) => {
                 item.toDeliveryQuantity = item.allowDeliverNum;
             });
+            // 堂食订单：直接无需配送并完单
+            const isDine = (formState.value as any)?.orderExtension?.dine?.isDine === 1;
+            if (isDine) {
+                formState.value.shippingMethod = 3;
+                // 全量发货数据（无需依赖表格勾选）
+                deliverData.value = formState.value.items.map((it: any) => ({
+                    itemId: it.itemId,
+                    toDeliveryQuantity: it.allowDeliverNum
+                }));
+                warnSplitNeed.value = false;
+                // 先结束加载，确保表单已挂载
+                loading.value = false;
+                await nextTick();
+                deliverDo();
+                return;
+            }
         }
     } catch (error: any) {
         message.error(error.message);

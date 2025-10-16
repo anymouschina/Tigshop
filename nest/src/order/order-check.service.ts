@@ -1341,11 +1341,21 @@ export class OrderCheckService {
     const uniqueShopIds = Array.from(new Set(shopIds));
     const singleShopId = uniqueShopIds.length === 1 ? uniqueShopIds[0] : 0;
 
-    // 3) 读取地址（使用传入或当前选中的地址；若无则报错）
+    // 3) 读取地址（dine 场景不校验地址/手机号）
+    const productExtra = (this.checkoutParams?.product_extra ?? {}) as any;
+    const isDine = !!(
+      productExtra && typeof productExtra === 'object' && (
+        productExtra.dine === true ||
+        (productExtra.dine && (productExtra.dine.isDine === 1 || Object.keys(productExtra.dine).length > 0))
+      )
+    );
     const addressId = Number(this.checkoutParams?.address_id ?? 0);
-    const addr = await this.getSelectedOrDefaultAddressRaw(userId, addressId);
-    if (!addr) {
-      throw new HttpException("请先选择收货地址", HttpStatus.BAD_REQUEST);
+    let addr: any = null;
+    if (!isDine) {
+      addr = await this.getSelectedOrDefaultAddressRaw(userId, addressId);
+      if (!addr) {
+        throw new HttpException("请先选择收货地址", HttpStatus.BAD_REQUEST);
+      }
     }
 
     // 4) 生成订单基础字段
@@ -1372,6 +1382,25 @@ export class OrderCheckService {
         }
       }
       const orderExtension = JSON.stringify(extensionPayload);
+      // 地址与联系方式：dine 模式下允许为空
+      const consignee = addr ? String(addr.consignee ?? "") : "";
+      const address = addr ? String(addr.address ?? "") : "";
+      const region_ids = addr ? String(addr.region_ids ?? "") : "";
+      const region_names = addr ? String(addr.region_names ?? "") : "";
+      const mobile = addr ? String(addr.mobile ?? "") : "";
+      const email = addr ? String(addr.email ?? "") : "";
+      const addressDataJson = addr
+        ? JSON.stringify({
+            addressId: addr.address_id,
+            consignee: addr.consignee,
+            regionIds: addr.region_ids,
+            regionNames: addr.region_names,
+            address: addr.address,
+            mobile: addr.mobile,
+            email: addr.email ?? "",
+          })
+        : JSON.stringify({ dine: productExtra?.dine ?? {} });
+
       const order = await tx.order.create({
         data: {
           order_sn: orderSn,
@@ -1380,12 +1409,12 @@ export class OrderCheckService {
           pay_status: 0,
           shipping_status: 0,
           add_time: now,
-          consignee: String(addr.consignee ?? ""),
-          address: String(addr.address ?? ""),
-          region_ids: String(addr.region_ids ?? ""),
-          region_names: String(addr.region_names ?? ""),
-          mobile: String(addr.mobile ?? ""),
-          email: String(addr.email ?? ""),
+          consignee,
+          address,
+          region_ids,
+          region_names,
+          mobile,
+          email,
           shipping_method: 1,
           logistics_id: 0,
           logistics_name: "",
@@ -1406,15 +1435,7 @@ export class OrderCheckService {
           paid_amount: 0,
           order_extension: orderExtension,
           order_source: clientType,
-          address_data: JSON.stringify({
-            addressId: addr.address_id,
-            consignee: addr.consignee,
-            regionIds: addr.region_ids,
-            regionNames: addr.region_names,
-            address: addr.address,
-            mobile: addr.mobile,
-            email: addr.email ?? "",
-          }),
+          address_data: addressDataJson,
         },
       });
 

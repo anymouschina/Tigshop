@@ -458,6 +458,8 @@ onLoad((options) => {
                     people: dinePeople.value
                 }
             };
+            // 堂食订单不使用地址，显式置为 0 以避免后端地址校验
+            formState.addressId = 0;
         }
     }
 });

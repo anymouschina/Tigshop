@@ -548,6 +548,8 @@ export class OrderCheckController {
       flow_type: flowType,
       product_extra: productExtra,
       user_id: userId,
+      // 传入请求上下文供服务内解析 order_source（X-Client-Type / User-Agent）
+      _req: req,
     };
 
     await this.orderCheckService.initSet(params);

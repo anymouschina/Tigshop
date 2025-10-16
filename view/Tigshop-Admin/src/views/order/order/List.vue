@@ -436,7 +436,7 @@
                                                 green: item.orderStatus === 5
                                             }"
                                         >
-                                            {{ item.orderStatusName }}
+                                            {{ isStorefront(item) && item.orderStatus === 1 ? '待制作' : item.orderStatusName }}
                                         </span>
                                     </td>
                                     <td v-if="index == 0" :rowspan="item.items.length">
@@ -465,14 +465,14 @@
 
                                             <DialogForm
                                                 :params="{ act: 'detail', id: item.orderId }"
-                                                :title="'订单发货 ' + item.orderSn"
+                                                :title="(isStorefront(item) ? '订单取餐 ' : '订单发货 ') + item.orderSn"
                                                 isDrawer
                                                 path="order/order/src/ToShip"
                                                 width="900px"
                                                 @okCallback="loadFilter"
                                                 v-if="canDeliver(item)"
                                             >
-                                                <el-button bg size="small" text type="danger"> 去发货 </el-button>
+                                                <el-button bg size="small" text type="danger"> {{ isStorefront(item) ? '完成取餐' : '去发货' }} </el-button>
                                             </DialogForm>
                                             <el-button
                                                 v-if="item.availableActions.deliver && item.vendorId && isS2b2c() && adminType !== 'vendor'"
@@ -492,7 +492,7 @@
                                                 type="danger"
                                                 @click="onReceiptClick(item.orderId)"
                                             >
-                                                确认收货
+                                                {{ isStorefront(item) ? '制作完成' : '确认收货' }}
                                             </el-button>
                                             <div v-if="item.isChangeOrderStatus">
                                                 <DialogForm
@@ -511,11 +511,11 @@
                                                     :params="{ id: item.orderId, preOrderStatus: item.preOrderStatus }"
                                                     isDrawer
                                                     path="order/order/src/ChangeStatus"
-                                                    title="取消发货"
+                                                    :title="isStorefront(item) ? '取消取餐' : '取消发货'"
                                                     width="600px"
                                                     @okCallback="loadFilter"
                                                 >
-                                                    <el-button bg class="buttonColor" size="small" text type="primary"> 取消发货 </el-button>
+                                                    <el-button bg class="buttonColor" size="small" text type="primary"> {{ isStorefront(item) ? '取消取餐' : '取消发货' }} </el-button>
                                                 </DialogForm>
                                             </div>
                                         </div>
@@ -844,6 +844,13 @@ const canDeliver = (item: any) => {
     // vendorId>0 且当前是平台/店铺管理员时：若不是供应商角色但希望提醒，可用催发货按钮，上方已有逻辑
     // 这里发货按钮允许三类：超级管理员(admin)、供应商(vendor)、店铺管理员(shop)
     return ["admin", "vendor", "shop"].includes(String(type));
+};
+// 堂食订单识别
+const isStorefront = (item: any) => {
+    const dine = item?.orderExtension?.dine?.isDine === 1;
+    const typeName = (item?.shippingTypeName || '') as string;
+    const isPickup = /自[提取]|到店|门店自提/.test(typeName);
+    return dine || isPickup;
 };
 </script>
 <style lang="less" scoped>
