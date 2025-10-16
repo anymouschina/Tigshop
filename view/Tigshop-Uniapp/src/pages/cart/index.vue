@@ -298,6 +298,7 @@
 
 <script lang="ts" setup>
 import { ref, computed } from "vue";
+import { toMoney, normalizeTotal, normalizeCartList } from "@/utils/money";
 import activityCard from "@/components/masonry/activityCard.vue";
 import discountInfo from "@/components/product/discountInfo.vue";
 import recommend from "@/components/recommend/index.vue";
@@ -405,6 +406,8 @@ onShow(() => {
 const isLoad = ref(true);
 const showLogin = ref(!uni.getStorageSync("token"));
 
+// 金额精度统一规整工具见 @/utils/money
+
 const getCartList = async () => {
     uni.showLoading({
         title: t("加载中")
@@ -412,8 +415,8 @@ const getCartList = async () => {
     try {
         const result = await getCart();
         console.log(result);
-        total.value = result.total;
-        cartList.value = result.cartList;
+        total.value = normalizeTotal(result.total);
+        cartList.value = normalizeCartList(result.cartList);
         showLogin.value = false;
         updateCheckbox();
     } catch (error: any) {
