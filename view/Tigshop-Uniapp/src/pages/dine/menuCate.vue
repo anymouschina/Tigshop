@@ -128,11 +128,13 @@ async function refreshCart(){
       (blk.carts||[])
         .filter((c:any)=> c && c.isChecked === true) // 仅渲染/计价勾选状态的商品
         .forEach((c:any)=>{
+          const unit = Number(c.price ?? c.originalPrice ?? 0);
+          const priceCents = Number.isFinite(unit) ? Math.round(unit * 100) : 0; // 统一为分，配合弹窗 divider=100 展示
           lines.push({
             cartId:c.cartId,
             productId:c.productId,
             qty:c.quantity,
-            price:Number(c.price)||Number(c.originalPrice)||0,
+            price: priceCents,
             productName:c.productName,
             picThumb:c.picThumb,
             skuId:c.skuId
@@ -160,7 +162,7 @@ async function inc(id:number){
   if(!line) return;
   try {
     await addToCart({ productId: id, quantity:1, skuId: line.skuId, shopId: shopId.value });
-    await refreshCart();
+    await refreshCart(); // 刷新 totals 与列表
   } catch(e){
     uni.showToast({ title:'加购失败', icon:'none' });
     console.error(e);
@@ -170,20 +172,20 @@ async function dec(id:number){
   const line = cart.value.find(l=> l.productId===id); if(!line) return;
   const newQty = line.qty - 1;
   if(newQty<=0){
-    try { await removeCartItemData({ cartIds:[line.cartId] }); cart.value = cart.value.filter(l=> l.cartId!==line.cartId); }
+    try { await removeCartItemData({ cartIds:[line.cartId] }); cart.value = cart.value.filter(l=> l.cartId!==line.cartId); await refreshCart(); }
     catch(e){ await refreshCart(); }
   } else {
-    try { await updateCartItemData({ cartId: line.cartId, data:{ quantity:newQty } }); line.qty = newQty; }
+    try { await updateCartItemData({ cartId: line.cartId, data:{ quantity:newQty } }); line.qty = newQty; await refreshCart(); }
     catch(e){ await refreshCart(); }
   }
 }
 async function removeLine(id:number){
   const line = cart.value.find(l=> l.productId===id); if(!line) return;
-  try { await removeCartItemData({ cartIds:[line.cartId] }); cart.value = cart.value.filter(l=> l.cartId!==line.cartId); }
+  try { await removeCartItemData({ cartIds:[line.cartId] }); cart.value = cart.value.filter(l=> l.cartId!==line.cartId); await refreshCart(); }
   catch(e){ await refreshCart(); }
 }
 async function clearCart(){
-  try { await apiClearCart(); cart.value = []; }
+  try { await apiClearCart(); cart.value = []; await refreshCart(); }
   catch(e){ await refreshCart(); }
 }
 // 勾选功能在扫码点餐场景不需要，已移除
