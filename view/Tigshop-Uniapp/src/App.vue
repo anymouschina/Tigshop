@@ -4,6 +4,8 @@ import { useConfigStore } from "@/store/config";
 import checkAppUpdate from "@/utils/checkAppUpdate";
 import { isDemo } from "@/utils";
 import init from "@/utils/init";
+import { csrfCreate, userSignin } from "@/api/login/login";
+import { useUserStore } from "@/store/user";
 
 // #ifdef H5
 const isInIframe = () => {
@@ -54,10 +56,46 @@ onLaunch(async () => {
         console.error("初始化失败:", error);
     }
 
+    // 开发/调试便捷自动登录：当开启 VITE_AUTH_LOGIN 且本地无 token 时尝试自动登录
+    try {
+        const shouldAuto = String(import.meta.env.VITE_AUTH_LOGIN).toLowerCase() === 'true';
+        const hasToken = !!uni.getStorageSync('token');
+        if (shouldAuto && !hasToken) {
+            const token = await quickAutoLogin();
+            if (token) {
+                // 成功后若当前不在首页，跳转首页
+                const pages = getCurrentPages();
+                const cur:any = pages[pages.length - 1];
+                const route = cur?.route || cur?.__route__ || '';
+                if (!route || route === 'pages/login/index') {
+                    uni.reLaunch({ url: '/pages/index/index' });
+                }
+            }
+        }
+    } catch(e){
+        console.warn('[AUTO-LOGIN] skipped or failed:', e);
+    }
+
     // #ifdef H5
     if (isDemo()) handlerToPcMobile();
     // #endif
 });
+
+async function quickAutoLogin(){
+    try {
+        const userStore = useUserStore();
+        const csrf = await csrfCreate();
+        const username = import.meta.env.VITE_DEFAULT_USER_NAME || '13627331273';
+        const password = import.meta.env.VITE_DEFAULT_USER_PASSWORD || 'qq7758258';
+        const data:any = { loginType: 'password', username, password, mobile: '', mobileCode: '', verifyToken: '' };
+        const res:any = await userSignin(data, { 'X-CSRF-Token': csrf });
+        userStore.setToken(res.token);
+        await userStore.getUserInfo();
+        return res.token;
+    } catch (e) {
+        return '';
+    }
+}
 
 onLoad(() => {
     // #ifdef APP-PLUS || APP-HARMONY
