@@ -64,6 +64,9 @@ const avatarImg = 'https://img.js.design/assets/img/670e0e7e36544e7fd0426ff9.png
 .panel-body { flex:1; }
 .line { display:flex; align-items:center; padding:24rpx 32rpx; position:relative; }
 .line + .line { border-top:1px solid #f5f5f5; }
+.check { width:40rpx; height:40rpx; border:2rpx solid #ccc; border-radius:50%; margin-right:20rpx; box-sizing:border-box; position:relative; }
+.check.on { background:#18b5b5; border-color:#18b5b5; }
+.check.on:after { content:""; position:absolute; left:11rpx; top:6rpx; width:12rpx; height:20rpx; border:4rpx solid #fff; border-top:none; border-left:none; transform:rotate(45deg); }
 .pic { width:120rpx; height:120rpx; border-radius:16rpx; background:#f6f6f6; margin-right:24rpx; }
 .info { flex:1; display:flex; flex-direction:column; }
 .name { font-size:28rpx; color:#222; font-weight:500; margin-bottom:8rpx; }

@@ -11,7 +11,7 @@
           <view class="list-content">
             <template v-if="!isLoading && total > 0">
               <scroll-view :scroll-y="true" class="list-scroll" @scrolltolower="reachBottom">
-                <masonry :commodity-list="list" @select="emitSelect" />
+                <masonry :commodity-list="list" @callback="emitSelect" />
               </scroll-view>
             </template>
             <template v-if="!isLoading && total === 0">

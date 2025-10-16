@@ -13,7 +13,7 @@
         <styleOneCate :shop-id="shopId" :table-no="tableNo" />
       </template>
       <template v-if="decorateType === '2'">
-        <styleTwoCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo" @select-product="handleProductSelect" />
+        <styleTwoCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo"  @select-product="refreshCart"/>
       </template>
       <template v-if="decorateType === '3'">
         <styleThreeCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo" />
@@ -23,7 +23,7 @@
       <DineCartPopup
         :show="showPopup"
         :items="cart"
-        @update:show="v=>showPopup=v"
+        @update:show="v=>{ showPopup=v;refreshCart(); }"
         @inc="inc"
         @dec="dec"
         @remove="removeLine"
@@ -68,9 +68,11 @@ const decorateType = computed(()=> {
 });
 
 // 简易本地购物车（后续可与全局共享或服务端同步）
-interface CartLine { productId:number; qty:number; price:number; productName?:string; pic?:string; picUrl?:string; picThumb?:string }
+// 后端购物车行映射：仅保留下单所需字段；qty=quantity, price(分) 统一转 number
+interface CartLine { cartId:number; productId:number; qty:number; price:number; productName?:string; picThumb?:string; skuId?:number }
 const cart = ref<CartLine[]>([]);
 const showPopup = ref(false);
+// 统计全部已加入购物车的商品（扫码点餐无勾选功能）
 const cartCount = computed(()=> cart.value.reduce((s,i)=>s+i.qty,0));
 const totalAmount = computed(()=> (cart.value.reduce((s,i)=> s + i.price*i.qty,0)/100).toFixed(2));
 
@@ -91,24 +93,91 @@ function init(){
 }
 
 function toConfirm(){
-  if(cartCount.value===0) return;
+  if(!cart.value.length) return;
   const items = cart.value.map(i=>`${i.productId}:${i.qty}`).join(',');
   uni.navigateTo({ url:`/pages/dine/confirm?shopId=${shopId.value}&table=${tableNo.value}&type=${orderType.value}&pc=${peopleCount.value}&items=${items}` });
+  // 关闭弹窗并刷新购物车最新数据（可能后端有促销/金额变化）
+  showPopup.value = false;
+  refreshCart();
 }
 
 // 商品选择（来自子组件）
-function handleProductSelect(p:any){
-  const pid = p.productId || p.id;
-  if(!pid) return;
-  const price = p.price || p.discountsPrice || p.salePrice || p.minPrice || 0;
-  let line = cart.value.find(l=> l.productId===pid);
-  if(!line){ line = { productId:pid, qty:0, price, productName:p.productName||p.name, pic:p.pic||p.picUrl||p.picThumb, picUrl:p.picUrl, picThumb:p.picThumb }; cart.value.push(line); }
-  line.qty++;
+// ===== 购物车接口集成 =====
+// 若构建未配置 @ 别名，这里使用相对路径（本文件位于 pages/dine/）
+import { getCart, updateCartItemData, clearCart as apiClearCart, removeCartItemData } from '../../api/cart/cart';
+import { addToCart } from '../../api/product/product';
+
+async function refreshCart(){
+  try {
+    const res:any = await getCart();
+    // 结构: { data: { cartList: [...], total: {...} }, code }
+    const list = res?.data?.cartList || res?.cartList || [];
+    const lines:CartLine[] = [];
+    list.forEach((blk:any)=>{
+      if(shopId.value && blk.shopId !== shopId.value) return; // 仅当前店铺
+      (blk.carts||[]).forEach((c:any)=>{
+        lines.push({
+          cartId:c.cartId,
+          productId:c.productId,
+          qty:c.quantity,
+          price:Number(c.price)||Number(c.originalPrice)||0,
+          productName:c.productName,
+          picThumb:c.picThumb,
+          skuId:c.skuId
+        });
+      });
+    });
+    cart.value = lines;
+  } catch(e){ console.warn('[DINE] getCart failed', e); }
 }
-function inc(id:number){ const line = cart.value.find(l=>l.productId===id); if(line){ line.qty++; } }
-function dec(id:number){ const line = cart.value.find(l=>l.productId===id); if(line){ line.qty--; if(line.qty<=0){ cart.value = cart.value.filter(l=> l.productId!==id); } } }
-function removeLine(id:number){ cart.value = cart.value.filter(l=> l.productId!==id); }
-function clearCart(){ cart.value = []; }
+
+// 商品选择：此处不直接加本地，而是触发规格/数量确认弹窗（后续接入）。当前先直接加 1 件默认 SKU。
+async function handleProductSelect(p:any){
+  const pid = p.productId || p.id; if(!pid) return;
+  // 规格二次确认 TODO: 调起规格组件，拿到 skuId 与 quantity
+  try {
+    await addToCart({ productId: pid, quantity:1, skuId: p.skuId, shopId: shopId.value });
+    await refreshCart();
+    showPopup.value = true; // 新增后弹出购物车
+  } catch(e){ uni.showToast({ title:'加入购物车失败', icon:'none' }); console.error(e); }
+}
+
+// 加数量改用 addToCart，保持与后端“加购”语义一致（后端一般做累加）
+async function inc(id:number){
+  const line = cart.value.find(l=> l.productId===id);
+  if(!line) return;
+  try {
+    await addToCart({ productId: id, quantity:1, skuId: line.skuId, shopId: shopId.value });
+    await refreshCart();
+  } catch(e){
+    uni.showToast({ title:'加购失败', icon:'none' });
+    console.error(e);
+  }
+}
+async function dec(id:number){
+  const line = cart.value.find(l=> l.productId===id); if(!line) return;
+  const newQty = line.qty - 1;
+  if(newQty<=0){
+    try { await removeCartItemData({ cartIds:[line.cartId] }); cart.value = cart.value.filter(l=> l.cartId!==line.cartId); }
+    catch(e){ await refreshCart(); }
+  } else {
+    try { await updateCartItemData({ cartId: line.cartId, data:{ quantity:newQty } }); line.qty = newQty; }
+    catch(e){ await refreshCart(); }
+  }
+}
+async function removeLine(id:number){
+  const line = cart.value.find(l=> l.productId===id); if(!line) return;
+  try { await removeCartItemData({ cartIds:[line.cartId] }); cart.value = cart.value.filter(l=> l.cartId!==line.cartId); }
+  catch(e){ await refreshCart(); }
+}
+async function clearCart(){
+  try { await apiClearCart(); cart.value = []; }
+  catch(e){ await refreshCart(); }
+}
+// 勾选功能在扫码点餐场景不需要，已移除
+
+// 页面进入后首次同步购物车
+refreshCart();
 
 const cateHeight = computed(()=> {
   const screenH = (configStore as any).windowInfo?.screenHeight || 0;
