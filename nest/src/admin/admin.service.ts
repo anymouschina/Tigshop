@@ -455,7 +455,7 @@ export class AdminService {
       }),
       this.databaseService.order.aggregate({
         where: {
-          order_status: 5, // Assuming 5 means COMPLETED
+          order_status: 3, // COMPLETED
           created_at: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
           },

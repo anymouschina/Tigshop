@@ -27,7 +27,7 @@ import { RolesGuard } from "../../common/guards/roles.guard";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("财务管理-账单记录")
-@Controller("admin/finance/statement")
+@Controller("adminapi/finance/statement")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("admin")
 export class StatementController {

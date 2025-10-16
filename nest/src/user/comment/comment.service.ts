@@ -1,10 +1,11 @@
 // @ts-nocheck
 import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
+import { ConfigService as SettingConfigService } from "src/setting/config.service";
 
 @Injectable()
 export class CommentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private readonly settingConfig: SettingConfigService) {}
 
   /**
    * 获取评论数量统计
@@ -136,16 +137,68 @@ export class CommentService {
   /**
    * 获取评论详情
    */
-  async getCommentDetail(commentId: number) {
-    const comment = await (this.prisma as any).comment.findUnique({
+  async getCommentDetail(commentId: number, userId?: number) {
+    let comment = await (this.prisma as any).comment.findUnique({
       where: { comment_id: commentId },
     });
 
-    if (!comment) {
-      throw new HttpException("评论不存在", HttpStatus.NOT_FOUND);
+    // 补充检索逻辑：若按 comment_id 未命中，尝试把 id 视作 order_item_id（对齐部分前端调用）
+    if (!comment && Number.isFinite(Number(commentId)) && Number(userId)) {
+      // Try treat id as order_item_id
+      const byItem = await (this.prisma as any).comment.findFirst({
+        where: { order_item_id: Number(commentId), user_id: Number(userId), parent_id: 0 },
+      });
+      if (byItem) comment = byItem;
+      // Or treat id as order_id
+      if (!comment) {
+        const byOrder = await (this.prisma as any).comment.findFirst({
+          where: { order_id: Number(commentId), user_id: Number(userId), parent_id: 0 },
+          orderBy: { comment_id: 'desc' },
+        });
+        if (byOrder) comment = byOrder;
+      }
     }
+    // Load replies (simple fields per PHP: comment_id,user_id,username,content,add_time,parent_id)
+    const replies = await (this.prisma as any).comment.findMany({
+      where: { parent_id: Number(comment.comment_id) },
+      select: {
+        comment_id: true,
+        user_id: true,
+        username: true,
+        content: true,
+        add_time: true,
+        parent_id: true,
+      },
+      orderBy: { comment_id: "asc" },
+    });
 
-    return comment;
+    // Optional kefu name from config (fallback empty string)
+    let kefuName: string = "";
+    try {
+      const cfg = (await this.settingConfig.getJsonConfig("kefuSetting")) as any;
+      if (cfg) {
+        // accept either string or object.name
+        if (typeof cfg === "string") kefuName = cfg;
+        else if (typeof cfg === "object" && cfg.name) kefuName = String(cfg.name);
+      }
+    } catch {}
+
+    // Normalize JSON fields if present
+    const parseMaybeJson = (val: any) => {
+      if (val == null) return val;
+      if (typeof val === "object") return val;
+      const s = String(val);
+      if (!s) return s;
+      try { const j = JSON.parse(s); return j; } catch { return val; }
+    };
+
+    return {
+      ...comment,
+      comment_tag: parseMaybeJson(comment.comment_tag),
+      show_pics: parseMaybeJson(comment.show_pics),
+      reply: replies,
+      kefu_name: kefuName,
+    };
   }
 
   /**

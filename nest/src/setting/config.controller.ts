@@ -45,7 +45,7 @@ import axios from "axios";
 import * as nodemailer from "nodemailer";
 
 @ApiTags("系统配置管理")
-@Controller(["admin/config", "adminapi/setting/config"])
+@Controller(["adminapi/setting/config"])
 // 对 adminapi 前缀使用 AdminJwtAuthGuard + AuthorityGuard，旧 admin/config 仍可由 RolesGuard 兼容
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 // Roles 仍保留以兼容原逻辑（非 adminapi 路径）

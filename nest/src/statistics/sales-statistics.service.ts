@@ -455,7 +455,7 @@ export class SalesStatisticsService {
     // Balance payments: sum of balance field for paid-time range and valid order_status (confirmed, processing, completed).
     const balanceWhereCurrent: any = {
       is_del: 0,
-      order_status: { in: [1, 2, 5] },
+      order_status: { not: 2 },
       pay_time: {
         gte: startTimestamp,
         lte: endTimestamp,
@@ -463,7 +463,7 @@ export class SalesStatisticsService {
     };
     const balanceWherePrev: any = {
       is_del: 0,
-      order_status: { in: [1, 2, 5] },
+      order_status: { not: 2 },
       pay_time: {
         gte: prevStartTimestamp,
         lte: prevEndTimestamp,
@@ -663,14 +663,14 @@ export class SalesStatisticsService {
           where: {
             shop_id: shopId,
             is_del: 0,
-            order_status: { in: [1, 2, 5] }, // ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED
+            order_status: { not: 2 },
           },
         })
         .catch(() => 0),
 
       this.prisma
         .$queryRaw({
-          sql: `SELECT COUNT(*) as count FROM order_item oi JOIN \`order\` o ON oi.order_id = o.order_id WHERE o.is_del = 0 AND o.order_status IN (1, 2, 5) -- ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED AND o.pay_status = 2 ${shopId > -1 ? `AND oi.shop_id = ${shopId}` : ""}`,
+          sql: `SELECT COUNT(*) as count FROM order_item oi JOIN \`order\` o ON oi.order_id = o.order_id WHERE o.is_del = 0 AND o.order_status <> 2 AND o.pay_status = 2 ${shopId > -1 ? `AND oi.shop_id = ${shopId}` : ""}`,
           args: [],
         })
         .then((result: any) =>
@@ -685,7 +685,7 @@ export class SalesStatisticsService {
           where: {
             shop_id: shopId,
             is_del: 0,
-            order_status: { in: [1, 2, 5] }, // ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED
+            order_status: { not: 2 },
           },
           _sum: { total_amount: true },
         })
@@ -698,7 +698,7 @@ export class SalesStatisticsService {
           where: {
             shop_id: shopId,
             is_del: 0,
-            order_status: { in: [1, 2, 5] }, // ORDER_CONFIRMED, ORDER::ORDER_PROCESSING, Order::ORDER_COMPLETED
+            order_status: { not: 2 },
           },
           select: { user_id: true },
           distinct: ["user_id"],

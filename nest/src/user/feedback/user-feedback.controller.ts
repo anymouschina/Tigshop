@@ -17,7 +17,7 @@ import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { Public } from "../../auth/decorators/public.decorator";
 
 @ApiTags("User Feedback")
-@Controller()
+@Controller('api')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UserFeedbackController {

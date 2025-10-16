@@ -27,7 +27,7 @@ import { RolesGuard } from "../../common/guards/roles.guard";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 
 @ApiTags("财务管理-用户余额记录")
-@Controller("admin/finance/user-balance-log")
+@Controller("adminapi/finance/user-balance-log")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("admin")
 export class UserBalanceLogController {

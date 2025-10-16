@@ -24,7 +24,7 @@ import { RolesGuard } from "../../auth/guards/roles.guard";
 import { Roles } from "../../auth/decorators/roles.decorator";
 
 @ApiTags("Gallery Management")
-@Controller("setting/gallery")
+@Controller("api/setting/gallery")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class GalleryController {

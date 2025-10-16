@@ -281,6 +281,15 @@
                                         <!--团购订单-->
                                         <!--</el-tag>-->
                                         <Tag v-if="item.isExchangeOrder" :transparent="true" color="red" text="积分兑换"></Tag>
+                                        <!-- 堂食订单桌号展示 -->
+                                        <el-tooltip
+                                            v-if="item && item.orderExtension && item.orderExtension.dine && item.orderExtension.dine.table"
+                                            :content="'桌号：' + item.orderExtension.dine.table"
+                                            effect="light"
+                                            placement="top"
+                                        >
+                                            <Tag :transparent="false" color="#fa8c16" :text="'桌号 ' + item.orderExtension.dine.table"></Tag>
+                                        </el-tooltip>
                                         <el-tooltip
                                             v-if="item.payLog"
                                             :content="'订单使用' + payTypeName(item.payLog.payCode) + '下单'"

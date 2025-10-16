@@ -17,15 +17,15 @@ export enum LogEvent {
   CANCEL = 'CANCEL',
 }
 
-// Legacy numeric order_status mapping suggestion (can be refined):
-// 0 PENDING(unpaid), 1 CONFIRMED/PROCESSING, 4 CANCELED, 5 COMPLETED
+// Numeric order_status mapping (aligned with canonical DB codes):
+// 0 PENDING(unpaid), 1 CONFIRMED/processing, 2 CANCELED, 3 COMPLETED
 export const ServiceStateToOrderStatus: Record<ServiceState, number> = {
   [ServiceState.CREATED]: 0,
   [ServiceState.IN_PROGRESS]: 1,
   [ServiceState.READY]: 1,
   [ServiceState.SERVED]: 1,
-  [ServiceState.COMPLETED]: 5,
-  [ServiceState.CANCELED]: 4,
+  [ServiceState.COMPLETED]: 3,
+  [ServiceState.CANCELED]: 2,
 };
 
 export const AllowedTransitions: Record<ServiceState, ServiceState[]> = {

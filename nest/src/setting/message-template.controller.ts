@@ -35,7 +35,7 @@ import {
 } from "@nestjs/swagger";
 
 @ApiTags("消息模板管理")
-@Controller("admin/message-template")
+@Controller("adminapi/message-template")
 @UseGuards(RolesGuard)
 @Roles("admin")
 export class MessageTemplateController {

@@ -194,7 +194,7 @@ export class InvoiceService {
           user_id: userId,
           pay_status: 1, // 已支付
           invoice_status: 0, // 未开票
-          order_status: { not: 4 }, // 未取消
+          order_status: { not: 2 }, // 未取消
         },
         orderBy: { add_time: "desc" },
         skip,
@@ -211,7 +211,7 @@ export class InvoiceService {
           user_id: userId,
           pay_status: 1,
           invoice_status: 0,
-          order_status: { not: 4 },
+          order_status: { not: 2 },
         },
       }),
     ]);

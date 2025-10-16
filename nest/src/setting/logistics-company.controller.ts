@@ -34,7 +34,7 @@ import {
 } from "@nestjs/swagger";
 
 @ApiTags("物流公司管理")
-@Controller("admin/logistics-company")
+@Controller("adminapi/logistics-company")
 @UseGuards(RolesGuard)
 @Roles("admin")
 export class LogisticsCompanyController {

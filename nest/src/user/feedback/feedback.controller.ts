@@ -21,7 +21,7 @@ import { AdminAuthGuard } from "../../../common/guards/admin-auth.guard";
 import { ResponseUtil } from "../../../common/utils/response.util";
 
 @ApiTags("用户反馈管理")
-@Controller("admin/user/feedback")
+@Controller("adminapi/user/feedback")
 @UseGuards(AdminAuthGuard)
 export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}

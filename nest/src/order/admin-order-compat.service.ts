@@ -664,7 +664,7 @@ export class AdminOrderCompatService {
     const shippingTypeName = o.shipping_type_name || "普通快递";
 
     return {
-      orderStatusName: this.getOrderStatusName(o.order_status),
+      orderStatusName: this.getOrderStatusName(o.order_status, o.shipping_status, o.comment_status, o.pay_status),
       userAddress,
       shippingStatusName: this.getShippingStatusName(o.shipping_status),
       payStatusName: this.getPayStatusName(o.pay_status),
@@ -868,18 +868,18 @@ export class AdminOrderCompatService {
     return ext;
   }
 
-  private getOrderStatusName(status: number) {
-    switch (Number(status)) {
-      case 0:
-        return "待支付";
-      case 1:
-        return "待发货";
-      case 2:
-        return "已取消";
-      case 3:
-        return "已完成";
-      default:
-        return "";
+  private getOrderStatusName(status: number, shippingStatus?: number, commentStatus?: number, payStatus?: number) {
+    // 与用户端一致的显示规则
+    try {
+      const util = require('../common/order-status.util');
+      return util.getOrderStatusNameDisplay(status, shippingStatus, commentStatus, payStatus);
+    } catch {
+      // 回退（不建议走到这里）
+      if (Number(status) === 0) return '待支付';
+      if (Number(status) === 1) return Number(shippingStatus) > 0 ? '待收货' : '待发货';
+      if (Number(status) === 2) return '已取消';
+      if (Number(status) === 3) return Number(commentStatus) === 0 ? '待评价' : '已完成';
+      return '';
     }
   }
 

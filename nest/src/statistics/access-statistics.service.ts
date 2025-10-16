@@ -158,7 +158,7 @@ export class AccessStatisticsService {
         endTs,
       ),
       this.prisma.$queryRawUnsafe(
-        `SELECT COUNT(*) AS c FROM \`order\` WHERE is_del = 0 AND shop_id = ? AND order_status IN (3,5) AND add_time BETWEEN ? AND ?`,
+        `SELECT COUNT(*) AS c FROM \`order\` WHERE is_del = 0 AND shop_id = ? AND order_status = 3 AND add_time BETWEEN ? AND ?`,
         shopId,
         startTs,
         endTs,

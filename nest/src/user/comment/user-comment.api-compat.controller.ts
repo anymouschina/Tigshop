@@ -77,8 +77,9 @@ export class UserCommentApiCompatController {
   // GET /api/user/comment/detail
   @Get("detail")
   @ApiOperation({ summary: "评价详情（兼容）" })
-  async detail(@Query("id") id: number) {
-    const item = await this.commentService.getCommentDetail(Number(id));
+  async detail(@Request() req, @Query("id") id: number) {
+    const userId = req.user.userId || req.user.user_id || req.user.sub;
+    const item = await this.commentService.getCommentDetail(Number(id), Number(userId));
     return { code: 0, message: "success", data: item };
   }
 }

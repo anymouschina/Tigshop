@@ -24,7 +24,7 @@ import { RolesGuard } from "../../auth/guards/roles.guard";
 import { Roles } from "../../auth/decorators/roles.decorator";
 
 @ApiTags("ShippingType Management")
-@Controller("setting/shipping_type")
+@Controller("adminapi/setting/shipping_type")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class ShippingTypeController {

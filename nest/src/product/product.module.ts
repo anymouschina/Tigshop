@@ -5,7 +5,6 @@ import { ProductDetailService } from "./product-detail.service";
 import { ProductController } from "./product.controller";
 import { CategoryController } from "./category.controller";
 import { CategoryService } from "./category.service";
-import { BrandController } from "./brand.controller";
 import { BrandService } from "./brand.service";
 import { CommentModule } from "./comment/comment.module";
 import { SkuModule } from "./sku/sku.module";
@@ -50,7 +49,6 @@ import { ShopProductCategoryModule } from "src/merchant/shop-product-category/sh
   controllers: [
     ProductController,
     CategoryController,
-    BrandController,
     // adminapi compatibility controllers
     AdminApiProductController,
     AdminApiCategoryController,

@@ -216,7 +216,7 @@ export class PayService {
       throw new HttpException("订单已支付", HttpStatus.BAD_REQUEST);
     }
 
-    if (order.order_status === 4) {
+    if (order.order_status === 2) {
       throw new HttpException("订单已取消", HttpStatus.BAD_REQUEST);
     }
 
