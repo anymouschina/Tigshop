@@ -6,6 +6,7 @@ import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
 import { PrismaService } from "src/prisma/prisma.service";
 import axios from "axios";
+import { shopContext } from "src/common/shop-context/shop-context";
 
 @ApiTags("Admin API - 装修分享(兼容)")
 @Controller("adminapi/decorate/decorateShare")
@@ -101,8 +102,20 @@ export class AdminDecorateShareCompatController {
         return { code: 1, message: '装修数据格式错误，缺少必要字段！', data: null };
       }
 
-      // 获取shop_id (参考PHP版本第52行)
-      const shopId = req.user?.shopId ?? 0;
+      // 获取 shopId：优先 AsyncLocalStorage 上下文，其次 header，再次 user.shopId
+      let shopId = shopContext.getStore()?.shopId || 0;
+      if (!shopId) {
+        const headerRaw = req.headers['x-shop-id'] ?? req.headers['x-shopid'];
+        const headerVal = Number(headerRaw);
+        if (Number.isFinite(headerVal) && headerVal > 0) shopId = headerVal;
+      }
+      if (!shopId) {
+        const userShop = req.user?.shopId;
+        if (Number.isFinite(userShop) && userShop > 0) shopId = userShop;
+      }
+      if (!shopId) {
+        return { code: 1, message: '缺少店铺ID，无法导入到指定店铺', data: null };
+      }
 
       // 写入本地 decorate (参考PHP版本第81-88行)
       const now = Math.floor(Date.now() / 1000);
@@ -119,7 +132,7 @@ export class AdminDecorateShareCompatController {
         },
       });
 
-      return { code: 0, message: "success", data: { decorate_id: created.decorate_id } };
+  return { code: 0, message: "success", data: { decorate_id: created.decorate_id, shopId } };
     } catch (e) {
       return { code: 1, message: `导入异常: ${e?.message || e}`, data: null };
     }
