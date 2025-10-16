@@ -4,13 +4,14 @@
   - A unique constraint covering the columns `[shop_id,pickup_day,pickup_no]` on the table `order` will be added. If there are existing duplicate values, this will fail.
 
 */
--- AlterTable
-ALTER TABLE `order` ADD COLUMN `pickup_day` INTEGER UNSIGNED NULL,
-    ADD COLUMN `pickup_no` MEDIUMINT UNSIGNED NULL,
-    ADD COLUMN `table_no` VARCHAR(32) NULL;
+-- AlterTable (idempotent)
+ALTER TABLE `order`
+    ADD COLUMN IF NOT EXISTS `pickup_day` INTEGER UNSIGNED NULL,
+    ADD COLUMN IF NOT EXISTS `pickup_no` MEDIUMINT UNSIGNED NULL,
+    ADD COLUMN IF NOT EXISTS `table_no` VARCHAR(32) NULL;
 
--- CreateTable
-CREATE TABLE `shop_table` (
+-- CreateTable (guarded for existing installations)
+CREATE TABLE IF NOT EXISTS `shop_table` (
     `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `shop_id` MEDIUMINT UNSIGNED NOT NULL,
     `table_no` VARCHAR(32) NOT NULL,
@@ -52,11 +53,9 @@ CREATE TABLE IF NOT EXISTS `upload` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- CreateIndex
-CREATE INDEX `idx_order_shop_table_no` ON `order`(`shop_id`, `table_no`);
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS `idx_order_shop_table_no` ON `order`(`shop_id`, `table_no`);
 
--- CreateIndex
-CREATE INDEX `idx_order_shop_pickup_queue` ON `order`(`shop_id`, `pickup_day`, `pickup_no`);
+CREATE INDEX IF NOT EXISTS `idx_order_shop_pickup_queue` ON `order`(`shop_id`, `pickup_day`, `pickup_no`);
 
--- CreateIndex
-CREATE UNIQUE INDEX `uniq_shop_day_pickup_no` ON `order`(`shop_id`, `pickup_day`, `pickup_no`);
+CREATE UNIQUE INDEX IF NOT EXISTS `uniq_shop_day_pickup_no` ON `order`(`shop_id`, `pickup_day`, `pickup_no`);
