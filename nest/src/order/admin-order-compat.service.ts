@@ -1075,17 +1075,59 @@ export class AdminOrderCompatService {
     if (!order) throw new NotFoundException("订单不存在");
     const now = Math.floor(Date.now() / 1000);
     const shipping_status = data?.shippingStatus != null ? Number(data.shippingStatus) : 1; // 默认 1=已发货
-    await this.prisma.order.update({
-      where: { order_id: orderId },
-      data: {
-        tracking_no: data?.trackingNo ?? order.tracking_no,
-        logistics_id: data?.logisticsId != null ? Number(data.logisticsId) : order.logistics_id,
-        logistics_name: data?.logisticsName ?? order.logistics_name,
-        shipping_time: now,
-        shipping_status,
-      },
-    });
-    await this.addLog(orderId, `发货：物流=${data?.logisticsName ?? order.logistics_name} 单号=${data?.trackingNo ?? order.tracking_no}`, adminName, adminId);
+    // 若是父订单且已拆分，级联更新所有子订单
+    const isParent = order.parent_order_id === 0 && order.is_store_splited === 1;
+    if (isParent) {
+      const children = await this.prisma.order.findMany({ where: { parent_order_id: order.order_id } });
+      await this.prisma.$transaction(async (tx) => {
+        // 更新父订单
+        await tx.order.update({
+          where: { order_id: order.order_id },
+          data: {
+            tracking_no: data?.trackingNo ?? order.tracking_no,
+            logistics_id: data?.logisticsId != null ? Number(data.logisticsId) : order.logistics_id,
+            logistics_name: data?.logisticsName ?? order.logistics_name,
+            shipping_time: now,
+            shipping_status,
+          },
+        });
+        // 更新子订单（保持物流号空或继承父设置，可再扩展多包裹）
+        for (const c of children) {
+          await tx.order.update({
+            where: { order_id: c.order_id },
+            data: {
+              shipping_time: now,
+              shipping_status,
+            },
+          });
+        }
+      });
+      await this.addLog(orderId, `父订单发货并级联子订单：物流=${data?.logisticsName ?? order.logistics_name} 单号=${data?.trackingNo ?? order.tracking_no}`, adminName, adminId);
+      for (const c of await this.prisma.order.findMany({ where: { parent_order_id: order.order_id } })) {
+        await this.addLog(c.order_id, `继承父订单发货状态`, adminName, adminId);
+      }
+    } else {
+      await this.prisma.order.update({
+        where: { order_id: orderId },
+        data: {
+          tracking_no: data?.trackingNo ?? order.tracking_no,
+          logistics_id: data?.logisticsId != null ? Number(data.logisticsId) : order.logistics_id,
+          logistics_name: data?.logisticsName ?? order.logistics_name,
+          shipping_time: now,
+          shipping_status,
+        },
+      });
+      await this.addLog(orderId, `发货：物流=${data?.logisticsName ?? order.logistics_name} 单号=${data?.trackingNo ?? order.tracking_no}`, adminName, adminId);
+      // 若为子订单，判断所有兄弟是否已发货，若都发货则提升父订单 shipping_status
+      if (order.parent_order_id) {
+        const siblings = await this.prisma.order.findMany({ where: { parent_order_id: order.parent_order_id } });
+        const allShipped = siblings.every(s => Number(s.shipping_status) === 1);
+        if (allShipped) {
+          await this.prisma.order.update({ where: { order_id: order.parent_order_id }, data: { shipping_status: 1, shipping_time: now } });
+          await this.addLog(order.parent_order_id, '所有子订单已发货，父订单标记为已发货', adminName, adminId);
+        }
+      }
+    }
     return true;
   }
 
@@ -1104,15 +1146,40 @@ export class AdminOrderCompatService {
       throw new BadRequestException("未发货订单不能确认收货");
     }
     const targetShipping = shippingStatus != null ? Number(shippingStatus) : 1;
-    await this.prisma.order.update({
-      where: { order_id: orderId },
-      data: {
-        order_status: 3,
-        shipping_status: targetShipping === 0 ? 1 : targetShipping,
-        received_time: now,
-      },
-    });
-    await this.addLog(orderId, "确认收货，订单已完成", adminName, adminId);
+    const targetStatus = targetShipping === 0 ? 1 : targetShipping;
+    const isParent = order.parent_order_id === 0 && order.is_store_splited === 1;
+    if (isParent) {
+      const children = await this.prisma.order.findMany({ where: { parent_order_id: order.order_id } });
+      await this.prisma.$transaction(async (tx) => {
+        await tx.order.update({ where: { order_id: order.order_id }, data: { order_status: 3, shipping_status: targetStatus, received_time: now } });
+        for (const c of children) {
+          await tx.order.update({ where: { order_id: c.order_id }, data: { order_status: 3, shipping_status: targetStatus, received_time: now } });
+        }
+      });
+      await this.addLog(orderId, '父订单确认收货并级联子订单', adminName, adminId);
+      for (const c of await this.prisma.order.findMany({ where: { parent_order_id: order.order_id } })) {
+        await this.addLog(c.order_id, '继承父订单确认收货', adminName, adminId);
+      }
+    } else {
+      await this.prisma.order.update({
+        where: { order_id: orderId },
+        data: {
+          order_status: 3,
+          shipping_status: targetStatus,
+          received_time: now,
+        },
+      });
+      await this.addLog(orderId, "确认收货，订单已完成", adminName, adminId);
+      // 子订单完成后检查同父订单其他子单是否也完成
+      if (order.parent_order_id) {
+        const siblings = await this.prisma.order.findMany({ where: { parent_order_id: order.parent_order_id } });
+        const allDone = siblings.every(s => Number(s.order_status) === 3);
+        if (allDone) {
+          await this.prisma.order.update({ where: { order_id: order.parent_order_id }, data: { order_status: 3, shipping_status: 1, received_time: now } });
+          await this.addLog(order.parent_order_id, '全部子订单完成，父订单标记完成', adminName, adminId);
+        }
+      }
+    }
     return true;
   }
 

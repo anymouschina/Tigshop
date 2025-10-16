@@ -335,7 +335,41 @@ export class OrderService {
       }
     }
 
-    let records = orders.map((o: any) => this.mapOrderRowToRecord(o, itemsByOrder[o.order_id] || [], userMap, shopMap));
+    // 用户端需要聚合拆分：隐藏子订单 (parent_order_id>0)，并将其商品并入父订单
+    const parentMap = new Map<number, any>();
+    const childBuckets: Record<number, any[]> = {};
+    for (const o of orders) {
+      const pid = Number(o.parent_order_id || 0);
+      if (pid > 0) {
+        if (!childBuckets[pid]) childBuckets[pid] = [];
+        childBuckets[pid].push(o);
+      } else {
+        parentMap.set(o.order_id, o);
+      }
+    }
+
+    // 组装记录：仅遍历父订单；若聚合存在则合并子订单的 items / 金额不重新计算（保留父订单原金额，保持与下单时一致）
+    let records = Array.from(parentMap.values()).map((parent: any) => {
+      const children = childBuckets[parent.order_id] || [];
+      // 合并商品：父自身 items + 所有子 items
+      const mergedItems = [
+        ...(itemsByOrder[parent.order_id] || []),
+        ...children.flatMap((c: any) => itemsByOrder[c.order_id] || []),
+      ];
+      const base = this.mapOrderRowToRecord(parent, mergedItems, userMap, shopMap);
+      if (children.length) {
+        base.children = children.map((c: any) => ({
+          orderId: c.order_id,
+          orderSn: c.order_sn,
+          shippingStatus: c.shipping_status,
+          orderStatus: c.order_status,
+        }));
+        base.isStoreSplited = parent.is_store_splited || 1;
+        base.mergedChildrenCount = children.length;
+        base.mergedItemsCount = mergedItems.length;
+      }
+      return base;
+    });
     records = records.map((r: any) => ({
       ...r,
       payLog: paylogByOrder.get(Number(r.orderId))
@@ -350,7 +384,7 @@ export class OrderService {
 
     return {
       records,
-      total,
+      total: records.length, // 聚合后总数以父订单数量为准
     };
   }
 

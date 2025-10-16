@@ -29,7 +29,8 @@
                                 <div class="form-group">
                                     <label class="control-label"><span>选择店铺：</span></label>
                                     <div class="control-container">
-                                        <SelectShop v-model:shopId="filterParams.shopId" @onChange="onSearchSubmit"></SelectShop>
+                                        <!-- 原写法使用 v-model:shopId（需组件定义 modelModifiers），为兼容直接改为 :shopId + @update:shopId -->
+                                        <SelectShop :shopId="filterParams.shopId" @update:shopId="(v)=>{filterParams.shopId=v; onSearchSubmit();}"></SelectShop>
                                     </div>
                                 </div>
                             </div>
@@ -37,7 +38,7 @@
                                 <div class="form-group">
                                     <label class="control-label"><span>供应商：</span></label>
                                     <div class="control-container">
-                                        <SelectVendor v-model:vendorId="filterParams.vendorId" @onChange="onSearchSubmit"></SelectVendor>
+                                        <SelectVendor :vendorId="filterParams.vendorId" @update:vendorId="(v)=>{filterParams.vendorId=v; onSearchSubmit();}"></SelectVendor>
                                     </div>
                                 </div>
                             </div>
@@ -46,7 +47,7 @@
                                     <label class="control-label"><span>支付方式：</span></label>
                                     <div class="control-container">
                                         <el-select v-model="filterParams.payCode" clearable @change="onSearchSubmit">
-                                            <el-option v-for="item in payTypeList" :label="item.label" :value="item.value"></el-option>
+                                            <el-option v-for="item in payTypeList" :key="item.value" :label="item.label" :value="item.value"></el-option>
                                         </el-select>
                                     </div>
                                 </div>
@@ -56,7 +57,7 @@
                                     <label class="control-label"><span>支付状态：</span></label>
                                     <div class="control-container">
                                         <el-select v-model="filterParams.payStatus" clearable @change="onSearchSubmit">
-                                            <el-option v-for="item in payStatusList" :label="item.label" :value="item.value"></el-option>
+                                            <el-option v-for="item in payStatusList" :key="item.value" :label="item.label" :value="item.value"></el-option>
                                         </el-select>
                                     </div>
                                 </div>
@@ -66,7 +67,7 @@
                                     <label class="control-label"><span>发货状态：</span></label>
                                     <div class="control-container">
                                         <el-select v-model="filterParams.shippingStatus" clearable @change="onSearchSubmit">
-                                            <el-option v-for="item in shippingStatusList" :label="item.label" :value="item.value"></el-option>
+                                            <el-option v-for="item in shippingStatusList" :key="item.value" :label="item.label" :value="item.value"></el-option>
                                         </el-select>
                                     </div>
                                 </div>
@@ -100,10 +101,7 @@
                                 <div class="form-group">
                                     <label class="control-label"><span>配送物流：</span></label>
                                     <div class="control-container">
-                                        <SelectLogisticsCompany
-                                            v-model:logisticsId="filterParams.logisticsId"
-                                            @onChange="onSearchSubmit"
-                                        ></SelectLogisticsCompany>
+                                        <SelectLogisticsCompany :logisticsId="filterParams.logisticsId" @update:logisticsId="(v)=>{filterParams.logisticsId=v; onSearchSubmit();}"></SelectLogisticsCompany>
                                     </div>
                                 </div>
                             </div>
@@ -114,18 +112,20 @@
                                         <el-select v-model="filterParams.mark" clearable @change="onSearchSubmit">
                                             <template #label>
                                                 <template v-if="filterParams.mark !== -1">
-                                                    <SignTag :value="filterParams.mark!" />
+                                                    <!-- 去除 TS 非空断言 ! 以避免模板解析错误 -->
+                                                    <SignTag :value="filterParams.mark" />
                                                 </template>
                                                 <template v-else> 全部订单 </template>
                                             </template>
-                                            <template v-for="sign in signList" :key="sign.value">
+                                            <!-- template v-for 不能直接加 key，将 key 下沉到内部元素 -->
+                                            <template v-for="sign in signList">
                                                 <template v-if="sign.value !== -1">
-                                                    <el-option :value="sign.value">
+                                                    <el-option :key="sign.value" :value="sign.value">
                                                         <SignTag :value="sign.value" />
                                                     </el-option>
                                                 </template>
                                                 <template v-else>
-                                                    <el-option label="全部订单" :value="-1"></el-option>
+                                                    <el-option label="全部订单" :value="-1" :key="sign.value"></el-option>
                                                 </template>
                                             </template>
                                         </el-select>
@@ -135,13 +135,7 @@
                             <div class="simple-form-field">
                                 <div class="form-group">
                                     <label class="control-label"><span>下单时间：</span></label>
-                                    <SelectTimeInterval
-                                        v-model:end-date="filterParams.addEndTime"
-                                        v-model:start-date="filterParams.addStartTime"
-                                        :clearable="false"
-                                        type="date"
-                                        value-format="YYYY-MM-DD"
-                                    ></SelectTimeInterval>
+                                    <SelectTimeInterval :start-date="filterParams.addStartTime" :end-date="filterParams.addEndTime" @update:start-date="(v)=>filterParams.addStartTime=v" @update:end-date="(v)=>filterParams.addEndTime=v" :clearable="false" type="date" value-format="YYYY-MM-DD"></SelectTimeInterval>
                                 </div>
                             </div>
                             <div class="simple-form-warp">
@@ -208,8 +202,8 @@
                                             @change="onSelectChangeAll"
                                         ></el-checkbox>
                                         <SortButton
-                                            v-model:sortField="filterParams.sortField"
-                                            v-model:sortOrder="filterParams.sortOrder"
+                                            :sortField="filterParams.sortField" @update:sortField="(v)=>filterParams.sortField=v"
+                                            :sortOrder="filterParams.sortOrder" @update:sortOrder="(v)=>filterParams.sortOrder=v"
                                             sortName="orderId"
                                             text="订单信息(下单时间排序)"
                                             @loadData="onSearchSubmit()"
@@ -217,8 +211,8 @@
                                     </th>
                                     <th>
                                         <SortButton
-                                            v-model:sortField="filterParams.sortField"
-                                            v-model:sortOrder="filterParams.sortOrder"
+                                            :sortField="filterParams.sortField" @update:sortField="(v)=>filterParams.sortField=v"
+                                            :sortOrder="filterParams.sortOrder" @update:sortOrder="(v)=>filterParams.sortOrder=v"
                                             sortName="totalAmount"
                                             text="订单金额"
                                             @loadData="onSearchSubmit()"
@@ -232,7 +226,7 @@
                                 </tr>
                             </thead>
                         </table>
-                        <table v-for="item in filterState" class="custom-table">
+                        <table v-for="item in filterState" :key="item.orderId" class="custom-table">
                             <thead>
                                 <tr class="data-tr">
                                     <th colspan="6">
@@ -329,7 +323,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(product, index) in item.items">
+                                <tr v-for="(product, index) in item.items" :key="product.itemId">
                                     <td>
                                         <div class="displayRow flex flex-align-center flex-justify-between">
                                             <ProductCard
@@ -405,7 +399,7 @@
                                             <div class="gray">
                                                 收货人：
                                                 <span class="black">
-                                                    {{ maskString(item.consignee!, 1, 1) }}
+                                                    {{ maskString(item.consignee, 1, 1) }}
                                                 </span>
                                             </div>
                                             <div class="gray">
@@ -476,7 +470,7 @@
                                                 path="order/order/src/ToShip"
                                                 width="900px"
                                                 @okCallback="loadFilter"
-                                                v-if="(item.availableActions.deliver && adminType == 'admin' && !item.vendorId) || (item.availableActions.deliver  && adminType == 'vendor')"
+                                                v-if="canDeliver(item)"
                                             >
                                                 <el-button bg size="small" text type="danger"> 去发货 </el-button>
                                             </DialogForm>
@@ -535,7 +529,7 @@
                     </a-spin>
                 </div>
                 <div v-if="total > 0" class="pagination-con">
-                    <Pagination v-model:page="filterParams.page" v-model:size="filterParams.size" :total="total" @callback="loadFilter" />
+                    <Pagination :page="filterParams.page" :size="filterParams.size" @update:page="(v)=>{filterParams.page=v; loadFilter();}" @update:size="(v)=>{filterParams.size=v; loadFilter();}" :total="total" @callback="loadFilter" />
                 </div>
             </div>
         </div>
@@ -840,6 +834,16 @@ const onSelectChange = (e: any) => {
             selectedIds.value.splice(index, 1);
         }
     }
+};
+
+// 统一判断是否显示“去发货”按钮：后台返回 availableActions.deliver=true 即允许；角色包含 admin / vendor / shop 任一即可；
+// 之前逻辑遗漏了 shop 导致店铺管理员看不到按钮。
+const canDeliver = (item: any) => {
+    if (!item?.availableActions?.deliver) return false;
+    const type = adminType.value;
+    // vendorId>0 且当前是平台/店铺管理员时：若不是供应商角色但希望提醒，可用催发货按钮，上方已有逻辑
+    // 这里发货按钮允许三类：超级管理员(admin)、供应商(vendor)、店铺管理员(shop)
+    return ["admin", "vendor", "shop"].includes(String(type));
 };
 </script>
 <style lang="less" scoped>
