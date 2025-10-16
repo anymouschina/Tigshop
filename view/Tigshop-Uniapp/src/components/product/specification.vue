@@ -209,6 +209,7 @@
                                 :disabled="skuItem.length === 0"
                                 :extra-attr-ids="filterParams.extraAttrIds"
                                 :is-quick="true"
+                                :type="type"
                                 @callback="closePopup"
                             >
                                 <view class="btn buy-right" :class="skuItem.length === 0 ? 'disabled-div' : ''">{{ $t("立即购买") }}</view>
@@ -253,6 +254,7 @@
                                     :extra-attr-ids="filterParams.extraAttrIds"
                                     :number="productNumber"
                                     :is-quick="true"
+                                    :type="type"
                                     @callback="closePopup"
                                 >
                                     <view class="btn buy-right" :class="productStock === 0 ? 'disabled-div' : ''">{{ $t("立即购买") }}</view>

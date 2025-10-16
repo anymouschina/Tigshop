@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { normalizeTotal } from '@/utils/money';
-import { onLoad } from '@dcloudio/uni-app';
+import { onLoad, onShow } from '@dcloudio/uni-app';
 // 使用默认导入保证 Vue 正确识别组件（script setup 会自动注册）
 // @ts-ignore 这些旧组件未显式 export default，通过 SFC 编译仍可使用
 import styleOneCate from './styles/styleOneCate.vue';
@@ -89,7 +89,10 @@ onLoad((q:any)=>{
   if(q.pc){ const pc = Number(q.pc); if(pc>0 && pc<100) peopleCount.value = pc; }
   init();
 });
-
+onShow(()=>{
+  // 每次进入页面时刷新购物车（可能在其它页面已修改）
+  if(mode.value==='ready') refreshCart()
+});
 function init(){
   if(!shopId.value){ mode.value='error'; errorMsg.value='缺少店铺ID'; return; }
   // 目前无需额外接口，直接进入 ready；后续可在此按 shopId 拉取分类装修配置 / 启用的风格等

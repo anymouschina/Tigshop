@@ -11,7 +11,8 @@
           <view class="list-content">
             <template v-if="!isLoading && total > 0">
               <scroll-view :scroll-y="true" class="list-scroll" @scrolltolower="reachBottom">
-                <masonry :commodity-list="list" @callback="emitSelect" />
+                <!-- from='dine'：堂食场景下，masonry 内“立即购买”等同“选好了”直接跳转结算 -->
+                <masonry :commodity-list="list" type="dine" @callback="emitSelect" />
               </scroll-view>
             </template>
             <template v-if="!isLoading && total === 0">
