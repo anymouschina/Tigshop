@@ -101,4 +101,20 @@ export class ShopProductCategoryService {
     await this.prisma.product.updateMany({ where: { shop_category_id: id }, data: { shop_category_id: targetId } });
     return true;
   }
+
+  async findById(id: number) {
+    if (!id) return null;
+    return this.prisma.shop_product_category.findUnique({ where: { category_id: id } });
+  }
+
+  async countChildren(id: number) {
+    return this.prisma.shop_product_category.count({ where: { parent_id: id } });
+  }
+
+  async listByShopAndParent(shopId: number, parentId: number) {
+    return this.prisma.shop_product_category.findMany({
+      where: { shop_id: Number(shopId), parent_id: Number(parentId) },
+      orderBy: [{ sort_order: 'asc' }, { category_id: 'asc' }],
+    });
+  }
 }

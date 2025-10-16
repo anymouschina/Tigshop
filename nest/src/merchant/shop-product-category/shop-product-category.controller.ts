@@ -12,6 +12,13 @@ import { Request } from "express";
 export class ShopProductCategoryController {
   constructor(private readonly svc: ShopProductCategoryService) {}
 
+  private formatDateTime(ts?: number | null): string {
+    if (!ts) return "";
+    const d = new Date(ts * 1000);
+    const pad = (n: number) => (n < 10 ? "0" + n : String(n));
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
   @Get("list")
   @ApiOperation({ summary: "获取店铺商品分类列表（admin）" })
   async list(@Query() query: any, @Req() req: Request) {
@@ -102,5 +109,31 @@ export class ShopProductCategoryController {
   async moveCat(@Body() body: any) {
     await this.svc.moveCat(Number(body.id), Number(body.targetCatId));
     return { code: 0, message: "success" };
+  }
+
+  @Get("detail")
+  @ApiOperation({ summary: "获取店铺商品分类详情(admin)" })
+  async detail(@Query("id") id: string) {
+    const cid = Number(id);
+    if (!cid) {
+      return { code: 0, message: "success", data: null };
+    }
+    const record = await this.svc.findById(cid);
+    if (!record) {
+      return { code: 0, message: "success", data: null };
+    }
+    const childCount = await this.svc.countChildren(cid);
+    const data = {
+      addTime: this.formatDateTime(record.add_time),
+      categoryId: record.category_id,
+      parentId: record.parent_id,
+      categoryName: record.category_name,
+      hasChildren: childCount > 0 ? 1 : 0, // Java 端示例可能返回 null，这里返回 1/0，更易前端判断；若需 null 可改
+      isShow: record.is_show,
+      shopId: record.shop_id,
+      sortOrder: record.sort_order,
+      categoryPic: "", // 无该字段，返回空串兼容
+    };
+    return { code: 0, message: "success", data };
   }
 }

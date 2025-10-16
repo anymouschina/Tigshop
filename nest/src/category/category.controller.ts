@@ -16,6 +16,67 @@ export class CategoryController {
   ) {}
 
   /**
+   * 店铺分类树 (顶级) - 对齐 Java 版 /api/shop/category/tree
+   * 请求: GET /api/shop/category/tree?shopId=xxx
+   * 返回: [{ categoryId, parentId, categoryName, categoryPic, isStore }]
+   */
+  @Get('shop/category/tree')
+  @Public()
+  @ApiOperation({ summary: '获取店铺顶级分类（shop/category/tree）' })
+  async shopCategoryTree(@Query('shopId') rawShopId: string, @CurrentShopId() decoShopId?: number) {
+    // 优先显式传入的 shopId，其次装饰器解析
+    const shopId = Number(rawShopId || decoShopId || 0) || 0;
+    if (!hasValidShopId(shopId)) {
+      return { code: 0, message: 'success', data: [] };
+    }
+
+    const tree = await this.shopCatService.getAll(shopId);
+    // 只取 parent_id == 0 的顶级分类
+    const topLevel = (tree || []).filter((n: any) => (n.parent_id ?? 0) === 0);
+    const mapped = topLevel.map((n: any) => ({
+      categoryId: n.category_id,
+      parentId: n.parent_id ?? 0,
+      categoryName: n.category_name,
+      categoryPic: n.category_pic || '',
+      isStore: 1,
+    }));
+    return { code: 0, message: 'success', data: mapped };
+  }
+
+  /**
+   * 店铺分类父级结构 - 对齐 Java 版 /api/shop/category/parentTree
+   * 语义：返回指定分类 (id) 的父级（目前示例中该分类本身为顶级），并附带所有顶级分类列表。
+   * 示例返回结构参照 java-b2b2c-pro：data 数组里仅一个对象，catList 是所有顶级分类列表。
+   */
+  @Get('shop/category/parentTree')
+  @Public()
+  @ApiOperation({ summary: '获取店铺分类父级结构（shop/category/parentTree）' })
+  async shopCategoryParentTree(
+    @Query('id') rawId: string,
+  ) {
+    const categoryId = Number(rawId || 0) || 0;
+    if (!categoryId) return { code: 0, message: 'success', data: [] };
+    // 根据分类直接查出记录（含 shop_id 与 parent_id）
+    const record = await this.shopCatService.findById(categoryId);
+    if (!record) return { code: 0, message: 'success', data: [] };
+    // 查找同店铺同 parent_id 的同级列表（包含自身）
+    const siblings = await this.shopCatService.listByShopAndParent(record.shop_id, record.parent_id);
+    const mappedSiblings = siblings.map((n: any) => ({
+      categoryId: n.category_id,
+      parentId: n.parent_id ?? 0,
+      categoryName: n.category_name,
+      catList: null,
+    }));
+    const payload = [{
+      categoryId: record.category_id,
+      parentId: record.parent_id ?? 0,
+      categoryName: record.category_name,
+      catList: mappedSiblings,
+    }];
+    return { code: 0, message: 'success', data: payload };
+  }
+
+  /**
    * 获取当前分类的父级分类 - 对齐PHP版本 category/Category/parentTree
    */
   @Get("category/category/parentTree")

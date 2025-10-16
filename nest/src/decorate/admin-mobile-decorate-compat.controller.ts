@@ -172,8 +172,8 @@ export class AdminMobileDecorateCompatController {
   async setHome(@Body("id") id: number) {
     const it = await this.prisma.decorate.findUnique({ where: { decorate_id: this.num(id, 0) } });
     if (!it) return { code: 1, message: "#不存在的模板", data: null };
-    await this.prisma.decorate.updateMany({ where: { decorate_type: it.decorate_type, is_home: 1 }, data: { is_home: 0 } });
-    await this.prisma.decorate.update({ where: { decorate_id: it.decorate_id }, data: { is_home: 1 } });
+    await this.prisma.decorate.updateMany({ where: { decorate_type: it.decorate_type, shop_id: it.shop_id, is_home: 1 }, data: { is_home: 0 } });
+    await this.prisma.decorate.update({ where: { decorate_id: it.decorate_id }, data: { is_home: 1, update_time: Math.floor(Date.now()/1000) } });
     return { code: 0, message: "success", data: true };
   }
 

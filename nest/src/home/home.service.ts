@@ -71,7 +71,10 @@ export class HomeService {
         where: { decorate_id: previewId, decorate_type: 1 },
       });
 
-      if (!decorate) throw new Error('模板不存在');
+      if (!decorate) {
+        this.logger.warn('首页装修模板不存在，返回空结构');
+        return { decorateId: 0, moduleList: [], pageModule: {} };
+      }
 
       // 预览规则：moduleList 来自 draft_data，pageModule 来自 data（对齐 PHP）
       let draftParsed: any = null;
@@ -206,7 +209,10 @@ export class HomeService {
         orderBy: [{ update_time: "desc" }, { decorate_id: "desc" }],
       });
 
-  if (!decorate) throw new Error('模板不存在');
+  if (!decorate) {
+    this.logger.warn('PC 首页装修模板不存在，返回空结构');
+    return { decorate_id: 0, module_list: [], backgroundImage: '' };
+  }
       if (!decorate.data) return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
 
       try {

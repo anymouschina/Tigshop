@@ -3,6 +3,7 @@ import { Controller, Get, Query, Post, Body, Req, UseGuards } from '@nestjs/comm
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AnyJwtAuthGuard } from 'src/auth/guards/any-jwt-auth.guard';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 // 与 PHP 路径对齐：GET /api/shop/shop/detail?shopId=xx
 @ApiTags('Shop Public')
@@ -247,7 +248,7 @@ export class ShopController {
    * 返回: { shopId, isCollected, collectCount }
    */
   @Post('collect')
-  @UseGuards(AnyJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '店铺收藏/取消收藏 (toggle)' })
   async collect(@Body() body: any, @Req() req: any) {
     const shopId = Number(body?.shopId || body?.id);

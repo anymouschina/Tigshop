@@ -76,6 +76,8 @@
 </template>
 
 <script lang="ts" setup>
+// 兼容微信小程序全局对象类型声明
+declare const wx: any;
 import { computed, onUnmounted, reactive, ref } from "vue";
 import { getOrderCheckData, updateOrderCheckData, orderSubmit, updateCouponData, getPaymentType, getShippingType } from "@/api/order/check";
 import type { CartList, Total, PaymentTypeItem, ShippingTypeItem } from "@/types/order/check";
@@ -198,7 +200,15 @@ const getOrderInfo = async () => {
     try {
         const result = await getOrderCheckData({ flowType: flowType.value, ...formState });
         const { cartList, total, couponList, tmplIds, item, useCouponIds, selectUserCouponIds } = result;
-        Object.assign(formState, item);
+        // 合并后端返回的 item 到 formState，避免将我们构建好的 shippingType 映射被后端的空数组覆盖
+        if (item) {
+            const { shippingType: itemShippingType, ...rest } = item as any;
+            Object.assign(formState, rest);
+            // 如果后端返回的 shippingType 不是数组（可能已经是映射），再替换；否则保持之前构建的映射
+            if (itemShippingType && !Array.isArray(itemShippingType)) {
+                formState.shippingType = itemShippingType;
+            }
+        }
         cartListData.value = cartList;
         totalData.value = total;
         couponListData.value = couponList;
@@ -230,7 +240,13 @@ const updateOrderCheck = async () => {
     });
     try {
         const result = await updateOrderCheckData({ flowType: flowType.value, ...formState });
-        Object.assign(formState, result.item);
+        if (result.item) {
+            const { shippingType: itemShippingType, ...rest } = result.item as any;
+            Object.assign(formState, rest);
+            if (itemShippingType && !Array.isArray(itemShippingType)) {
+                formState.shippingType = itemShippingType;
+            }
+        }
         totalData.value = result.total;
         availablePoints.value = result.availablePoints;
         return result;
@@ -320,7 +336,8 @@ const submit = async () => {
  */
 const submitOrder = async () => {
     try {
-        const result = await orderSubmit(formState);
+        // 确保提交时包含 flowType（有的后端需要）
+        const result = await orderSubmit({ flowType: flowType.value, ...formState });
         if (result.returnType === 2) {
             redirect({
                 url: `/pages/order/payStatus?id=${result.orderId}`,
