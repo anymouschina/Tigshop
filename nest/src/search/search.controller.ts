@@ -11,6 +11,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { SearchService } from "./search.service";
+import { CurrentShopId } from "src/common/decorators/current-shop.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { Public } from "../auth/decorators/public.decorator";
 
@@ -99,6 +100,7 @@ export class SearchController {
       pageType?: string;
       keyword?: string;
     },
+    @CurrentShopId() shopId?: number,
   ) {
     const {
       page = 1,
@@ -126,6 +128,7 @@ export class SearchController {
       filters: {
         category: catNum ? [catNum] : [],
         hasDiscount: couponIdNum > 0,
+        shopId: shopId && shopId > 0 ? shopId : undefined,
       },
     };
 

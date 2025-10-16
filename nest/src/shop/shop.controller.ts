@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { AnyJwtAuthGuard } from 'src/auth/guards/any-jwt-auth.guard';
 
 // 与 PHP 路径对齐：GET /api/shop/shop/detail?shopId=xx
 @ApiTags('Shop Public')
@@ -15,7 +16,7 @@ export class ShopController {
    */
   @Get('detail')
   @ApiOperation({ summary: '获取店铺详情（对齐 PHP shop/shop/detail）' })
-  async getDetail(@Query('shopId') shopIdRaw: any) {
+  async getDetail(@Query('shopId') shopIdRaw: any, @Req() req: any) {
     const shopId = Number(shopIdRaw);
     if (!Number.isFinite(shopId) || shopId <= 0) {
       return { code: 400, message: '参数 shopId 无效', data: null };
@@ -55,9 +56,17 @@ export class ShopController {
     const STATUS_LIST: Record<number, string> = { 1: '开业', 4: '暂停运营', 10: '关店' };
     const statusText = STATUS_LIST[shop.status] || '';
 
-  // 收藏量与是否已收藏（当前 schema 未找到收藏店铺表，置 null/false）
-  const collectCount = null;
-  const collectShop = false;
+    // 收藏量与是否已收藏
+    let collectCount = 0;
+    let collectShop = false;
+    const userId = req?.user?.userId ? Number(req.user.userId) : 0;
+    try {
+      collectCount = await this.prisma.collect_shop.count({ where: { shop_id: shopId } });
+      if (userId > 0) {
+        const exist = await this.prisma.collect_shop.findFirst({ where: { shop_id: shopId, user_id: userId } });
+        collectShop = !!exist;
+      }
+    } catch {}
 
     const baseProductSelect = {
       product_id: true,
@@ -181,6 +190,94 @@ export class ShopController {
     const decorateType = cfg?.biz_val ? String(cfg.biz_val) : '2'; // 默认用风格2
     // 预留 modules（可根据不同类型组装）
     const modules: any[] = [];
-    return { code: 0, message: 'success', data: { shopId, decorateType, modules } };
+      const record = await this.prisma.decorate.findFirst({
+        where: { shop_id: shopId },
+        orderBy: { update_time: 'desc' },
+        select: { decorate_id: true, data: true, draft_data: true }
+      });
+
+      // 默认空 pageModule
+      const emptyPageModule = {
+        type: 'page',
+        module: [],
+        backgroundRepeat: '',
+        backgroundSize: '',
+        style: 0,
+        title: '',
+        titleColor: '',
+        headerStyle: 1,
+        titleBackgroundColor: '',
+        backgroundImage: { picUrl: '', picThumb: '' },
+        backgroundColor: 'rgba(242, 242, 242, 1)'
+      };
+
+      let pageModule = emptyPageModule;
+      let moduleList: any[] = [];
+      let decorateId: number | null = null;
+
+      const parseJson = (val: any) => {
+        if (!val || typeof val !== 'string') return val || '';
+        try { return JSON.parse(val); } catch { return ''; }
+      };
+
+      if (record) {
+        const raw = parseJson(record.data) || parseJson(record.draft_data);
+        if (raw && typeof raw === 'object') {
+          // 兼容两种结构：{ pageModule, moduleList } 或直接数组
+          if (raw.pageModule && raw.moduleList) {
+            pageModule = { ...emptyPageModule, ...raw.pageModule };
+            moduleList = Array.isArray(raw.moduleList) ? raw.moduleList : [];
+          } else if (Array.isArray(raw)) {
+            moduleList = raw;
+          } else {
+            // 尝试常见字段
+            if (raw.moduleList && Array.isArray(raw.moduleList)) moduleList = raw.moduleList;
+            if (raw.pageModule && typeof raw.pageModule === 'object') pageModule = { ...emptyPageModule, ...raw.pageModule };
+          }
+        }
+        decorateId = record.decorate_id;
+      }
+
+      return { code: 0, message: 'success', data: { pageModule, moduleList, decorateId } };
+  }
+
+  /**
+   * 店铺收藏 toggle 接口 - POST /api/shop/shop/collect
+   * body: { shopId: number, action?: 'toggle' | 'add' | 'remove' }
+   * 返回: { shopId, isCollected, collectCount }
+   */
+  @Post('collect')
+  @UseGuards(AnyJwtAuthGuard)
+  @ApiOperation({ summary: '店铺收藏/取消收藏 (toggle)' })
+  async collect(@Body() body: any, @Req() req: any) {
+    const shopId = Number(body?.shopId || body?.id);
+    const action = (body?.action || 'toggle').toString();
+    if (!Number.isFinite(shopId) || shopId <= 0) {
+      return { code: 400, message: '参数 shopId 无效', data: null };
+    }
+    const userId = req?.user?.userId ? Number(req.user.userId) : 0;
+    if (!userId) return { code: 401, message: '未登录无法收藏', data: null };
+    const shop = await this.prisma.shop.findUnique({ where: { shop_id: shopId }, select: { shop_id: true } });
+    if (!shop) return { code: 404, message: '店铺不存在', data: null };
+
+    const existing = await this.prisma.collect_shop.findFirst({ where: { shop_id: shopId, user_id: userId } });
+    let isCollected: boolean;
+    if (action === 'add') {
+      if (!existing) await this.prisma.collect_shop.create({ data: { shop_id: shopId, user_id: userId, add_time: Math.floor(Date.now()/1000) } });
+      isCollected = true;
+    } else if (action === 'remove') {
+      if (existing) await this.prisma.collect_shop.delete({ where: { collect_id: existing.collect_id } });
+      isCollected = false;
+    } else { // toggle
+      if (existing) {
+        await this.prisma.collect_shop.delete({ where: { collect_id: existing.collect_id } });
+        isCollected = false;
+      } else {
+        await this.prisma.collect_shop.create({ data: { shop_id: shopId, user_id: userId, add_time: Math.floor(Date.now()/1000) } });
+        isCollected = true;
+      }
+    }
+    const collectCount = await this.prisma.collect_shop.count({ where: { shop_id: shopId } });
+    return { code: 0, message: 'success', data: { shopId, isCollected, collectCount } };
   }
 }

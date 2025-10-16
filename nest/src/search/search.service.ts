@@ -33,6 +33,7 @@ export interface SearchFilters {
   hasDiscount?: boolean;
   dateRange?: { start: Date; end: Date };
   rating?: number;
+  shopId?: number; // 店铺过滤
 }
 
 export interface SearchSuggestions {
@@ -527,6 +528,12 @@ export class SearchService {
           },
         });
       }
+    }
+
+    // 店铺过滤（若传入）
+    const shopId = options.filters?.shopId;
+    if (shopId && Number.isFinite(shopId) && shopId > 0) {
+      where.AND.push({ shop_id: shopId });
     }
 
     return where;

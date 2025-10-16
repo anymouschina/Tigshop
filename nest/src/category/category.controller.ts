@@ -4,6 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { CategoryService, CategoryTreeNode } from "./category.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Request } from "express";
+import { CurrentShopId, hasValidShopId } from "src/common/decorators/current-shop.decorator";
 import { ShopProductCategoryService } from "src/merchant/shop-product-category/shop-product-category.service";
 
 @ApiTags("Product Category")
@@ -44,12 +45,9 @@ export class CategoryController {
   @Get("category/category/list")
   @Public()
   @ApiOperation({ summary: "根据上级获得指定分类" })
-  async list(@Query("id") id: string, @Query("shopId") shopIdQ: string, @Req() req: Request): Promise<any> {
+  async list(@Query("id") id: string, @CurrentShopId() shopId?: number): Promise<any> {
     const categoryId = Number(id) || 0;
-    // Extract shopId from query or header (header: X-Shop-Id), allow 0
-    const headerValRaw = (req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any]) as any;
-    const headerVal = headerValRaw !== undefined ? Number(headerValRaw) : undefined;
-    const resolvedShopId = shopIdQ !== undefined && shopIdQ !== null && shopIdQ !== '' ? Number(shopIdQ) : headerVal;
+    const resolvedShopId = shopId; // 已使用统一装饰器解析
 
     // Helper to camel-case
     const toCamel = (nodes: CategoryTreeNode[]): any[] =>
@@ -63,7 +61,7 @@ export class CategoryController {
       }));
 
     // If no shopId provided, fallback to original global behaviour
-    if (resolvedShopId === undefined || isNaN(resolvedShopId)) {
+    if (!hasValidShopId(resolvedShopId)) {
       const data = await this.categoryService.getCategoryList(categoryId);
       return toCamel(data);
     }
@@ -126,10 +124,8 @@ export class CategoryController {
   @Get("category/category/all")
   @Public()
   @ApiOperation({ summary: "获取所有分类" })
-  async all(@Query("shopId") shopIdQ: string, @Req() req: Request): Promise<any> {
-    const headerValRaw = (req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any]) as any;
-    const headerVal = headerValRaw !== undefined ? Number(headerValRaw) : undefined;
-    const resolvedShopId = shopIdQ !== undefined && shopIdQ !== null && shopIdQ !== '' ? Number(shopIdQ) : headerVal;
+  async all(@CurrentShopId() shopId?: number): Promise<any> {
+    const resolvedShopId = shopId;
 
     const toCamel = (nodes: CategoryTreeNode[]): any[] =>
       (nodes || []).map((n) => ({
@@ -141,7 +137,7 @@ export class CategoryController {
         ...(n.children && n.children.length ? { children: toCamel(n.children) } : {}),
       }));
 
-    if (resolvedShopId === undefined || isNaN(resolvedShopId)) {
+    if (!hasValidShopId(resolvedShopId)) {
       const data = await this.categoryService.getAllCategories();
       return { source: 'global', fallback: false, list: toCamel(data) };
     }
