@@ -76,7 +76,7 @@ export class AdminOrderCompatService {
     const skuMap = new Map(skus.map((s: any) => [s.sku_id, s]));
     const productMap = new Map(products.map((p: any) => [p.product_id, p]));
 
-    // 将订单项按订单分组，并补充库存字段
+    // 将订单项按订单分组，并补充库存字段；同时准备父订单聚合
     const itemMap = new Map<number, any[]>();
     for (const it of items) {
       const arr = itemMap.get(it.order_id) || [];
@@ -89,19 +89,57 @@ export class AdminOrderCompatService {
       itemMap.set(it.order_id, arr);
     }
 
-  const records = orders.map((o) => this.mapOrderRowToRecord(o, itemMap.get(o.order_id) || [], userMap, shopMap));
+    // 默认合并拆单：无 shopId/vendorId 精确过滤，且 mergeSplit != 0
+    const mergeSplit = String(query.mergeSplit ?? query.merge_split ?? '1') !== '0';
+    const explicitShopFilter = where.shop_id !== undefined;
+    const explicitVendorFilter = where.vendor_id !== undefined;
+    const needMerge = mergeSplit && !explicitShopFilter && !explicitVendorFilter;
 
-    return { records, total, size, current: page, pages: Math.max(1, Math.ceil((total || 0) / size)) };
+    // 构建父订单 -> 子订单项聚合
+    const childrenItemsByParent = new Map<number, any[]>();
+    if (needMerge) {
+      for (const o of orders) {
+        if (o.parent_order_id && o.parent_order_id > 0) {
+          const list = childrenItemsByParent.get(o.parent_order_id) || [];
+          const its = itemMap.get(o.order_id) || [];
+          for (const it of its) list.push(it);
+          childrenItemsByParent.set(o.parent_order_id, list);
+        }
+      }
+    }
+
+    let mergedOrders = orders;
+    if (needMerge) {
+      // 过滤掉子订单，只保留父订单；父订单若拆分，将其 items 设为聚合后的子订单项
+      mergedOrders = orders.filter((o) => !o.parent_order_id || o.parent_order_id === 0);
+      for (const o of mergedOrders) {
+        if (o.is_store_splited && o.order_id && childrenItemsByParent.has(o.order_id)) {
+          itemMap.set(o.order_id, childrenItemsByParent.get(o.order_id)!);
+        }
+      }
+    }
+
+    const records = mergedOrders.map((o) => this.mapOrderRowToRecord(o, itemMap.get(o.order_id) || [], userMap, shopMap));
+    return { records, total: needMerge ? mergedOrders.length : total, size, current: page, pages: Math.max(1, Math.ceil(((needMerge ? mergedOrders.length : total) || 0) / size)) };
   }
 
   async detail(id: number) {
     const o = await this.prisma.order.findUnique({ where: { order_id: id } });
     if (!o) throw new NotFoundException("订单不存在");
 
-    const [items, logs] = await Promise.all([
-      this.prisma.order_item.findMany({ where: { order_id: id } }),
-      this.prisma.order_log.findMany({ where: { order_id: id }, orderBy: { log_id: "desc" } }),
-    ]);
+    // 若为父订单且已拆分，需要读取所有子订单项聚合；否则只读自身
+    let items: any[] = [];
+    if (o.is_store_splited && o.parent_order_id === 0) {
+      const children = await this.prisma.order.findMany({ where: { parent_order_id: o.order_id } });
+      const childIds = children.map(c => c.order_id);
+      if (childIds.length) {
+        const childItems = await this.prisma.order_item.findMany({ where: { order_id: { in: childIds } } });
+        items.push(...childItems);
+      }
+    } else {
+      items = await this.prisma.order_item.findMany({ where: { order_id: id } });
+    }
+    const logs = await this.prisma.order_log.findMany({ where: { order_id: id }, orderBy: { log_id: "desc" } });
 
     // 关联数据：用户、店铺、商品、SKU
     const [user, shop] = await Promise.all([
