@@ -1,6 +1,13 @@
 <template>
     <tig-layout title="提交订单">
-        <addressInfo :data="getAddressInfo" />
+        <view v-if="fromDine" class="dine-banner">
+            <text class="iconfont-h5 icon-gouwuche3 cart"></text>
+            <view class="info">
+                <view class="row">堂食桌号：<text class="emph">{{ dineTable }}</text></view>
+                <view class="row" v-if="dinePeople>0">用餐人数：<text class="emph">{{ dinePeople }}</text></view>
+            </view>
+        </view>
+        <addressInfo v-if="!fromDine" :data="getAddressInfo" />
 
         <template v-if="paymentTypeList.length > 0">
             <paymentMode v-model:pay-type-id="formState.payTypeId" :available-payment-type="paymentTypeList" @change="updateOrderCheck" />
@@ -9,6 +16,7 @@
         <stroeCard
             v-model:shipping-type="formState.shippingType"
             :cart-list="cartListData"
+            :from-dine="fromDine"
             :shipping-type-list="shippingTypeData"
             @change="updateOrderCheck"
             @change-product-extra="changeProductExtra"
@@ -138,6 +146,10 @@ const formState = reactive<IformState>({
 });
 
 const addressList = ref<AddressFilterResult[]>([]);
+// 来自扫码点餐的上下文（需尽早声明，供后续计算使用）
+const fromDine = ref(false);
+const dineTable = ref('');
+const dinePeople = ref(0);
 const getAddressInfo = ref<AddressFilterResult>({} as AddressFilterResult);
 const getAddressListData = async () => {
     try {
@@ -173,6 +185,7 @@ const getPaymentTypeData = async () => {
 const shippingTypeData = ref<{ [key: string]: ShippingTypeItem[] }>({});
 const getShippingTypeData = async () => {
     try {
+        if (fromDine.value) return; // 堂食无需配送方式
         const result = await getShippingType({ flowType: flowType.value });
         shippingTypeData.value = result;
         for (const key in result) {
@@ -289,6 +302,7 @@ const getBalanceStatus = (status: boolean) => {
 };
 
 const shippingTypeStaus = computed(() => {
+    if (fromDine.value) return false; // 堂食不校验配送方式
     // 若映射对象还未初始化，阻止提交
     if (!formState.shippingType) return true;
 
@@ -400,7 +414,9 @@ const initPageData = async () => {
         uni.showLoading({
             title: t("加载中")
         });
-        await Promise.all([getAddressListData(), getPaymentTypeData(), getShippingTypeData(), userStore.getUserInfo()]);
+        const tasks: Promise<any>[] = [getPaymentTypeData(), getShippingTypeData(), userStore.getUserInfo()];
+        if (!fromDine.value) tasks.unshift(getAddressListData());
+        await Promise.all(tasks);
         await getOrderInfo();
     } catch (error: any) {
         console.error(error);
@@ -428,11 +444,37 @@ onLoad((options) => {
         if (options.flowType) {
             flowType.value = options.flowType;
         }
+        if (options.from === 'dine') {
+            fromDine.value = true;
+            dineTable.value = options.table || '';
+            const pc = Number(options.pc);
+            dinePeople.value = Number.isFinite(pc) ? pc : 0;
+            // 标记堂食消费，便于后端统计与策略（例如免配送）
+            formState.productExtra = {
+                ...(formState.productExtra || {}),
+                dine: {
+                    isDine: 1,
+                    table: dineTable.value,
+                    people: dinePeople.value
+                }
+            };
+        }
     }
 });
 </script>
 
 <style lang="scss" scoped>
+.dine-banner {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    padding: 20rpx 30rpx;
+    background: #f7f8fa;
+    border-bottom: 1px solid #f1f1f1;
+    .cart { color:#18b5b5; font-size: 40rpx; }
+    .info { font-size: 24rpx; color:#333; line-height: 1.6; }
+    .emph { font-weight: 600; }
+}
 .submit-btn-box {
     background-color: #fff;
     width: 100%;

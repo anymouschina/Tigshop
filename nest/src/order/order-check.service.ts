@@ -1332,6 +1332,14 @@ export class OrderCheckService {
 
     // 2) 计算总计
     const totals = await this.getTotalFee(builtCart);
+    // 2.1) 识别店铺范围（若仅有一家店铺，则将订单的 shop_id 置为该店铺）
+    const shopIds = Array.isArray(builtCart?.cartList)
+      ? (builtCart.cartList as any[])
+          .map((s) => Number(s?.shopId ?? 0))
+          .filter((n) => Number.isFinite(n) && n > 0)
+      : [];
+    const uniqueShopIds = Array.from(new Set(shopIds));
+    const singleShopId = uniqueShopIds.length === 1 ? uniqueShopIds[0] : 0;
 
     // 3) 读取地址（使用传入或当前选中的地址；若无则报错）
     const addressId = Number(this.checkoutParams?.address_id ?? 0);
@@ -1355,6 +1363,15 @@ export class OrderCheckService {
       // 5.1 创建订单
       // 解析客户端来源，对齐 PHP \utils\Util::getClientType()
       const clientType = this.detectClientType();
+      // 透传 product_extra 中的扩展信息（例如堂食 dine 标识）到 order_extension
+      const extensionPayload: any = {};
+      if (this.checkoutParams?.product_extra && typeof this.checkoutParams.product_extra === 'object') {
+        const pe = this.checkoutParams.product_extra as any;
+        if (pe.dine) {
+          extensionPayload.dine = pe.dine;
+        }
+      }
+      const orderExtension = JSON.stringify(extensionPayload);
       const order = await tx.order.create({
         data: {
           order_sn: orderSn,
@@ -1375,6 +1392,7 @@ export class OrderCheckService {
           shipping_type_id: shippingTypeId,
           shipping_type_name: shippingTypeName,
           pay_type_id: payTypeId,
+          shop_id: singleShopId,
           // 金额类字段
           product_amount: totals.productAmount,
           service_fee: totals.serviceFee,
@@ -1386,7 +1404,7 @@ export class OrderCheckService {
           total_amount: totals.totalAmount,
           unpaid_amount: totals.unpaidAmount,
           paid_amount: 0,
-          order_extension: "",
+          order_extension: orderExtension,
           order_source: clientType,
           address_data: JSON.stringify({
             addressId: addr.address_id,

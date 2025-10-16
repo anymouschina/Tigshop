@@ -28,8 +28,10 @@
       </scroll-view>
       <view class="panel-footer">
         <view class="summary">
-          <image class="avatar" :src="avatarImg" mode="aspectFit" />
-          <view class="badge" v-if="totalCount>0">{{ totalCount }}</view>
+          <view class="carticon">
+            <text class="iconfont-h5 icon-gouwuche3" />
+            <view class="badge" v-if="totalCount>0">{{ totalCount }}</view>
+          </view>
           <view class="amt">¥ {{ totalAmount }}</view>
         </view>
         <button class="confirm" :disabled="!items.length" @click="emit('confirm')">选好了</button>
@@ -57,7 +59,7 @@ function dec(id:number){ emit('dec', id); }
 function remove(id:number){ emit('remove', id); }
 function formatPrice(p:number){ return (p/divider.value).toFixed(2); }
 function handleClose(){ /* 关闭回调：无需额外处理，v-model 已更新 */ }
-const avatarImg = 'https://img.js.design/assets/img/670e0e7e36544e7fd0426ff9.png';
+// 使用统一购物车图标 (iconfont)
 </script>
 <style scoped lang="scss">
 .cart-panel { width:100%; max-height:70vh; display:flex; flex-direction:column; }
@@ -84,8 +86,9 @@ const avatarImg = 'https://img.js.design/assets/img/670e0e7e36544e7fd0426ff9.png
 .empty { padding:80rpx 40rpx; text-align:center; color:#999; }
 .panel-footer { display:flex; align-items:center; justify-content:space-between; padding:20rpx 32rpx calc(env(safe-area-inset-bottom) + 20rpx); border-top:1px solid #f1f1f1; }
 .summary { position:relative; display:flex; align-items:center; gap:16rpx; }
-.avatar { width:80rpx; height:80rpx; border-radius:50%; background:#f6f6f6; }
-.badge { position:absolute; left:60rpx; top:-10rpx; min-width:36rpx; padding:4rpx 8rpx; background:#ff4d4f; color:#fff; font-size:22rpx; border-radius:28rpx; text-align:center; font-weight:600; }
+.carticon { width:80rpx; height:80rpx; border-radius:50%; background:#18b5b5; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 8rpx 20rpx rgba(24,181,181,0.35); position:relative; }
+.carticon .iconfont-h5 { font-size:40rpx; color:#fff; }
+.badge { position:absolute; right:-10rpx; top:-10rpx; min-width:36rpx; padding:4rpx 8rpx; background:#ff4d4f; color:#fff; font-size:22rpx; border-radius:28rpx; text-align:center; font-weight:600; }
 .amt { font-size:36rpx; font-weight:600; color:#ff5a00; }
 .confirm { background:#18b5b5; color:#fff; font-size:30rpx; font-weight:600; padding:0 52rpx; height:80rpx; line-height:80rpx; border:none; border-radius:54rpx; box-shadow:0 6rpx 16rpx rgba(24,181,181,0.35); }
 .confirm:disabled { background:#ccc; box-shadow:none; }

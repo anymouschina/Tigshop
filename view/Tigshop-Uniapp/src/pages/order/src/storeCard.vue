@@ -113,7 +113,7 @@
                 </view>
             </template>
 
-            <view class="payment">
+            <view class="payment" v-if="!fromDine">
                 <view class="payment-title">{{ $t("配送方式") }}</view>
                 <view class="payment-content" @click="handleDistributionMode(item.shopId, item.noShipping)">
                     <view class="payment-text">{{ getShippingTypeText(item.shopId, item.noShipping) }}</view>
@@ -200,6 +200,7 @@ const { t } = useI18n();
 
 interface Props {
     cartList: CartList[];
+    fromDine: boolean;
     shippingTypeList: { [key: string]: ShippingTypeItem[] };
     shippingType: {
         [key: string]: {

@@ -226,41 +226,57 @@ export class OrderCheckController {
   async update(
     @Request() req,
     @Body()
-    body: {
-      address_id?: number;
-      shipping_type?: any;
-      pay_type_id?: number;
-      use_point?: number;
-      use_balance?: number;
-      flow_type?: number;
-      use_coupon_ids?: number[];
-      product_extra?: any;
-    },
+    body: any,
   ) {
     const userId = resolveRequestUserId(req);
+    // 兼容驼峰与下划线命名
+    const address_id = Number(body.address_id ?? body.addressId ?? 0) || 0;
+    const shipping_type = body.shipping_type ?? body.shippingType ?? [];
+    const pay_type_id = Number(body.pay_type_id ?? body.payTypeId ?? 1) || 1;
+    const use_point = Number(body.use_point ?? body.usePoint ?? 0) || 0;
+    const use_balance = Number(body.use_balance ?? body.useBalance ?? 0) || 0;
+    const flow_type = Number(body.flow_type ?? body.flowType ?? 1) || 1;
+    const use_coupon_ids = body.use_coupon_ids ?? body.useCouponIds ?? [];
+    const product_extra = body.product_extra ?? body.productExtra ?? {};
+
     const params = {
-      address_id: body.address_id || 0,
-      shipping_type: body.shipping_type || [],
-      pay_type_id: body.pay_type_id || 1,
-      use_point: body.use_point || 0,
-      use_balance: body.use_balance || 0,
-      flow_type: body.flow_type || 1,
-      use_coupon_ids: body.use_coupon_ids || [],
-      product_extra: body.product_extra || [],
+      address_id,
+      shipping_type,
+      pay_type_id,
+      use_point,
+      use_balance,
+      flow_type,
+      use_coupon_ids,
+      product_extra,
       user_id: userId,
     };
 
     await this.orderCheckService.initSet(params);
 
-    // 如果有附加属性就更新购物车
+    // 如果有附加属性就更新购物车（仅当 cartId 与 attrIds 有效时）
     if (params.product_extra && Object.keys(params.product_extra).length > 0) {
-      const attrIds = params.product_extra.extra_attr_ids?.split(",") || [];
-      const extraSkuData =
-        await this.orderCheckService.getProductExtraDetail(attrIds);
-      await this.orderCheckService.updateCartExtraData(
-        params.product_extra.cart_id,
-        extraSkuData,
-      );
+      const rawCartId = params.product_extra.cart_id ?? params.product_extra.cartId;
+      const cartId = Number(rawCartId);
+      const rawAttr =
+        params.product_extra.extra_attr_ids ??
+        params.product_extra.extraAttrIds ??
+        params.product_extra.extraAttrIDs;
+
+      let attrIds: number[] = [];
+      if (Array.isArray(rawAttr)) {
+        attrIds = rawAttr.map((v: any) => Number(v)).filter((n) => Number.isInteger(n) && n > 0);
+      } else if (typeof rawAttr === 'string' && rawAttr.trim() !== '') {
+        attrIds = rawAttr
+          .split(',')
+          .map((s: string) => Number(s.trim()))
+          .filter((n) => Number.isInteger(n) && n > 0);
+      }
+
+      if (Number.isInteger(cartId) && cartId > 0 && attrIds.length > 0) {
+        const extraSkuData = await this.orderCheckService.getProductExtraDetail(attrIds);
+        await this.orderCheckService.updateCartExtraData(cartId, extraSkuData);
+      }
+      // 若仅有堂食信息等其他字段（如 productExtra.dine），不做购物车更新，直接继续后续逻辑
     }
 
     const cartSource = await this.orderCheckService.getStoreCarts(
@@ -479,6 +495,9 @@ export class OrderCheckController {
       buyerNote?: string;
       invoiceData?: any;
       flowType?: number;
+      // optionally carry product extra (e.g., dine info)
+      product_extra?: any;
+      productExtra?: any;
     },
   ) {
     const userId = resolveRequestUserId(req);
@@ -515,6 +534,7 @@ export class OrderCheckController {
     const buyerNote = String(body.buyer_note ?? body.buyerNote ?? "");
     const invoiceData = (body.invoice_data ?? body.invoiceData ?? []) as any;
     const flowType = Number(body.flow_type ?? body.flowType ?? 1);
+    const productExtra = (body.product_extra ?? body.productExtra ?? {}) as any;
 
     const params = {
       address_id: addressId,
@@ -526,6 +546,7 @@ export class OrderCheckController {
       buyer_note: buyerNote,
       invoice_data: invoiceData,
       flow_type: flowType,
+      product_extra: productExtra,
       user_id: userId,
     };
 

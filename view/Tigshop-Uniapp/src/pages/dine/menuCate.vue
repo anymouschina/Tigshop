@@ -98,19 +98,32 @@ function init(){
   refreshCart();
 }
 
-function toConfirm(){
+async function toConfirm(){
   if(!cart.value.length) return;
-  const items = cart.value.map(i=>`${i.productId}:${i.qty}`).join(',');
-  uni.navigateTo({ url:`/pages/dine/confirm?shopId=${shopId.value}&table=${tableNo.value}&type=${orderType.value}&pc=${peopleCount.value}&items=${items}` });
-  // 关闭弹窗并刷新购物车最新数据（可能后端有促销/金额变化）
+  try {
+    // 将当前店铺的购物车行设为选中，其它全部取消，保证 /pages/order/check 仅带本店勾选商品
+    const result:any = await getCart();
+    const list = result?.cartList || result?.data?.cartList || [];
+    const wantIds = new Set(cart.value.map(i=> i.cartId));
+    const checkData: any[] = [];
+    list.forEach((blk:any)=>{
+      (blk.carts||[]).forEach((c:any)=>{
+        const shouldCheck = (blk.shopId === shopId.value) && wantIds.has(c.cartId);
+        checkData.push({ cartId: c.cartId, isChecked: shouldCheck ? 1 : 0 });
+      });
+    });
+    if (checkData.length) await updateCartCheck({ data: checkData });
+  } catch(e) {
+    // 忽略失败，直接跳转
+  }
+  uni.navigateTo({ url:`/pages/order/check?from=dine&shopId=${shopId.value}&table=${tableNo.value}&type=${orderType.value}&pc=${peopleCount.value}` });
   showPopup.value = false;
-  refreshCart();
 }
 
 // 商品选择（来自子组件）
 // ===== 购物车接口集成 =====
 // 若构建未配置 @ 别名，这里使用相对路径（本文件位于 pages/dine/）
-import { getCart, updateCartItemData, clearCart as apiClearCart, removeCartItemData } from '../../api/cart/cart';
+import { getCart, updateCartItemData, clearCart as apiClearCart, removeCartItemData, updateCartCheck } from '../../api/cart/cart';
 import { addToCart } from '../../api/product/product';
 
 async function refreshCart(){
