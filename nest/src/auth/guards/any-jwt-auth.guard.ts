@@ -32,7 +32,7 @@ export class AnyJwtAuthGuard extends AuthGuard(['admin-jwt', 'jwt']) {
 
     if (err || !user) {
       const body = { code: 401, message: '请先登录', data: null, timestamp: new Date().toISOString(), path: request.url };
-      throw new HttpException(body, 200);
+      throw new HttpException(body, 401);
     }
 
     // 规范化 user 对象：区分 admin 与 普通用户；统一字段 userId

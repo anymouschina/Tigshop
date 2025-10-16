@@ -40,7 +40,6 @@ export class ShopController {
         kefu_weixin: true,
         kefu_link: true,
         is_contact_kefu: true,
-        last_login_time: true,
         vendor_set_price_type: true,
         vendor_set_price_auto_value: true,
         service_fee_rate: true,
@@ -56,9 +55,9 @@ export class ShopController {
     const STATUS_LIST: Record<number, string> = { 1: '开业', 4: '暂停运营', 10: '关店' };
     const statusText = STATUS_LIST[shop.status] || '';
 
-    // 统计收藏量（若表存在）
-    // 收藏数量：当前 schema 未定义 collect_shop 模型，这里置 0（后续若加表可填充）
-    const collectCount = 0;
+  // 收藏量与是否已收藏（当前 schema 未找到收藏店铺表，置 null/false）
+  const collectCount = null;
+  const collectShop = false;
 
     const baseProductSelect = {
       product_id: true,
@@ -71,12 +70,14 @@ export class ShopController {
 
     const whereOnSale = { shop_id: shopId, product_status: 1, is_delete: 0 } as any;
 
-    const [hotList, newList, bestList, listingList, listingCount] = await Promise.all([
+    const [hotList, newList, bestList, listingList, listingCount, productCount, newProductCount] = await Promise.all([
       this.prisma.product.findMany({ where: { ...whereOnSale, is_hot: 1 }, select: baseProductSelect, orderBy: { product_id: 'desc' }, take: 5 }),
       this.prisma.product.findMany({ where: { ...whereOnSale, is_new: 1 }, select: baseProductSelect, orderBy: { product_id: 'desc' }, take: 5 }),
       this.prisma.product.findMany({ where: { ...whereOnSale, is_best: 1 }, select: baseProductSelect, orderBy: { product_id: 'desc' }, take: 5 }),
       this.prisma.product.findMany({ where: whereOnSale, select: baseProductSelect, orderBy: { product_id: 'desc' }, take: 5 }),
       this.prisma.product.count({ where: whereOnSale }),
+      this.prisma.product.count({ where: whereOnSale }),
+      this.prisma.product.count({ where: { ...whereOnSale, is_new: 1 } }),
     ]);
 
     const toMoney = (v: any) => {
@@ -91,12 +92,52 @@ export class ShopController {
       productSn: p.product_sn || '',
     });
 
+    // 商户信息（若存在）
+    let merchantData: any = null;
+    if (shop.merchant_id && shop.merchant_id > 0) {
+      const merchant = await this.prisma.merchant.findUnique({
+        where: { merchant_id: shop.merchant_id },
+        select: {
+          merchant_id: true,
+          merchant_apply_id: true,
+          user_id: true,
+          add_time: true,
+          merchant_data: true,
+          status: true,
+          type: true,
+          company_name: true,
+          corporate_name: true,
+          settlement_cycle: true,
+        },
+      });
+      if (merchant) {
+        // merchant_data JSON 解析
+        let parsed: any = null;
+        try { parsed = merchant.merchant_data ? JSON.parse(merchant.merchant_data) : null; } catch { parsed = null; }
+        const typeText = merchant.type ? '个人认证' : '企业认证';
+        merchantData = {
+          typeText,
+          statusText: null, // 可按状态枚举补充
+          merchantId: merchant.merchant_id,
+          merchantApplyId: merchant.merchant_apply_id || 0,
+          userId: merchant.user_id || 0,
+          addTime: merchant.add_time ? new Date(merchant.add_time * 1000).toISOString().replace('T', ' ').substring(0, 19) : '',
+          merchantData: parsed || {},
+          status: merchant.status || 0,
+          type: merchant.type ? 1 : 0,
+          companyName: merchant.company_name || '',
+          corporateName: merchant.corporate_name || '',
+          settlementCycle: merchant.settlement_cycle || 15,
+        };
+      }
+    }
+
     const data = {
       shopId: shop.shop_id,
       shopTitle: shop.shop_title || '',
       shopLogo: shop.shop_logo || '',
-  shopBanner: '',
-  shopBg: '',
+      shopBanner: '',
+      shopBg: '',
       status: shop.status,
       statusText,
       addTime: shop.add_time ? new Date((shop.add_time ?? 0) * 1000).toISOString().replace('T', ' ').substring(0, 19) : '',
@@ -108,8 +149,38 @@ export class ShopController {
       bestProduct: bestList.map(mapProduct),
       listingProduct: listingList.map(mapProduct),
       listing: listingCount,
+      clickCount: shop.click_count || 0,
+      shopMoney: Number(shop.shop_money || 0),
+      frozenMoney: Number(shop.frozen_money || 0),
+      contactMobile: shop.contact_mobile || '',
+      description: shop.description || '',
+      kefuPhone: shop.kefu_phone || '',
+      kefuWeixin: shop.kefu_weixin || '',
+      kefuLink: shop.kefu_link || '',
+      isContactKefu: shop.is_contact_kefu || 0,
+      collectShop,
+      productCount,
+      newProductCount,
+      merchant: merchantData,
     };
 
     return { code: 0, message: 'success', data };
+  }
+
+  /**
+   * 分类装修配置（用户端）- 对齐前端期望 /api/shop/shop/decorate?shopId=xx
+   * PHP 逻辑：读取配置 productCategoryDecorateType 作为装修类型；未来可扩展按店铺定制。
+   * 响应示例：{ code:0, message:'success', data:{ shopId, decorateType, modules:[] } }
+   */
+  @Get('decorate')
+  @ApiOperation({ summary: '获取店铺分类装修配置（对齐 PHP decorate 接口）' })
+  async getDecorate(@Query('shopId') shopIdRaw: any) {
+    const shopId = Number(shopIdRaw) || 0;
+    // 读取配置: biz_code = productCategoryDecorateType
+    const cfg = await this.prisma.config.findFirst({ where: { biz_code: 'productCategoryDecorateType', is_del: 0 } });
+    const decorateType = cfg?.biz_val ? String(cfg.biz_val) : '2'; // 默认用风格2
+    // 预留 modules（可根据不同类型组装）
+    const modules: any[] = [];
+    return { code: 0, message: 'success', data: { shopId, decorateType, modules } };
   }
 }

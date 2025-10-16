@@ -64,8 +64,8 @@ export class HybridImAuthGuard implements CanActivate {
     }
 
     // 两者都失败，返回统一风格
-    const body = { code: 401, message: '请先登录', data: null, timestamp: new Date().toISOString(), path: request.url };
-    throw new HttpException(body, 200);
+  const body = { code: 401, message: '请先登录', data: null, timestamp: new Date().toISOString(), path: request.url };
+  throw new HttpException(body, 401);
   }
 
   private normalizeUser(user: any, isAdmin: boolean) {

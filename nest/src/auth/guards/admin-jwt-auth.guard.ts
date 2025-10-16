@@ -44,7 +44,7 @@ export class AdminJwtAuthGuard extends AuthGuard("admin-jwt") {
       return user ?? null;
     }
 
-    // 鉴权失败时，按 PHP 风格返回 HTTP 200，业务码 401
+    // 鉴权失败时：返回真正的 HTTP 401
     if (err || !user) {
       const body = {
         code: 401,
@@ -53,7 +53,7 @@ export class AdminJwtAuthGuard extends AuthGuard("admin-jwt") {
         timestamp: new Date().toISOString(),
         path: request.url,
       };
-      throw new HttpException(body, 200);
+      throw new HttpException(body, 401);
     }
 
     return user;

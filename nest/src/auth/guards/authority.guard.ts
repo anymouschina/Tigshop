@@ -33,7 +33,7 @@ export class AuthorityGuard implements CanActivate {
         timestamp: new Date().toISOString(),
         path: request.url,
       };
-      throw new HttpException(body, 200);
+      throw new HttpException(body, 401);
     }
 
     // 获取 prisma 实例（从 request 中获取，在 app.module.ts 中设置）
@@ -56,7 +56,7 @@ export class AuthorityGuard implements CanActivate {
 
     if (!adminUser) {
       const body = { code: 401, message: "请先登录", data: null };
-      throw new HttpException(body, 200);
+      throw new HttpException(body, 401);
     }
 
     // 超级管理员拥有所有权限
@@ -108,7 +108,7 @@ export class AuthorityGuard implements CanActivate {
         timestamp: new Date().toISOString(),
         path: request.url,
       };
-      throw new HttpException(body, 200);
+      throw new HttpException(body, 403);
     }
     return true;
   }
