@@ -27,8 +27,8 @@ CREATE TABLE `shop_table` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- CreateTable
-CREATE TABLE `upload` (
+-- CreateTable (guarded for existing installations)
+CREATE TABLE IF NOT EXISTS `upload` (
     `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `file_name` VARCHAR(255) NOT NULL,
     `file_path` TEXT NOT NULL,
