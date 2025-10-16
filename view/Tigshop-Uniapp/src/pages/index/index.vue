@@ -30,6 +30,7 @@
             </view>
         </template>
         <tig-back-top :scroll-top="scrollTop" />
+        <FloatingBall />
     </tig-layout>
 </template>
 
@@ -48,6 +49,7 @@ import { usecatnavStore } from "@/store/catnav";
 import { staticResource } from "@/utils";
 import checkAppUpdate from "@/utils/checkAppUpdate";
 import { useScrollTop } from "@/hooks";
+import FloatingBall from "@/components/floating/FloatingBall.vue";
 import type { PageModule } from "@/types/home/home";
 
 const { scrollTop } = useScrollTop(onPageScroll);
