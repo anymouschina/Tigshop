@@ -302,12 +302,18 @@ export class AdminOrderCompatService {
     });
     const totalSubtotal = groupList.reduce((acc, g) => acc + g.subtotal, 0) || 1;
 
-    // 原金额
-    const oShipping = Number(order.shipping_fee || 0);
-    const oProduct = Number(order.product_amount || 0);
-    const oTotal = Number(order.total_amount || 0);
-    const oPaid = Number(order.paid_amount || 0);
-    const oUnpaid = Number(order.unpaid_amount || 0);
+  // 原金额（全量字段，后续按比分摊）
+  const oShipping = Number(order.shipping_fee || 0);
+  const oProduct = Number(order.product_amount || 0);
+  const oTotal = Number(order.total_amount || 0);
+  const oPaid = Number(order.paid_amount || 0);
+  const oUnpaid = Number(order.unpaid_amount || 0);
+  const oCoupon = Number(order.coupon_amount || 0);
+  const oPoints = Number(order.points_amount || 0);
+  const oDiscount = Number(order.discount_amount || 0);
+  const oBalance = Number(order.balance || 0);
+  const oService = Number(order.service_fee || 0);
+  const oInvoice = Number(order.invoice_fee || 0);
 
     // 生成子单并迁移明细
     const now = Math.floor(Date.now() / 1000);
@@ -326,7 +332,8 @@ export class AdminOrderCompatService {
       return fallback;
     };
 
-    let shipAssigned = 0, paidAssigned = 0, unpaidAssigned = 0, totalAssigned = 0, productAssigned = 0;
+    let shipAssigned = 0, paidAssigned = 0, unpaidAssigned = 0, totalAssigned = 0, productAssigned = 0,
+      couponAssigned = 0, pointsAssigned = 0, discountAssigned = 0, balanceAssigned = 0, serviceAssigned = 0, invoiceAssigned = 0;
     await this.prisma.$transaction(async (tx) => {
       for (let idx = 0; idx < groupList.length; idx++) {
         const g = groupList[idx];
@@ -334,13 +341,20 @@ export class AdminOrderCompatService {
         const ratio = g.subtotal / totalSubtotal;
 
         // 分摊金额，最后一个吃尾差
-        const product_amount = isLast ? (oProduct - productAssigned) : Number((oProduct * ratio).toFixed(2));
-        const shipping_fee = isLast ? (oShipping - shipAssigned) : Number((oShipping * ratio).toFixed(2));
-        const total_amount = isLast ? (oTotal - totalAssigned) : Number((oTotal * ratio).toFixed(2));
-        const paid_amount = isLast ? (oPaid - paidAssigned) : Number((oPaid * ratio).toFixed(2));
-        const unpaid_amount = isLast ? (oUnpaid - unpaidAssigned) : Number((oUnpaid * ratio).toFixed(2));
+  const product_amount = isLast ? (oProduct - productAssigned) : Number((oProduct * ratio).toFixed(2));
+  const shipping_fee = isLast ? (oShipping - shipAssigned) : Number((oShipping * ratio).toFixed(2));
+  const total_amount = isLast ? (oTotal - totalAssigned) : Number((oTotal * ratio).toFixed(2));
+  const paid_amount = isLast ? (oPaid - paidAssigned) : Number((oPaid * ratio).toFixed(2));
+  const unpaid_amount = isLast ? (oUnpaid - unpaidAssigned) : Number((oUnpaid * ratio).toFixed(2));
+  const coupon_amount = isLast ? (oCoupon - couponAssigned) : Number((oCoupon * ratio).toFixed(2));
+  const points_amount = isLast ? (oPoints - pointsAssigned) : Number((oPoints * ratio).toFixed(2));
+  const discount_amount = isLast ? (oDiscount - discountAssigned) : Number((oDiscount * ratio).toFixed(2));
+  const balance = isLast ? (oBalance - balanceAssigned) : Number((oBalance * ratio).toFixed(2));
+  const service_fee = isLast ? (oService - serviceAssigned) : Number((oService * ratio).toFixed(2));
+  const invoice_fee = isLast ? (oInvoice - invoiceAssigned) : Number((oInvoice * ratio).toFixed(2));
 
-        shipAssigned += shipping_fee; paidAssigned += paid_amount; unpaidAssigned += unpaid_amount; totalAssigned += total_amount; productAssigned += product_amount;
+  shipAssigned += shipping_fee; paidAssigned += paid_amount; unpaidAssigned += unpaid_amount; totalAssigned += total_amount; productAssigned += product_amount;
+  couponAssigned += coupon_amount; pointsAssigned += points_amount; discountAssigned += discount_amount; balanceAssigned += balance; serviceAssigned += service_fee; invoiceAssigned += invoice_fee;
 
         const childSn = await genSn();
         const child = await tx.order.create({
@@ -388,14 +402,14 @@ export class AdminOrderCompatService {
             total_amount,
             paid_amount,
             unpaid_amount,
-            coupon_amount: order.coupon_amount,
-            points_amount: order.points_amount,
-            discount_amount: order.discount_amount,
-            balance: order.balance,
-            online_paid_amount: order.online_paid_amount,
+            coupon_amount,
+            points_amount,
+            discount_amount,
+            balance,
+            online_paid_amount: order.online_paid_amount, // 若后续需要按比例拆分可再补充
             offline_paid_amount: order.offline_paid_amount,
-            service_fee: order.service_fee,
-            invoice_fee: order.invoice_fee,
+            service_fee,
+            invoice_fee,
             order_extension: order.order_extension,
             order_source: order.order_source,
             invoice_data: order.invoice_data,
@@ -420,6 +434,49 @@ export class AdminOrderCompatService {
       await tx.order.update({ where: { order_id: order.order_id }, data: { is_store_splited: 1 } });
     });
     return true;
+  }
+
+  /**
+   * 获取店铺订单统计（收入、订单数等）
+   * - 仅统计该店铺自身的订单（拆分后的子订单）
+   * - 避免父订单重复计入：排除 shop_id=0 且 is_store_splited=1 的父订单
+   * - 收入统计仅包含已支付订单 (pay_status IN (1,2))
+   */
+  async getShopOrderStats(shopId: number) {
+    const sid = Number(shopId);
+    if (!Number.isFinite(sid) || sid <= 0) {
+      throw new BadRequestException('无效的店铺ID');
+    }
+    // 订单记录：该店铺的订单（子订单）或未拆分单（shop_id=sid & is_store_splited=0）
+    // 由于拆分逻辑中子订单 shop_id 已指向店铺，直接按 shop_id 过滤即可；父订单 shop_id=0 不会被计入。
+    const paidStatuses = [1,2];
+    const [orderCount, paidOrders, productAgg, shippingAgg, couponAgg, discountAgg, pointsAgg, balanceAgg] = await Promise.all([
+      this.prisma.order.count({ where: { shop_id: sid } }),
+      this.prisma.order.findMany({ where: { shop_id: sid, pay_status: { in: paidStatuses as any } }, select: { paid_amount: true, total_amount: true, product_amount: true, shipping_fee: true } }),
+      this.prisma.order.aggregate({ _sum: { product_amount: true }, where: { shop_id: sid } }),
+      this.prisma.order.aggregate({ _sum: { shipping_fee: true }, where: { shop_id: sid } }),
+      this.prisma.order.aggregate({ _sum: { coupon_amount: true }, where: { shop_id: sid } }),
+      this.prisma.order.aggregate({ _sum: { discount_amount: true }, where: { shop_id: sid } }),
+      this.prisma.order.aggregate({ _sum: { points_amount: true }, where: { shop_id: sid } }),
+      this.prisma.order.aggregate({ _sum: { balance: true }, where: { shop_id: sid } }),
+    ]);
+
+    const toNumber = (v: any) => Number(v ?? 0);
+    const paidAmount = paidOrders.reduce((acc, o: any) => acc + toNumber(o.paid_amount), 0);
+    const grossAmount = paidOrders.reduce((acc, o: any) => acc + toNumber(o.total_amount), 0);
+    return {
+      shopId: sid,
+      orderCount,
+      paidAmount: Number(paidAmount.toFixed(2)),
+      grossAmount: Number(grossAmount.toFixed(2)),
+      productAmount: Number(toNumber(productAgg._sum.product_amount).toFixed(2)),
+      shippingFee: Number(toNumber(shippingAgg._sum.shipping_fee).toFixed(2)),
+      couponAmount: Number(toNumber(couponAgg._sum.coupon_amount).toFixed(2)),
+      discountAmount: Number(toNumber(discountAgg._sum.discount_amount).toFixed(2)),
+      pointsAmount: Number(toNumber(pointsAgg._sum.points_amount).toFixed(2)),
+      balanceUsed: Number(toNumber(balanceAgg._sum.balance).toFixed(2)),
+      paidOrderCount: paidOrders.length,
+    };
   }
 
   // ---------- 导出：字段清单/读取偏好/生成 CSV ----------

@@ -78,6 +78,15 @@ export class AdminOrderCompatController {
     return this.updateField(body);
   }
 
+  @Get("shop/stats")
+  @Authorities("order")
+  @ApiOperation({ summary: "店铺订单统计（收入、订单数等）" })
+  async shopStats(@Query("shopId") shopId: string) {
+    const sid = Number(shopId);
+    const data = await this.svc.getShopOrderStats(sid);
+    return { code: 0, message: "success", data };
+  }
+
   @Get("log/list")
   @Authorities("order")
   @ApiOperation({ summary: "订单日志列表（admin 兼容）" })

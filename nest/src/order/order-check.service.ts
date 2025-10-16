@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { AdminOrderCompatService } from "./admin-order-compat.service";
 import { ConfigService as SettingConfigService } from "src/setting/config.service";
 import { CartService, CartItemDetail } from "../cart/cart.service";
 import {
@@ -99,6 +100,7 @@ export class OrderCheckService {
     private readonly prisma: PrismaService,
     private readonly cartService: CartService,
     private readonly settingConfig: SettingConfigService,
+    private readonly adminOrderCompatService: AdminOrderCompatService,
   ) {}
 
   /**
@@ -609,10 +611,17 @@ export class OrderCheckService {
         const cartData = await this.getStoreCarts(userId, effectiveFlowType);
         for (const shop of cartData.carts) {
           const shopId = Number(shop?.shopId ?? 0);
-          if (!shopId) continue;
-            // 仅当该店不是全部虚拟商品 (noShipping==1 表示无需物流，仍可以不给配送方式)；
-            // 这里仍然补上，保持与 PHP 行为一致（始终至少返回一条）。
-          if (!grouped.has(shopId)) {
+          // 对于 shopId==0 的平台商品，也补齐默认配送方式，避免前端出现缺失导致无法提交
+          const already = grouped.has(shopId);
+          const isNoShippingGroup = Number(shop?.noShipping ?? shop?.no_shipping ?? 0) === 1;
+          // 虚拟/无需物流的店铺如果已有条目则跳过，无则也可以不加；保持原逻辑补一个默认，前端可忽略
+          if (!already && !isNoShippingGroup) {
+            grouped.set(shopId, {
+              shippingTypeId: 1,
+              shippingTypeName: defaultName,
+            });
+          } else if (!already && isNoShippingGroup) {
+            // 为 noShipping 分组也补一个占位，防止前端校验逻辑误判缺失
             grouped.set(shopId, {
               shippingTypeId: 1,
               shippingTypeName: defaultName,
@@ -675,19 +684,15 @@ export class OrderCheckService {
     const userId = Number(this.checkoutParams?.user_id ?? 0);
     const shippingFeeResult = await this.calculateShippingFee(shops);
     const shippingFee = shippingFeeResult.total;
-    const storeShippingFeeList: number[] = [];
-    const storeShippingFeeMap: Record<string, number> = {};
+  // 将运费映射直接输出为对象 (shopId -> fee) 以对齐 Java 响应
+  const storeShippingFeeMap: Record<string, number> = {};
 
     for (const [shopId, fee] of shippingFeeResult.storeShippingFee.entries()) {
       const roundedFee = this.roundCurrency(fee);
       storeShippingFeeMap[String(shopId)] = roundedFee;
     }
 
-    for (const shop of shops) {
-      const shopId = Number(shop?.shopId ?? 0);
-      const fee = shippingFeeResult.storeShippingFee.get(shopId) ?? 0;
-      storeShippingFeeList.push(this.roundCurrency(fee));
-    }
+    // 不再构建数组形式，保持对象结构即可（若需要数组可在此补充）
 
     const availablePoints = userId > 0
       ? await this.calculateAvailablePoints(productAmount, userId)
@@ -725,7 +730,7 @@ export class OrderCheckService {
       productAmount,
       checkedCount: totals.checkedCount ?? 0,
       discounts,
-      discountAfter, // 若需要对齐 PHP 在无折扣时返回 null，可在此加: discountAfter: discounts>0?discountAfter:null
+      discountAfter: discounts > 0 ? discountAfter : null,
       totalCount: totals.totalCount ?? totals.checkedCount ?? 0,
       discountCouponAmount: couponAmount,
       discountDiscountAmount: discountAmount,
@@ -734,8 +739,7 @@ export class OrderCheckService {
       discountTimeDiscountAmount,
       serviceFee,
       shippingFee,
-  storeShippingFee: storeShippingFeeList,
-  storeShippingFeeMap,
+      storeShippingFee: storeShippingFeeMap,
       couponAmount,
       discountAmount,
       totalAmount,
@@ -750,6 +754,7 @@ export class OrderCheckService {
         : [],
       balance,
       deliveryOption,
+      storeShippingRule: null, // 兼容占位
     };
   }
 
@@ -1605,6 +1610,12 @@ export class OrderCheckService {
       return order;
     });
 
+    // 自动按店铺/供应商拆单，使各店铺能看到自己的订单
+    try {
+      await this.adminOrderCompatService.splitStoreOrder(Number(result.order_id));
+    } catch (e) {
+      console.error('splitStoreOrder failed', e?.message);
+    }
     return {
       order_id: result.order_id,
       unpaid_amount: Number(totals.unpaidAmount ?? 0),

@@ -289,16 +289,27 @@ const getBalanceStatus = (status: boolean) => {
 };
 
 const shippingTypeStaus = computed(() => {
-    if (!formState.shippingType) {
-        return true;
-    }
+    // 若映射对象还未初始化，阻止提交
+    if (!formState.shippingType) return true;
 
-    for (const item of cartListData.value) {
-        if (item.noShipping === 0 && !formState.shippingType[item.shopId]) {
-            return true;
-        }
-    }
+    for (const group of cartListData.value) {
+        // 不需要物流的商品组直接跳过
+        if (group.noShipping === 1) continue;
 
+        const shopId = group.shopId;
+        const hasMapping = !!formState.shippingType[shopId];
+        const hasSelectableList = !!shippingTypeData.value[shopId] && shippingTypeData.value[shopId].length > 0;
+    // 使用后端新的字段 storeShippingFee（对象映射），兼容旧逻辑
+    const totalAny: any = totalData.value;
+    const hasComputedFee = !!(totalAny?.storeShippingFee && (totalAny.storeShippingFee[String(shopId)] !== undefined));
+
+        // 逻辑说明：
+        // 1. 如果该店铺提供可选的配送方式列表 (hasSelectableList)，则必须在 formState.shippingType 中已经选中一个
+        // 2. 如果没有可选列表 (hasSelectableList === false)，但后端已经计算了运费 (hasComputedFee)，则视为已自动选择，放行
+        // 3. 否则阻止提交
+        if (hasSelectableList && !hasMapping) return true;
+        if (!hasSelectableList && !hasComputedFee && !hasMapping) return true;
+    }
     return false;
 });
 const submitLoading = ref(false);
