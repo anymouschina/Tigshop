@@ -43,11 +43,15 @@ import { computed } from 'vue';
 interface CartLine { productId:number; price:number; qty:number; productName?:string; pic?:string; picUrl?:string; picThumb?:string; }
 // 使用 defineModel 使父组件可直接 v-model:show
 const innerShow = defineModel<boolean>('show', { default:false });
-const props = defineProps<{ items:CartLine[]; divider?:number }>();
+const props = defineProps<{ items:CartLine[]; divider?:number; totalAmount?: string|number; totalCount?: number }>();
 const emit = defineEmits<{ (e:'inc',id:number):void; (e:'dec',id:number):void; (e:'remove',id:number):void; (e:'clear'):void; (e:'confirm'):void }>();
 const divider = computed(()=> props.divider || 100);
-const totalCount = computed(()=> props.items.reduce((s,i)=> s+i.qty,0));
-const totalAmount = computed(()=> (props.items.reduce((s,i)=> s+i.price*i.qty,0)/divider.value).toFixed(2));
+// 优先使用服务端 totals（父组件传入），否则回退本地合计
+const totalCount = computed(()=> (props.totalCount ?? props.items.reduce((s,i)=> s+i.qty,0)) as number);
+const totalAmount = computed(()=> {
+  if (props.totalAmount !== undefined && props.totalAmount !== null) return String(props.totalAmount);
+  return (props.items.reduce((s,i)=> s+i.price*i.qty,0)/divider.value).toFixed(2);
+});
 function inc(id:number){ emit('inc', id); }
 function dec(id:number){ emit('dec', id); }
 function remove(id:number){ emit('remove', id); }

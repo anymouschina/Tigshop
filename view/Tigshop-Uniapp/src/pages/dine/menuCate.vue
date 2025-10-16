@@ -18,11 +18,13 @@
       <template v-if="decorateType === '3'">
         <styleThreeCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo" />
       </template>
-      <!-- 底部购物车条组件 -->
-      <DineCartBar :count="cartCount" :amount="totalAmount" @confirm="toConfirm" @showCart="showPopup=true" />
+      <!-- 底部购物车条组件（使用服务端 totals） -->
+      <DineCartBar :count="displayCount" :amount="displayAmount" @confirm="toConfirm" @showCart="showPopup=true" />
       <DineCartPopup
         :show="showPopup"
         :items="cart"
+        :total-count="displayCount"
+        :total-amount="displayAmount"
         @update:show="v=>{ showPopup=v; if(!v) refreshCart(); }"
         @inc="inc"
         @dec="dec"
@@ -35,6 +37,7 @@
 </template>
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { normalizeTotal } from '@/utils/money';
 import { onLoad } from '@dcloudio/uni-app';
 // 使用默认导入保证 Vue 正确识别组件（script setup 会自动注册）
 // @ts-ignore 这些旧组件未显式 export default，通过 SFC 编译仍可使用
@@ -72,9 +75,10 @@ const decorateType = computed(()=> {
 interface CartLine { cartId:number; productId:number; qty:number; price:number; productName?:string; picThumb?:string; skuId?:number }
 const cart = ref<CartLine[]>([]);
 const showPopup = ref(false);
-// 统计全部已加入购物车的商品（扫码点餐无勾选功能）
-const cartCount = computed(()=> cart.value.reduce((s,i)=>s+i.qty,0));
-const totalAmount = computed(()=> (cart.value.reduce((s,i)=> s + i.price*i.qty,0)/100).toFixed(2));
+// 服务端已计算 totals（参考 cart/index 逻辑）
+const dineTotal = ref<any>({ checkedCount: 0, discountAfter: '0.00', discounts: '0.00', productAmount: '0.00', serviceFee: '0.00' });
+const displayCount = computed(()=> Number(dineTotal.value?.checkedCount || 0));
+const displayAmount = computed(()=> String(dineTotal.value?.discountAfter || '0.00'));
 
 onLoad((q:any)=>{
   try { logOnLoad('menuCate', q); } catch(e){}
@@ -112,22 +116,28 @@ import { addToCart } from '../../api/product/product';
 async function refreshCart(){
   try {
     const res:any = await getCart();
-    // 结构: { data: { cartList: [...], total: {...} }, code }
-    const list = res?.data?.cartList || res?.cartList || [];
+    // 参考 cart/index：接口已返回 total 与 cartList
+    const list = res?.cartList || res?.data?.cartList || [];
+    if (res?.total || res?.data?.total) {
+      const t = res?.total || res?.data?.total;
+      dineTotal.value = normalizeTotal(t);
+    }
     const lines:CartLine[] = [];
     list.forEach((blk:any)=>{
       if(shopId.value && blk.shopId !== shopId.value) return; // 仅当前店铺
-      (blk.carts||[]).forEach((c:any)=>{
-        lines.push({
-          cartId:c.cartId,
-          productId:c.productId,
-          qty:c.quantity,
-          price:Number(c.price)||Number(c.originalPrice)||0,
-          productName:c.productName,
-          picThumb:c.picThumb,
-          skuId:c.skuId
+      (blk.carts||[])
+        .filter((c:any)=> c && c.isChecked === true) // 仅渲染/计价勾选状态的商品
+        .forEach((c:any)=>{
+          lines.push({
+            cartId:c.cartId,
+            productId:c.productId,
+            qty:c.quantity,
+            price:Number(c.price)||Number(c.originalPrice)||0,
+            productName:c.productName,
+            picThumb:c.picThumb,
+            skuId:c.skuId
+          });
         });
-      });
     });
     cart.value = lines;
   } catch(e){ console.warn('[DINE] getCart failed', e); }

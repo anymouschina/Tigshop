@@ -25,9 +25,21 @@ export class CartController {
    */
   @Get("list")
   @ApiOperation({ summary: "获取购物车列表" })
-  async getCartList(@Request() req) {
+  async getCartList(@Request() req, @Query() query: Record<string, any> = {}) {
     const userId = resolveRequestUserId(req);
-    return this.cartService.getCart(userId);
+    // 解析 shopId：优先 Header，其次 Query
+    const headerShopIdRaw = (req.headers?.['x-shop-id'] ?? req.headers?.['x-shopid']) as any;
+    const shopIdResolved = Number(headerShopIdRaw ?? query.shopId ?? query.shop_id);
+    const shopId = Number.isFinite(shopIdResolved) && shopIdResolved > 0 ? shopIdResolved : undefined;
+
+    // 解析 isChecked（1/0/true/false）
+    const isCheckedRaw = query.isChecked ?? query.is_checked;
+    const isChecked =
+      isCheckedRaw === undefined
+        ? undefined
+        : (String(isCheckedRaw).toLowerCase() === '1' || String(isCheckedRaw).toLowerCase() === 'true' ? 1 : 0);
+
+    return this.cartService.getCart(userId, { shopId, isChecked });
   }
 
   /**

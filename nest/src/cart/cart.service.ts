@@ -729,11 +729,24 @@ export class CartService {
   /**
    * 获取用户购物车
    * @param userId 用户ID
+   * @param filters 可选过滤：shopId、isChecked
    * @returns 购物车数据
    */
-  async getCart(userId: number): Promise<CartData> {
+  async getCart(
+    userId: number,
+    filters?: { shopId?: number; isChecked?: number | boolean },
+  ): Promise<CartData> {
+    const where: any = { user_id: userId };
+    if (filters?.shopId && Number.isFinite(filters.shopId) && (filters.shopId as number) > 0) {
+      where.shop_id = Number(filters.shopId);
+    }
+    if (filters?.isChecked !== undefined) {
+      const flag = Number(filters.isChecked) ? 1 : 0;
+      where.is_checked = flag;
+    }
+
     const cartRows = await this.prisma.cart.findMany({
-      where: { user_id: userId },
+      where,
       orderBy: { cart_id: "desc" },
     });
 
