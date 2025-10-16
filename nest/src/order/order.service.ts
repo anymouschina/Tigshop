@@ -487,6 +487,18 @@ export class OrderService {
     });
     if (!rawOrder) throw new NotFoundException("订单不存在");
 
+    // 若为父订单，检查子订单是否已部分/全部发货；只要存在已发货子订单则禁止取消，避免资损
+    if (Number(rawOrder.parent_order_id || 0) === 0) {
+      const children = await this.prisma.order.findMany({ where: { parent_order_id: Number(rawOrder.order_id) } });
+      const anyChildShipped = children.some((c: any) => Number(c.shipping_status) > 0);
+      if (anyChildShipped) {
+        throw new BadRequestException("订单已部分发货，无法直接取消，请联系客服或申请售后");
+      }
+    } else {
+      // 子订单不允许用户直接取消（列表已聚合隐藏），防止单侧取消破坏父订单金额一致性
+      throw new BadRequestException("拆分子订单不支持直接取消，请联系客服或申请售后");
+    }
+
     // 允许待付款和待发货订单取消
     const canCancel = [0, 1].includes(Number(rawOrder.order_status));
     if (!canCancel) {
@@ -970,19 +982,21 @@ export class OrderService {
   private buildStepStatus(order: any) {
     const addDesc = this.formatUnixToTime(order.add_time);
     const paid = Number(order.pay_status) > 0;
-  // 发货判定：以 shipping_status>0 为准，避免仅凭 order_status=2 但 shipping_status=0 时误判
-  const shipped = Number(order.shipping_status) > 0;
+    // 发货判定：shipping_status=1 全部发货，=2 部分发货
+    const ss = Number(order.shipping_status);
+    const shippedFull = ss === 1;
+    const shippedPartial = ss === 2;
     const completed = Number(order.order_status) === 5;
     const steps = [
       { title: "提交订单", description: addDesc },
       { title: paid ? "已支付" : "待支付", description: paid ? this.formatUnixToTime(order.pay_time) : "" },
-      { title: shipped ? "已发货" : (Number(order.order_status) === 3 ? "已取消" : "待发货"), description: shipped ? this.formatUnixToTime(order.shipping_time) : "" },
+      { title: shippedFull ? "已发货" : (shippedPartial ? "部分发货" : (Number(order.order_status) === 3 ? "已取消" : "待发货")), description: (shippedFull || shippedPartial) ? this.formatUnixToTime(order.shipping_time) : "" },
     ];
     if (completed) {
       steps.push({ title: Number(order.comment_status) === 0 ? "待评价" : "已完成", description: order.received_time ? this.formatUnixToTime(order.received_time) : "" });
     }
     let current = 1;
-    if (completed) current = steps.length; else if (shipped) current = 3; else if (paid) current = 2; else current = 1;
+    if (completed) current = steps.length; else if (shippedFull || shippedPartial) current = 3; else if (paid) current = 2; else current = 1;
     return { current, status: "process", steps };
   }
 
@@ -993,7 +1007,8 @@ export class OrderService {
     const ss = Number(shippingStatus);
     const isPendingPay = os === 0 && ps === 0; // 待支付
     const isPaidUnshipped = ps === 1 && ss === 0; // 已支付待发货
-    const isShipped = ss === 1; // 已发货
+    const isShippedFull = ss === 1; // 全部发货
+    const isShippedPartial = ss === 2; // 部分发货
     const isCancelled = os === 2; // 已取消
     const isCompleted = os === 3; // 已完成
     // 售后规则：对齐 admin 端与旧 PHP 行为 —— 只要已支付且未取消即可申请售后（含“待发货”“待收货”“已完成/待评价”阶段）
@@ -1004,10 +1019,10 @@ export class OrderService {
       toPay: isPendingPay,
       setPaid: isPendingPay,
       setUnpaid: false,
-      cancelOrder:  (isPendingPay || isPaidUnshipped) && !isCompleted,
+      cancelOrder:  (isPendingPay || isPaidUnshipped) && !isCompleted, // 部分/全部发货均禁止取消
       delOrder: isCancelled,
-      deliver: isPaid && !isShipped,
-  confirmReceipt: isShipped && !isCompleted && !isCancelled,
+      deliver: isPaid && (ss === 0 || isShippedPartial), // 部分发货仍可继续发剩余商品
+      confirmReceipt: isShippedFull && !isCompleted && !isCancelled, // 仅全部发货允许确认收货
       splitOrder: false,
       modifyOrder: !isCompleted && !isCancelled,
       rebuy: false,
