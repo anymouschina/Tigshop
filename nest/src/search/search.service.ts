@@ -83,8 +83,14 @@ export class SearchService {
     total: number;
   }> {
     const keyword = params.keyword?.trim() || "";
-    const catId = params.cat && Number.isFinite(params.cat) ? Number(params.cat) : undefined;
-    const brandId = params.brand && Number.isFinite(params.brand) ? Number(params.brand) : undefined;
+    const catId =
+      params.cat && Number.isFinite(params.cat)
+        ? Number(params.cat)
+        : undefined;
+    const brandId =
+      params.brand && Number.isFinite(params.brand)
+        ? Number(params.brand)
+        : undefined;
 
     // 分类：显示的全部分类（对齐PHP：不强制仅叶子，保持 is_show=1）
     const categories = await this.prisma.category.findMany({
@@ -94,10 +100,7 @@ export class SearchService {
         category_name: true,
         category_pic: true,
       },
-      orderBy: [
-        { sort_order: "asc" },
-        { category_id: "asc" },
-      ],
+      orderBy: [{ sort_order: "asc" }, { category_id: "asc" }],
     });
 
     // 品牌：显示的全部品牌（is_show=1）
@@ -110,10 +113,7 @@ export class SearchService {
         first_word: true,
         is_show: true,
       },
-      orderBy: [
-        { sort_order: "asc" },
-        { brand_id: "asc" },
-      ],
+      orderBy: [{ sort_order: "asc" }, { brand_id: "asc" }],
     });
 
     // 最高价（仅统计上架有效商品）
@@ -276,7 +276,8 @@ export class SearchService {
 
     const results: SearchResult[] = products.map((product) => {
       const image = product.pic_thumb || product.pic_url || undefined;
-      const isOnSale = (product.is_promote ?? 0) === 1 || !!product.is_promote_activity;
+      const isOnSale =
+        (product.is_promote ?? 0) === 1 || !!product.is_promote_activity;
       const desc = product.product_desc || product.product_brief || "";
 
       return {

@@ -40,8 +40,14 @@ export class SearchController {
       keyword?: string;
     },
   ) {
-    const catNum = query.cat !== undefined && query.cat !== null ? Number(query.cat) : undefined;
-    const brandNum = query.brand !== undefined && query.brand !== null ? Number(query.brand) : undefined;
+    const catNum =
+      query.cat !== undefined && query.cat !== null
+        ? Number(query.cat)
+        : undefined;
+    const brandNum =
+      query.brand !== undefined && query.brand !== null
+        ? Number(query.brand)
+        : undefined;
 
     const { filter, total } = await this.searchService.getFilterData({
       keyword: query.keyword || "",
@@ -139,7 +145,8 @@ export class SearchController {
     const records = searchResults.results.map((result) => {
       const m = result.metadata || {};
       const priceStr = m.price != null ? String(m.price) : "0.00";
-      const marketPriceStr = m.originalPrice != null ? String(m.originalPrice) : "0.00";
+      const marketPriceStr =
+        m.originalPrice != null ? String(m.originalPrice) : "0.00";
 
       return {
         productId: result.id,

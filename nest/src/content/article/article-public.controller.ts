@@ -53,7 +53,10 @@ export class UserArticlePublicController {
           where: { parent_id: cat.article_category_id },
           select: { article_category_id: true },
         });
-        const catIds = [cat.article_category_id, ...children.map((c) => c.article_category_id)];
+        const catIds = [
+          cat.article_category_id,
+          ...children.map((c) => c.article_category_id),
+        ];
         where.article_category_id = { in: catIds };
       }
     }
@@ -68,7 +71,9 @@ export class UserArticlePublicController {
     };
     const sortFieldRaw = query.sort_field || "article_id";
     const sortField = fieldMap[sortFieldRaw] || "article_id";
-    const sortOrder = (query.sort_order === "asc" ? "asc" : "desc") as "asc" | "desc";
+    const sortOrder = (query.sort_order === "asc" ? "asc" : "desc") as
+      | "asc"
+      | "desc";
 
     const [records, total] = await Promise.all([
       this.prisma.article.findMany({
@@ -92,7 +97,8 @@ export class UserArticlePublicController {
     }
     function toIdArray(val: any): number[] {
       if (val == null) return [];
-      if (Array.isArray(val)) return val.map((x) => Number(x)).filter((n) => !Number.isNaN(n));
+      if (Array.isArray(val))
+        return val.map((x) => Number(x)).filter((n) => !Number.isNaN(n));
       if (typeof val === "number") return Number.isNaN(val) ? [] : [val];
       if (typeof val === "string") {
         try {
@@ -123,7 +129,12 @@ export class UserArticlePublicController {
     const item = await this.prisma.article.findFirst({
       where: { article_id: articleId, is_show: 1 },
     });
-    if (!item) return { code: 0, message: "success", data: { item: null, next: null, prev: null } };
+    if (!item)
+      return {
+        code: 0,
+        message: "success",
+        data: { item: null, next: null, prev: null },
+      };
 
     const next = await this.prisma.article.findFirst({
       where: { is_show: 1, article_id: { gt: articleId } },
@@ -134,7 +145,11 @@ export class UserArticlePublicController {
       orderBy: { article_id: "desc" },
     });
 
-    return { code: 0, message: "success", data: camelCase({ item, next, prev }) };
+    return {
+      code: 0,
+      message: "success",
+      data: camelCase({ item, next, prev }),
+    };
   }
 
   /**
@@ -146,7 +161,11 @@ export class UserArticlePublicController {
   @ApiOperation({ summary: "帮助类文章详情" })
   @ApiQuery({ name: "id", required: false })
   @ApiQuery({ name: "article_sn", required: false })
-  @ApiQuery({ name: "articleSn", required: false, description: "兼容前端驼峰参数名" })
+  @ApiQuery({
+    name: "articleSn",
+    required: false,
+    description: "兼容前端驼峰参数名",
+  })
   async issueInfo(
     @Query("id") id?: number,
     @Query("article_sn") article_sn?: string,
@@ -164,7 +183,12 @@ export class UserArticlePublicController {
         where: { article_sn: String(sn), is_show: 1 },
       });
     }
-    if (!item) return { code: 0, message: "success", data: { item: null, next: null, prev: null } };
+    if (!item)
+      return {
+        code: 0,
+        message: "success",
+        data: { item: null, next: null, prev: null },
+      };
 
     const next = await this.prisma.article.findFirst({
       where: { is_show: 1, article_id: { gt: item.article_id } },
@@ -175,6 +199,10 @@ export class UserArticlePublicController {
       orderBy: { article_id: "desc" },
     });
 
-    return { code: 0, message: "success", data: camelCase({ item, next, prev }) };
+    return {
+      code: 0,
+      message: "success",
+      data: camelCase({ item, next, prev }),
+    };
   }
 }

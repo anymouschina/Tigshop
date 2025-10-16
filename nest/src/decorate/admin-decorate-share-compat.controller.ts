@@ -18,7 +18,10 @@ export class AdminDecorateShareCompatController {
   @Get("share")
   @ApiOperation({ summary: "生成分享（创建记录并返回导入链接）" })
   @Authorities("decorateManage")
-  async share(@Query("decorate_id") decorate_id: number, @Query("decorateId") decorateIdAlias?: number) {
+  async share(
+    @Query("decorate_id") decorate_id: number,
+    @Query("decorateId") decorateIdAlias?: number,
+  ) {
     const id = Number(decorate_id ?? decorateIdAlias ?? 0);
     if (!id) return { code: 1, message: "参数错误", data: null };
 
@@ -45,7 +48,11 @@ export class AdminDecorateShareCompatController {
     return {
       code: 0,
       message: "success",
-      data: { sn, token, api_url: `/api/home/share/import?sn=${sn}&token=${token}` },
+      data: {
+        sn,
+        token,
+        api_url: `/api/home/share/import?sn=${sn}&token=${token}`,
+      },
     };
   }
 
@@ -59,12 +66,12 @@ export class AdminDecorateShareCompatController {
     function analyzeUrl(importUrl: string) {
       try {
         const parsedUrl = new URL(importUrl);
-        const port = parsedUrl.port ? `:${parsedUrl.port}` : '';
+        const port = parsedUrl.port ? `:${parsedUrl.port}` : "";
         const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}${port}${parsedUrl.pathname}`;
         const params = Object.fromEntries(parsedUrl.searchParams.entries());
         return { baseUrl, queryParams: params };
       } catch {
-        throw new Error('无效的链接!');
+        throw new Error("无效的链接!");
       }
     }
 
@@ -74,38 +81,50 @@ export class AdminDecorateShareCompatController {
       const params = urlInfo.queryParams;
 
       if (!params.sn || !params.token) {
-        return { code: 1, message: `链接中参数缺少${!params.sn ? 'sn' : 'token'}字段!`, data: null };
+        return {
+          code: 1,
+          message: `链接中参数缺少${!params.sn ? "sn" : "token"}字段!`,
+          data: null,
+        };
       }
 
       // 拉取远程数据 (参考PHP版本Http::get)
       const resp = await axios.get(urlInfo.baseUrl, {
         params: params,
-        timeout: 15000
+        timeout: 15000,
       });
 
       const body = resp?.data;
 
       // 检查是否为JSON格式
-      if (typeof body !== 'object' || body === null) {
-        return { code: 1, message: '返回结果有误！', data: null };
+      if (typeof body !== "object" || body === null) {
+        return { code: 1, message: "返回结果有误！", data: null };
       }
 
       // 检查是否有data字段 (参考PHP版本第76行)
       if (!body.data) {
-        return { code: 1, message: '未获取到有用的模板信息，请重新导入分享模板链接！', data: null };
+        return {
+          code: 1,
+          message: "未获取到有用的模板信息，请重新导入分享模板链接！",
+          data: null,
+        };
       }
 
       const decorate = body.data;
 
       // 验证必要字段 (参考PHP版本第81-84行)
       if (!decorate.decorateTitle || !decorate.data) {
-        return { code: 1, message: '装修数据格式错误，缺少必要字段！', data: null };
+        return {
+          code: 1,
+          message: "装修数据格式错误，缺少必要字段！",
+          data: null,
+        };
       }
 
       // 获取 shopId：优先 AsyncLocalStorage 上下文，其次 header，再次 user.shopId
       let shopId = shopContext.getStore()?.shopId || 0;
       if (!shopId) {
-        const headerRaw = req.headers['x-shop-id'] ?? req.headers['x-shopid'];
+        const headerRaw = req.headers["x-shop-id"] ?? req.headers["x-shopid"];
         const headerVal = Number(headerRaw);
         if (Number.isFinite(headerVal) && headerVal > 0) shopId = headerVal;
       }
@@ -114,7 +133,11 @@ export class AdminDecorateShareCompatController {
         if (Number.isFinite(userShop) && userShop > 0) shopId = userShop;
       }
       if (!shopId) {
-        return { code: 1, message: '缺少店铺ID，无法导入到指定店铺', data: null };
+        return {
+          code: 1,
+          message: "缺少店铺ID，无法导入到指定店铺",
+          data: null,
+        };
       }
 
       // 写入本地 decorate (参考PHP版本第81-88行)
@@ -132,7 +155,11 @@ export class AdminDecorateShareCompatController {
         },
       });
 
-  return { code: 0, message: "success", data: { decorate_id: created.decorate_id, shopId } };
+      return {
+        code: 0,
+        message: "success",
+        data: { decorate_id: created.decorate_id, shopId },
+      };
     } catch (e) {
       return { code: 1, message: `导入异常: ${e?.message || e}`, data: null };
     }

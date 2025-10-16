@@ -414,7 +414,11 @@ export class PublicVerificationController {
       return {
         code: 400,
         message: "验证参数不完整",
-        data: { captchaType, pointJson: pointJson || null, token: token || null },
+        data: {
+          captchaType,
+          pointJson: pointJson || null,
+          token: token || null,
+        },
         path: "/api/common/verification/verification",
       };
     }

@@ -1,7 +1,20 @@
 // @ts-nocheck
-import { Body, Controller, Get, Post, Query, Res, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from "@nestjs/common";
 import { Response } from "express";
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
@@ -32,7 +45,17 @@ export class AdminStatementCompatController {
       sort_field: q.sort_field ?? q.sortField ?? "id",
       sort_order: q.sort_order ?? q.sortOrder ?? "desc",
     });
-    return { code: 0, message: "success", data: { records: result.items, total: result.total, page: result.page, size: result.size, total_pages: result.total_pages } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: result.items,
+        total: result.total,
+        page: result.page,
+        size: result.size,
+        total_pages: result.total_pages,
+      },
+    };
   }
 
   // GET getStatementStatisticsList
@@ -75,7 +98,19 @@ export class AdminStatementCompatController {
       sort_field: q.sort_field ?? q.sortField ?? "id",
       sort_order: q.sort_order ?? q.sortOrder ?? "desc",
     });
-    const header = ["id","userId","shopId","type","status","amount","createTime","updateTime","relatedId","adminRemark","description"];
+    const header = [
+      "id",
+      "userId",
+      "shopId",
+      "type",
+      "status",
+      "amount",
+      "createTime",
+      "updateTime",
+      "relatedId",
+      "adminRemark",
+      "description",
+    ];
     const rows = (result.items || []).map((it) => [
       it.id,
       it.user_id,
@@ -83,23 +118,36 @@ export class AdminStatementCompatController {
       it.type,
       it.status,
       it.amount,
-      it.create_time instanceof Date ? it.create_time.toISOString() : it.create_time,
-      it.update_time instanceof Date ? it.update_time.toISOString() : it.update_time,
+      it.create_time instanceof Date
+        ? it.create_time.toISOString()
+        : it.create_time,
+      it.update_time instanceof Date
+        ? it.update_time.toISOString()
+        : it.update_time,
       it.related_id,
       it.admin_remark ?? "",
       (it.description ?? "").replace(/\r|\n/g, " "),
     ]);
     const csvLines = [
       header.join(","),
-      ...rows.map((r) => r.map((v) => {
-        const s = String(v ?? "");
-        return s.includes(",") || s.includes("\n") || s.includes('"') ? '"' + s.replace(/"/g, '""') + '"' : s;
-      }).join(",")),
+      ...rows.map((r) =>
+        r
+          .map((v) => {
+            const s = String(v ?? "");
+            return s.includes(",") || s.includes("\n") || s.includes('"')
+              ? '"' + s.replace(/"/g, '""') + '"'
+              : s;
+          })
+          .join(","),
+      ),
     ];
     const csv = csvLines.join("\r\n");
     const buf = Buffer.from("\ufeff" + csv, "utf8");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="statement-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="statement-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
     return res.send(buf);
   }
 
@@ -113,7 +161,7 @@ export class AdminStatementCompatController {
         ? [new Date(q.start_date), new Date(q.end_date)]
         : undefined,
     );
-    const header = ["type","totalAmount","count"];
+    const header = ["type", "totalAmount", "count"];
     const lines = [header.join(",")];
     for (const key of Object.keys(stats)) {
       const row = [key, stats[key].total_amount ?? 0, stats[key].count ?? 0];
@@ -122,7 +170,10 @@ export class AdminStatementCompatController {
     const csv = lines.join("\r\n");
     const buf = Buffer.from("\ufeff" + csv, "utf8");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="statement-stat-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="statement-stat-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
     return res.send(buf);
   }
 
@@ -144,9 +195,7 @@ export class AdminStatementCompatController {
         { code: 1, description: "入账时间" },
         { code: 2, description: "下单时间" },
       ],
-      accountType: [
-        { code: 1, description: "账户余额" },
-      ],
+      accountType: [{ code: 1, description: "账户余额" }],
       entryType: [
         { code: 1, description: "自动" },
         { code: 2, description: "手动" },

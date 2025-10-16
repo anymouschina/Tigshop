@@ -1,9 +1,25 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Request, Logger } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+  Logger,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { CollectService } from "./collect.service";
-import { CollectListDto, CollectType, CollectListResponse, CollectProductDto, DeleteCollectDto, SuccessResponse } from "./dto/collect.dto";
+import {
+  CollectListDto,
+  CollectType,
+  CollectListResponse,
+  CollectProductDto,
+  DeleteCollectDto,
+  SuccessResponse,
+} from "./dto/collect.dto";
 
 @ApiTags("User Collection (Compat)")
 @Controller("api/user/collectProduct")
@@ -17,7 +33,9 @@ export class CollectProductCompatController {
    * 兼容PHP路径：/api/user/collectProduct/list
    */
   @Get("list")
-  @ApiOperation({ summary: "获取商品收藏列表（兼容 /api/user/collectProduct/list）" })
+  @ApiOperation({
+    summary: "获取商品收藏列表（兼容 /api/user/collectProduct/list）",
+  })
   async list(
     @Request() req,
     @Query() query: { page?: number; size?: number },
@@ -39,7 +57,9 @@ export class CollectProductCompatController {
     @Request() req,
     @Body() body: CollectProductDto,
   ): Promise<SuccessResponse> {
-    this.logger.debug(`CollectProductCompatController save called with body: ${JSON.stringify(body)} ${JSON.stringify(req.user)}`);
+    this.logger.debug(
+      `CollectProductCompatController save called with body: ${JSON.stringify(body)} ${JSON.stringify(req.user)}`,
+    );
     return this.collectService.collectProduct(req.user.userId, body);
   }
 

@@ -119,7 +119,8 @@ export class TranslationsService {
     dataId: number;
     items: { localeId: number; translationValue: string }[];
   }) {
-    const { translationName, translationKey, dataType, dataId, items } = payload;
+    const { translationName, translationKey, dataType, dataId, items } =
+      payload;
 
     // 清理旧数据
     await this.prisma.translations_data.deleteMany({
@@ -179,7 +180,9 @@ export class TranslationsService {
 
     // 可选：附带 locales 信息
     // 这里轻量查询 locales 基础字段
-    const localeIds = Array.from(new Set(rows.map((r) => r.locale_id).filter(Boolean))) as number[];
+    const localeIds = Array.from(
+      new Set(rows.map((r) => r.locale_id).filter(Boolean)),
+    ) as number[];
     const localesMap: Record<number, any> = {};
     if (localeIds.length) {
       const locales = await this.prisma.locales.findMany({

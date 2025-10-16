@@ -103,7 +103,8 @@ export class RechargeSettingService {
 
   async create(createDto: CreateRechargeSettingDto) {
     const amount = (createDto as any).amount ?? (createDto as any).Amount;
-    const giveAmount = (createDto as any).giveAmount ?? (createDto as any).GiveAmount;
+    const giveAmount =
+      (createDto as any).giveAmount ?? (createDto as any).GiveAmount;
     const sort = (createDto as any).sort ?? (createDto as any).Sort;
     const status = (createDto as any).status ?? (createDto as any).Status;
 
@@ -134,7 +135,8 @@ export class RechargeSettingService {
 
     const updateData: any = {};
     const amount = (updateDto as any).amount ?? (updateDto as any).Amount;
-    const giveAmount = (updateDto as any).giveAmount ?? (updateDto as any).GiveAmount;
+    const giveAmount =
+      (updateDto as any).giveAmount ?? (updateDto as any).GiveAmount;
     const status = (updateDto as any).status ?? (updateDto as any).Status;
     const sort = (updateDto as any).sort ?? (updateDto as any).Sort;
 

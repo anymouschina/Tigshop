@@ -90,10 +90,13 @@ export class UserInvoiceService {
           mobile: true,
         },
       });
-      userMap = users.reduce((acc: any, u: any) => {
-        acc[u.user_id] = u;
-        return acc;
-      }, {} as Record<number, any>);
+      userMap = users.reduce(
+        (acc: any, u: any) => {
+          acc[u.user_id] = u;
+          return acc;
+        },
+        {} as Record<number, any>,
+      );
     }
 
     const records = rawRecords.map((r: any) => ({

@@ -12,14 +12,19 @@ import { PanelService } from "src/panel/panel.service";
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class AdminApiProductCreateCompatController {
-  constructor(private prisma: PrismaService, private panel: PanelService) {}
+  constructor(
+    private prisma: PrismaService,
+    private panel: PanelService,
+  ) {}
 
   private async genUniqueProductSn(prefix = "SN") {
     for (let i = 0; i < 5; i++) {
       const sn = `${prefix}${Date.now()}${Math.floor(Math.random() * 1000)
         .toString()
         .padStart(3, "0")}`;
-      const exist = await this.prisma.product.count({ where: { product_sn: sn } });
+      const exist = await this.prisma.product.count({
+        where: { product_sn: sn },
+      });
       if (!exist) return sn;
       await new Promise((r) => setTimeout(r, 5));
     }
@@ -51,7 +56,10 @@ export class AdminApiProductCreateCompatController {
     };
 
     const now = Math.floor(Date.now() / 1000);
-    const firstImg = Array.isArray(body.imgList) && body.imgList.length > 0 ? body.imgList[0] : null;
+    const firstImg =
+      Array.isArray(body.imgList) && body.imgList.length > 0
+        ? body.imgList[0]
+        : null;
 
     const data: any = {
       product_name: productName,
@@ -59,37 +67,61 @@ export class AdminApiProductCreateCompatController {
       category_id: toNumber(body.categoryId ?? body.category_id, 0),
       product_price: toNumber(body.productPrice ?? body.product_price, 0),
       market_price: toNumber(body.marketPrice ?? body.market_price, 0),
-      product_status: toNumber(body.productStatus ?? body.product_status, 1) ? 1 : 0,
+      product_status: toNumber(body.productStatus ?? body.product_status, 1)
+        ? 1
+        : 0,
       brand_id: toNumber(body.brandId ?? body.brand_id, 0),
       shipping_tpl_id: toNumber(body.shippingTplId ?? body.shipping_tpl_id, 0),
       free_shipping: toNumber(body.freeShipping ?? body.free_shipping, 0),
       shop_id: shopId,
-      shop_category_id: toNumber(body.shopCategoryId ?? body.shop_category_id, 0),
+      shop_category_id: toNumber(
+        body.shopCategoryId ?? body.shop_category_id,
+        0,
+      ),
       product_weight: toNumber(body.productWeight ?? body.product_weight, 0),
       product_stock: toNumber(body.productStock ?? body.product_stock, 0),
       keywords: body.keywords ?? "",
       product_brief: body.productBrief ?? "",
       product_desc: body.productDesc ?? "",
       pic_url: firstImg?.picUrl || firstImg?.pic_url || "",
-      pic_thumb: firstImg?.picThumb || firstImg?.pic_thumb || firstImg?.picUrl || firstImg?.pic_url || "",
-      pic_original: firstImg?.picOriginal || firstImg?.pic_original || firstImg?.picUrl || firstImg?.pic_url || "",
+      pic_thumb:
+        firstImg?.picThumb ||
+        firstImg?.pic_thumb ||
+        firstImg?.picUrl ||
+        firstImg?.pic_url ||
+        "",
+      pic_original:
+        firstImg?.picOriginal ||
+        firstImg?.pic_original ||
+        firstImg?.picUrl ||
+        firstImg?.pic_url ||
+        "",
       is_support_cod: toNumber(body.isSupportCod ?? body.is_support_cod, 1),
       give_integral: toNumber(body.giveIntegral ?? body.give_integral, -1),
       rank_integral: toNumber(body.rankIntegral ?? body.rank_integral, -1),
       integral: toNumber(body.integral, 0),
       card_group_id: toNumber(
-        body.cardGroupId ?? (Array.isArray(body.eCardList) && body.eCardList[0]?.groupId),
+        body.cardGroupId ??
+          (Array.isArray(body.eCardList) && body.eCardList[0]?.groupId),
         0,
       ),
       virtual_sample: body.virtualSample ?? body.virtual_sample ?? "",
-      paid_content: Array.isArray(body.paidContent) ? JSON.stringify(body.paidContent) : body.paidContent ?? null,
+      paid_content: Array.isArray(body.paidContent)
+        ? JSON.stringify(body.paidContent)
+        : (body.paidContent ?? null),
       no_shipping: toNumber(body.noShipping ?? body.no_shipping, 0),
-      fixed_shipping_type: toNumber(body.fixedShippingType ?? body.fixed_shipping_type, 2),
-      fixed_shipping_fee: toNumber(body.fixedShippingFee ?? body.fixed_shipping_fee, 0),
+      fixed_shipping_type: toNumber(
+        body.fixedShippingType ?? body.fixed_shipping_type,
+        2,
+      ),
+      fixed_shipping_fee: toNumber(
+        body.fixedShippingFee ?? body.fixed_shipping_fee,
+        0,
+      ),
       limit_number: toNumber(body.limitNumber ?? body.limit_number, 0),
       product_service_ids: Array.isArray(body.productServiceIds)
         ? (body.productServiceIds as any[]).map((x) => String(x)).join(",")
-        : body.productServiceIds ?? null,
+        : (body.productServiceIds ?? null),
       add_time: now,
     };
 
@@ -97,14 +129,21 @@ export class AdminApiProductCreateCompatController {
     if (Array.isArray(body.productDescArr) && body.productDescArr.length) {
       try {
         const html = body.productDescArr
-          .map((it: any) => (typeof it?.html === "string" ? it.html : it?.pic ? `<div class="desc-pic-item"><img src="${it.pic}"></div>` : ""))
+          .map((it: any) =>
+            typeof it?.html === "string"
+              ? it.html
+              : it?.pic
+                ? `<div class="desc-pic-item"><img src="${it.pic}"></div>`
+                : "",
+          )
           .join("");
         if (html) data.product_desc = html;
       } catch {}
     }
 
     // 布尔型 product_type：非 0 视为 true
-    if (body.productType !== undefined) data.product_type = !!toNumber(body.productType, 0);
+    if (body.productType !== undefined)
+      data.product_type = !!toNumber(body.productType, 0);
 
     // 写入商品
     const created = await this.prisma.product.create({ data });
@@ -141,7 +180,10 @@ export class AdminApiProductCreateCompatController {
             sku_sn: row?.skuSn ?? row?.sku_sn ?? "",
             sku_tsn: row?.skuTsn ?? row?.sku_tsn ?? "",
             sku_stock: toNumber(row?.skuStock ?? row?.sku_stock, 0),
-            sku_price: toNumber(row?.skuPrice ?? row?.sku_price, data.product_price ?? 0),
+            sku_price: toNumber(
+              row?.skuPrice ?? row?.sku_price,
+              data.product_price ?? 0,
+            ),
           },
         });
       }

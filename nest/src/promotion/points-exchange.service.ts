@@ -44,20 +44,35 @@ export class PointsExchangeService {
     });
 
     // 补齐产品与 SKU 信息
-    const productIds = Array.from(new Set(rows.map((r) => r.product_id).filter(Boolean)));
-    const skuIds = Array.from(new Set(rows.map((r) => r.sku_id).filter((x) => !!x && Number(x) > 0)));
+    const productIds = Array.from(
+      new Set(rows.map((r) => r.product_id).filter(Boolean)),
+    );
+    const skuIds = Array.from(
+      new Set(rows.map((r) => r.sku_id).filter((x) => !!x && Number(x) > 0)),
+    );
 
     const [products, skus] = await Promise.all([
       productIds.length
         ? this.prisma.product.findMany({
             where: { product_id: { in: productIds } },
-            select: { product_id: true, product_name: true, product_price: true, product_stock: true, pic_thumb: true },
+            select: {
+              product_id: true,
+              product_name: true,
+              product_price: true,
+              product_stock: true,
+              pic_thumb: true,
+            },
           })
         : Promise.resolve([]),
       skuIds.length
         ? this.prisma.product_sku.findMany({
             where: { sku_id: { in: skuIds as number[] } },
-            select: { sku_id: true, sku_price: true, sku_stock: true, sku_sn: true },
+            select: {
+              sku_id: true,
+              sku_price: true,
+              sku_stock: true,
+              sku_sn: true,
+            },
           })
         : Promise.resolve([]),
     ]);
@@ -69,8 +84,14 @@ export class PointsExchangeService {
     return rows.map((item) => {
       const prod = productMap.get(item.product_id);
       const sku = item.sku_id ? skuMap.get(item.sku_id) : undefined;
-      const productPrice = sku?.sku_price != null ? Number(sku.sku_price) : Number(prod?.product_price || 0);
-      const discountsPrice = Math.max(0, productPrice - Number(item.points_deducted_amount));
+      const productPrice =
+        sku?.sku_price != null
+          ? Number(sku.sku_price)
+          : Number(prod?.product_price || 0);
+      const discountsPrice = Math.max(
+        0,
+        productPrice - Number(item.points_deducted_amount),
+      );
       return {
         ...item,
         product: prod
@@ -135,21 +156,46 @@ export class PointsExchangeService {
   }
 
   async getDetail(id: number): Promise<any> {
-    const result = await this.prisma.points_exchange.findUnique({ where: { id } });
+    const result = await this.prisma.points_exchange.findUnique({
+      where: { id },
+    });
 
     if (!result) {
       throw new Error("积分商品不存在");
     }
     // 读取产品与 SKU
     const [prod, sku] = await Promise.all([
-  this.prisma.product.findFirst({ where: { product_id: result.product_id }, select: { product_id: true, product_name: true, product_price: true, product_stock: true, pic_thumb: true } }),
+      this.prisma.product.findFirst({
+        where: { product_id: result.product_id },
+        select: {
+          product_id: true,
+          product_name: true,
+          product_price: true,
+          product_stock: true,
+          pic_thumb: true,
+        },
+      }),
       result.sku_id && Number(result.sku_id) > 0
-        ? this.prisma.product_sku.findUnique({ where: { sku_id: Number(result.sku_id) }, select: { sku_id: true, sku_price: true, sku_stock: true, sku_sn: true } })
+        ? this.prisma.product_sku.findUnique({
+            where: { sku_id: Number(result.sku_id) },
+            select: {
+              sku_id: true,
+              sku_price: true,
+              sku_stock: true,
+              sku_sn: true,
+            },
+          })
         : Promise.resolve(null),
     ]);
 
-    let productPrice = sku?.sku_price != null ? Number(sku.sku_price) : Number(prod?.product_price || 0);
-    let productStock = sku?.sku_stock != null ? Number(sku.sku_stock) : Number(prod?.product_stock || 0);
+    const productPrice =
+      sku?.sku_price != null
+        ? Number(sku.sku_price)
+        : Number(prod?.product_price || 0);
+    let productStock =
+      sku?.sku_stock != null
+        ? Number(sku.sku_stock)
+        : Number(prod?.product_stock || 0);
     let isEnabled = result.is_enabled;
 
     const discountsPrice = Math.max(
@@ -172,10 +218,20 @@ export class PointsExchangeService {
     return {
       ...result,
       product: prod
-        ? { product_id: prod.product_id, product_name: prod.product_name, product_price: prod.product_price, pic_thumb: prod.pic_thumb }
+        ? {
+            product_id: prod.product_id,
+            product_name: prod.product_name,
+            product_price: prod.product_price,
+            pic_thumb: prod.pic_thumb,
+          }
         : null,
       product_sku: sku
-        ? { sku_id: sku.sku_id, sku_price: sku.sku_price, sku_stock: sku.sku_stock, sku_sn: sku.sku_sn }
+        ? {
+            sku_id: sku.sku_id,
+            sku_price: sku.sku_price,
+            sku_stock: sku.sku_stock,
+            sku_sn: sku.sku_sn,
+          }
         : null,
       product_price: productPrice,
       product_stock: productStock,

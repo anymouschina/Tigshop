@@ -1,14 +1,19 @@
 // @ts-nocheck
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { toMoneyString, toWeightString, toDateTime } from "src/common/utils/format";
+import {
+  toMoneyString,
+  toWeightString,
+  toDateTime,
+} from "src/common/utils/format";
 import { CommentService } from "./comment/comment.service";
 
 @Injectable()
 export class ProductDetailService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => CommentService)) private readonly commentService: CommentService,
+    @Inject(forwardRef(() => CommentService))
+    private readonly commentService: CommentService,
   ) {}
 
   /**
@@ -26,7 +31,7 @@ export class ProductDetailService {
       throw new Error("商品不存在");
     }
 
-  // 并行获取所有相关数据（尚未补充 isBuy / 付费内容 / 秒杀等扩展逻辑）
+    // 并行获取所有相关数据（尚未补充 isBuy / 付费内容 / 秒杀等扩展逻辑）
     const [
       descArr,
       skuList,
@@ -42,7 +47,7 @@ export class ProductDetailService {
     ] = await Promise.all([
       this.getProductDescArr(product.product_desc),
       this.getSkuList(productId),
-  this.getProductGalleryList(productId),
+      this.getProductGalleryList(productId),
       this.getVideoList(productId),
       this.getAttrList(productId),
       this.getProductCommentRankDetail(productId),
@@ -54,7 +59,7 @@ export class ProductDetailService {
     ]);
 
     // 秒杀状态与结束时间（对齐 PHP：存在进行中的 seckill 则 isSeckill=1 且填充结束时间）
-    let seckillEndTime: number | string = '';
+    let seckillEndTime: number | string = "";
     try {
       const now = Math.floor(Date.now() / 1000);
       const seckillRow = await this.prisma.seckill.findFirst({
@@ -66,7 +71,7 @@ export class ProductDetailService {
         select: { seckill_end_time: true },
       });
       if (seckillRow) {
-        seckillEndTime = seckillRow.seckill_end_time ?? '';
+        seckillEndTime = seckillRow.seckill_end_time ?? "";
       }
     } catch (_) {}
 
@@ -74,7 +79,7 @@ export class ProductDetailService {
     let isBuy = 0;
     try {
       // 读取 request userId：此 service 原本无 req 注入，需从全局 request 取（Nest 可通过 async-local storage 或自建传参，这里简化：若无 userId 则视为未购）
-      const g: any = (global as any);
+      const g: any = global as any;
       const currentUserId = g.__currentUserId || null; // 若上层 controller 想支持，可在进入前设置
       if (currentUserId) {
         const orderCount = await this.prisma.order.count({
@@ -107,12 +112,15 @@ export class ProductDetailService {
 
     // 未购买则清空付费内容（paid_content）
     if (!isBuy && product.paid_content) {
-      product.paid_content = '' as any;
+      product.paid_content = "" as any;
     }
 
     // 库存兜底：如果存在 SKU 但全部 skuStock = 0 且商品主表有正库存，则将主表库存赋给首个 SKU，避免前端误判“售罄”
     if (Array.isArray(skuList) && skuList.length > 0) {
-      const skuSum = skuList.reduce((sum, s) => sum + Number(s?.skuStock || 0), 0);
+      const skuSum = skuList.reduce(
+        (sum, s) => sum + Number(s?.skuStock || 0),
+        0,
+      );
       const productTotalStock = Number(product.product_stock ?? 0);
       if (skuSum === 0 && productTotalStock > 0) {
         // 仅在所有SKU都为0时做兜底；不平均分配，直接给第一个，保持简单且可见
@@ -130,8 +138,8 @@ export class ProductDetailService {
         productSn: product.product_sn,
         productTsn: product.product_tsn ?? "0",
         productDesc: product.product_desc ?? "",
-  productPrice: toMoneyString(product.product_price),
-  marketPrice: toMoneyString(product.market_price),
+        productPrice: toMoneyString(product.product_price),
+        marketPrice: toMoneyString(product.market_price),
         productStock: product.product_stock ?? 0,
         productStatus: product.product_status ?? 1,
         productType: this.toNumberFlag(product.product_type, 1),
@@ -143,12 +151,12 @@ export class ProductDetailService {
         checkStatus: product.check_status ?? 1,
         checkReason: product.check_reason ?? "",
         clickCount: product.click_count ?? 0,
-  productWeight: toWeightString(product.product_weight),
+        productWeight: toWeightString(product.product_weight),
         isPromote: product.is_promote ?? 0,
         isPromoteActivity: product.is_promote_activity ? 1 : 0,
-  promotePrice: toMoneyString(product.promote_price),
-  promoteStartDate: toDateTime(product.promote_start_date),
-  promoteEndDate: toDateTime(product.promote_end_date),
+        promotePrice: toMoneyString(product.promote_price),
+        promoteStartDate: toDateTime(product.promote_start_date),
+        promoteEndDate: toDateTime(product.promote_end_date),
         seckillMaxNum: product.seckill_max_num ?? 0,
         productBrief: product.product_brief ?? "",
         shippingTplId: product.shipping_tpl_id ?? 0,
@@ -178,19 +186,24 @@ export class ProductDetailService {
         isSupportReturn: product.is_support_return ?? 0,
         isSupportCod: product.is_support_cod ?? 1,
         productVideo: product.product_video ?? "",
-  prepayPrice: toMoneyString(product.prepay_price ?? 0),
+        prepayPrice: toMoneyString(product.prepay_price ?? 0),
         cardGroupId: product.card_group_id ?? 0,
         virtualSample: product.virtual_sample ?? "",
         paidContent: product.paid_content ?? "",
         noShipping: product.no_shipping ?? 0,
         fixedShippingType: product.fixed_shipping_type ?? 2,
-  fixedShippingFee: toMoneyString(product.fixed_shipping_fee ?? 0),
+        fixedShippingFee: toMoneyString(product.fixed_shipping_fee ?? 0),
         vendorProductId: product.vendor_product_id ?? null,
         vendorId: product.vendor_id ?? null,
         // 兼容前端使用的扩展字段
         isBuy,
         // 秒杀标记：优先用实时 seckillRow 结果，其次回退到历史 seckillDetail 判断
-        isSeckill: seckillEndTime ? 1 : (Array.isArray(seckillDetail) && seckillDetail.some((s:any) => s?.status === 1) ? 1 : 0),
+        isSeckill: seckillEndTime
+          ? 1
+          : Array.isArray(seckillDetail) &&
+              seckillDetail.some((s: any) => s?.status === 1)
+            ? 1
+            : 0,
         shopPickupTplId: null,
         isShopPickup: 0,
         isLogistics: 1,
@@ -198,23 +211,23 @@ export class ProductDetailService {
         eCardGroup: eCardGroup,
       },
       // 商品描述数组 - 对齐PHP的descArr字段
-  descArr,
+      descArr,
       // SKU列表 - 对齐PHP的skuList字段
-  skuList,
+      skuList,
       // 商品图片列表 - 对齐PHP的picList字段
-  picList,
+      picList,
       // 视频列表 - 对齐PHP的videoList字段
-  videoList,
+      videoList,
       // 属性列表 - 对齐PHP的attrList字段
-  attrList,
+      attrList,
       // 评论评分详情 - 对齐PHP的rankDetail字段
-  rankDetail,
+      rankDetail,
       // 秒杀信息 - 对齐PHP的seckillDetail字段
-  seckillDetail,
+      seckillDetail,
       // 服务列表 - 对齐PHP的serviceList字段
-  serviceList,
+      serviceList,
       // 选中的属性值 - 对齐PHP的checkedValue字段
-  checkedValue,
+      checkedValue,
       // 咨询总数 - 对齐PHP的consultationTotal字段
       consultationTotal,
       // 新增：店铺客服/联系方式（与订单详情结构部分对齐）
@@ -228,7 +241,9 @@ export class ProductDetailService {
           }
         : null,
       // 为前端快速访问（有些旧代码可能直接读顶层）再扁平提供一份（不影响已有字段）
-      kefuInlet: shopDataReal ? this.safeParseArray(shopDataReal.kefu_inlet) : [],
+      kefuInlet: shopDataReal
+        ? this.safeParseArray(shopDataReal.kefu_inlet)
+        : [],
       kefuLink: shopDataReal?.kefu_link || "",
       kefuPhone: shopDataReal?.kefu_phone || "",
       // 追加：对齐 PHP 返回的秒杀结束时间字段（若需要）
@@ -261,7 +276,11 @@ export class ProductDetailService {
       const parsed = JSON.parse(String(v));
       return Array.isArray(parsed) ? parsed : [];
     } catch {
-      if (typeof v === "string" && v.includes(",")) return v.split(",").map((x) => x.trim()).filter(Boolean);
+      if (typeof v === "string" && v.includes(","))
+        return v
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean);
       return [];
     }
   }
@@ -474,10 +493,12 @@ export class ProductDetailService {
    */
   async getProductCommentRankDetail(productId: number): Promise<any> {
     try {
-      const stats = await this.commentService.getCommentStats(Number(productId));
+      const stats = await this.commentService.getCommentStats(
+        Number(productId),
+      );
       const total = stats?.totalComments ?? 0;
       const goodCount = Array.isArray(stats?.ratingDistribution)
-        ? (stats.ratingDistribution.find((r: any) => r.rating === 5)?.count || 0)
+        ? stats.ratingDistribution.find((r: any) => r.rating === 5)?.count || 0
         : 0;
       const averageRank = stats?.averageRating ?? 0;
       const goodPercent = total > 0 ? Math.round((goodCount / total) * 100) : 0;

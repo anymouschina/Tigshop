@@ -13,7 +13,10 @@ import { Response } from "express";
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class AdminSalesmanOrderCompatController {
-  constructor(private prisma: PrismaService, private panel: PanelService) {}
+  constructor(
+    private prisma: PrismaService,
+    private panel: PanelService,
+  ) {}
 
   private coerceNumber(v: any, dft = 0) {
     const n = Number(v);
@@ -67,14 +70,20 @@ export class AdminSalesmanOrderCompatController {
     const skip = (page - 1) * size;
     // 基础筛选（status/salesmanId/orderId/orderSn/keyword/时间区间/productId/itemId）
     const where: any = {};
-    if (query.status !== undefined && query.status !== "") where.status = this.coerceNumber(query.status, 0);
-    if (query.salesmanId) where.salesman_id = this.coerceNumber(query.salesmanId, 0);
-    if (query.productId) where.product_id = this.coerceNumber(query.productId, 0);
+    if (query.status !== undefined && query.status !== "")
+      where.status = this.coerceNumber(query.status, 0);
+    if (query.salesmanId)
+      where.salesman_id = this.coerceNumber(query.salesmanId, 0);
+    if (query.productId)
+      where.product_id = this.coerceNumber(query.productId, 0);
     if (query.itemId) where.item_id = this.coerceNumber(query.itemId, 0);
     if (query.orderId) where.order_id = this.coerceNumber(query.orderId, 0);
 
     // 时间区间（下单时间/记录创建时间）
-    const addTimeStart = this.coerceNumber(query.startTime || query.addTimeStart, 0);
+    const addTimeStart = this.coerceNumber(
+      query.startTime || query.addTimeStart,
+      0,
+    );
     const addTimeEnd = this.coerceNumber(query.endTime || query.addTimeEnd, 0);
     if (addTimeStart || addTimeEnd) {
       where.add_time = {} as any;
@@ -110,55 +119,102 @@ export class AdminSalesmanOrderCompatController {
       }
       const ordersWhere: any = { ...(shopId ? { shop_id: shopId } : {}) };
       if (orderSn) ordersWhere.order_sn = { contains: orderSn };
-      if (keyword) ordersWhere.OR = [{ order_sn: { contains: keyword } }, ...(userIds.length ? [{ user_id: { in: userIds } }] : [])];
-      const orders = await this.prisma.order.findMany({ where: ordersWhere, select: { order_id: true } });
+      if (keyword)
+        ordersWhere.OR = [
+          { order_sn: { contains: keyword } },
+          ...(userIds.length ? [{ user_id: { in: userIds } }] : []),
+        ];
+      const orders = await this.prisma.order.findMany({
+        where: ordersWhere,
+        select: { order_id: true },
+      });
       allowedOrderIds = orders.map((o) => o.order_id);
       where.order_id = { in: allowedOrderIds.length ? allowedOrderIds : [-1] };
     }
 
     // 先计数再分页
     const total = await this.prisma.salesman_order.count({ where });
-    const rows = await this.prisma.salesman_order.findMany({ where, orderBy: { salesman_order_id: "desc" }, skip, take: size });
+    const rows = await this.prisma.salesman_order.findMany({
+      where,
+      orderBy: { salesman_order_id: "desc" },
+      skip,
+      take: size,
+    });
 
     if (!rows.length)
       return { code: 0, message: "success", data: { records: [], total } };
 
     // 批量聚合相关 id
-    const orderIds = Array.from(new Set(rows.map((r: any) => r.order_id).filter(Boolean)));
-    const itemIds = Array.from(new Set(rows.map((r: any) => r.item_id).filter(Boolean)));
-    const salesmanIds = Array.from(new Set(rows.map((r: any) => r.salesman_id).filter(Boolean)));
-    const productIds = Array.from(new Set(rows.map((r: any) => r.product_id).filter(Boolean)));
+    const orderIds = Array.from(
+      new Set(rows.map((r: any) => r.order_id).filter(Boolean)),
+    );
+    const itemIds = Array.from(
+      new Set(rows.map((r: any) => r.item_id).filter(Boolean)),
+    );
+    const salesmanIds = Array.from(
+      new Set(rows.map((r: any) => r.salesman_id).filter(Boolean)),
+    );
+    const productIds = Array.from(
+      new Set(rows.map((r: any) => r.product_id).filter(Boolean)),
+    );
 
     // 读取订单与按店铺过滤（若 allowedOrderIds 已限定，则无需再次按店铺过滤）
     const orders = orderIds.length
-      ? await this.prisma.order.findMany({ where: { order_id: { in: orderIds }, ...(shopId && !allowedOrderIds ? { shop_id: shopId } : {}) } })
+      ? await this.prisma.order.findMany({
+          where: {
+            order_id: { in: orderIds },
+            ...(shopId && !allowedOrderIds ? { shop_id: shopId } : {}),
+          },
+        })
       : [];
     const orderMap = new Map(orders.map((o: any) => [o.order_id, o] as const));
 
     // 用户
-    const userIds = Array.from(new Set(orders.map((o: any) => o.user_id).filter(Boolean)));
+    const userIds = Array.from(
+      new Set(orders.map((o: any) => o.user_id).filter(Boolean)),
+    );
     const users = userIds.length
-      ? await this.prisma.user.findMany({ where: { user_id: { in: userIds } }, select: { user_id: true, username: true, nickname: true, mobile: true, avatar: true, distribution_register_time: true } })
+      ? await this.prisma.user.findMany({
+          where: { user_id: { in: userIds } },
+          select: {
+            user_id: true,
+            username: true,
+            nickname: true,
+            mobile: true,
+            avatar: true,
+            distribution_register_time: true,
+          },
+        })
       : [];
     const userMap = new Map(users.map((u: any) => [u.user_id, u] as const));
 
     // 订单项
     const items = itemIds.length
-      ? await this.prisma.order_item.findMany({ where: { item_id: { in: itemIds } } })
+      ? await this.prisma.order_item.findMany({
+          where: { item_id: { in: itemIds } },
+        })
       : [];
     const itemMap = new Map(items.map((it: any) => [it.item_id, it] as const));
 
     // 分销员
     const salesmen = salesmanIds.length
-      ? await this.prisma.salesman.findMany({ where: { salesman_id: { in: salesmanIds } } })
+      ? await this.prisma.salesman.findMany({
+          where: { salesman_id: { in: salesmanIds } },
+        })
       : [];
-    const salesmanMap = new Map(salesmen.map((s: any) => [s.salesman_id, s] as const));
+    const salesmanMap = new Map(
+      salesmen.map((s: any) => [s.salesman_id, s] as const),
+    );
 
     // 分销商品设置
     const salesmanProducts = productIds.length
-      ? await this.prisma.salesman_product.findMany({ where: { product_id: { in: productIds } } })
+      ? await this.prisma.salesman_product.findMany({
+          where: { product_id: { in: productIds } },
+        })
       : [];
-    const spMap = new Map(salesmanProducts.map((sp: any) => [sp.product_id, sp] as const));
+    const spMap = new Map(
+      salesmanProducts.map((sp: any) => [sp.product_id, sp] as const),
+    );
 
     // 组装记录
     const records = rows
@@ -179,21 +235,38 @@ export class AdminSalesmanOrderCompatController {
 
         // salesmanProductData：优先读取 salesman_order.salesman_product_data，否则基于 salesman_product 生成
         const rawSPD = this.parseMaybeJson<any>(r.salesman_product_data);
-        const commissionData = rawSPD?.commissionData ?? this.parseMaybeJson<any>(sp?.commission_data) ?? {};
-        const commissionType = this.coerceNumber(rawSPD?.commissionType ?? sp?.commission_type ?? 1, 1);
+        const commissionData =
+          rawSPD?.commissionData ??
+          this.parseMaybeJson<any>(sp?.commission_data) ??
+          {};
+        const commissionType = this.coerceNumber(
+          rawSPD?.commissionType ?? sp?.commission_type ?? 1,
+          1,
+        );
         const normalizeCommissionToLevels = (data: any) => {
           // 支持多种可能结构：[{levelArr:[{level,rate,downSalesmanRate}...]}] 或 {level1,level2,level3,level4}
           if (Array.isArray(data)) {
             const first = data[0];
-            if (first && Array.isArray(first.levelArr)) return first.levelArr as any[];
-            if (data.length && typeof data[0] === "object" && "level" in data[0] && "rate" in data[0]) return data as any[];
+            if (first && Array.isArray(first.levelArr))
+              return first.levelArr as any[];
+            if (
+              data.length &&
+              typeof data[0] === "object" &&
+              "level" in data[0] &&
+              "rate" in data[0]
+            )
+              return data as any[];
           }
           if (data && typeof data === "object") {
             const arr = [] as any[];
             for (let lv = 1; lv <= 4; lv++) {
               const k = (data as any)[`level${lv}`] ?? (data as any)[lv];
               if (k != null)
-                arr.push({ level: lv, rate: String(k), downSalesmanRate: null });
+                arr.push({
+                  level: lv,
+                  rate: String(k),
+                  downSalesmanRate: null,
+                });
             }
             return arr;
           }
@@ -203,45 +276,67 @@ export class AdminSalesmanOrderCompatController {
 
         const productCommissionText = (() => {
           if (!levelArr.length) return "";
-          const levelName = (lv: number) => (lv === 4 ? "钻石分销员" : lv === 3 ? "金牌分销员" : lv === 2 ? "银牌分销员" : "普通分销员");
-          const parts = levelArr.map((lv) => `${levelName(this.coerceNumber(lv.level, 1))}佣金:${this.toAmountStr(lv.rate, commissionType === 1 ? 2 : 2)}${commissionType === 1 ? "%" : ""};`);
+          const levelName = (lv: number) =>
+            lv === 4
+              ? "钻石分销员"
+              : lv === 3
+                ? "金牌分销员"
+                : lv === 2
+                  ? "银牌分销员"
+                  : "普通分销员";
+          const parts = levelArr.map(
+            (lv) =>
+              `${levelName(this.coerceNumber(lv.level, 1))}佣金:${this.toAmountStr(lv.rate, commissionType === 1 ? 2 : 2)}${commissionType === 1 ? "%" : ""};`,
+          );
           return parts.join("");
         })();
 
         const profitComposition = (() => {
           if (!sm || !levelArr.length) return "";
-          const found = levelArr.find((lv) => this.coerceNumber(lv.level, 0) === this.coerceNumber(sm.level, 0));
+          const found = levelArr.find(
+            (lv) =>
+              this.coerceNumber(lv.level, 0) === this.coerceNumber(sm.level, 0),
+          );
           return found ? this.toAmountStr(found.rate, 2) : "";
         })();
 
-        const salesmanProductData = rawSPD || (sp
-          ? {
-              salesmanProductId: sp.salesman_product_id,
-              productId: sp.product_id,
-              isJoin: this.coerceNumber(sp.is_join, 0),
-              commissionType,
-              commissionData: levelArr.length ? [{ levelArr }] : [],
-              addTime: sp.add_time ?? null,
-              updateTime: sp.update_time ? this.formatTime(sp.update_time) : null,
-              shopId: sp.shop_id ?? 0,
-              productCommission: { productCommission: productCommissionText, subCommission: "" },
-              salesman: sm
-                ? {
-                    salesmanId: sm.salesman_id,
-                    userId: sm.user_id,
-                    level: sm.level,
-                    groupId: sm.group_id,
-                    pid: sm.pid,
-                    addTime: sm.add_time ?? 0, // 这里保持为数值，贴近示例中 salesmanProductData.salesman.addTime
-                    shopId: sm.shop_id ?? 0,
-                    saleAmount: this.coerceNumber(sm.sale_amount, 0),
-                    orderSaleType: null,
-                  }
-                : null,
-            }
-          : null);
+        const salesmanProductData =
+          rawSPD ||
+          (sp
+            ? {
+                salesmanProductId: sp.salesman_product_id,
+                productId: sp.product_id,
+                isJoin: this.coerceNumber(sp.is_join, 0),
+                commissionType,
+                commissionData: levelArr.length ? [{ levelArr }] : [],
+                addTime: sp.add_time ?? null,
+                updateTime: sp.update_time
+                  ? this.formatTime(sp.update_time)
+                  : null,
+                shopId: sp.shop_id ?? 0,
+                productCommission: {
+                  productCommission: productCommissionText,
+                  subCommission: "",
+                },
+                salesman: sm
+                  ? {
+                      salesmanId: sm.salesman_id,
+                      userId: sm.user_id,
+                      level: sm.level,
+                      groupId: sm.group_id,
+                      pid: sm.pid,
+                      addTime: sm.add_time ?? 0, // 这里保持为数值，贴近示例中 salesmanProductData.salesman.addTime
+                      shopId: sm.shop_id ?? 0,
+                      saleAmount: this.coerceNumber(sm.sale_amount, 0),
+                      orderSaleType: null,
+                    }
+                  : null,
+              }
+            : null);
 
-        const settlementData = this.parseMaybeJson<any>(r.salesman_settlement_data) || {
+        const settlementData = this.parseMaybeJson<any>(
+          r.salesman_settlement_data,
+        ) || {
           id: null,
           shopId: null,
           code: null,
@@ -367,7 +462,8 @@ export class AdminSalesmanOrderCompatController {
               vendorProductId: it.vendor_product_id ?? null,
               vendorProductSkuId: it.vendor_product_sku_id ?? null,
               vendorId: it.vendor_id ?? null,
-              totalProductMoney: Number(this.toAmountStr(it.price)) * (it.quantity || 1),
+              totalProductMoney:
+                Number(this.toAmountStr(it.price)) * (it.quantity || 1),
             }
           : null;
 
@@ -378,7 +474,9 @@ export class AdminSalesmanOrderCompatController {
               nickname: u.nickname,
               avatar: u.avatar,
               userId: u.user_id,
-              distributionRegisterTime: this.formatTime(u.distribution_register_time as any),
+              distributionRegisterTime: this.formatTime(
+                u.distribution_register_time as any,
+              ),
             }
           : null;
 
@@ -427,13 +525,21 @@ export class AdminSalesmanOrderCompatController {
       });
 
     // 若需要 groupName，可在此追加轻量查询（避免 N+1）
-    const groupIds = Array.from(new Set(records.map((r: any) => r?.salesman?.groupId).filter(Boolean)));
+    const groupIds = Array.from(
+      new Set(records.map((r: any) => r?.salesman?.groupId).filter(Boolean)),
+    );
     if (groupIds.length) {
-      const groups = await this.prisma.salesman_group.findMany({ where: { group_id: { in: groupIds } }, select: { group_id: true, group_name: true } });
-      const gmap = new Map(groups.map((g) => [g.group_id, g.group_name] as const));
+      const groups = await this.prisma.salesman_group.findMany({
+        where: { group_id: { in: groupIds } },
+        select: { group_id: true, group_name: true },
+      });
+      const gmap = new Map(
+        groups.map((g) => [g.group_id, g.group_name] as const),
+      );
       for (const rec of records as any[]) {
         if (rec?.salesman?.groupId && rec.salesman.groupInfo) {
-          rec.salesman.groupInfo.groupName = gmap.get(rec.salesman.groupId) || "";
+          rec.salesman.groupInfo.groupName =
+            gmap.get(rec.salesman.groupId) || "";
         }
       }
     }
@@ -447,15 +553,24 @@ export class AdminSalesmanOrderCompatController {
   async export(@Req() req: any, @Query() query: any, @Res() res: Response) {
     // 复用 list 的筛选逻辑但不分页，设置最大导出条数以防过大
     const shopId = await this.panel.getUserShopId(req.user?.userId);
-    const limit = Math.min(Math.max(this.coerceNumber(query.limit, 5000), 1), 20000);
+    const limit = Math.min(
+      Math.max(this.coerceNumber(query.limit, 5000), 1),
+      20000,
+    );
 
     const where: any = {};
-    if (query.status !== undefined && query.status !== "") where.status = this.coerceNumber(query.status, 0);
-    if (query.salesmanId) where.salesman_id = this.coerceNumber(query.salesmanId, 0);
-    if (query.productId) where.product_id = this.coerceNumber(query.productId, 0);
+    if (query.status !== undefined && query.status !== "")
+      where.status = this.coerceNumber(query.status, 0);
+    if (query.salesmanId)
+      where.salesman_id = this.coerceNumber(query.salesmanId, 0);
+    if (query.productId)
+      where.product_id = this.coerceNumber(query.productId, 0);
     if (query.itemId) where.item_id = this.coerceNumber(query.itemId, 0);
     if (query.orderId) where.order_id = this.coerceNumber(query.orderId, 0);
-    const addTimeStart = this.coerceNumber(query.startTime || query.addTimeStart, 0);
+    const addTimeStart = this.coerceNumber(
+      query.startTime || query.addTimeStart,
+      0,
+    );
     const addTimeEnd = this.coerceNumber(query.endTime || query.addTimeEnd, 0);
     if (addTimeStart || addTimeEnd) {
       where.add_time = {} as any;
@@ -477,35 +592,84 @@ export class AdminSalesmanOrderCompatController {
       let userIds: number[] = [];
       if (keyword) {
         const users = await this.prisma.user.findMany({
-          where: { OR: [{ username: { contains: keyword } }, { nickname: { contains: keyword } }, { mobile: { contains: keyword } }] },
+          where: {
+            OR: [
+              { username: { contains: keyword } },
+              { nickname: { contains: keyword } },
+              { mobile: { contains: keyword } },
+            ],
+          },
           select: { user_id: true },
         });
         userIds = users.map((u) => u.user_id);
       }
       const ordersWhere: any = { ...(shopId ? { shop_id: shopId } : {}) };
       if (orderSn) ordersWhere.order_sn = { contains: orderSn };
-      if (keyword) ordersWhere.OR = [{ order_sn: { contains: keyword } }, ...(userIds.length ? [{ user_id: { in: userIds } }] : [])];
-      const orders = await this.prisma.order.findMany({ where: ordersWhere, select: { order_id: true } });
+      if (keyword)
+        ordersWhere.OR = [
+          { order_sn: { contains: keyword } },
+          ...(userIds.length ? [{ user_id: { in: userIds } }] : []),
+        ];
+      const orders = await this.prisma.order.findMany({
+        where: ordersWhere,
+        select: { order_id: true },
+      });
       allowedOrderIds = orders.map((o) => o.order_id);
       where.order_id = { in: allowedOrderIds.length ? allowedOrderIds : [-1] };
     }
 
-    const rows = await this.prisma.salesman_order.findMany({ where, orderBy: { salesman_order_id: "desc" }, take: limit });
+    const rows = await this.prisma.salesman_order.findMany({
+      where,
+      orderBy: { salesman_order_id: "desc" },
+      take: limit,
+    });
 
     // 关联数据
-    const orderIds = Array.from(new Set(rows.map((r: any) => r.order_id).filter(Boolean)));
-    const itemIds = Array.from(new Set(rows.map((r: any) => r.item_id).filter(Boolean)));
-    const salesmanIds = Array.from(new Set(rows.map((r: any) => r.salesman_id).filter(Boolean)));
+    const orderIds = Array.from(
+      new Set(rows.map((r: any) => r.order_id).filter(Boolean)),
+    );
+    const itemIds = Array.from(
+      new Set(rows.map((r: any) => r.item_id).filter(Boolean)),
+    );
+    const salesmanIds = Array.from(
+      new Set(rows.map((r: any) => r.salesman_id).filter(Boolean)),
+    );
 
-    const orders = orderIds.length ? await this.prisma.order.findMany({ where: { order_id: { in: orderIds } } }) : [];
+    const orders = orderIds.length
+      ? await this.prisma.order.findMany({
+          where: { order_id: { in: orderIds } },
+        })
+      : [];
     const orderMap = new Map(orders.map((o: any) => [o.order_id, o] as const));
-    const usersIds = Array.from(new Set(orders.map((o: any) => o.user_id).filter(Boolean)));
-    const users = usersIds.length ? await this.prisma.user.findMany({ where: { user_id: { in: usersIds } }, select: { user_id: true, username: true, nickname: true, mobile: true } }) : [];
+    const usersIds = Array.from(
+      new Set(orders.map((o: any) => o.user_id).filter(Boolean)),
+    );
+    const users = usersIds.length
+      ? await this.prisma.user.findMany({
+          where: { user_id: { in: usersIds } },
+          select: {
+            user_id: true,
+            username: true,
+            nickname: true,
+            mobile: true,
+          },
+        })
+      : [];
     const userMap = new Map(users.map((u: any) => [u.user_id, u] as const));
-    const items = itemIds.length ? await this.prisma.order_item.findMany({ where: { item_id: { in: itemIds } } }) : [];
+    const items = itemIds.length
+      ? await this.prisma.order_item.findMany({
+          where: { item_id: { in: itemIds } },
+        })
+      : [];
     const itemMap = new Map(items.map((it: any) => [it.item_id, it] as const));
-    const salesmen = salesmanIds.length ? await this.prisma.salesman.findMany({ where: { salesman_id: { in: salesmanIds } } }) : [];
-    const salesmanMap = new Map(salesmen.map((s: any) => [s.salesman_id, s] as const));
+    const salesmen = salesmanIds.length
+      ? await this.prisma.salesman.findMany({
+          where: { salesman_id: { in: salesmanIds } },
+        })
+      : [];
+    const salesmanMap = new Map(
+      salesmen.map((s: any) => [s.salesman_id, s] as const),
+    );
 
     // 构造 CSV 行
     const header = [

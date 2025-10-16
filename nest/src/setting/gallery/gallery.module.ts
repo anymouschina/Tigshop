@@ -9,7 +9,11 @@ import { UploadModule } from "src/upload/upload.module";
 
 @Module({
   imports: [UploadModule],
-  controllers: [GalleryController, AdminGalleryController, AdminGalleryPicController],
+  controllers: [
+    GalleryController,
+    AdminGalleryController,
+    AdminGalleryPicController,
+  ],
   providers: [GalleryService, AdminGalleryCompatService],
   exports: [GalleryService, AdminGalleryCompatService],
 })

@@ -53,6 +53,10 @@ export class AdminPromotionCompatController {
       this.svc.getFilterCount({ ...base, time_type: 2 }),
       this.svc.getFilterCount({ ...base, time_type: 3 }),
     ]);
-    return ResponseUtil.success({ timeType1Count, timeType2Count, timeType3Count });
+    return ResponseUtil.success({
+      timeType1Count,
+      timeType2Count,
+      timeType3Count,
+    });
   }
 }

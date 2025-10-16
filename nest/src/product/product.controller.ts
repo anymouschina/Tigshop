@@ -143,12 +143,14 @@ export class ProductController {
   @Get("getProductAvailability")
   @Public()
   @ApiOperation({ summary: "获取SKU库存信息" })
-  async getProductAvailability(
-    @Query() query: GetAvailabilityQueryDto,
-  ) {
+  async getProductAvailability(@Query() query: GetAvailabilityQueryDto) {
     const productId = Number(query.id);
     const skuIdNum = query.skuId ? Number(query.skuId) : null;
-    const { stock, priceStr, originPriceStr } = await this.productPricingService.getAvailability({ productId, skuId: skuIdNum });
+    const { stock, priceStr, originPriceStr } =
+      await this.productPricingService.getAvailability({
+        productId,
+        skuId: skuIdNum,
+      });
     return {
       productId,
       skuId: skuIdNum,
@@ -178,7 +180,10 @@ export class ProductController {
   @ApiOperation({ summary: "获取商品价格" })
   async getProductAmount(@Body() body: GetProductAmountBodyDto) {
     const items = Array.isArray(body?.skuItem) ? body.skuItem : [];
-    const { count, totalStr } = await this.productPricingService.getAmount(Number(body.id), items.map(i => ({ skuId: Number(i.skuId), num: Number(i.num) })));
+    const { count, totalStr } = await this.productPricingService.getAmount(
+      Number(body.id),
+      items.map((i) => ({ skuId: Number(i.skuId), num: Number(i.num) })),
+    );
     return { count, total: totalStr };
   }
 
@@ -188,7 +193,9 @@ export class ProductController {
   @Get("getBatchProductAvailability")
   @Public()
   @ApiOperation({ summary: "批量获取库存" })
-  async getBatchProductAvailability(@Query() query: GetBatchAvailabilityQueryDto) {
+  async getBatchProductAvailability(
+    @Query() query: GetBatchAvailabilityQueryDto,
+  ) {
     // 前端传入 skuIds (逗号分隔)，需要返回形如 { [skuId]: { price, stock } }
     const skuIds = (query.skuIds || "")
       .split(",")
@@ -212,8 +219,14 @@ export class ProductController {
   async getPriceInBatches(@Body() body: GetPriceInBatchesBodyDto) {
     const items = Array.isArray(body?.products) ? body.products : [];
     const normalized = items
-      .map(i => ({ productId: Number(i.productId), skuId: Number(i.skuId) }))
-      .filter(i => Number.isFinite(i.productId) && i.productId > 0 && Number.isFinite(i.skuId) && i.skuId > 0);
+      .map((i) => ({ productId: Number(i.productId), skuId: Number(i.skuId) }))
+      .filter(
+        (i) =>
+          Number.isFinite(i.productId) &&
+          i.productId > 0 &&
+          Number.isFinite(i.skuId) &&
+          i.skuId > 0,
+      );
     return await this.productPricingService.getPriceInBatches(normalized);
   }
 

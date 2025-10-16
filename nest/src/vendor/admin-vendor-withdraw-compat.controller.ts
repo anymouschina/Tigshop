@@ -44,7 +44,10 @@ export class AdminVendorWithdrawCompatController {
     }
 
     const sortFieldInput = query.sort_field ?? query.sortField ?? "add_time";
-    const sortOrder: "asc" | "desc" = (query.sort_order ?? query.sortOrder ?? "desc").toLowerCase() === "asc" ? "asc" : "desc";
+    const sortOrder: "asc" | "desc" =
+      (query.sort_order ?? query.sortOrder ?? "desc").toLowerCase() === "asc"
+        ? "asc"
+        : "desc";
     const sortFieldMap: Record<string, string> = {
       add_time: "add_time",
       addTime: "add_time",
@@ -55,7 +58,12 @@ export class AdminVendorWithdrawCompatController {
 
     const [total, list] = await this.prisma.$transaction([
       this.prisma.vendor_withdraw.count({ where }),
-      this.prisma.vendor_withdraw.findMany({ where, skip, take: size, orderBy: { [orderByField]: sortOrder } }),
+      this.prisma.vendor_withdraw.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { [orderByField]: sortOrder },
+      }),
     ]);
 
     return { code: 0, message: "success", data: { records: list, total } };

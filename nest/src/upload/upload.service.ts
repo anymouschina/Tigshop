@@ -175,13 +175,13 @@ export class UploadService {
           const thumbRelativePath = path.join(category, thumbFilename);
 
           // 动态导入 sharp，避免在未安装或生产裁剪场景下崩溃
-          const sharpModule = await import('sharp').catch(() => null);
+          const sharpModule = await import("sharp").catch(() => null);
           if (sharpModule && sharpModule.default) {
             const thumbnailBuffer = await sharpModule
               .default(file.buffer)
               .resize(thumbWidth, thumbHeight, {
-                fit: 'cover',
-                position: 'center',
+                fit: "cover",
+                position: "center",
               })
               .toBuffer();
 
@@ -211,12 +211,15 @@ export class UploadService {
           } else {
             // 未安装 sharp 或导入失败，静默跳过
             if (process.env.DEBUG_THUMBNAIL) {
-              console.warn('[UploadService] sharp 未可用，跳过缩略图生成');
+              console.warn("[UploadService] sharp 未可用，跳过缩略图生成");
             }
           }
         } catch (err) {
           if (process.env.DEBUG_THUMBNAIL) {
-            console.warn('[UploadService] 生成缩略图失败，已忽略:', err?.message);
+            console.warn(
+              "[UploadService] 生成缩略图失败，已忽略:",
+              err?.message,
+            );
           }
         }
       }

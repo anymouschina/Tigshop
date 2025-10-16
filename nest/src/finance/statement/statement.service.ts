@@ -125,7 +125,11 @@ export class StatementService {
       throw new Error("账单记录不存在");
     }
 
-    return { id: statement.statement_id, status: statement.settlement_status, ...statement } as any;
+    return {
+      id: statement.statement_id,
+      status: statement.settlement_status,
+      ...statement,
+    } as any;
   }
 
   async create(data: CreateStatementDto) {
@@ -184,7 +188,11 @@ export class StatementService {
       },
     });
 
-    return { id: statement.statement_id, status: statement.settlement_status, ...statement } as any;
+    return {
+      id: statement.statement_id,
+      status: statement.settlement_status,
+      ...statement,
+    } as any;
   }
 
   async update(data: UpdateStatementDto) {
@@ -197,7 +205,10 @@ export class StatementService {
     }
 
     // 状态变更检查
-    if (data.status !== undefined && data.status !== statement.settlement_status) {
+    if (
+      data.status !== undefined &&
+      data.status !== statement.settlement_status
+    ) {
       // 只有待审核状态可以变为已确认、已拒绝或已取消
       if (statement.settlement_status === 0) {
         if (data.status === 1 || data.status === 2 || data.status === 3) {
@@ -227,7 +238,11 @@ export class StatementService {
       data: updateData,
     });
 
-    return { id: updatedStatement.statement_id, status: updatedStatement.settlement_status, ...updatedStatement } as any;
+    return {
+      id: updatedStatement.statement_id,
+      status: updatedStatement.settlement_status,
+      ...updatedStatement,
+    } as any;
   }
 
   async remove(id: number) {

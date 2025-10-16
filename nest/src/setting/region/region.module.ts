@@ -6,7 +6,11 @@ import { AdminRegionCompatController } from "./admin-region-compat.controller";
 import { RegionApiController } from "../../sys/region.api.controller";
 
 @Module({
-  controllers: [RegionController, AdminRegionCompatController, RegionApiController],
+  controllers: [
+    RegionController,
+    AdminRegionCompatController,
+    RegionApiController,
+  ],
   providers: [RegionService],
   exports: [RegionService],
 })

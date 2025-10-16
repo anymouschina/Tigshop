@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Query, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -10,12 +19,23 @@ import { UploadType } from "src/upload/dto/upload.dto";
 @Controller("adminapi/setting/galleryPic")
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class AdminGalleryPicController {
-  constructor(private readonly svc: AdminGalleryCompatService, private readonly uploadService: UploadService) {}
+  constructor(
+    private readonly svc: AdminGalleryCompatService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   @Get("list")
   @Authorities("galleryPicManage")
-  async list(@Query("galleryId") galleryId?: string, @Query("page") page?: string, @Query("size") size?: string) {
-    const data = await this.svc.getGalleryPicList({ gallery_id: Number(galleryId || 0), page: Number(page || 1), size: Number(size || 15) });
+  async list(
+    @Query("galleryId") galleryId?: string,
+    @Query("page") page?: string,
+    @Query("size") size?: string,
+  ) {
+    const data = await this.svc.getGalleryPicList({
+      gallery_id: Number(galleryId || 0),
+      page: Number(page || 1),
+      size: Number(size || 15),
+    });
     return { code: 0, message: "success", data };
   }
 
@@ -37,7 +57,10 @@ export class AdminGalleryPicController {
   @Post("uploadImg")
   @UseInterceptors(FileInterceptor("file"))
   @Authorities("galleryPicManage")
-  async uploadImg(@UploadedFile() file: Express.Multer.File, @Query("galleryId") galleryId?: string) {
+  async uploadImg(
+    @UploadedFile() file: Express.Multer.File,
+    @Query("galleryId") galleryId?: string,
+  ) {
     const gid = Number(galleryId || 0);
     if (!gid) return { code: 1, message: "缺少相册ID" };
 
@@ -65,6 +88,15 @@ export class AdminGalleryPicController {
       },
     });
 
-    return { code: 0, message: "success", data: { picId: created.pic_id, picUrl: created.pic_url, picThumb: created.pic_thumb, picName: created.pic_name } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        picId: created.pic_id,
+        picUrl: created.pic_url,
+        picThumb: created.pic_thumb,
+        picName: created.pic_name,
+      },
+    };
   }
 }

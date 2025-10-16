@@ -13,7 +13,13 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
-import { CreateMerchantDto, MerchantListQueryDto, OperateMerchantDto, UpdateFieldDto, UpdateMerchantDto } from "./dto/merchant.dto";
+import {
+  CreateMerchantDto,
+  MerchantListQueryDto,
+  OperateMerchantDto,
+  UpdateFieldDto,
+  UpdateMerchantDto,
+} from "./dto/merchant.dto";
 
 // 兼容 PHP 后台商户管理路由: /adminapi/merchant/merchant/*
 @ApiTags("Admin API - 商户管理(兼容)")
@@ -50,7 +56,10 @@ export class MerchantCompatController {
     }
 
     const orderBy: any = {};
-    if (query.sortField && ["add_time", "merchant_id"].includes(query.sortField)) {
+    if (
+      query.sortField &&
+      ["add_time", "merchant_id"].includes(query.sortField)
+    ) {
       orderBy[query.sortField] = query.sortOrder === "ascend" ? "asc" : "desc";
     } else {
       orderBy.merchant_id = "desc";
@@ -70,7 +79,9 @@ export class MerchantCompatController {
     const countTasks = records.map(async (m: any) => {
       const merchantId = m.merchant_id;
       const [accountCount, userCount, shopCount] = await Promise.all([
-        this.prisma.merchant_account.count({ where: { merchant_id: merchantId } }),
+        this.prisma.merchant_account.count({
+          where: { merchant_id: merchantId },
+        }),
         this.prisma.merchant_user.count({ where: { merchant_id: merchantId } }),
         // shop 表是否存在 merchant_id 字段需确认；若不存在则返回 0
         this.prisma.shop
@@ -99,21 +110,25 @@ export class MerchantCompatController {
   @Get(":id")
   @Authorities("merchantDetailView")
   async detail(@Param("id", ParseIntPipe) id: number) {
-    const merchant = await this.prisma.merchant.findUnique({ where: { merchant_id: id } });
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { merchant_id: id },
+    });
     if (!merchant) {
       return { code: 404, message: "商户不存在", data: null };
     }
     const [accountCount, userCount, shopCount] = await Promise.all([
       this.prisma.merchant_account.count({ where: { merchant_id: id } }),
       this.prisma.merchant_user.count({ where: { merchant_id: id } }),
-      this.prisma.shop
-        .count({ where: { merchant_id: id } })
-        .catch(() => 0),
+      this.prisma.shop.count({ where: { merchant_id: id } }).catch(() => 0),
     ]);
     return {
       code: 0,
       message: "success",
-      data: this.transformMerchant(merchant, { accountCount, userCount, shopCount }),
+      data: this.transformMerchant(merchant, {
+        accountCount,
+        userCount,
+        shopCount,
+      }),
     };
   }
 
@@ -173,7 +188,11 @@ export class MerchantCompatController {
     return {
       code: 0,
       message: "success",
-      data: this.transformMerchant(created, { accountCount: 0, userCount: 0, shopCount: 0 }),
+      data: this.transformMerchant(created, {
+        accountCount: 0,
+        userCount: 0,
+        shopCount: 0,
+      }),
     };
   }
 
@@ -184,7 +203,10 @@ export class MerchantCompatController {
    */
   @Post("update")
   @Authorities("merchantUpdate")
-  async update(@Body() body: UpdateMerchantDto, @Query("id") idFromQuery?: string) {
+  async update(
+    @Body() body: UpdateMerchantDto,
+    @Query("id") idFromQuery?: string,
+  ) {
     const id = Number(body?.id ?? body?.merchantId ?? idFromQuery);
     if (!id) {
       return { code: 400, message: "缺少商户ID", data: false };
@@ -195,25 +217,36 @@ export class MerchantCompatController {
     const toUpdate: any = {};
     if (baseData !== undefined) {
       toUpdate.base_data = JSON.stringify(baseData);
-      if (baseData?.companyName !== undefined) toUpdate.company_name = baseData.companyName;
-      if (baseData?.corporateName !== undefined) toUpdate.corporate_name = baseData.corporateName;
-      if (baseData?.type !== undefined) toUpdate.type = Number(baseData.type) === 2;
+      if (baseData?.companyName !== undefined)
+        toUpdate.company_name = baseData.companyName;
+      if (baseData?.corporateName !== undefined)
+        toUpdate.corporate_name = baseData.corporateName;
+      if (baseData?.type !== undefined)
+        toUpdate.type = Number(baseData.type) === 2;
     }
     if (merchantData !== undefined) {
       toUpdate.merchant_data = JSON.stringify(merchantData);
     }
     if (body?.shopTitle !== undefined) {
       // 合并现有 shop_data，仅更新 title
-      const current = await this.prisma.merchant.findUnique({ where: { merchant_id: id }, select: { shop_data: true } });
+      const current = await this.prisma.merchant.findUnique({
+        where: { merchant_id: id },
+        select: { shop_data: true },
+      });
       let shopData: any = {};
       if (current?.shop_data) {
-        try { shopData = JSON.parse(current.shop_data); } catch (e) {}
+        try {
+          shopData = JSON.parse(current.shop_data);
+        } catch (e) {}
       }
       shopData.shopTitle = body.shopTitle as any;
       toUpdate.shop_data = JSON.stringify(shopData);
     }
 
-    const updated = await this.prisma.merchant.update({ where: { merchant_id: id }, data: toUpdate });
+    const updated = await this.prisma.merchant.update({
+      where: { merchant_id: id },
+      data: toUpdate,
+    });
 
     // 若绑定管理员，确保关系存在
     if (Number(adminBind?.type) === 2 && adminBind?.adminId) {
@@ -223,13 +256,22 @@ export class MerchantCompatController {
       if (!exists) {
         try {
           await this.prisma.merchant_user.create({
-            data: { merchant_id: id, admin_user_id: Number(adminBind.adminId), is_admin: 1, user_id: 0 },
+            data: {
+              merchant_id: id,
+              admin_user_id: Number(adminBind.adminId),
+              is_admin: 1,
+              user_id: 0,
+            },
           });
         } catch (e) {}
       }
     }
 
-    return { code: 0, message: "success", data: this.transformMerchant(updated) };
+    return {
+      code: 0,
+      message: "success",
+      data: this.transformMerchant(updated),
+    };
   }
 
   /**
@@ -241,7 +283,7 @@ export class MerchantCompatController {
   @Authorities("merchantUpdate")
   async operate(
     @Param("id", ParseIntPipe) id: number,
-    @Body() body: OperateMerchantDto
+    @Body() body: OperateMerchantDto,
   ) {
     const action = body?.action;
     const statusMap: Record<string, number> = {
@@ -269,7 +311,10 @@ export class MerchantCompatController {
       merchantData.rejectReason = body.reason;
       update.merchant_data = JSON.stringify(merchantData);
     }
-    await this.prisma.merchant.update({ where: { merchant_id: id }, data: update });
+    await this.prisma.merchant.update({
+      where: { merchant_id: id },
+      data: update,
+    });
     return { code: 0, message: "success", data: true };
   }
 

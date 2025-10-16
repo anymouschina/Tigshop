@@ -98,7 +98,8 @@ export class CollectService {
         });
 
         // 价格统一转字符串（与期望示例保持："78.00"）
-        const formatPrice = (p: any) => (p != null ? Number(p).toFixed(2) : "0.00");
+        const formatPrice = (p: any) =>
+          p != null ? Number(p).toFixed(2) : "0.00";
 
         return {
           collectId: collect.collect_id,
@@ -106,7 +107,7 @@ export class CollectService {
           productId: product?.product_id || collect.product_id,
           addTime: this.formatTime(collect.add_time),
           productName: product?.product_name || "",
-            productSn: product?.product_sn || "",
+          productSn: product?.product_sn || "",
           picThumb: product?.pic_thumb || "",
           marketPrice: formatPrice(product?.market_price),
           isPromote: product?.is_promote || 0,
@@ -141,7 +142,9 @@ export class CollectService {
     collectProductDto: CollectProductDto,
   ): Promise<SuccessResponse> {
     // 兼容 product_id 与 productId 两种写法
-    const product_id = (collectProductDto as any).product_id ?? (collectProductDto as any).productId;
+    const product_id =
+      (collectProductDto as any).product_id ??
+      (collectProductDto as any).productId;
     if (!product_id || isNaN(Number(product_id))) {
       throw new BadRequestException("商品ID不能为空");
     }

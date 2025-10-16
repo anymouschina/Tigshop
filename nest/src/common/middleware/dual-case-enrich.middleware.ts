@@ -1,8 +1,8 @@
-import { Injectable, NestMiddleware } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { Injectable, NestMiddleware } from "@nestjs/common";
+import { Request, Response, NextFunction } from "express";
 
 function isPlainObject(value: any): boolean {
-  if (Object.prototype.toString.call(value) !== '[object Object]') return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]") return false;
   const proto = Object.getPrototypeOf(value);
   return proto === null || proto === Object.prototype;
 }
@@ -15,8 +15,8 @@ function toCamel(str: string) {
 // camelCase -> snake_case
 function toSnake(str: string) {
   return str
-    .replace(/([A-Z])/g, '_$1')
-    .replace(/__/g, '_')
+    .replace(/([A-Z])/g, "_$1")
+    .replace(/__/g, "_")
     .toLowerCase();
 }
 

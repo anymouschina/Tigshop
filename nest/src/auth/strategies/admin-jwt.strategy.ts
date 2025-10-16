@@ -99,7 +99,7 @@ export class AdminJwtStrategy extends PassportStrategy(Strategy, "admin-jwt") {
     this.logger.debug(`Returning user object: ${JSON.stringify(result)}`);
     return {
       ...adminUser,
-      ...result
+      ...result,
     };
   }
 }

@@ -1,20 +1,20 @@
 // Dine-order related enums & helpers
 export enum ServiceState {
-  CREATED = 'CREATED',
-  IN_PROGRESS = 'IN_PROGRESS',
-  READY = 'READY',
-  SERVED = 'SERVED',
-  COMPLETED = 'COMPLETED',
-  CANCELED = 'CANCELED',
+  CREATED = "CREATED",
+  IN_PROGRESS = "IN_PROGRESS",
+  READY = "READY",
+  SERVED = "SERVED",
+  COMPLETED = "COMPLETED",
+  CANCELED = "CANCELED",
 }
 
 export enum LogEvent {
-  CREATE = 'CREATE',
-  APPEND = 'APPEND',
-  CHANGE_TABLE = 'CHANGE_TABLE',
-  STATE_CHANGE = 'STATE_CHANGE',
-  PAY = 'PAY',
-  CANCEL = 'CANCEL',
+  CREATE = "CREATE",
+  APPEND = "APPEND",
+  CHANGE_TABLE = "CHANGE_TABLE",
+  STATE_CHANGE = "STATE_CHANGE",
+  PAY = "PAY",
+  CANCEL = "CANCEL",
 }
 
 // Numeric order_status mapping (aligned with canonical DB codes):

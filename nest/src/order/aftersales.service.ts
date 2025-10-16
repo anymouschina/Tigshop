@@ -81,7 +81,9 @@ export class AftersalesService {
     });
 
     // 附带订单号，便于前端展示
-    const orderIds = Array.from(new Set(results.map((r: any) => r.order_id).filter(Boolean)));
+    const orderIds = Array.from(
+      new Set(results.map((r: any) => r.order_id).filter(Boolean)),
+    );
     const orderSnMap = new Map<number, string>();
     if (orderIds.length) {
       const orders = await this.prisma.order.findMany({
@@ -146,19 +148,39 @@ export class AftersalesService {
   }
 
   async getDetail(id: number): Promise<any> {
-    const result = await this.prisma.aftersales.findUnique({ where: { aftersale_id: id } });
+    const result = await this.prisma.aftersales.findUnique({
+      where: { aftersale_id: id },
+    });
     if (!result) throw new Error("售后记录不存在");
 
-    const items = await this.prisma.aftersales_item.findMany({ where: { aftersale_id: id } });
-    const orderItemIds = items.map((it) => it.order_item_id).filter(Boolean) as number[];
+    const items = await this.prisma.aftersales_item.findMany({
+      where: { aftersale_id: id },
+    });
+    const orderItemIds = items
+      .map((it) => it.order_item_id)
+      .filter(Boolean) as number[];
     const orderItems = orderItemIds.length
-      ? await this.prisma.order_item.findMany({ where: { item_id: { in: orderItemIds } } })
+      ? await this.prisma.order_item.findMany({
+          where: { item_id: { in: orderItemIds } },
+        })
       : [];
-    const orderItemMap = new Map(orderItems.map((oi) => [oi.item_id, oi] as const));
-    const aftersales_items = items.map((it) => ({ ...it, items: orderItemMap.get(it.order_item_id as number) || null }));
+    const orderItemMap = new Map(
+      orderItems.map((oi) => [oi.item_id, oi] as const),
+    );
+    const aftersales_items = items.map((it) => ({
+      ...it,
+      items: orderItemMap.get(it.order_item_id as number) || null,
+    }));
 
-    const order = result.order_id ? await this.prisma.order.findUnique({ where: { order_id: result.order_id } }) : null;
-    const aftersales_log = await this.prisma.aftersales_log.findMany({ where: { aftersale_id: id }, orderBy: { log_id: "desc" } });
+    const order = result.order_id
+      ? await this.prisma.order.findUnique({
+          where: { order_id: result.order_id },
+        })
+      : null;
+    const aftersales_log = await this.prisma.aftersales_log.findMany({
+      where: { aftersale_id: id },
+      orderBy: { log_id: "desc" },
+    });
 
     let suggest = 0;
     for (const it of items) {

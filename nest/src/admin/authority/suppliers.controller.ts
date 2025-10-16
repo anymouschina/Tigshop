@@ -17,7 +17,10 @@ export class SuppliersCompatController {
   async list(@Query() query: any) {
     const page = Number(query.page) || 1;
     const size = Number(query.size) || 15;
-    const paging = query.paging !== undefined ? query.paging !== "false" && query.paging !== false : true;
+    const paging =
+      query.paging !== undefined
+        ? query.paging !== "false" && query.paging !== false
+        : true;
     const skip = (page - 1) * size;
     const keyword = (query.keyword ?? "").trim();
     const where: any = {};
@@ -30,13 +33,21 @@ export class SuppliersCompatController {
     }
 
     if (!paging) {
-      const records = await this.prisma.suppliers.findMany({ where, orderBy: { suppliers_id: "desc" } });
+      const records = await this.prisma.suppliers.findMany({
+        where,
+        orderBy: { suppliers_id: "desc" },
+      });
       const data = records.map((r) => this.normalize(r));
       return { code: 0, message: "success", data };
     }
 
     const [records, total] = await Promise.all([
-      this.prisma.suppliers.findMany({ where, skip, take: size, orderBy: { suppliers_id: "desc" } }),
+      this.prisma.suppliers.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { suppliers_id: "desc" },
+      }),
       this.prisma.suppliers.count({ where }),
     ]);
     const data = {
@@ -52,14 +63,22 @@ export class SuppliersCompatController {
   @Get("detail")
   @ApiOperation({ summary: "供应商详情（兼容）" })
   async detail(@Query("id") id: string) {
-    const item = await this.prisma.suppliers.findUnique({ where: { suppliers_id: Number(id) } });
-    return { code: 0, message: "success", data: item ? this.normalize(item) : null };
+    const item = await this.prisma.suppliers.findUnique({
+      where: { suppliers_id: Number(id) },
+    });
+    return {
+      code: 0,
+      message: "success",
+      data: item ? this.normalize(item) : null,
+    };
   }
 
   @Post("create")
   @ApiOperation({ summary: "新增供应商（兼容）" })
   async create(@Body() body: any) {
-    const created = await this.prisma.suppliers.create({ data: this.denormalize(body) });
+    const created = await this.prisma.suppliers.create({
+      data: this.denormalize(body),
+    });
     return { code: 0, message: "success", data: this.normalize(created) };
   }
 
@@ -67,7 +86,10 @@ export class SuppliersCompatController {
   @ApiOperation({ summary: "更新供应商（兼容）" })
   async update(@Body() body: any) {
     const id = Number(body.id ?? body.suppliersId ?? body.suppliers_id);
-    const updated = await this.prisma.suppliers.update({ where: { suppliers_id: id }, data: this.denormalize(body) });
+    const updated = await this.prisma.suppliers.update({
+      where: { suppliers_id: id },
+      data: this.denormalize(body),
+    });
     return { code: 0, message: "success", data: this.normalize(updated) };
   }
 
@@ -85,7 +107,10 @@ export class SuppliersCompatController {
     const id = Number(body.id ?? body.suppliersId ?? body.suppliers_id);
     const field = body.field;
     const value = body.value ?? body.val;
-    await this.prisma.suppliers.update({ where: { suppliers_id: id }, data: { [field]: value } });
+    await this.prisma.suppliers.update({
+      where: { suppliers_id: id },
+      data: { [field]: value },
+    });
     return { code: 0, message: "success" };
   }
 
@@ -95,8 +120,13 @@ export class SuppliersCompatController {
     const act = String(body.act ?? body.type ?? "").toLowerCase();
     let ids: number[] = [];
     const raw = body.ids;
-    if (Array.isArray(raw)) ids = raw.map((x) => Number(x)).filter(Number.isFinite);
-    else if (typeof raw === "string") ids = raw.split(",").map((s) => Number(s.trim())).filter(Number.isFinite);
+    if (Array.isArray(raw))
+      ids = raw.map((x) => Number(x)).filter(Number.isFinite);
+    else if (typeof raw === "string")
+      ids = raw
+        .split(",")
+        .map((s) => Number(s.trim()))
+        .filter(Number.isFinite);
     else if (typeof raw === "number") ids = [raw];
 
     if (!ids.length) return { code: 0, message: "success", data: [] };
@@ -104,14 +134,18 @@ export class SuppliersCompatController {
     const results: any[] = [];
     if (act === "del" || act === "delete") {
       for (const id of ids) {
-        await this.prisma.suppliers.delete({ where: { suppliers_id: id } }).catch(() => null);
+        await this.prisma.suppliers
+          .delete({ where: { suppliers_id: id } })
+          .catch(() => null);
         results.push({ id, ok: true });
       }
     } else if (body.field != null) {
       const field = body.field;
       const value = body.value ?? body.val;
       for (const id of ids) {
-        await this.prisma.suppliers.update({ where: { suppliers_id: id }, data: { [field]: value } }).catch(() => null);
+        await this.prisma.suppliers
+          .update({ where: { suppliers_id: id }, data: { [field]: value } })
+          .catch(() => null);
         results.push({ id, ok: true });
       }
     }

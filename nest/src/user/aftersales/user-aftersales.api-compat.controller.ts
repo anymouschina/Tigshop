@@ -1,11 +1,23 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Request } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+} from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { RefundApplyService } from "../../finance/refund-apply/refund-apply.service";
 import { OrderService } from "../../order/order.service";
 import { PrismaService } from "src/prisma/prisma.service";
-import { AFTERSALES_TYPE_NAME, STATUS_NAME, AftersalesStatus } from "src/order/aftersales.service";
+import {
+  AFTERSALES_TYPE_NAME,
+  STATUS_NAME,
+  AftersalesStatus,
+} from "src/order/aftersales.service";
 
 @ApiTags("User Aftersales API Compat")
 @Controller("api/user/aftersales")
@@ -54,7 +66,10 @@ export class UserAftersalesApiCompatController {
   // 对齐 PHP：GET /api/user/aftersales/applyData
   @Get("applyData")
   @ApiOperation({ summary: "获取售后申请基础数据（兼容）" })
-  async applyData(@Request() req, @Query() query: { order_id?: number; orderId?: number }) {
+  async applyData(
+    @Request() req,
+    @Query() query: { order_id?: number; orderId?: number },
+  ) {
     const userId = req.user?.user_id ?? req.user?.userId;
     const oid = Number(query.order_id || query.orderId);
     if (!oid || !Number.isFinite(oid)) {
@@ -113,7 +128,10 @@ export class UserAftersalesApiCompatController {
     let refund_amount = body.refund_amount ?? body.refundAmount;
     let orderDetail: any = null;
     try {
-      orderDetail = await this.orderService.getOrderDetail(Number(order_id), user_id);
+      orderDetail = await this.orderService.getOrderDetail(
+        Number(order_id),
+        user_id,
+      );
     } catch (e: any) {
       return { code: 404, message: e?.message || "订单不存在", data: null };
     }
@@ -157,14 +175,22 @@ export class UserAftersalesApiCompatController {
     }
 
     // 上限保护：不可超过已支付金额（paid_amount）
-    const paidAmountNum = Number(orderDetail?.paidAmount || orderDetail?.paid_amount || 0);
+    const paidAmountNum = Number(
+      orderDetail?.paidAmount || orderDetail?.paid_amount || 0,
+    );
     if (paidAmountNum > 0 && refund_amount > paidAmountNum) {
       refund_amount = paidAmountNum;
     }
 
     // 退款原因 / 类型映射
-    const refund_reason = body.aftersale_reason ?? body.aftersaleReason ?? body.refund_reason ?? body.refundReason ?? "";
-    const refund_type = body.aftersale_type ?? body.aftersaleType ?? body.refund_type ?? 0; // 2:仅退款 1:退货退款
+    const refund_reason =
+      body.aftersale_reason ??
+      body.aftersaleReason ??
+      body.refund_reason ??
+      body.refundReason ??
+      "";
+    const refund_type =
+      body.aftersale_type ?? body.aftersaleType ?? body.refund_type ?? 0; // 2:仅退款 1:退货退款
 
     // 组装服务需要的数据结构
     const payload: any = {
@@ -174,14 +200,25 @@ export class UserAftersalesApiCompatController {
       refund_type,
       user_id,
       refund_note: refund_reason,
-      refund_images: Array.isArray(body.pics) ? body.pics.join(",") : body.refund_images || "",
+      refund_images: Array.isArray(body.pics)
+        ? body.pics.join(",")
+        : body.refund_images || "",
       // 兼容：如果需要后续细化线上/线下拆分，可在此扩展
     };
 
     // 生成售后单号（简单规则，可后续替换为更贴近旧系统的算法）
     const generateAftersalesSn = () => {
       const now = new Date();
-      return "AS" + now.getFullYear() + ("0" + (now.getMonth() + 1)).slice(-2) + ("0" + now.getDate()).slice(-2) + now.getTime().toString().slice(-5) + Math.floor(Math.random() * 1000).toString().padStart(3, "0");
+      return (
+        "AS" +
+        now.getFullYear() +
+        ("0" + (now.getMonth() + 1)).slice(-2) +
+        ("0" + now.getDate()).slice(-2) +
+        now.getTime().toString().slice(-5) +
+        Math.floor(Math.random() * 1000)
+          .toString()
+          .padStart(3, "0")
+      );
     };
 
     // 事务：仅写入 aftersales 与 aftersales_item
@@ -193,7 +230,9 @@ export class UserAftersalesApiCompatController {
           data: {
             aftersale_type: Number(refund_type) || 0,
             status: AftersalesStatus.IN_REVIEW,
-            pics: Array.isArray(body.pics) ? JSON.stringify(body.pics) : body.pics || "[]",
+            pics: Array.isArray(body.pics)
+              ? JSON.stringify(body.pics)
+              : body.pics || "[]",
             description: refund_reason || "",
             reply: "",
             add_time,
@@ -214,30 +253,36 @@ export class UserAftersalesApiCompatController {
           },
         });
 
-        const aftersaleItemsData: any[] = Object.keys(itemAggregates).map((itemId) => ({
-          aftersale_id: aftersales.aftersale_id,
-          order_item_id: Number(itemId),
-          number: itemAggregates[itemId],
-        }));
+        const aftersaleItemsData: any[] = Object.keys(itemAggregates).map(
+          (itemId) => ({
+            aftersale_id: aftersales.aftersale_id,
+            order_item_id: Number(itemId),
+            number: itemAggregates[itemId],
+          }),
+        );
         if (aftersaleItemsData.length) {
           await tx.aftersales_item.createMany({ data: aftersaleItemsData });
         }
         // 创建初始化日志（与旧 PHP 行为对齐）
         try {
-          const typeName = refund_type == 2 ? '仅退款' : '退货退款';
-          const logInfo = `会员发起了${typeName}: ${refund_reason || ''}`.trim();
+          const typeName = refund_type == 2 ? "仅退款" : "退货退款";
+          const logInfo =
+            `会员发起了${typeName}: ${refund_reason || ""}`.trim();
           await tx.aftersales_log.create({
             data: {
               aftersale_id: aftersales.aftersale_id,
               log_info: logInfo,
               add_time,
-              admin_name: '',
+              admin_name: "",
               refund_money: 0,
               refund_type: 0,
               refund_desc: refund_reason || logInfo,
-              user_name: '',
-              return_pic: Array.isArray(body.pics) && body.pics.length ? JSON.stringify(body.pics) : null,
-            }
+              user_name: "",
+              return_pic:
+                Array.isArray(body.pics) && body.pics.length
+                  ? JSON.stringify(body.pics)
+                  : null,
+            },
           });
         } catch {}
         return aftersales;
@@ -256,13 +301,33 @@ export class UserAftersalesApiCompatController {
     }
 
     // 组装返回
-    const items = await this.prisma.aftersales_item.findMany({ where: { aftersale_id: createdAftersales.aftersale_id } });
-    const orderItemIds = items.map((it) => it.order_item_id).filter(Boolean) as number[];
-    const orderItems = orderItemIds.length ? await this.prisma.order_item.findMany({ where: { item_id: { in: orderItemIds } } }) : [];
-    const orderItemMap = new Map(orderItems.map((oi) => [oi.item_id, oi] as const));
+    const items = await this.prisma.aftersales_item.findMany({
+      where: { aftersale_id: createdAftersales.aftersale_id },
+    });
+    const orderItemIds = items
+      .map((it) => it.order_item_id)
+      .filter(Boolean) as number[];
+    const orderItems = orderItemIds.length
+      ? await this.prisma.order_item.findMany({
+          where: { item_id: { in: orderItemIds } },
+        })
+      : [];
+    const orderItemMap = new Map(
+      orderItems.map((oi) => [oi.item_id, oi] as const),
+    );
     const orderSn = orderDetail?.orderSn || orderDetail?.order_sn || "";
-    const aftersalesItems = items.map((it) => this.composeAftersalesItem(it, orderItemMap.get(it.order_item_id as number), orderSn));
-    const record = this.composeAftersalesRecord(createdAftersales, orderSn, aftersalesItems);
+    const aftersalesItems = items.map((it) =>
+      this.composeAftersalesItem(
+        it,
+        orderItemMap.get(it.order_item_id as number),
+        orderSn,
+      ),
+    );
+    const record = this.composeAftersalesRecord(
+      createdAftersales,
+      orderSn,
+      aftersalesItems,
+    );
     return { code: 0, message: "success", data: record };
   }
 
@@ -277,7 +342,8 @@ export class UserAftersalesApiCompatController {
     }
     const updatePayload: any = { id: Number(id) };
     if (body.status !== undefined) updatePayload.status = body.status;
-    if (body.refund_amount !== undefined) updatePayload.refund_amount = Number(body.refund_amount);
+    if (body.refund_amount !== undefined)
+      updatePayload.refund_amount = Number(body.refund_amount);
     try {
       const updated = await this.refundApplyService.update(updatePayload);
       return { code: 0, message: "success", data: updated };
@@ -327,14 +393,18 @@ export class UserAftersalesApiCompatController {
         this.prisma.refund_apply.count({ where: { user_id: userId } }),
       ]);
       if (refundRows.length) {
-        const orderIds2 = Array.from(new Set(refundRows.map((r: any) => r.order_id).filter(Boolean)));
+        const orderIds2 = Array.from(
+          new Set(refundRows.map((r: any) => r.order_id).filter(Boolean)),
+        );
         let orderSnMap2 = new Map<number, string>();
         if (orderIds2.length) {
           const orders2 = await this.prisma.order.findMany({
             where: { order_id: { in: orderIds2 as number[] } },
             select: { order_id: true, order_sn: true },
           });
-            orderSnMap2 = new Map(orders2.map((o) => [o.order_id, o.order_sn] as const));
+          orderSnMap2 = new Map(
+            orders2.map((o) => [o.order_id, o.order_sn] as const),
+          );
         }
         const transformed = refundRows.map((r: any) => {
           // 粗略映射 refund_status -> aftersales status（可按需细化）
@@ -369,19 +439,27 @@ export class UserAftersalesApiCompatController {
             [],
           );
         });
-        return { code: 0, message: "success", data: { records: transformed, total: refundTotal } };
+        return {
+          code: 0,
+          message: "success",
+          data: { records: transformed, total: refundTotal },
+        };
       }
     }
 
     // 预取涉及的订单号
-    const orderIds = Array.from(new Set(rows.map((r: any) => r.order_id).filter(Boolean)));
+    const orderIds = Array.from(
+      new Set(rows.map((r: any) => r.order_id).filter(Boolean)),
+    );
     let orderSnMap = new Map<number, string>();
     if (orderIds.length) {
       const orders = await this.prisma.order.findMany({
         where: { order_id: { in: orderIds as number[] } },
         select: { order_id: true, order_sn: true },
       });
-      orderSnMap = new Map(orders.map((o) => [o.order_id, o.order_sn] as const));
+      orderSnMap = new Map(
+        orders.map((o) => [o.order_id, o.order_sn] as const),
+      );
     }
 
     // 预取所有 aftersale_id 对应 items
@@ -391,20 +469,38 @@ export class UserAftersalesApiCompatController {
           where: { aftersale_id: { in: aftersaleIds } },
         })
       : [];
-    const orderItemIds = items.map((it) => it.order_item_id).filter(Boolean) as number[];
+    const orderItemIds = items
+      .map((it) => it.order_item_id)
+      .filter(Boolean) as number[];
     const orderItems = orderItemIds.length
-      ? await this.prisma.order_item.findMany({ where: { item_id: { in: orderItemIds } } })
+      ? await this.prisma.order_item.findMany({
+          where: { item_id: { in: orderItemIds } },
+        })
       : [];
-    const orderItemMap = new Map(orderItems.map((oi) => [oi.item_id, oi] as const));
+    const orderItemMap = new Map(
+      orderItems.map((oi) => [oi.item_id, oi] as const),
+    );
     const itemsByAftersale = new Map<number, any[]>();
     for (const it of items) {
       const arr = itemsByAftersale.get(it.aftersale_id as number) || [];
       const oi = orderItemMap.get(it.order_item_id as number);
-      arr.push(this.composeAftersalesItem(it, oi, orderSnMap.get(oi?.order_id || 0) || ""));
+      arr.push(
+        this.composeAftersalesItem(
+          it,
+          oi,
+          orderSnMap.get(oi?.order_id || 0) || "",
+        ),
+      );
       itemsByAftersale.set(it.aftersale_id as number, arr);
     }
 
-    const records = rows.map((r) => this.composeAftersalesRecord(r, orderSnMap.get(r.order_id || 0) || "", itemsByAftersale.get(r.aftersale_id) || []));
+    const records = rows.map((r) =>
+      this.composeAftersalesRecord(
+        r,
+        orderSnMap.get(r.order_id || 0) || "",
+        itemsByAftersale.get(r.aftersale_id) || [],
+      ),
+    );
 
     return {
       code: 0,
@@ -432,23 +528,50 @@ export class UserAftersalesApiCompatController {
 
   private async fetchAftersalesRecord(id: number, userId: number) {
     if (!id) return null;
-    const record = await this.prisma.aftersales.findUnique({ where: { aftersale_id: id } });
+    const record = await this.prisma.aftersales.findUnique({
+      where: { aftersale_id: id },
+    });
     if (!record) return null;
     if (userId && record.user_id && userId !== record.user_id) return null;
-    const items = await this.prisma.aftersales_item.findMany({ where: { aftersale_id: id } });
-    const orderItemIds = items.map((it) => it.order_item_id).filter(Boolean) as number[];
+    const items = await this.prisma.aftersales_item.findMany({
+      where: { aftersale_id: id },
+    });
+    const orderItemIds = items
+      .map((it) => it.order_item_id)
+      .filter(Boolean) as number[];
     const orderItems = orderItemIds.length
-      ? await this.prisma.order_item.findMany({ where: { item_id: { in: orderItemIds } } })
+      ? await this.prisma.order_item.findMany({
+          where: { item_id: { in: orderItemIds } },
+        })
       : [];
-    const orderItemMap = new Map(orderItems.map((oi) => [oi.item_id, oi] as const));
+    const orderItemMap = new Map(
+      orderItems.map((oi) => [oi.item_id, oi] as const),
+    );
     const order = record.order_id
-      ? await this.prisma.order.findUnique({ where: { order_id: record.order_id }, select: { order_sn: true, order_id: true } })
+      ? await this.prisma.order.findUnique({
+          where: { order_id: record.order_id },
+          select: { order_sn: true, order_id: true },
+        })
       : null;
-    const aftersalesItems = items.map((it) => this.composeAftersalesItem(it, orderItemMap.get(it.order_item_id as number), order?.order_sn || ""));
-    return this.composeAftersalesRecord(record, order?.order_sn || "", aftersalesItems);
+    const aftersalesItems = items.map((it) =>
+      this.composeAftersalesItem(
+        it,
+        orderItemMap.get(it.order_item_id as number),
+        order?.order_sn || "",
+      ),
+    );
+    return this.composeAftersalesRecord(
+      record,
+      order?.order_sn || "",
+      aftersalesItems,
+    );
   }
 
-  private composeAftersalesRecord(raw: any, orderSn: string, aftersalesItems: any[]) {
+  private composeAftersalesRecord(
+    raw: any,
+    orderSn: string,
+    aftersalesItems: any[],
+  ) {
     const toMoney = (v: any) => {
       if (v == null) return "0.00";
       if (typeof v === "number") return v.toFixed(2);
@@ -457,16 +580,25 @@ export class UserAftersalesApiCompatController {
         try {
           const digits = (v.d as number[]).join("");
           const e = v.e as number;
-            const num = Number(digits) * Math.pow(10, e - digits.length + 1);
+          const num = Number(digits) * Math.pow(10, e - digits.length + 1);
           return num.toFixed(2);
-        } catch { return "0.00"; }
+        } catch {
+          return "0.00";
+        }
       }
       return "0.00";
     };
     return {
-      aftersalesTypeName: AFTERSALES_TYPE_NAME[raw.aftersale_type] || AFTERSALES_TYPE_NAME[raw.aftersales_type] || "",
+      aftersalesTypeName:
+        AFTERSALES_TYPE_NAME[raw.aftersale_type] ||
+        AFTERSALES_TYPE_NAME[raw.aftersales_type] ||
+        "",
       statusName: STATUS_NAME[raw.status] || "",
-      aftersaleId: raw.aftersale_id ?? raw.aftersale_id ?? raw.aftersales_id ?? raw.aftersale_id,
+      aftersaleId:
+        raw.aftersale_id ??
+        raw.aftersale_id ??
+        raw.aftersales_id ??
+        raw.aftersale_id,
       aftersaleType: raw.aftersale_type ?? raw.aftersales_type ?? 0,
       status: raw.status,
       pics: raw.pics ? this.parsePics(raw.pics) : [],
@@ -521,7 +653,9 @@ export class UserAftersalesApiCompatController {
         const e = p.e as number;
         const num = Number(digits) * Math.pow(10, e - digits.length + 1);
         return num.toFixed(2);
-      } catch { return "0.00"; }
+      } catch {
+        return "0.00";
+      }
     }
     return "0.00";
   }
@@ -533,7 +667,10 @@ export class UserAftersalesApiCompatController {
       const parsed = JSON.parse(pics);
       if (Array.isArray(parsed)) return parsed;
     } catch {}
-    return pics.split(",").filter(Boolean).map((p) => ({ picName: p, picThumb: p, picUrl: p }));
+    return pics
+      .split(",")
+      .filter(Boolean)
+      .map((p) => ({ picName: p, picThumb: p, picUrl: p }));
   }
 
   private formatTime(ts: number) {
@@ -551,17 +688,20 @@ export class UserAftersalesApiCompatController {
     if (!aftersaleId) {
       return { code: 200, message: "OK", data: [] };
     }
-    const logs = await this.prisma.aftersales_log.findMany({ where: { aftersale_id: aftersaleId }, orderBy: { log_id: 'asc' } });
-    const data = logs.map(l => ({
+    const logs = await this.prisma.aftersales_log.findMany({
+      where: { aftersale_id: aftersaleId },
+      orderBy: { log_id: "asc" },
+    });
+    const data = logs.map((l) => ({
       logId: l.log_id,
-      adminName: l.admin_name || '',
+      adminName: l.admin_name || "",
       aftersalesId: l.aftersale_id || null,
       returnPic: l.return_pic || null,
       logInfo: l.log_info,
       refundDesc: l.refund_desc,
       refundMoney: Number(l.refund_money || 0),
       refundType: l.refund_type,
-      userName: l.user_name || '',
+      userName: l.user_name || "",
       addTime: this.formatTime(l.add_time),
       shopId: 0,
       vendorId: 0,
@@ -572,7 +712,10 @@ export class UserAftersalesApiCompatController {
   // 对齐 PHP：POST /api/user/aftersales/feedback
   @Post("feedback")
   @ApiOperation({ summary: "售后留言（兼容）" })
-  async feedback(@Request() req, @Body() body: { id: number; content: string }) {
+  async feedback(
+    @Request() req,
+    @Body() body: { id: number; content: string },
+  ) {
     // 占位：可写入 refund_log，当前返回成功
     return { code: 200, message: "提交成功", data: true };
   }
@@ -582,7 +725,10 @@ export class UserAftersalesApiCompatController {
   @ApiOperation({ summary: "取消售后（兼容）" })
   async cancel(@Body() body: { id: number }) {
     // 将状态置为已取消(3)
-    const updated = await this.refundApplyService.update({ id: body.id, status: 3 });
+    const updated = await this.refundApplyService.update({
+      id: body.id,
+      status: 3,
+    });
     return { code: 200, message: "OK", data: updated };
   }
 }

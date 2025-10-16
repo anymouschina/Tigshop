@@ -1,9 +1,21 @@
 // @ts-nocheck
-import { Controller, Get, Post, Put, Body, Query, UseGuards, Request } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+} from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { UserInvoiceService } from "./user-invoice.service";
-import { CreateUserInvoiceDto, UpdateUserInvoiceDto } from "./dto/user-invoice.dto";
+import {
+  CreateUserInvoiceDto,
+  UpdateUserInvoiceDto,
+} from "./dto/user-invoice.dto";
 
 @ApiTags("User Invoice API Compat")
 @Controller("api/user/invoice")
@@ -33,7 +45,10 @@ export class UserInvoiceApiCompatController {
   // 对齐 PHP：POST /api/user/invoice/update（需登录）
   @Post("update")
   @ApiOperation({ summary: "更新发票申请（兼容）" })
-  async update(@Request() req, @Body() body: UpdateUserInvoiceDto & { id: number }) {
+  async update(
+    @Request() req,
+    @Body() body: UpdateUserInvoiceDto & { id: number },
+  ) {
     const updated = await this.userInvoiceService.update(body.id, body);
     return { code: 200, message: "OK", data: updated };
   }

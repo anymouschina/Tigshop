@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Req } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { ShopProductCategoryService } from "./shop-product-category.service";
@@ -25,15 +33,25 @@ export class ShopProductCategoryController {
     const page = Number(query.page) || 1;
     const size = Number(query.size) || 15;
     // 优先 query.shopId 其次 Header X-Shop-Id；若都无则默认 0
-    const headerShop = req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any];
+    const headerShop =
+      req.headers["x-shop-id"] ?? req.headers["X-Shop-Id" as any];
     const headerVal = headerShop !== undefined ? Number(headerShop) : undefined;
-    const shopId = query.shopId !== undefined ? Number(query.shopId) : (headerVal !== undefined ? headerVal : 0);
+    const shopId =
+      query.shopId !== undefined
+        ? Number(query.shopId)
+        : headerVal !== undefined
+          ? headerVal
+          : 0;
     const filter = {
       page,
       size,
       keyword: query.keyword ?? "",
-      parent_id: query.parentId !== undefined ? Number(query.parentId) : undefined,
-      is_show: query.isShow !== undefined && query.isShow !== "" ? Number(query.isShow) : undefined,
+      parent_id:
+        query.parentId !== undefined ? Number(query.parentId) : undefined,
+      is_show:
+        query.isShow !== undefined && query.isShow !== ""
+          ? Number(query.isShow)
+          : undefined,
       shop_id: shopId,
     };
     const { records, total } = await this.svc.list(filter);
@@ -58,9 +76,16 @@ export class ShopProductCategoryController {
   @Get("getAllCategory")
   @ApiOperation({ summary: "获取店铺商品分类树（admin）" })
   async getAllCategory(@Query("shopId") shopId: string, @Req() req: Request) {
-    const headerShop = req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any];
-    const parsedHeader = headerShop !== undefined ? Number(headerShop) : undefined;
-    const resolved = shopId !== undefined ? Number(shopId) : (parsedHeader !== undefined ? parsedHeader : 0);
+    const headerShop =
+      req.headers["x-shop-id"] ?? req.headers["X-Shop-Id" as any];
+    const parsedHeader =
+      headerShop !== undefined ? Number(headerShop) : undefined;
+    const resolved =
+      shopId !== undefined
+        ? Number(shopId)
+        : parsedHeader !== undefined
+          ? parsedHeader
+          : 0;
     const tree = await this.svc.getAll(resolved);
     const mapNode = (n: any): any => ({
       categoryId: n.category_id,
@@ -68,7 +93,9 @@ export class ShopProductCategoryController {
       categoryName: n.category_name,
       sortOrder: n.sort_order,
       isShow: n.is_show,
-      ...(n.children && n.children.length ? { children: n.children.map(mapNode) } : {}),
+      ...(n.children && n.children.length
+        ? { children: n.children.map(mapNode) }
+        : {}),
     });
     return { code: 0, message: "success", data: tree.map(mapNode) };
   }
@@ -76,9 +103,15 @@ export class ShopProductCategoryController {
   @Post("create")
   @ApiOperation({ summary: "创建店铺商品分类（admin）" })
   async create(@Body() body: any, @Req() req: Request) {
-    const headerShop = req.headers['x-shop-id'] ?? req.headers['X-Shop-Id' as any];
+    const headerShop =
+      req.headers["x-shop-id"] ?? req.headers["X-Shop-Id" as any];
     const headerVal = headerShop !== undefined ? Number(headerShop) : undefined;
-    const resolvedShopId = body.shopId !== undefined ? Number(body.shopId) : (headerVal !== undefined ? headerVal : 0);
+    const resolvedShopId =
+      body.shopId !== undefined
+        ? Number(body.shopId)
+        : headerVal !== undefined
+          ? headerVal
+          : 0;
     const data = {
       category_name: body.categoryName,
       parent_id: body.parentId ? Number(body.parentId) : 0,
@@ -87,13 +120,21 @@ export class ShopProductCategoryController {
       shop_id: resolvedShopId,
     };
     const created = await this.svc.create(data);
-    return { code: 0, message: "success", data: { categoryId: created.category_id } };
+    return {
+      code: 0,
+      message: "success",
+      data: { categoryId: created.category_id },
+    };
   }
 
   @Post("updateField")
   @ApiOperation({ summary: "更新单个字段（admin）" })
   async updateField(@Body() body: any) {
-    await this.svc.updateField(Number(body.id), String(body.field), body.val ?? body.value);
+    await this.svc.updateField(
+      Number(body.id),
+      String(body.field),
+      body.val ?? body.value,
+    );
     return { code: 0, message: "success" };
   }
 

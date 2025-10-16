@@ -1,5 +1,9 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
@@ -31,7 +35,12 @@ export class ProductGroupCompatService {
     const page = Number(filter.page) || 1;
     const size = Number(filter.size) || 15;
     const skip = (page - 1) * size;
-    const rows = await this.prisma.product_group.findMany({ where, orderBy, skip, take: size });
+    const rows = await this.prisma.product_group.findMany({
+      where,
+      orderBy,
+      skip,
+      take: size,
+    });
     return rows.map((r) => this.mapRow(r));
   }
 
@@ -47,7 +56,9 @@ export class ProductGroupCompatService {
   }
 
   async getDetail(id: number) {
-    const r = await this.prisma.product_group.findUnique({ where: { product_group_id: id } });
+    const r = await this.prisma.product_group.findUnique({
+      where: { product_group_id: id },
+    });
     if (!r) throw new NotFoundException("分组不存在");
     return this.mapRow(r, true);
   }
@@ -59,15 +70,22 @@ export class ProductGroupCompatService {
   }
 
   async update(id: number, body: any) {
-    const exists = await this.prisma.product_group.findUnique({ where: { product_group_id: id } });
+    const exists = await this.prisma.product_group.findUnique({
+      where: { product_group_id: id },
+    });
     if (!exists) throw new NotFoundException("分组不存在");
     const data = this.mapBodyToUpdate(body);
-    await this.prisma.product_group.update({ where: { product_group_id: id }, data });
+    await this.prisma.product_group.update({
+      where: { product_group_id: id },
+      data,
+    });
     return true;
   }
 
   async delete(id: number) {
-    const group = await this.prisma.product_group.findUnique({ where: { product_group_id: id } });
+    const group = await this.prisma.product_group.findUnique({
+      where: { product_group_id: id },
+    });
     if (!group) return true; // 视为已删除
     if (["新品", "热卖"].includes(group.product_group_name || "")) {
       throw new BadRequestException("新品和热卖分组不能删除");
@@ -77,12 +95,18 @@ export class ProductGroupCompatService {
   }
 
   async batchDelete(ids: number[]) {
-    const groups = await this.prisma.product_group.findMany({ where: { product_group_id: { in: ids } } });
-    const protectedOnes = groups.filter((g) => ["新品", "热卖"].includes(g.product_group_name || ""));
+    const groups = await this.prisma.product_group.findMany({
+      where: { product_group_id: { in: ids } },
+    });
+    const protectedOnes = groups.filter((g) =>
+      ["新品", "热卖"].includes(g.product_group_name || ""),
+    );
     if (protectedOnes.length) {
       throw new BadRequestException("新品和热卖分组不能删除");
     }
-    await this.prisma.product_group.deleteMany({ where: { product_group_id: { in: ids } } });
+    await this.prisma.product_group.deleteMany({
+      where: { product_group_id: { in: ids } },
+    });
     return true;
   }
 
@@ -107,7 +131,9 @@ export class ProductGroupCompatService {
     if (!b.productGroupName || String(b.productGroupName).trim() === "") {
       throw new BadRequestException("分组名称不能为空");
     }
-    const productIds = Array.isArray(b.productIds) ? b.productIds.map((x) => Number(x)).filter((x) => x > 0) : [];
+    const productIds = Array.isArray(b.productIds)
+      ? b.productIds.map((x) => Number(x)).filter((x) => x > 0)
+      : [];
     const now = Math.floor(Date.now() / 1000);
     return {
       product_group_name: String(b.productGroupName),
@@ -122,11 +148,16 @@ export class ProductGroupCompatService {
   // 映射: 前端驼峰 body -> DB 字段（更新）
   private mapBodyToUpdate(b: any) {
     const data: any = {};
-    if (b.productGroupName !== undefined) data.product_group_name = String(b.productGroupName);
-    if (b.productGroupSn !== undefined) data.product_group_sn = String(b.productGroupSn || "");
-    if (b.productGroupDescription !== undefined) data.product_group_description = String(b.productGroupDescription || "");
+    if (b.productGroupName !== undefined)
+      data.product_group_name = String(b.productGroupName);
+    if (b.productGroupSn !== undefined)
+      data.product_group_sn = String(b.productGroupSn || "");
+    if (b.productGroupDescription !== undefined)
+      data.product_group_description = String(b.productGroupDescription || "");
     if (b.productIds !== undefined) {
-      const productIds = Array.isArray(b.productIds) ? b.productIds.map((x) => Number(x)).filter((x) => x > 0) : [];
+      const productIds = Array.isArray(b.productIds)
+        ? b.productIds.map((x) => Number(x)).filter((x) => x > 0)
+        : [];
       data.product_ids = productIds.length ? productIds.join(",") : null;
     }
     return data;

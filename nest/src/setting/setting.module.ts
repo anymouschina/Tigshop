@@ -43,7 +43,7 @@ import { AdminMailTemplatesCompatController } from "./mail-templates/admin-mailT
     AdminShippingTplCompatController,
     AdminFriendLinksCompatController,
     AdminAppVersionCompatController,
-  AdminMessageTypeCompatController,
+    AdminMessageTypeCompatController,
     AdminMailTemplatesCompatController,
     MessageTemplateController,
     MailTemplateController,

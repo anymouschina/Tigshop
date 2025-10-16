@@ -41,7 +41,8 @@ export class ResponseInterceptor<T>
 
   private transformAdminTimeFields(payload: any): any {
     if (!payload || typeof payload !== "object") return payload;
-    if (Array.isArray(payload)) return payload.map((it) => this.transformAdminTimeFields(it));
+    if (Array.isArray(payload))
+      return payload.map((it) => this.transformAdminTimeFields(it));
     const out: any = Array.isArray(payload) ? [] : {};
     for (const key of Object.keys(payload)) {
       const val = (payload as any)[key];
@@ -49,25 +50,27 @@ export class ResponseInterceptor<T>
         out[key] = this.transformAdminTimeFields(val);
       } else {
         // 规则：snake_case 下划线结尾为 _time 的字段，或常见时间字段名
-        const isTimeLike = /_time$/.test(key) || [
-          "pay_time",
-          "received_time",
-          "create_time",
-          "update_time",
-          "refund_time",
-          "ship_time",
-          "done_time",
-          "last_update_time",
-          "sign_time",
-          "check_time",
-          "cancel_time",
-          "audit_time",
-          "withdraw_time",
-          "settle_time",
-          "apply_time",
-          "start_time",
-          "end_time",
-        ].includes(key);
+        const isTimeLike =
+          /_time$/.test(key) ||
+          [
+            "pay_time",
+            "received_time",
+            "create_time",
+            "update_time",
+            "refund_time",
+            "ship_time",
+            "done_time",
+            "last_update_time",
+            "sign_time",
+            "check_time",
+            "cancel_time",
+            "audit_time",
+            "withdraw_time",
+            "settle_time",
+            "apply_time",
+            "start_time",
+            "end_time",
+          ].includes(key);
         out[key] = isTimeLike ? this.formatEpochToDateTime(val) : val;
       }
     }
@@ -90,7 +93,10 @@ export class ResponseInterceptor<T>
             const transformed = isAdminApi
               ? this.transformAdminTimeFields(payload)
               : payload;
-            return { ...(data as any), data: camelCase(transformed, false) } as any;
+            return {
+              ...(data as any),
+              data: camelCase(transformed, false),
+            } as any;
           }
           return data as any;
         }
@@ -98,7 +104,9 @@ export class ResponseInterceptor<T>
         // 未包装的返回：对所有接口数据做驼峰转换（admin 还额外处理时间字段）
         let finalPayload = data;
         if (data && typeof data === "object") {
-          const transformed = isAdminApi ? this.transformAdminTimeFields(data) : data;
+          const transformed = isAdminApi
+            ? this.transformAdminTimeFields(data)
+            : data;
           finalPayload = camelCase(transformed, false);
         }
         return {

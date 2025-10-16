@@ -69,7 +69,7 @@ export class AddressService {
       throw new NotFoundException("地址不存在");
     }
 
-    return this.formatAddressResponse(address)
+    return this.formatAddressResponse(address);
   }
 
   /**
@@ -246,7 +246,9 @@ export class AddressService {
     const { id } = setDefaultAddressDto;
 
     // 验证地址是否存在
-    const existingAddress = await (this.databaseService as any).user_address.findFirst({
+    const existingAddress = await (
+      this.databaseService as any
+    ).user_address.findFirst({
       where: {
         address_id: id,
         user_id: userId,
@@ -311,7 +313,9 @@ export class AddressService {
       return { address: this.formatAddressResponse(defaultAddress) };
     }
 
-    const firstAddress = await (this.databaseService as any).user_address.findFirst({
+    const firstAddress = await (
+      this.databaseService as any
+    ).user_address.findFirst({
       where: { user_id: userId },
       orderBy: { address_id: "asc" },
     });
@@ -383,7 +387,10 @@ export class AddressService {
     const isDefault = Number(address.is_default ?? 0) === 1 ? 1 : 0;
     const isSelected = Number(address.is_selected ?? 0) === 1 ? 1 : 0;
 
-    const regionName = regionNames.filter((name) => !!name).join(" ").trim();
+    const regionName = regionNames
+      .filter((name) => !!name)
+      .join(" ")
+      .trim();
 
     return {
       regionName,

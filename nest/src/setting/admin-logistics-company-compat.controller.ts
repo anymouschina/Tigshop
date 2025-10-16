@@ -19,17 +19,26 @@ export class AdminLogisticsCompanyCompatController {
   async list(@Query() query: any, @Req() req: any) {
     // 兼容参数：paging 可以是 'false'/'0'/false；logisticsId 与 logistics_id 皆可
     const pagingRaw = query.paging;
-    const paging = pagingRaw === undefined ? true : !((String(pagingRaw)).toLowerCase() === "false" || String(pagingRaw) === "0");
+    const paging =
+      pagingRaw === undefined
+        ? true
+        : !(
+            String(pagingRaw).toLowerCase() === "false" ||
+            String(pagingRaw) === "0"
+          );
     const page = Number(query.page) || 1;
     const size = Number(query.size) || 15;
     // 从 header / query 解析 shopId（优先 header: X-Shop-Id）
     const headerShopIdRaw = req.headers["x-shop-id"] ?? req.headers["x-shopid"];
-    const resolvedShopId = Number(headerShopIdRaw ?? query.shopId ?? query.shop_id);
+    const resolvedShopId = Number(
+      headerShopIdRaw ?? query.shopId ?? query.shop_id,
+    );
     const shopId = Number.isFinite(resolvedShopId) ? resolvedShopId : 0;
 
     const filter: any = {
       keyword: query.keyword,
-      logistics_id: Number(query.logistics_id ?? query.logisticsId) || undefined,
+      logistics_id:
+        Number(query.logistics_id ?? query.logisticsId) || undefined,
       paging,
       page,
       size,

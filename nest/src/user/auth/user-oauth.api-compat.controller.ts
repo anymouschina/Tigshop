@@ -23,7 +23,10 @@ export class UserOAuthApiCompatController {
   // 对齐 PHP：POST /api/user/oauth/callback/:source
   @Post("callback/:source")
   @ApiOperation({ summary: "第三方登录回调（兼容）" })
-  async callback(@Param("source") source: string, @Body() body: { code?: string }) {
+  async callback(
+    @Param("source") source: string,
+    @Body() body: { code?: string },
+  ) {
     if (source === "wechat") {
       const data = await this.wechatOAuthService.auth(body?.code || "");
       return { code: 200, message: "OK", data };

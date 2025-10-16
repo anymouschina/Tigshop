@@ -2,7 +2,10 @@
 export const toMoneyString = (value: any): string => {
   try {
     if (value === null || value === undefined) return "0.00";
-    const num = typeof value === "string" ? Number(value) : Number(value?.toString?.() ?? value);
+    const num =
+      typeof value === "string"
+        ? Number(value)
+        : Number(value?.toString?.() ?? value);
     if (Number.isNaN(num)) return "0.00";
     return num.toFixed(2);
   } catch {
@@ -13,7 +16,10 @@ export const toMoneyString = (value: any): string => {
 export const toWeightString = (value: any): string => {
   try {
     if (value === null || value === undefined) return "0.000";
-    const num = typeof value === "string" ? Number(value) : Number(value?.toString?.() ?? value);
+    const num =
+      typeof value === "string"
+        ? Number(value)
+        : Number(value?.toString?.() ?? value);
     if (Number.isNaN(num)) return "0.000";
     return num.toFixed(3);
   } catch {

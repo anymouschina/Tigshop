@@ -83,7 +83,8 @@ export class ConfigController {
     const data = {
       ...map,
       defaultTechSupport:
-        map.defaultTechSupport ?? "/static/mini/images/common/default_tech_support.png",
+        map.defaultTechSupport ??
+        "/static/mini/images/common/default_tech_support.png",
     };
     return { code: 0, message: "success", data };
   }
@@ -220,7 +221,9 @@ export class ConfigController {
     const payload = body ?? {};
     const entries = Object.entries(payload);
     await Promise.all(
-      entries.map(([k, v]) => this.configService.setConfigByCode(k, String(v ?? "")))
+      entries.map(([k, v]) =>
+        this.configService.setConfigByCode(k, String(v ?? "")),
+      ),
     );
     return { code: 0, message: "success", data: true };
   }
@@ -232,7 +235,9 @@ export class ConfigController {
     const payload = body ?? {};
     const entries = Object.entries(payload);
     await Promise.all(
-      entries.map(([k, v]) => this.configService.setConfigByCode(k, String(v ?? "")))
+      entries.map(([k, v]) =>
+        this.configService.setConfigByCode(k, String(v ?? "")),
+      ),
     );
     return { code: 0, message: "success", data: true };
   }
@@ -282,7 +287,9 @@ export class ConfigController {
     const payload = body ?? {};
     const entries = Object.entries(payload);
     await Promise.all(
-      entries.map(([k, v]) => this.configService.setConfigByCode(k, String(v ?? "")))
+      entries.map(([k, v]) =>
+        this.configService.setConfigByCode(k, String(v ?? "")),
+      ),
     );
     return { code: 0, message: "success", data: true };
   }
@@ -313,7 +320,9 @@ export class ConfigController {
     const payload = body ?? {};
     const entries = Object.entries(payload);
     await Promise.all(
-      entries.map(([k, v]) => this.configService.setConfigByCode(k, String(v ?? "")))
+      entries.map(([k, v]) =>
+        this.configService.setConfigByCode(k, String(v ?? "")),
+      ),
     );
     return { code: 0, message: "success", data: true };
   }
@@ -334,7 +343,9 @@ export class ConfigController {
       "defaultLogisticsName",
     ];
     const map = await this.configService.getConfigsByCodes(keys);
-    const hasAny = Object.values(map).some((v) => v !== undefined && v !== null && v !== "");
+    const hasAny = Object.values(map).some(
+      (v) => v !== undefined && v !== null && v !== "",
+    );
     return { code: 0, message: "success", data: hasAny ? map : null };
   }
 
@@ -345,7 +356,9 @@ export class ConfigController {
     const payload = body ?? {};
     const entries = Object.entries(payload);
     await Promise.all(
-      entries.map(([k, v]) => this.configService.setConfigByCode(k, String(v ?? "")))
+      entries.map(([k, v]) =>
+        this.configService.setConfigByCode(k, String(v ?? "")),
+      ),
     );
     return { code: 0, message: "success", data: true };
   }
@@ -465,7 +478,9 @@ export class ConfigController {
     const payload = body ?? {};
     const entries = Object.entries(payload);
     await Promise.all(
-      entries.map(([k, v]) => this.configService.setConfigByCode(k, String(v ?? "")))
+      entries.map(([k, v]) =>
+        this.configService.setConfigByCode(k, String(v ?? "")),
+      ),
     );
     return { code: 0, message: "success", data: true };
   }
@@ -495,7 +510,9 @@ export class ConfigController {
     const payload = body ?? {};
     const entries = Object.entries(payload);
     await Promise.all(
-      entries.map(([k, v]) => this.configService.setConfigByCode(k, String(v ?? "")))
+      entries.map(([k, v]) =>
+        this.configService.setConfigByCode(k, String(v ?? "")),
+      ),
     );
     return { code: 0, message: "success", data: true };
   }
@@ -617,12 +634,19 @@ export class ConfigController {
   @Authorities("saveAuthSettingsManage")
   async saveAuth(@Body() body: any) {
     const payload = body ?? {};
-    const stringify = (v: any) => (v === undefined || v === null ? "" : String(v));
+    const stringify = (v: any) =>
+      v === undefined || v === null ? "" : String(v);
     const toNumStr = (v: any) => String(Number(v || 0));
     await Promise.all([
       this.configService.setConfigByCode("type", toNumStr(payload.type)),
-      this.configService.setConfigByCode("isIdentity", toNumStr(payload.isIdentity)),
-      this.configService.setConfigByCode("isEnquiry", toNumStr(payload.isEnquiry)),
+      this.configService.setConfigByCode(
+        "isIdentity",
+        toNumStr(payload.isIdentity),
+      ),
+      this.configService.setConfigByCode(
+        "isEnquiry",
+        toNumStr(payload.isEnquiry),
+      ),
       this.configService.setConfigByCode("smsNote", stringify(payload.smsNote)),
       this.configService.setConfigByCode("tips", stringify(payload.tips)),
     ]);
@@ -658,7 +682,10 @@ export class ConfigController {
         "productCategoryDecorateType",
         String(productCategoryDecorateType),
       ),
-      this.configService.setConfigByCode("defaultHeaderStyle", defaultHeaderStyle),
+      this.configService.setConfigByCode(
+        "defaultHeaderStyle",
+        defaultHeaderStyle,
+      ),
       this.configService.setConfigByCode("lightShopLogo", lightShopLogo),
     ]);
     return { code: 0, message: "success", data: true };
@@ -715,7 +742,9 @@ export class ConfigController {
     const payload = body ?? {};
     const entries = Object.entries(payload);
     await Promise.all(
-      entries.map(([k, v]) => this.configService.setConfigByCode(k, String(v ?? "")))
+      entries.map(([k, v]) =>
+        this.configService.setConfigByCode(k, String(v ?? "")),
+      ),
     );
     return { code: 0, message: "success", data: true };
   }
@@ -724,7 +753,13 @@ export class ConfigController {
   @Get("layoutThemeSwitchSettings")
   @ApiOperation({ summary: "获取布局与主题切换设置（兼容）" })
   async layoutThemeSwitchSettings() {
-    const keys = ["layout", "navTheme", "primaryColor", "adminLightLogo", "versionInfoHidden"];
+    const keys = [
+      "layout",
+      "navTheme",
+      "primaryColor",
+      "adminLightLogo",
+      "versionInfoHidden",
+    ];
     const map = await this.configService.getConfigsByCodes(keys);
     const data = {
       layout: map.layout ?? "mix",
@@ -740,7 +775,8 @@ export class ConfigController {
   @Get("loginSettings")
   @ApiOperation({ summary: "获取登录设置（兼容）" })
   async loginSettings() {
-    const data = (await this.configService.getJsonConfig("loginSettings")) ?? {};
+    const data =
+      (await this.configService.getJsonConfig("loginSettings")) ?? {};
     return { code: 0, message: "success", data };
   }
 
@@ -756,15 +792,16 @@ export class ConfigController {
   @Get("paySettings")
   @ApiOperation({ summary: "获取支付设置聚合（兼容）" })
   async paySettings() {
-    const [basic, wechat, ali, yaband, offline, paypal, yun] = await Promise.all([
-      this.configService.getJsonConfig("basicPaySettings"),
-      this.configService.getJsonConfig("wechatPaySettings"),
-      this.configService.getJsonConfig("aliPaySettings"),
-      this.configService.getJsonConfig("yaBandPaySettings"),
-      this.configService.getJsonConfig("offlinePaySettings"),
-      this.configService.getJsonConfig("payPalSettings"),
-      this.configService.getJsonConfig("yunPaySettings"),
-    ]);
+    const [basic, wechat, ali, yaband, offline, paypal, yun] =
+      await Promise.all([
+        this.configService.getJsonConfig("basicPaySettings"),
+        this.configService.getJsonConfig("wechatPaySettings"),
+        this.configService.getJsonConfig("aliPaySettings"),
+        this.configService.getJsonConfig("yaBandPaySettings"),
+        this.configService.getJsonConfig("offlinePaySettings"),
+        this.configService.getJsonConfig("payPalSettings"),
+        this.configService.getJsonConfig("yunPaySettings"),
+      ]);
     const data = {
       basicPaySettings: basic ?? {},
       wechatPaySettings: wechat ?? {},
@@ -804,7 +841,8 @@ export class ConfigController {
   @Get("basicPaySettings")
   @ApiOperation({ summary: "获取基础支付设置（兼容）" })
   async basicPaySettings() {
-    const data = (await this.configService.getJsonConfig("basicPaySettings")) ?? {};
+    const data =
+      (await this.configService.getJsonConfig("basicPaySettings")) ?? {};
     return { code: 0, message: "success", data };
   }
 
@@ -818,7 +856,8 @@ export class ConfigController {
   @Get("wechatPaySettings")
   @ApiOperation({ summary: "获取微信支付设置（兼容）" })
   async wechatPaySettings() {
-    const data = (await this.configService.getJsonConfig("wechatPaySettings")) ?? {};
+    const data =
+      (await this.configService.getJsonConfig("wechatPaySettings")) ?? {};
     return { code: 0, message: "success", data };
   }
 
@@ -832,7 +871,8 @@ export class ConfigController {
   @Get("aliPaySettings")
   @ApiOperation({ summary: "获取支付宝设置（兼容）" })
   async aliPaySettings() {
-    const data = (await this.configService.getJsonConfig("aliPaySettings")) ?? {};
+    const data =
+      (await this.configService.getJsonConfig("aliPaySettings")) ?? {};
     return { code: 0, message: "success", data };
   }
 
@@ -846,7 +886,8 @@ export class ConfigController {
   @Get("yaBandPaySettings")
   @ApiOperation({ summary: "获取YA支付设置（兼容）" })
   async yaBandPaySettings() {
-    const data = (await this.configService.getJsonConfig("yaBandPaySettings")) ?? {};
+    const data =
+      (await this.configService.getJsonConfig("yaBandPaySettings")) ?? {};
     return { code: 0, message: "success", data };
   }
 
@@ -860,7 +901,8 @@ export class ConfigController {
   @Get("offlinePaySettings")
   @ApiOperation({ summary: "获取线下支付设置（兼容）" })
   async offlinePaySettings() {
-    const data = (await this.configService.getJsonConfig("offlinePaySettings")) ?? {};
+    const data =
+      (await this.configService.getJsonConfig("offlinePaySettings")) ?? {};
     return { code: 0, message: "success", data };
   }
 
@@ -874,7 +916,8 @@ export class ConfigController {
   @Get("payPalSettings")
   @ApiOperation({ summary: "获取PayPal设置（兼容）" })
   async payPalSettings() {
-    const data = (await this.configService.getJsonConfig("payPalSettings")) ?? {};
+    const data =
+      (await this.configService.getJsonConfig("payPalSettings")) ?? {};
     return { code: 0, message: "success", data };
   }
 
@@ -888,7 +931,8 @@ export class ConfigController {
   @Get("yunPaySettings")
   @ApiOperation({ summary: "获取云支付设置（兼容）" })
   async yunPaySettings() {
-    const data = (await this.configService.getJsonConfig("yunPaySettings")) ?? {};
+    const data =
+      (await this.configService.getJsonConfig("yunPaySettings")) ?? {};
     return { code: 0, message: "success", data };
   }
 
@@ -949,7 +993,11 @@ export class ConfigController {
     ]);
     const to = String(body?.to ?? cfg.testMailAddress ?? cfg.smtpMail ?? "");
     if (!to) {
-      return { code: 0, message: "success", data: { success: false, error: "missing recipient" } };
+      return {
+        code: 0,
+        message: "success",
+        data: { success: false, error: "missing recipient" },
+      };
     }
     const secure = String(cfg.smtpSsl ?? "0") === "1";
     const port = Number(cfg.smtpPort ?? (secure ? 465 : 25));
@@ -957,7 +1005,10 @@ export class ConfigController {
       host: cfg.smtpHost,
       port,
       secure,
-      auth: cfg.smtpUser && cfg.smtpPass ? { user: cfg.smtpUser, pass: cfg.smtpPass } : undefined,
+      auth:
+        cfg.smtpUser && cfg.smtpPass
+          ? { user: cfg.smtpUser, pass: cfg.smtpPass }
+          : undefined,
     } as any);
     try {
       await transporter.verify();
@@ -969,7 +1020,11 @@ export class ConfigController {
       });
       return { code: 0, message: "success", data: { success: true } };
     } catch (err: any) {
-      return { code: 0, message: "success", data: { success: false, error: String(err?.message || err) } };
+      return {
+        code: 0,
+        message: "success",
+        data: { success: false, error: String(err?.message || err) },
+      };
     }
   }
 
@@ -1206,7 +1261,10 @@ export class ConfigController {
   @Get("getAdminBase")
   @ApiOperation({ summary: "获取后台基础配置（兼容）" })
   @Authorities("configAdminBaseView")
-  async getAdminBase(@Query("shopId") shopId?: string, @Query("vendorId") vendorId?: string) {
+  async getAdminBase(
+    @Query("shopId") shopId?: string,
+    @Query("vendorId") vendorId?: string,
+  ) {
     // 简化实现：读取所需键值，部分按 PHP 逻辑提供默认
     const keys = [
       "icoDefinedCss",
@@ -1253,7 +1311,8 @@ export class ConfigController {
       shop_company: map.shopCompany ?? "",
       shop_company_txt: map.shopCompanyTxt ?? "",
       powered_by: map.poweredBy ?? "Powered by Tigshop",
-      powered_by_logo: map.poweredByLogo ?? "/static/mini/images/common/powered_by.png",
+      powered_by_logo:
+        map.poweredByLogo ?? "/static/mini/images/common/powered_by.png",
       powered_by_status: toBoolInt(map.poweredByStatus ?? 1),
       layout: hasScope ? SHOP_LAYOUT : (map.layout ?? "mix"),
       nav_theme: hasScope ? SHOP_NAVTHEME : (map.navTheme ?? "light"),
@@ -1261,8 +1320,12 @@ export class ConfigController {
       admin_light_logo: map.adminLightLogo ?? "",
       version_info_hidden: toBoolInt(map.versionInfoHidden ?? 0),
       default_copyright: toBoolInt(map.defaultCopyright ?? 1),
-      default_tech_support: map.defaultTechSupport ?? "/static/mini/images/common/default_tech_support.png",
-      withdrawSettingVO: map.withdrawSettingVO ? JSON.parse(map.withdrawSettingVO) : {},
+      default_tech_support:
+        map.defaultTechSupport ??
+        "/static/mini/images/common/default_tech_support.png",
+      withdrawSettingVO: map.withdrawSettingVO
+        ? JSON.parse(map.withdrawSettingVO)
+        : {},
     };
     return { code: 0, message: "success", data };
   }

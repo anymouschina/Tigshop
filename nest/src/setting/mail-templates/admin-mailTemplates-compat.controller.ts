@@ -35,7 +35,10 @@ export class AdminMailTemplatesCompatController {
   @Get("detail")
   @Authorities("setting")
   @ApiOperation({ summary: "邮件模板详情（兼容）" })
-  async detail(@Query("id") id?: string, @Query("template_id") template_id?: string) {
+  async detail(
+    @Query("id") id?: string,
+    @Query("template_id") template_id?: string,
+  ) {
     const templateId = Number(id || template_id);
     const item = await this.mailTemplateService.getDetail(templateId);
     return { code: 0, message: "success", data: item };

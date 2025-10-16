@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Body, Controller, Get, Post, Query, Request, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Request,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "../auth/guards/authority.guard";
@@ -16,7 +24,9 @@ export class AdminAccountCompatController {
   @ApiOperation({ summary: "获取主账号信息（兼容）" })
   async getMainAccount(@Request() req) {
     const adminId = req.user?.userId;
-    const admin = await this.prisma.admin_user.findUnique({ where: { admin_id: adminId } });
+    const admin = await this.prisma.admin_user.findUnique({
+      where: { admin_id: adminId },
+    });
     if (!admin) return { code: 0, message: "success", data: null };
     return { code: 0, message: "success", data: this.normalizeAdmin(admin) };
   }
@@ -38,7 +48,10 @@ export class AdminAccountCompatController {
     if (body.mobile != null) data.mobile = body.mobile;
     if (body.email != null) data.email = body.email;
     if (body.avatar != null) data.avatar = body.avatar;
-    const updated = await this.prisma.admin_user.update({ where: { admin_id: adminId }, data });
+    const updated = await this.prisma.admin_user.update({
+      where: { admin_id: adminId },
+      data,
+    });
     return { code: 0, message: "success", data: this.normalizeAdmin(updated) };
   }
 
@@ -49,7 +62,10 @@ export class AdminAccountCompatController {
     const newPassword = String(body.newPassword ?? body.password ?? "");
     if (!newPassword) return { code: 400, message: "缺少新密码" };
     // 简化：直接更新明文或假定外部加密；真实实现应加盐哈希
-    const updated = await this.prisma.admin_user.update({ where: { admin_id: adminId }, data: { password: newPassword } });
+    const updated = await this.prisma.admin_user.update({
+      where: { admin_id: adminId },
+      data: { password: newPassword },
+    });
     return { code: 0, message: "success", data: this.normalizeAdmin(updated) };
   }
 
@@ -66,14 +82,22 @@ export class AdminAccountCompatController {
       const where: any = {};
       if (keyword) where.suppliers_name = { contains: keyword };
       const [records, total] = await Promise.all([
-        this.prisma.suppliers.findMany({ where, skip, take: size, orderBy: { suppliers_id: "desc" } }),
+        this.prisma.suppliers.findMany({
+          where,
+          skip,
+          take: size,
+          orderBy: { suppliers_id: "desc" },
+        }),
         this.prisma.suppliers.count({ where }),
       ]);
       return {
         code: 0,
         message: "success",
         data: {
-          records: records.map((r) => ({ id: r.suppliers_id, name: r.suppliers_name })),
+          records: records.map((r) => ({
+            id: r.suppliers_id,
+            name: r.suppliers_name,
+          })),
           total,
           size,
           current: page,
@@ -86,7 +110,12 @@ export class AdminAccountCompatController {
     const where: any = {};
     if (keyword) where.shop_name = { contains: keyword };
     const [records, total] = await Promise.all([
-      this.prisma.shop.findMany({ where, skip, take: size, orderBy: { shop_id: "desc" } }),
+      this.prisma.shop.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { shop_id: "desc" },
+      }),
       this.prisma.shop.count({ where }),
     ]);
     return {
@@ -111,11 +140,19 @@ export class AdminAccountCompatController {
     const skip = (page - 1) * size;
     const where: any = {};
     if (keyword) {
-      where.OR = [{ username: { contains: keyword } }, { email: { contains: keyword } }];
+      where.OR = [
+        { username: { contains: keyword } },
+        { email: { contains: keyword } },
+      ];
     }
 
     const [records, total] = await Promise.all([
-      this.prisma.admin_user.findMany({ where, skip, take: size, orderBy: { admin_id: "desc" } }),
+      this.prisma.admin_user.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { admin_id: "desc" },
+      }),
       this.prisma.admin_user.count({ where }),
     ]);
 

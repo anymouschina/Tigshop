@@ -169,13 +169,18 @@ const formatDecimal = (value: any, digits = 2) => {
 
 const toPlainNumber = (value: any, fallback = 0) => {
   if (value === null || value === undefined) return fallback;
-  if (typeof value === "number") return Number.isFinite(value) ? value : fallback;
+  if (typeof value === "number")
+    return Number.isFinite(value) ? value : fallback;
   if (typeof value === "bigint") return Number(value);
   if (typeof value === "string" && value.trim() !== "") {
     const num = Number(value);
     return Number.isNaN(num) ? fallback : num;
   }
-  if (typeof value === "object" && value !== null && typeof value.toNumber === "function") {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    typeof value.toNumber === "function"
+  ) {
     const num = value.toNumber();
     return Number.isNaN(num) ? fallback : num;
   }
@@ -231,8 +236,16 @@ const normalizeSkuData = (value: any, fallback: any[] = []) => {
         continue;
       }
 
-      const nameField = (entry as any).name ?? (entry as any).attrName ?? (entry as any).attr_name ?? (entry as any).specName;
-      const valueField = (entry as any).value ?? (entry as any).attrValue ?? (entry as any).attr_value ?? (entry as any).specValue;
+      const nameField =
+        (entry as any).name ??
+        (entry as any).attrName ??
+        (entry as any).attr_name ??
+        (entry as any).specName;
+      const valueField =
+        (entry as any).value ??
+        (entry as any).attrValue ??
+        (entry as any).attr_value ??
+        (entry as any).specValue;
 
       // 情况一：同时具备 name & value（或变体）
       if (nameField !== undefined && valueField !== undefined) {
@@ -259,7 +272,10 @@ const normalizeSkuData = (value: any, fallback: any[] = []) => {
       if (keys.length === 1) {
         const k = keys[0];
         const v = (entry as any)[k];
-        if (pendingName && ["value", "attrValue", "attr_value", "specValue"].includes(k)) {
+        if (
+          pendingName &&
+          ["value", "attrValue", "attr_value", "specValue"].includes(k)
+        ) {
           result.push(buildPair(pendingName, v));
           pendingName = null;
           continue;
@@ -277,13 +293,18 @@ const normalizeSkuData = (value: any, fallback: any[] = []) => {
       if (keys.length > 1) {
         for (const k of keys) {
           const v = (entry as any)[k];
-          if (pendingName && ["value", "attrValue", "attr_value", "specValue"].includes(k)) {
+          if (
+            pendingName &&
+            ["value", "attrValue", "attr_value", "specValue"].includes(k)
+          ) {
             result.push(buildPair(pendingName, v));
             pendingName = null;
             continue;
           }
           // 如果 k 看似语义键（包含Name/Value），按已处理逻辑跳过，避免重复
-          if (/attrName|attr_value|attrValue|value|specName|specValue/i.test(k)) {
+          if (
+            /attrName|attr_value|attrValue|value|specName|specValue/i.test(k)
+          ) {
             continue;
           }
           result.push(buildPair(k, v));
@@ -296,7 +317,10 @@ const normalizeSkuData = (value: any, fallback: any[] = []) => {
 
   if (parsed && typeof parsed === "object") {
     // 对象形态：尝试识别 attrName/attrValue 或普通 KV
-    if ("attrName" in parsed && ("attrValue" in parsed || "attr_value" in parsed)) {
+    if (
+      "attrName" in parsed &&
+      ("attrValue" in parsed || "attr_value" in parsed)
+    ) {
       return [
         buildPair(
           (parsed as any).attrName,
@@ -304,7 +328,9 @@ const normalizeSkuData = (value: any, fallback: any[] = []) => {
         ),
       ];
     }
-    return Object.entries(parsed).map(([key, val]) => buildPair(key, Array.isArray(val) ? val.join(" ") : val));
+    return Object.entries(parsed).map(([key, val]) =>
+      buildPair(key, Array.isArray(val) ? val.join(" ") : val),
+    );
   }
 
   return Array.isArray(fallback) ? fallback : [];
@@ -342,7 +368,9 @@ const buildAttributeMap = (records: any[]) => {
     };
 
     if (attr.attr_type === 2) {
-      let group = bucket.extra.find((entry) => entry.attrName === attrPayload.attrName);
+      let group = bucket.extra.find(
+        (entry) => entry.attrName === attrPayload.attrName,
+      );
       if (!group) {
         group = {
           attrName: attrPayload.attrName,
@@ -378,7 +406,12 @@ export class CartService {
     productId: number,
     quantity: number = 1,
     skuId: number = 0,
-    options?: { type?: number; salesmanId?: number; extraAttrIds?: string | number[]; isQuick?: boolean },
+    options?: {
+      type?: number;
+      salesmanId?: number;
+      extraAttrIds?: string | number[];
+      isQuick?: boolean;
+    },
   ) {
     // 入参兜底校验，避免 NaN/无效值导致 Prisma where 报错
     const pid = Number(productId);
@@ -472,14 +505,17 @@ export class CartService {
       let marketPrice = 0;
       let originalPrice = 0;
       let skuDataStr: string | null = null;
-      let skuPicThumb: string | null = null;
+      const skuPicThumb: string | null = null;
       if (sid > 0) {
-        const sku = await this.prisma.product_sku.findUnique({ where: { sku_id: sid } });
+        const sku = await this.prisma.product_sku.findUnique({
+          where: { sku_id: sid },
+        });
         if (sku) {
           skuDataStr = sku.sku_data ?? null;
           marketPrice = Number(productData?.market_price ?? 0);
           const skuPriceNum = Number(sku.sku_price ?? 0);
-          originalPrice = skuPriceNum > 0 ? skuPriceNum : Number(product.product_price ?? 0);
+          originalPrice =
+            skuPriceNum > 0 ? skuPriceNum : Number(product.product_price ?? 0);
         }
       } else {
         marketPrice = Number(product.market_price ?? 0);
@@ -492,25 +528,32 @@ export class CartService {
       if (rawExtra !== undefined && rawExtra !== null) {
         let attrIds: number[] = [];
         if (Array.isArray(rawExtra)) {
-          attrIds = rawExtra.map(v => Number(v)).filter(v => Number.isInteger(v) && v > 0);
-        } else if (typeof rawExtra === 'string') {
-          attrIds = rawExtra.split(',').map(s => Number(s.trim())).filter(v => Number.isInteger(v) && v > 0);
+          attrIds = rawExtra
+            .map((v) => Number(v))
+            .filter((v) => Number.isInteger(v) && v > 0);
+        } else if (typeof rawExtra === "string") {
+          attrIds = rawExtra
+            .split(",")
+            .map((s) => Number(s.trim()))
+            .filter((v) => Number.isInteger(v) && v > 0);
         }
         if (attrIds.length > 0) {
-          const attrs = await this.prisma.product_attributes.findMany({ where: { attributes_id: { in: attrIds } } });
-            if (attrs && attrs.length > 0) {
-              extraSkuDataPayload = attrs.map(attr => ({
-                attributesId: attr.attributes_id,
-                productId: attr.product_id,
-                attrType: attr.attr_type,
-                attrName: attr.attr_name ?? '',
-                attrValue: attr.attr_value ?? '',
-                attrPrice: formatDecimal(attr.attr_price ?? 0),
-                attrColor: attr.attr_color ?? '',
-                attrPic: attr.attr_pic ?? '',
-                attrPicThumb: attr.attr_pic_thumb ?? '',
-              }));
-            }
+          const attrs = await this.prisma.product_attributes.findMany({
+            where: { attributes_id: { in: attrIds } },
+          });
+          if (attrs && attrs.length > 0) {
+            extraSkuDataPayload = attrs.map((attr) => ({
+              attributesId: attr.attributes_id,
+              productId: attr.product_id,
+              attrType: attr.attr_type,
+              attrName: attr.attr_name ?? "",
+              attrValue: attr.attr_value ?? "",
+              attrPrice: formatDecimal(attr.attr_price ?? 0),
+              attrColor: attr.attr_color ?? "",
+              attrPic: attr.attr_pic ?? "",
+              attrPicThumb: attr.attr_pic_thumb ?? "",
+            }));
+          }
         }
       }
 
@@ -524,7 +567,9 @@ export class CartService {
           market_price: marketPrice,
           original_price: originalPrice,
           sku_data: skuDataStr ?? existingItem.sku_data ?? undefined,
-          extra_sku_data: extraSkuDataPayload ? JSON.stringify(extraSkuDataPayload) : existingItem.extra_sku_data,
+          extra_sku_data: extraSkuDataPayload
+            ? JSON.stringify(extraSkuDataPayload)
+            : existingItem.extra_sku_data,
         },
       });
     } else {
@@ -545,10 +590,10 @@ export class CartService {
         throw new NotFoundException("商品信息不完整");
       }
 
-  let skuData = null as string | null;
-  let marketPrice = 0;
-  let originalPrice = 0;
-  let skuPicThumb: string | null = null;
+      let skuData = null as string | null;
+      let marketPrice = 0;
+      let originalPrice = 0;
+      const skuPicThumb: string | null = null;
 
       if (sid > 0) {
         const sku = await this.prisma.product_sku.findUnique({
@@ -560,7 +605,8 @@ export class CartService {
           // 使用商品的市场价作为市场价，SKU价格作为原价；当SKU价格为0或空时回退到商品价
           marketPrice = Number(productData?.market_price ?? 0);
           const skuPriceNum = Number(sku.sku_price ?? 0);
-          originalPrice = skuPriceNum > 0 ? skuPriceNum : Number(product.product_price ?? 0);
+          originalPrice =
+            skuPriceNum > 0 ? skuPriceNum : Number(product.product_price ?? 0);
         }
       } else {
         // Use product price if no SKU
@@ -602,14 +648,21 @@ export class CartService {
           }
         }
       }
-      this.logger.debug(`skuData=${JSON.stringify(skuData)} extraSkuDataPayload=${JSON.stringify(extraSkuDataPayload)}`);
-      console.log(`skuData=${JSON.stringify(skuData)} extraSkuDataPayload=${JSON.stringify(extraSkuDataPayload)}`);
+      this.logger.debug(
+        `skuData=${JSON.stringify(skuData)} extraSkuDataPayload=${JSON.stringify(extraSkuDataPayload)}`,
+      );
+      console.log(
+        `skuData=${JSON.stringify(skuData)} extraSkuDataPayload=${JSON.stringify(extraSkuDataPayload)}`,
+      );
       cartItem = await this.prisma.cart.create({
         data: {
           user_id: userId,
           product_id: pid,
           product_sn: productData.product_sn,
-          pic_thumb: (skuPicThumb && skuPicThumb !== "") ? skuPicThumb : (productData.pic_thumb || ""),
+          pic_thumb:
+            skuPicThumb && skuPicThumb !== ""
+              ? skuPicThumb
+              : productData.pic_thumb || "",
           market_price: marketPrice,
           original_price: originalPrice,
           quantity: qty,
@@ -621,7 +674,9 @@ export class CartService {
           type: cartType,
           update_time: Math.floor(Date.now() / 1000),
           salesman_id: salesmanId,
-          extra_sku_data: extraSkuDataPayload ? JSON.stringify(extraSkuDataPayload) : undefined,
+          extra_sku_data: extraSkuDataPayload
+            ? JSON.stringify(extraSkuDataPayload)
+            : undefined,
         },
       });
     }
@@ -657,11 +712,18 @@ export class CartService {
     let stock = 0;
     if ((cartItem.sku_id ?? 0) > 0) {
       const [sku, product] = await Promise.all([
-        this.prisma.product_sku.findUnique({ where: { sku_id: cartItem.sku_id } }),
-        this.prisma.product.findFirst({ where: { product_id: cartItem.product_id } }),
+        this.prisma.product_sku.findUnique({
+          where: { sku_id: cartItem.sku_id },
+        }),
+        this.prisma.product.findFirst({
+          where: { product_id: cartItem.product_id },
+        }),
       ]);
       const skuStockNum = toPlainNumber(sku?.sku_stock, -1);
-      stock = skuStockNum >= 0 ? skuStockNum : toPlainNumber(product?.product_stock, 0);
+      stock =
+        skuStockNum >= 0
+          ? skuStockNum
+          : toPlainNumber(product?.product_stock, 0);
     } else {
       const product = await this.prisma.product.findFirst({
         where: { product_id: cartItem.product_id },
@@ -737,7 +799,11 @@ export class CartService {
     filters?: { shopId?: number; isChecked?: number | boolean },
   ): Promise<CartData> {
     const where: any = { user_id: userId };
-    if (filters?.shopId && Number.isFinite(filters.shopId) && (filters.shopId as number) > 0) {
+    if (
+      filters?.shopId &&
+      Number.isFinite(filters.shopId) &&
+      (filters.shopId as number) > 0
+    ) {
       where.shop_id = Number(filters.shopId);
     }
     if (filters?.isChecked !== undefined) {
@@ -822,7 +888,9 @@ export class CartService {
       }
     }
 
-    const skuIdSet = [...new Set(cartRows.map((row) => row.sku_id).filter(Boolean))];
+    const skuIdSet = [
+      ...new Set(cartRows.map((row) => row.sku_id).filter(Boolean)),
+    ];
     const skuMap = new Map<number, any>();
     if (skuIdSet.length > 0) {
       const skus = await this.prisma.product_sku.findMany({
@@ -878,8 +946,9 @@ export class CartService {
     for (const row of cartRows) {
       const product = productMap.get(row.product_id) ?? {};
       const shop = shopMap.get(row.shop_id) ?? {};
-      const sku = row.sku_id ? skuMap.get(row.sku_id) ?? null : null;
-      const attrGrouping = attrMap.get(row.product_id) ?? createEmptyAttrGroup();
+      const sku = row.sku_id ? (skuMap.get(row.sku_id) ?? null) : null;
+      const attrGrouping =
+        attrMap.get(row.product_id) ?? createEmptyAttrGroup();
 
       let shopBucket = groupedByShop.get(row.shop_id);
       if (!shopBucket) {
@@ -925,14 +994,20 @@ export class CartService {
       }
 
       const skuDataList = normalizeSkuData(row.sku_data ?? sku?.sku_data ?? []);
-      this.logger.debug(`cart_id=${row.cart_id} skuDataList=${JSON.stringify(skuDataList)} ${sku?.sku_data}`);
+      this.logger.debug(
+        `cart_id=${row.cart_id} skuDataList=${JSON.stringify(skuDataList)} ${sku?.sku_data}`,
+      );
       const extraSkuData = normalizeExtraSkuData(row.extra_sku_data);
-  const checked = Number(row.is_checked ?? 0) === 1;
+      const checked = Number(row.is_checked ?? 0) === 1;
       const skuPriceRaw = sku?.sku_price;
       const priceCandidate =
-        (skuPriceRaw !== undefined && skuPriceRaw !== null && Number(skuPriceRaw) > 0
+        (skuPriceRaw !== undefined &&
+        skuPriceRaw !== null &&
+        Number(skuPriceRaw) > 0
           ? skuPriceRaw
-          : row.original_price) ?? product?.product_price ?? 0;
+          : row.original_price) ??
+        product?.product_price ??
+        0;
       const priceNumber = toPlainNumber(priceCandidate, 0);
       const subtotal = priceNumber * row.quantity;
 
@@ -942,7 +1017,9 @@ export class CartService {
         productId: row.product_id,
         productSn: row.product_sn,
         picThumb: row.pic_thumb ?? "",
-        marketPrice: formatDecimal(product?.market_price ?? row.market_price ?? 0),
+        marketPrice: formatDecimal(
+          product?.market_price ?? row.market_price ?? 0,
+        ),
         originalPrice: formatDecimal(row.original_price ?? priceNumber ?? 0),
         quantity: row.quantity,
         skuId: row.sku_id ?? 0,
@@ -982,7 +1059,9 @@ export class CartService {
               skuStock: sku.sku_stock ?? 0,
               skuTsn: sku.sku_tsn ?? "",
               skuPrice: formatDecimal(sku.sku_price ?? priceNumber ?? 0),
-              marketPrice: formatDecimal(product?.market_price ?? row.market_price ?? 0),
+              marketPrice: formatDecimal(
+                product?.market_price ?? row.market_price ?? 0,
+              ),
               costPrice: null,
               vendorProductSkuId: sku.vendor_product_sku_id ?? null,
             }
@@ -991,13 +1070,13 @@ export class CartService {
         fixedShippingFee: formatDecimal(product?.fixed_shipping_fee ?? 0),
         vendorId: product?.vendor_id ?? 0,
         vendorProductId: product?.vendor_product_id ?? 0,
-    vendorProductSkuId: sku?.vendor_product_sku_id ?? null,
-    price: priceNumber,
-    stock: product?.product_stock ?? 0,
-    hasSku: false,
-    subtotal: formatDecimal(subtotal),
-    originPrice: priceNumber,
-    isDisabled: false,
+        vendorProductSkuId: sku?.vendor_product_sku_id ?? null,
+        price: priceNumber,
+        stock: product?.product_stock ?? 0,
+        hasSku: false,
+        subtotal: formatDecimal(subtotal),
+        originPrice: priceNumber,
+        isDisabled: false,
         activityInfo: [],
         serviceFee: formatDecimal(0),
         extraSkuAllData: attrGrouping ?? createEmptyAttrGroup(),
@@ -1012,7 +1091,8 @@ export class CartService {
 
       if (shouldConsiderSeckill) {
         const seckillStock =
-          seckillStockMap.get(seckillKeyExact) ?? seckillStockMap.get(seckillKeyFallback);
+          seckillStockMap.get(seckillKeyExact) ??
+          seckillStockMap.get(seckillKeyFallback);
         if (typeof seckillStock === "number") {
           effectiveStock = seckillStock;
         }
@@ -1020,7 +1100,9 @@ export class CartService {
 
       if (effectiveStock === undefined) {
         effectiveStock = toPlainNumber(
-          cartItem.hasSku ? sku?.sku_stock ?? product?.product_stock ?? 0 : product?.product_stock ?? 0,
+          cartItem.hasSku
+            ? (sku?.sku_stock ?? product?.product_stock ?? 0)
+            : (product?.product_stock ?? 0),
         );
       }
 
@@ -1058,28 +1140,56 @@ export class CartService {
 
     // 二次遍历计算 freeShippingAll / noShipping & shippingMode
     for (const g of cartList) {
-      const allVirtual = g.carts.length > 0 && g.carts.every(ci => (ci as any)?.freeShipping !== undefined ? (ci as any).fixedShippingType !== 1 && (ci as any).freeShipping === 0 ? (ci as any).shippingTplId === 0 ? (productMap.get(ci.productId)?.no_shipping === 1) : (productMap.get(ci.productId)?.no_shipping === 1) : (productMap.get(ci.productId)?.no_shipping === 1) : (productMap.get(ci.productId)?.no_shipping === 1));
+      const allVirtual =
+        g.carts.length > 0 &&
+        g.carts.every((ci) =>
+          (ci as any)?.freeShipping !== undefined
+            ? (ci as any).fixedShippingType !== 1 &&
+              (ci as any).freeShipping === 0
+              ? (ci as any).shippingTplId === 0
+                ? productMap.get(ci.productId)?.no_shipping === 1
+                : productMap.get(ci.productId)?.no_shipping === 1
+              : productMap.get(ci.productId)?.no_shipping === 1
+            : productMap.get(ci.productId)?.no_shipping === 1,
+        );
       // 上面写法过于复杂，重写：
     }
 
     for (const g of cartList) {
-      const allVirtual = g.carts.length > 0 && g.carts.every(ci => (productMap.get(ci.productId)?.no_shipping ?? 0) === 1);
-      const allFreePhysical = !allVirtual && g.carts.length > 0 && g.carts.every(ci => (productMap.get(ci.productId)?.no_shipping ?? 0) === 0 && (productMap.get(ci.productId)?.free_shipping ?? 0) === 1);
+      const allVirtual =
+        g.carts.length > 0 &&
+        g.carts.every(
+          (ci) => (productMap.get(ci.productId)?.no_shipping ?? 0) === 1,
+        );
+      const allFreePhysical =
+        !allVirtual &&
+        g.carts.length > 0 &&
+        g.carts.every(
+          (ci) =>
+            (productMap.get(ci.productId)?.no_shipping ?? 0) === 0 &&
+            (productMap.get(ci.productId)?.free_shipping ?? 0) === 1,
+        );
       g.noShipping = allVirtual ? 1 : 0;
       g.freeShippingAll = allFreePhysical ? 1 : 0;
-      g.shippingMode = allVirtual ? "virtual" : (allFreePhysical ? "free" : "mixed");
+      g.shippingMode = allVirtual
+        ? "virtual"
+        : allFreePhysical
+          ? "free"
+          : "mixed";
     }
 
     const total = {
       productAmount: totalAccumulator.productAmount,
       checkedCount: totalAccumulator.checkedCount,
       discounts: totalAccumulator.discounts,
-      discountAfter: totalAccumulator.productAmount - totalAccumulator.discounts,
+      discountAfter:
+        totalAccumulator.productAmount - totalAccumulator.discounts,
       totalCount: totalAccumulator.totalCount,
       discountCouponAmount: totalAccumulator.discountCouponAmount,
       discountDiscountAmount: totalAccumulator.discountDiscountAmount,
       discountSeckillAmount: totalAccumulator.discountSeckillAmount,
-      discountProductPromotionAmount: totalAccumulator.discountProductPromotionAmount,
+      discountProductPromotionAmount:
+        totalAccumulator.discountProductPromotionAmount,
       discountTimeDiscountAmount: totalAccumulator.discountTimeDiscountAmount,
       serviceFee: formatDecimal(totalAccumulator.serviceFee),
     };
@@ -1248,25 +1358,35 @@ export class CartService {
     if (cartRows.length === 0) return 0;
 
     // 预取产品信息
-    const productIds = [...new Set(cartRows.map(r => r.product_id))];
+    const productIds = [...new Set(cartRows.map((r) => r.product_id))];
     const products = await this.prisma.product.findMany({
       where: { product_id: { in: productIds } },
       select: { product_id: true, product_status: true, product_stock: true },
     });
-    const productMap = new Map<number, { product_status: number; product_stock: number }>();
+    const productMap = new Map<
+      number,
+      { product_status: number; product_stock: number }
+    >();
     for (const p of products) {
-      productMap.set(p.product_id, { product_status: p.product_status ?? 0, product_stock: p.product_stock ?? 0 });
+      productMap.set(p.product_id, {
+        product_status: p.product_status ?? 0,
+        product_stock: p.product_stock ?? 0,
+      });
     }
 
     // 预取 SKU 信息
-    const skuIds = [...new Set(cartRows.map(r => r.sku_id).filter(id => !!id))] as number[];
+    const skuIds = [
+      ...new Set(cartRows.map((r) => r.sku_id).filter((id) => !!id)),
+    ] as number[];
     let skuMap = new Map<number, { sku_stock: number }>();
     if (skuIds.length > 0) {
       const skus = await this.prisma.product_sku.findMany({
         where: { sku_id: { in: skuIds } },
         select: { sku_id: true, sku_stock: true },
       });
-      skuMap = new Map(skus.map(s => [s.sku_id, { sku_stock: s.sku_stock ?? 0 }]));
+      skuMap = new Map(
+        skus.map((s) => [s.sku_id, { sku_stock: s.sku_stock ?? 0 }]),
+      );
     }
 
     let totalCount = 0;
@@ -1276,7 +1396,10 @@ export class CartService {
       const product = productMap.get(row.product_id);
       const productStatus = product?.product_status ?? 0;
       // 计算库存：若有 sku 则用 sku_stock，否则用 product_stock
-      const stock = (row.sku_id ? skuMap.get(row.sku_id)?.sku_stock : product?.product_stock) ?? 0;
+      const stock =
+        (row.sku_id
+          ? skuMap.get(row.sku_id)?.sku_stock
+          : product?.product_stock) ?? 0;
       const isDisabled = stock <= 0 || productStatus === 0;
       if (isDisabled && row.is_checked === 1) {
         needUncheck.push(row.cart_id);

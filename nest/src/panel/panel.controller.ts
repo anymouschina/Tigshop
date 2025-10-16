@@ -83,11 +83,13 @@ export class PanelController {
       return { code: 1, message: "用户未登录", data: null };
     }
     const { shopId } = info;
-    const [consoleData, realTimeData, panelStatisticalData] = await Promise.all([
-      this.panelService.getConsoleData(shopId),
-      this.panelService.getRealTimeData(shopId),
-      this.panelService.getPanelStatisticalData(shopId),
-    ]);
+    const [consoleData, realTimeData, panelStatisticalData] = await Promise.all(
+      [
+        this.panelService.getConsoleData(shopId),
+        this.panelService.getRealTimeData(shopId),
+        this.panelService.getPanelStatisticalData(shopId),
+      ],
+    );
 
     return {
       code: 0,
@@ -105,7 +107,9 @@ export class PanelController {
   @ApiQuery({ name: "keyword", description: "关键词" })
   @ApiResponse({ status: 200, description: "获取成功" })
   async searchMenu(@Query("keyword") keyword: string, @Request() req) {
-    const adminType = await this.panelService.getUserAdminType(req.user?.userId);
+    const adminType = await this.panelService.getUserAdminType(
+      req.user?.userId,
+    );
     const trimmedKeyword = keyword?.trim() || "";
 
     const menuList = await this.authorityService.getAuthorityList(
@@ -345,9 +349,21 @@ export class PanelController {
   @Get("statisticsUser/userStatisticsPanel")
   @Authorities("statisticsUserManage")
   @ApiOperation({ summary: "用户统计面板" })
-  @ApiQuery({ name: "startTime", required: false, description: "开始日期 YYYY-MM-DD" })
-  @ApiQuery({ name: "endTime", required: false, description: "结束日期 YYYY-MM-DD" })
-  @ApiQuery({ name: "isExport", required: false, description: "是否导出，1为导出" })
+  @ApiQuery({
+    name: "startTime",
+    required: false,
+    description: "开始日期 YYYY-MM-DD",
+  })
+  @ApiQuery({
+    name: "endTime",
+    required: false,
+    description: "结束日期 YYYY-MM-DD",
+  })
+  @ApiQuery({
+    name: "isExport",
+    required: false,
+    description: "是否导出，1为导出",
+  })
   async getUserStatisticsPanel(
     @Query()
     query: {
@@ -358,7 +374,8 @@ export class PanelController {
     @Request() req,
   ) {
     try {
-      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      const userShopInfo =
+        await this.panelService.validateUserAndGetShopId(req);
       if (!userShopInfo) {
         return {
           code: 1,
@@ -369,7 +386,11 @@ export class PanelController {
       }
 
       const { shopId } = userShopInfo;
-      const result = await this.panelService.getUserStatisticsPanel(shopId, query?.startTime, query?.endTime);
+      const result = await this.panelService.getUserStatisticsPanel(
+        shopId,
+        query?.startTime,
+        query?.endTime,
+      );
 
       // 预留：如需导出，这里根据 isExport 返回文件流
       // 目前前端仅需要JSON数据以渲染『用户概览』，导出后续补充
@@ -393,13 +414,33 @@ export class PanelController {
   @Get("statisticsUser/userConsumptionRanking")
   @Authorities("statisticsUserManage")
   @ApiOperation({ summary: "会员消费排行" })
-  @ApiQuery({ name: "startTime", required: true, description: "开始日期 YYYY-MM-DD" })
-  @ApiQuery({ name: "endTime", required: true, description: "结束日期 YYYY-MM-DD" })
-  @ApiQuery({ name: "keyword", required: false, description: "会员名称或手机号" })
+  @ApiQuery({
+    name: "startTime",
+    required: true,
+    description: "开始日期 YYYY-MM-DD",
+  })
+  @ApiQuery({
+    name: "endTime",
+    required: true,
+    description: "结束日期 YYYY-MM-DD",
+  })
+  @ApiQuery({
+    name: "keyword",
+    required: false,
+    description: "会员名称或手机号",
+  })
   @ApiQuery({ name: "page", required: false, description: "页码" })
   @ApiQuery({ name: "size", required: false, description: "每页数量" })
-  @ApiQuery({ name: "sortField", required: false, description: "排序字段：orderAmount|orderNum" })
-  @ApiQuery({ name: "sortOrder", required: false, description: "排序规则：asc|desc" })
+  @ApiQuery({
+    name: "sortField",
+    required: false,
+    description: "排序字段：orderAmount|orderNum",
+  })
+  @ApiQuery({
+    name: "sortOrder",
+    required: false,
+    description: "排序规则：asc|desc",
+  })
   async getUserConsumptionRanking(
     @Query()
     query: {
@@ -416,7 +457,8 @@ export class PanelController {
     @Res() res: Response,
   ) {
     try {
-      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      const userShopInfo =
+        await this.panelService.validateUserAndGetShopId(req);
       if (!userShopInfo) {
         return res.json({
           code: 1,
@@ -445,7 +487,7 @@ export class PanelController {
         res.setHeader("Content-Type", "text/csv; charset=utf-8");
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename="user-consumption-ranking-${new Date().toISOString().slice(0,10)}.csv"`,
+          `attachment; filename="user-consumption-ranking-${new Date().toISOString().slice(0, 10)}.csv"`,
         );
         return res.send(result);
       }
@@ -469,9 +511,21 @@ export class PanelController {
   @Get("statisticsUser/addUserTrends")
   @Authorities("statisticsUserManage")
   @ApiOperation({ summary: "新增会员趋势" })
-  @ApiQuery({ name: "dateType", required: true, description: "统计维度：1=年(按月)、2=月(按日)、3=日(按时)" })
-  @ApiQuery({ name: "startEndTime", required: true, description: "维度起点：年(YYYY)/月(YYYY-MM)/日(YYYY-MM-DD)" })
-  @ApiQuery({ name: "isExport", required: false, description: "是否导出，1=导出CSV" })
+  @ApiQuery({
+    name: "dateType",
+    required: true,
+    description: "统计维度：1=年(按月)、2=月(按日)、3=日(按时)",
+  })
+  @ApiQuery({
+    name: "startEndTime",
+    required: true,
+    description: "维度起点：年(YYYY)/月(YYYY-MM)/日(YYYY-MM-DD)",
+  })
+  @ApiQuery({
+    name: "isExport",
+    required: false,
+    description: "是否导出，1=导出CSV",
+  })
   async getAddUserTrends(
     @Query()
     query: {
@@ -483,7 +537,8 @@ export class PanelController {
     @Res() res: Response,
   ) {
     try {
-      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      const userShopInfo =
+        await this.panelService.validateUserAndGetShopId(req);
       if (!userShopInfo) {
         return res.json({
           code: 1,
@@ -504,19 +559,25 @@ export class PanelController {
         });
       }
 
-      const result = await this.panelService.getAddUserTrends(dateType, startEndTime);
+      const result = await this.panelService.getAddUserTrends(
+        dateType,
+        startEndTime,
+      );
 
       if (query.isExport === "1") {
         // 导出CSV：时间,新增人数
         const header = "时间,新增人数\n";
         const csvBody = result.horizontalAxis
-          .map((label: string | number, idx: number) => `${label},${result.longitudinalAxis[idx] ?? 0}`)
+          .map(
+            (label: string | number, idx: number) =>
+              `${label},${result.longitudinalAxis[idx] ?? 0}`,
+          )
           .join("\n");
         const csv = header + csvBody;
         res.setHeader("Content-Type", "text/csv; charset=utf-8");
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename="add-user-trends-${new Date().toISOString().slice(0,10)}.csv"`,
+          `attachment; filename="add-user-trends-${new Date().toISOString().slice(0, 10)}.csv"`,
         );
         return res.send(Buffer.from(csv, "utf8"));
       }
@@ -540,9 +601,21 @@ export class PanelController {
   @Get("statisticsAccess/accessStatistics")
   @Authorities("statisticsAccessManage")
   @ApiOperation({ summary: "访问统计（点击量/访客数）" })
-  @ApiQuery({ name: "startTime", required: true, description: "开始日期 YYYY-MM-DD" })
-  @ApiQuery({ name: "endTime", required: true, description: "结束日期 YYYY-MM-DD" })
-  @ApiQuery({ name: "isHits", required: true, description: "是否点击量：1=点击量，0=访客数" })
+  @ApiQuery({
+    name: "startTime",
+    required: true,
+    description: "开始日期 YYYY-MM-DD",
+  })
+  @ApiQuery({
+    name: "endTime",
+    required: true,
+    description: "结束日期 YYYY-MM-DD",
+  })
+  @ApiQuery({
+    name: "isHits",
+    required: true,
+    description: "是否点击量：1=点击量，0=访客数",
+  })
   async getAccessStatistics(
     @Query()
     query: {
@@ -553,7 +626,8 @@ export class PanelController {
     @Request() req,
   ) {
     try {
-      const userShopInfo = await this.panelService.validateUserAndGetShopId(req);
+      const userShopInfo =
+        await this.panelService.validateUserAndGetShopId(req);
       if (!userShopInfo) {
         return {
           code: 1,

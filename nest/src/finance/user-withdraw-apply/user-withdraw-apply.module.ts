@@ -7,7 +7,10 @@ import { UserWithdrawApplyApiCompatController } from "./user-withdraw-apply.api-
 
 @Module({
   imports: [SettingModule],
-  controllers: [UserWithdrawApplyController, UserWithdrawApplyApiCompatController],
+  controllers: [
+    UserWithdrawApplyController,
+    UserWithdrawApplyApiCompatController,
+  ],
   providers: [UserWithdrawApplyService],
   exports: [UserWithdrawApplyService],
 })

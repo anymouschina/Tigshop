@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Request } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,7 +20,8 @@ import { PrismaService } from "src/prisma/prisma.service";
 @ApiBearerAuth()
 export class AdminUserCompatController {
   // 简单内存验证码缓存（进程级）
-  private static codeCache: Map<string, { code: string; expiredAt: number }> = new Map();
+  private static codeCache: Map<string, { code: string; expiredAt: number }> =
+    new Map();
 
   constructor(private prisma: PrismaService) {}
 
@@ -69,15 +78,23 @@ export class AdminUserCompatController {
     const adminIds = rows.map((r) => r.admin_id);
 
     // 角色名映射
-    const roleIds = Array.from(new Set(rows.map((r) => r.role_id).filter((x) => Number(x) > 0)));
+    const roleIds = Array.from(
+      new Set(rows.map((r) => r.role_id).filter((x) => Number(x) > 0)),
+    );
     const roles = roleIds.length
-      ? await this.prisma.admin_role.findMany({ where: { role_id: { in: roleIds } }, select: { role_id: true, role_name: true } })
+      ? await this.prisma.admin_role.findMany({
+          where: { role_id: { in: roleIds } },
+          select: { role_id: true, role_name: true },
+        })
       : [];
     const roleNameMap = new Map(roles.map((r) => [r.role_id, r.role_name]));
 
     // 子账号计数（hasChildren）
     const children = adminIds.length
-      ? await this.prisma.admin_user.findMany({ where: { parent_id: { in: adminIds } }, select: { parent_id: true } })
+      ? await this.prisma.admin_user.findMany({
+          where: { parent_id: { in: adminIds } },
+          select: { parent_id: true },
+        })
       : [];
     const childCountMap = new Map<number, number>();
     for (const c of children) {
@@ -122,7 +139,11 @@ export class AdminUserCompatController {
           return v ?? fallback;
         } catch {
           // 兼容逗号分隔
-          if (text.includes(",")) return text.split(",").map((t) => t.trim()).filter(Boolean);
+          if (text.includes(","))
+            return text
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean);
           return fallback;
         }
       }
@@ -158,7 +179,7 @@ export class AdminUserCompatController {
       const isAdminTop = userShop.some((x) => Number(x.isAdmin) === 1) ? 1 : 0;
 
       // 顶层 authList：优先自身 auth_list；若为空且有 role_id，则取角色 authority_list
-      let authList = parseAuthList(r.auth_list);
+      const authList = parseAuthList(r.auth_list);
       if ((!authList || authList.length === 0) && r.role_id && r.role_id > 0) {
         const rn = r.role_id;
         // 尝试用 roleNameMap 的 key 查一把 authority_list（需要再查一次 DB）
@@ -215,16 +236,23 @@ export class AdminUserCompatController {
 
     if (!id) return { code: 0, message: "success", data: null };
 
-    const r = await this.prisma.admin_user.findUnique({ where: { admin_id: id } });
+    const r = await this.prisma.admin_user.findUnique({
+      where: { admin_id: id },
+    });
     if (!r) return { code: 0, message: "success", data: null };
 
     // 如果有 role_id，则从 admin_role 合并权限列表
     let authList = r.auth_list || null;
     if (r.role_id && r.role_id > 0) {
-      const role = await this.prisma.admin_role.findUnique({ where: { role_id: r.role_id }, select: { authority_list: true } });
+      const role = await this.prisma.admin_role.findUnique({
+        where: { role_id: r.role_id },
+        select: { authority_list: true },
+      });
       if (role?.authority_list) authList = role.authority_list;
     }
-    const encipher_mobile = r.mobile ? `${String(r.mobile).slice(0,3)}****${String(r.mobile).slice(-4)}` : "";
+    const encipher_mobile = r.mobile
+      ? `${String(r.mobile).slice(0, 3)}****${String(r.mobile).slice(-4)}`
+      : "";
 
     return {
       code: 0,
@@ -250,14 +278,24 @@ export class AdminUserCompatController {
   @Authorities("adminUserConfig")
   async config(@Query() query: any, @Request() req: any) {
     // PHP: 返回角色列表（排除role_id=2），按 admin_type + shop_id 过滤
-    const adminType = (query?.admin_type || query?.adminType || req?.user?.adminType || "admin").toString();
-    const shopId = Number(query?.shop_id || query?.shopId || req?.user?.shopId || 0);
+    const adminType = (
+      query?.admin_type ||
+      query?.adminType ||
+      req?.user?.adminType ||
+      "admin"
+    ).toString();
+    const shopId = Number(
+      query?.shop_id || query?.shopId || req?.user?.shopId || 0,
+    );
     const roles = await this.prisma.admin_role.findMany({
       where: { admin_type: adminType, shop_id: shopId, NOT: { role_id: 2 } },
       select: { role_id: true, role_name: true },
       orderBy: { role_id: "asc" },
     });
-    const list = roles.map((r) => ({ roleId: r.role_id, roleName: r.role_name }));
+    const list = roles.map((r) => ({
+      roleId: r.role_id,
+      roleName: r.role_name,
+    }));
     return { code: 0, message: "success", data: list };
   }
 
@@ -278,7 +316,9 @@ export class AdminUserCompatController {
       add_time: now,
       password: dto.password || dto.initialPassword || "", // TODO: 后续接入加密
       initial_password: dto.initialPassword || "",
-      auth_list: Array.isArray(dto.authList) ? JSON.stringify(dto.authList) : (dto.authList || ""),
+      auth_list: Array.isArray(dto.authList)
+        ? JSON.stringify(dto.authList)
+        : dto.authList || "",
     };
     const created = await this.prisma.admin_user.create({ data });
     return { code: 0, message: "success", data: { adminId: created.admin_id } };
@@ -337,7 +377,9 @@ export class AdminUserCompatController {
       .map((x: string) => Number(x));
     if (!ids.length) return { code: 400, message: "ids required", data: null };
     if (type === "del") {
-      await this.prisma.admin_user.deleteMany({ where: { admin_id: { in: ids } } });
+      await this.prisma.admin_user.deleteMany({
+        where: { admin_id: { in: ids } },
+      });
     } else if (type === "enable" || type === "disable") {
       await this.prisma.admin_user.updateMany({
         where: { admin_id: { in: ids } },
@@ -363,7 +405,8 @@ export class AdminUserCompatController {
       roleId: "role_id",
       isUsing: "is_using",
     };
-    if (!map[field]) return { code: 400, message: "unsupported field", data: null };
+    if (!map[field])
+      return { code: 400, message: "unsupported field", data: null };
     await this.prisma.admin_user.update({
       where: { admin_id: id },
       data: { [map[field]]: value },
@@ -410,7 +453,11 @@ export class AdminUserCompatController {
   @Post("checkCode")
   @ApiOperation({ summary: "校验验证码（占位）" })
   @Authorities("adminUserCheckCode")
-  async checkCode(@Query("mobile") mobile: string, @Query("code") c: string, @Body() body?: any) {
+  async checkCode(
+    @Query("mobile") mobile: string,
+    @Query("code") c: string,
+    @Body() body?: any,
+  ) {
     // 允许通过 body 传参（POST 兼容）
     if ((!mobile || !c) && body) {
       mobile = body.mobile ?? mobile;

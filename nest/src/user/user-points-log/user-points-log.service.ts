@@ -34,7 +34,9 @@ export class UserPointsLogService {
     });
 
     // 手动补充用户名信息
-    const userIds = Array.from(new Set(rows.map((r: any) => r.user_id).filter(Boolean)));
+    const userIds = Array.from(
+      new Set(rows.map((r: any) => r.user_id).filter(Boolean)),
+    );
     const users = userIds.length
       ? await (this.prisma as any).user.findMany({
           where: { user_id: { in: userIds } },
@@ -43,7 +45,10 @@ export class UserPointsLogService {
       : [];
     const userMap = new Map(users.map((u: any) => [u.user_id, u.username]));
 
-    const records = rows.map((r: any) => ({ ...r, username: userMap.get(r.user_id) || "" }));
+    const records = rows.map((r: any) => ({
+      ...r,
+      username: userMap.get(r.user_id) || "",
+    }));
     return records;
   }
 

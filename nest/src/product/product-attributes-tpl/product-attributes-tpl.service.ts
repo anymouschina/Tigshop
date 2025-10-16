@@ -23,7 +23,8 @@ export class ProductAttributesTplService {
 
     // 将通用的 id 映射为实际主键字段 tpl_id
     const sortFieldMap: Record<string, string> = { id: "tpl_id" };
-    const resolvedSortField = sortFieldMap[sort_field] || sort_field || "tpl_id";
+    const resolvedSortField =
+      sortFieldMap[sort_field] || sort_field || "tpl_id";
     const orderBy: any = { [resolvedSortField]: sort_order || "desc" };
 
     const skip = (page - 1) * size;
@@ -55,7 +56,11 @@ export class ProductAttributesTplService {
 
   async createProductAttributesTpl(createData: CreateProductAttributesTplDto) {
     try {
-      const name = (createData as any).tpl_name ?? (createData as any).tplName ?? (createData as any).name ?? "";
+      const name =
+        (createData as any).tpl_name ??
+        (createData as any).tplName ??
+        (createData as any).name ??
+        "";
       const rawTplData =
         (createData as any).tpl_data ??
         (createData as any).tplData ??
@@ -65,7 +70,8 @@ export class ProductAttributesTplService {
         typeof rawTplData === "string"
           ? rawTplData
           : JSON.stringify(rawTplData ?? {});
-      const shopId = (createData as any).shop_id ?? (createData as any).shopId ?? 0;
+      const shopId =
+        (createData as any).shop_id ?? (createData as any).shopId ?? 0;
 
       const result = await this.prisma.product_attributes_tpl.create({
         data: {
@@ -100,12 +106,22 @@ export class ProductAttributesTplService {
       const result = await this.prisma.product_attributes_tpl.update({
         where: { tpl_id: id },
         data: {
-          ...(updateData as any).tpl_name !== undefined && { tpl_name: (updateData as any).tpl_name },
-          ...(updateData as any).tplName !== undefined && { tpl_name: (updateData as any).tplName },
-          ...(updateData as any).name !== undefined && { tpl_name: (updateData as any).name },
-          ...(tplData !== undefined) && { tpl_data: tplData },
-          ...(updateData as any).shop_id !== undefined && { shop_id: (updateData as any).shop_id },
-          ...(updateData as any).shopId !== undefined && { shop_id: (updateData as any).shopId },
+          ...((updateData as any).tpl_name !== undefined && {
+            tpl_name: (updateData as any).tpl_name,
+          }),
+          ...((updateData as any).tplName !== undefined && {
+            tpl_name: (updateData as any).tplName,
+          }),
+          ...((updateData as any).name !== undefined && {
+            tpl_name: (updateData as any).name,
+          }),
+          ...(tplData !== undefined && { tpl_data: tplData }),
+          ...((updateData as any).shop_id !== undefined && {
+            shop_id: (updateData as any).shop_id,
+          }),
+          ...((updateData as any).shopId !== undefined && {
+            shop_id: (updateData as any).shopId,
+          }),
         },
       });
       return result;

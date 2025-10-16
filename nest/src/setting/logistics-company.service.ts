@@ -145,9 +145,10 @@ export class LogisticsCompanyService {
         send_site: data.send_site || "",
         send_staff: data.send_staff || "",
         // schema 中为 String?，转为字符串存储
-        exp_type: data.exp_type !== undefined && data.exp_type !== null
-          ? String(data.exp_type)
-          : "",
+        exp_type:
+          data.exp_type !== undefined && data.exp_type !== null
+            ? String(data.exp_type)
+            : "",
         shop_id: data.shop_id || 1,
       },
     });

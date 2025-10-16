@@ -22,7 +22,8 @@ export class ProductInventoryLogService {
     }
 
     const sortFieldMap: Record<string, string> = { id: "log_id" };
-    const resolvedSortField = sortFieldMap[sort_field] || sort_field || "log_id";
+    const resolvedSortField =
+      sortFieldMap[sort_field] || sort_field || "log_id";
     const orderBy: any = { [resolvedSortField]: sort_order || "desc" };
 
     const skip = (page - 1) * size;
@@ -64,7 +65,8 @@ export class ProductInventoryLogService {
           change_number: (createData as any).change_number ?? 0,
           desc: (createData as any).desc ?? "",
           shop_id: (createData as any).shop_id ?? 0,
-          add_time: (createData as any).add_time ?? Math.floor(Date.now() / 1000),
+          add_time:
+            (createData as any).add_time ?? Math.floor(Date.now() / 1000),
         },
       });
       return result;
@@ -82,15 +84,33 @@ export class ProductInventoryLogService {
       const result = await this.prisma.product_inventory_log.update({
         where: { log_id: id },
         data: {
-          ...(updateData as any).product_id !== undefined && { product_id: (updateData as any).product_id },
-          ...(updateData as any).spec_id !== undefined && { spec_id: (updateData as any).spec_id },
-          ...(updateData as any).number !== undefined && { number: (updateData as any).number },
-          ...(updateData as any).old_number !== undefined && { old_number: (updateData as any).old_number },
-          ...(updateData as any).type !== undefined && { type: (updateData as any).type },
-          ...(updateData as any).change_number !== undefined && { change_number: (updateData as any).change_number },
-          ...(updateData as any).desc !== undefined && { desc: (updateData as any).desc },
-          ...(updateData as any).shop_id !== undefined && { shop_id: (updateData as any).shop_id },
-          ...(updateData as any).add_time !== undefined && { add_time: (updateData as any).add_time },
+          ...((updateData as any).product_id !== undefined && {
+            product_id: (updateData as any).product_id,
+          }),
+          ...((updateData as any).spec_id !== undefined && {
+            spec_id: (updateData as any).spec_id,
+          }),
+          ...((updateData as any).number !== undefined && {
+            number: (updateData as any).number,
+          }),
+          ...((updateData as any).old_number !== undefined && {
+            old_number: (updateData as any).old_number,
+          }),
+          ...((updateData as any).type !== undefined && {
+            type: (updateData as any).type,
+          }),
+          ...((updateData as any).change_number !== undefined && {
+            change_number: (updateData as any).change_number,
+          }),
+          ...((updateData as any).desc !== undefined && {
+            desc: (updateData as any).desc,
+          }),
+          ...((updateData as any).shop_id !== undefined && {
+            shop_id: (updateData as any).shop_id,
+          }),
+          ...((updateData as any).add_time !== undefined && {
+            add_time: (updateData as any).add_time,
+          }),
         },
       });
       return result;

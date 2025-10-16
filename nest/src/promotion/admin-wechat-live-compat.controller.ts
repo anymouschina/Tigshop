@@ -1,5 +1,14 @@
 // @ts-nocheck
-import { Controller, Get, Post, Put, Delete, Body, Query, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -21,11 +30,15 @@ export class AdminWechatLiveCompatController {
       keyword: query.keyword || "",
       page: Number(query.page || 1),
       size: Number(query.size || 15),
-      status: query.status === undefined || query.status === "" ? undefined : Number(query.status),
+      status:
+        query.status === undefined || query.status === ""
+          ? undefined
+          : Number(query.status),
       sortField: query.sortField || query.sort_field || "live_id",
       sortOrder: query.sortOrder || query.sort_order || "desc",
     } as any;
-    const { records, total, page, size, totalPages } = await this.svc.findAll(q);
+    const { records, total, page, size, totalPages } =
+      await this.svc.findAll(q);
     return ResponseUtil.success({ records, total, page, size, totalPages });
   }
 
@@ -59,7 +72,9 @@ export class AdminWechatLiveCompatController {
   async update(@Body() body: any) {
     const id = Number(body.id || body.live_id || body.liveId);
     const data = { ...body };
-    delete (data as any).id; delete (data as any).live_id; delete (data as any).liveId;
+    delete (data as any).id;
+    delete (data as any).live_id;
+    delete (data as any).liveId;
     const r = await this.svc.update(id, data);
     return ResponseUtil.success(r);
   }
@@ -77,7 +92,8 @@ export class AdminWechatLiveCompatController {
   @ApiOperation({ summary: "批量操作（兼容 /adminapi）" })
   async batch(@Body() body: any) {
     const { type, ids } = body;
-    if (!Array.isArray(ids) || ids.length === 0) return ResponseUtil.error("未选择项目");
+    if (!Array.isArray(ids) || ids.length === 0)
+      return ResponseUtil.error("未选择项目");
     if (type === "del") {
       await this.svc.batchDelete(ids.map(Number));
       return ResponseUtil.success();

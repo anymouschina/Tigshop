@@ -34,7 +34,13 @@ export class AdminUserBalanceLogCompatController {
     return {
       code: 0,
       message: "success",
-      data: { records: result.items, total: result.total, page: result.page, size: result.size, total_pages: result.total_pages },
+      data: {
+        records: result.items,
+        total: result.total,
+        page: result.page,
+        size: result.size,
+        total_pages: result.total_pages,
+      },
     };
   }
 

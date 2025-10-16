@@ -1,5 +1,12 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException, Inject, forwardRef, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Inject,
+  forwardRef,
+  Logger,
+} from "@nestjs/common";
 import { PayService } from "./pay.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CartService } from "../cart/cart.service";
@@ -23,7 +30,8 @@ export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cartService: CartService,
-    @Inject(forwardRef(() => PayService)) private readonly payService: PayService,
+    @Inject(forwardRef(() => PayService))
+    private readonly payService: PayService,
   ) {}
 
   /**
@@ -142,17 +150,17 @@ export class OrderService {
         `;
 
         // 扣减库存
-          await tx.product.updateMany({
-            where: { productId: item.productId },
-            data: {
-              productStock: {
-                decrement: item.quantity,
-              },
-              clickCount: {
-                increment: item.quantity,
-              },
+        await tx.product.updateMany({
+          where: { productId: item.productId },
+          data: {
+            productStock: {
+              decrement: item.quantity,
             },
-          });
+            clickCount: {
+              increment: item.quantity,
+            },
+          },
+        });
       }
 
       // 使用优惠券
@@ -199,46 +207,57 @@ export class OrderService {
     const skip = (pageNum - 1) * sizeNum;
     const where: any = { user_id: userId };
 
-    const toNum = (v: any) => (v === undefined || v === null || v === "" ? undefined : Number(v));
+    const toNum = (v: any) =>
+      v === undefined || v === null || v === "" ? undefined : Number(v);
     // 前端 orderStatus 枚举与 PHP 原始 DB 枚举不一致，做一层翻译：
     // FE:-1=全部 0=待支付(DB:0) 1=待发货(DB:1) 2=待收货(DB:2) 3=已完成(DB:5) 4=已取消(DB:3)
     const orderStatus = toNum(orderStatusRaw);
     if (orderStatus !== undefined && orderStatus !== -1) {
       switch (orderStatus) {
-        case 0: { // 待支付：必须未支付 + 未发货（防止状态未推进的脏数据混入）
+        case 0: {
+          // 待支付：必须未支付 + 未发货（防止状态未推进的脏数据混入）
           where.order_status = 0;
           if (where.pay_status === undefined) where.pay_status = 0;
           // 仅当未显式传 shippingStatus 时限制未发货
           if (where.shipping_status === undefined) where.shipping_status = 0;
-          break; }
+          break;
+        }
         case 1: // 待发货：限定未发货（shipping_status=0）且已确认态（order_status=1）
           where.order_status = 1;
           where.shipping_status = 0;
           break;
-        case 2: { // 待收货：已发货(含部分)但未完成/未取消
+        case 2: {
+          // 待收货：已发货(含部分)但未完成/未取消
           const { order_status, shipping_status, ...rest } = where;
           Object.assign(where, rest);
           (where as any).shipping_status = { in: [1, 2] } as any;
           (where as any).order_status = { not: { in: [2, 3] } } as any; // 排除已取消、已完成
-          break; }
+          break;
+        }
         case 3: // 已完成
-          where.order_status = 3; break;
+          where.order_status = 3;
+          break;
         case 4: // 已取消
-          where.order_status = 2; break;
+          where.order_status = 2;
+          break;
         default:
           break;
       }
     }
     const payStatus = toNum(payStatusRaw);
-    if (payStatus !== undefined && payStatus !== -1) where.pay_status = payStatus;
+    if (payStatus !== undefined && payStatus !== -1)
+      where.pay_status = payStatus;
     const shippingStatus = toNum(shippingStatusRaw);
-    if (shippingStatus !== undefined && shippingStatus !== -1) where.shipping_status = shippingStatus;
+    if (shippingStatus !== undefined && shippingStatus !== -1)
+      where.shipping_status = shippingStatus;
     const commentStatus = toNum(commentStatusRaw);
-    if (commentStatus !== undefined && commentStatus !== -1) where.comment_status = commentStatus;
+    if (commentStatus !== undefined && commentStatus !== -1)
+      where.comment_status = commentStatus;
 
     // PHP 行为补充：当仅筛选“待评价”(commentStatus=0) 且未显式限定订单状态时，
     // 需排除待支付/已取消，保留已确认和已完成，且必须已支付。
-    const hasExplicitOrderStatus = orderStatus !== undefined && orderStatus !== -1;
+    const hasExplicitOrderStatus =
+      orderStatus !== undefined && orderStatus !== -1;
     if (!hasExplicitOrderStatus && commentStatus === 0) {
       // “待评价” 仅展示已完成但未评价的订单（DB: order_status=3）
       if (where.pay_status === undefined) {
@@ -265,17 +284,28 @@ export class OrderService {
     const orderIds = orders.map((o: any) => o.order_id);
     const userIds = Array.from(new Set(orders.map((o: any) => o.user_id)));
     const shopIds = Array.from(
-      new Set(orders.map((o: any) => o.shop_id).filter((id: number) => Number(id) > 0)),
+      new Set(
+        orders
+          .map((o: any) => o.shop_id)
+          .filter((id: number) => Number(id) > 0),
+      ),
     );
 
     const [items, users, shops, paylogs] = await Promise.all([
       orderIds.length
-        ? this.prisma.order_item.findMany({ where: { order_id: { in: orderIds } } })
+        ? this.prisma.order_item.findMany({
+            where: { order_id: { in: orderIds } },
+          })
         : Promise.resolve([]),
       userIds.length
         ? this.prisma.user.findMany({
             where: { user_id: { in: userIds as any } },
-            select: { user_id: true, username: true, nickname: true, mobile: true },
+            select: {
+              user_id: true,
+              username: true,
+              nickname: true,
+              mobile: true,
+            },
           })
         : Promise.resolve([]),
       shopIds.length
@@ -295,7 +325,13 @@ export class OrderService {
       orderIds.length
         ? this.prisma.paylog.findMany({
             where: { order_id: { in: orderIds } },
-            select: { order_id: true, pay_sn: true, pay_code: true, transaction_id: true, add_time: true },
+            select: {
+              order_id: true,
+              pay_sn: true,
+              pay_code: true,
+              transaction_id: true,
+              add_time: true,
+            },
             orderBy: { add_time: "desc" },
           })
         : Promise.resolve([]),
@@ -315,7 +351,16 @@ export class OrderService {
     for (const s of shops as any[]) shopMap.set(s.shop_id, s);
 
     // 聚合每个订单的最新 paylog
-    const paylogByOrder = new Map<number, { paySn: string; payCode: string; transactionId: string; orderId: number; add_time: number }>();
+    const paylogByOrder = new Map<
+      number,
+      {
+        paySn: string;
+        payCode: string;
+        transactionId: string;
+        orderId: number;
+        add_time: number;
+      }
+    >();
     for (const p of paylogs as any[]) {
       const oid = Number(p.order_id);
       if (!paylogByOrder.has(oid)) {
@@ -350,7 +395,12 @@ export class OrderService {
         ...(itemsByOrder[parent.order_id] || []),
         ...children.flatMap((c: any) => itemsByOrder[c.order_id] || []),
       ];
-      const base = this.mapOrderRowToRecord(parent, mergedItems, userMap, shopMap);
+      const base = this.mapOrderRowToRecord(
+        parent,
+        mergedItems,
+        userMap,
+        shopMap,
+      );
       if (children.length) {
         base.children = children.map((c: any) => ({
           orderId: c.order_id,
@@ -430,7 +480,12 @@ export class OrderService {
     if (user) userMap.set(user.user_id, user);
     const shopMap = new Map<number, any>();
     if (shop) shopMap.set(shop.shop_id, shop);
-    const base = this.mapOrderRowToRecord(order as any, items as any[], userMap, shopMap);
+    const base = this.mapOrderRowToRecord(
+      order as any,
+      items as any[],
+      userMap,
+      shopMap,
+    );
     // 附加最近一条 paylog
     const lastPaylog = await this.prisma.paylog.findFirst({
       where: { order_id: order.order_id },
@@ -439,11 +494,21 @@ export class OrderService {
     });
     // 计算总商品重量（按商品重量*数量）
     let totalProductWeight = 0;
-    const pids = Array.from(new Set((items as any[]).map((x) => Number(x.product_id)).filter((n) => Number.isFinite(n) && n > 0)));
+    const pids = Array.from(
+      new Set(
+        (items as any[])
+          .map((x) => Number(x.product_id))
+          .filter((n) => Number.isFinite(n) && n > 0),
+      ),
+    );
     if (pids.length) {
-      const products = await this.prisma.product.findMany({ where: { product_id: { in: pids as any } }, select: { product_id: true, product_weight: true } });
+      const products = await this.prisma.product.findMany({
+        where: { product_id: { in: pids as any } },
+        select: { product_id: true, product_weight: true },
+      });
       const wmap = new Map<number, number>();
-      for (const p of products as any[]) wmap.set(Number(p.product_id), Number(p.product_weight || 0));
+      for (const p of products as any[])
+        wmap.set(Number(p.product_id), Number(p.product_weight || 0));
       for (const it of items as any[]) {
         const w = wmap.get(Number(it.product_id)) || 0;
         totalProductWeight += w * Number(it.quantity || 0);
@@ -483,14 +548,22 @@ export class OrderService {
 
     // 若为父订单，检查子订单是否已部分/全部发货；只要存在已发货子订单则禁止取消，避免资损
     if (Number(rawOrder.parent_order_id || 0) === 0) {
-      const children = await this.prisma.order.findMany({ where: { parent_order_id: Number(rawOrder.order_id) } });
-      const anyChildShipped = children.some((c: any) => Number(c.shipping_status) > 0);
+      const children = await this.prisma.order.findMany({
+        where: { parent_order_id: Number(rawOrder.order_id) },
+      });
+      const anyChildShipped = children.some(
+        (c: any) => Number(c.shipping_status) > 0,
+      );
       if (anyChildShipped) {
-        throw new BadRequestException("订单已部分发货，无法直接取消，请联系客服或申请售后");
+        throw new BadRequestException(
+          "订单已部分发货，无法直接取消，请联系客服或申请售后",
+        );
       }
     } else {
       // 子订单不允许用户直接取消（列表已聚合隐藏），防止单侧取消破坏父订单金额一致性
-      throw new BadRequestException("拆分子订单不支持直接取消，请联系客服或申请售后");
+      throw new BadRequestException(
+        "拆分子订单不支持直接取消，请联系客服或申请售后",
+      );
     }
 
     // 允许待付款和待发货订单取消
@@ -499,7 +572,9 @@ export class OrderService {
       throw new BadRequestException("只有待付款或待发货的订单才能取消");
     }
 
-    const items = await this.prisma.order_item.findMany({ where: { order_id: Number(orderId) } });
+    const items = await this.prisma.order_item.findMany({
+      where: { order_id: Number(orderId) },
+    });
     const now = Math.floor(Date.now() / 1000);
 
     await this.prisma.$transaction(async (tx) => {
@@ -514,11 +589,17 @@ export class OrderService {
 
         if (isGift) {
           if (productId > 0) {
-            const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
+            const prod = await tx.product.findFirst({
+              where: { product_id: productId },
+              select: { product_stock: true },
+            });
             if (prod) {
               const oldNum = Number(prod.product_stock || 0);
               const newNum = oldNum + quantity;
-              await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
+              await tx.product.updateMany({
+                where: { product_id: productId },
+                data: { product_stock: newNum },
+              });
               await tx.product_inventory_log.create({
                 data: {
                   product_id: productId,
@@ -538,19 +619,31 @@ export class OrderService {
         }
 
         if (skuId > 0) {
-          const sku = await tx.product_sku.findUnique({ where: { sku_id: skuId }, select: { sku_stock: true, product_id: true } });
+          const sku = await tx.product_sku.findUnique({
+            where: { sku_id: skuId },
+            select: { sku_stock: true, product_id: true },
+          });
           if (sku) {
             const oldSku = Number(sku.sku_stock || 0);
             const newSku = oldSku + quantity;
-            await tx.product_sku.update({ where: { sku_id: skuId }, data: { sku_stock: newSku } });
+            await tx.product_sku.update({
+              where: { sku_id: skuId },
+              data: { sku_stock: newSku },
+            });
 
             const pId = Number(sku.product_id || productId || 0);
             if (pId > 0) {
-              const prod = await tx.product.findFirst({ where: { product_id: pId }, select: { product_stock: true } });
+              const prod = await tx.product.findFirst({
+                where: { product_id: pId },
+                select: { product_stock: true },
+              });
               if (prod) {
                 const oldProd = Number(prod.product_stock || 0);
                 const newProd = oldProd + quantity;
-                await tx.product.updateMany({ where: { product_id: pId }, data: { product_stock: newProd } });
+                await tx.product.updateMany({
+                  where: { product_id: pId },
+                  data: { product_stock: newProd },
+                });
                 await tx.product_inventory_log.create({
                   data: {
                     product_id: pId,
@@ -568,11 +661,17 @@ export class OrderService {
             }
           }
         } else if (productId > 0) {
-          const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
+          const prod = await tx.product.findFirst({
+            where: { product_id: productId },
+            select: { product_stock: true },
+          });
           if (prod) {
             const oldNum = Number(prod.product_stock || 0);
             const newNum = oldNum + quantity;
-            await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
+            await tx.product.updateMany({
+              where: { product_id: productId },
+              data: { product_stock: newNum },
+            });
             await tx.product_inventory_log.create({
               data: {
                 product_id: productId,
@@ -597,9 +696,21 @@ export class OrderService {
       });
 
       // 微信支付订单自动退款
-      this.logger.debug(`检查订单 ${orderId} 是否需要自动发起微信支付退款`,rawOrder.pay_type_id === 1 && rawOrder.pay_status === 1 && Number(rawOrder.paid_amount) > 0);
-      if (rawOrder.pay_type_id === 1 && rawOrder.pay_status === 1 && Number(rawOrder.paid_amount) > 0) {
-          await this.payService.requestWechatRefund(rawOrder.order_id, Number(rawOrder.paid_amount));
+      this.logger.debug(
+        `检查订单 ${orderId} 是否需要自动发起微信支付退款`,
+        rawOrder.pay_type_id === 1 &&
+          rawOrder.pay_status === 1 &&
+          Number(rawOrder.paid_amount) > 0,
+      );
+      if (
+        rawOrder.pay_type_id === 1 &&
+        rawOrder.pay_status === 1 &&
+        Number(rawOrder.paid_amount) > 0
+      ) {
+        await this.payService.requestWechatRefund(
+          rawOrder.order_id,
+          Number(rawOrder.paid_amount),
+        );
       }
     });
 
@@ -618,18 +729,23 @@ export class OrderService {
 
     // 前端 user 详情里 orderStatus=1 表示待发货，而是否已发货应参考 shipping_status
     // 重新从 DB 拿原始记录避免映射后的语义偏差
-    const raw = await this.prisma.order.findUnique({ where: { order_id: Number(orderId) } });
+    const raw = await this.prisma.order.findUnique({
+      where: { order_id: Number(orderId) },
+    });
     if (!raw) throw new NotFoundException("订单不存在");
-  if (Number(raw.order_status) === 2) throw new BadRequestException('已取消订单无法确认收货');
-  if (Number(raw.order_status) === 3) return raw; // 幂等 (已完成)
-    if (Number(raw.shipping_status) === 0) throw new BadRequestException("未发货订单不能确认收货");
+    if (Number(raw.order_status) === 2)
+      throw new BadRequestException("已取消订单无法确认收货");
+    if (Number(raw.order_status) === 3) return raw; // 幂等 (已完成)
+    if (Number(raw.shipping_status) === 0)
+      throw new BadRequestException("未发货订单不能确认收货");
 
     const now = Math.floor(Date.now() / 1000);
     return this.prisma.order.update({
       where: { order_id: Number(orderId) },
       data: {
         order_status: 3, // 已完成（统一完成状态）
-        shipping_status: Number(raw.shipping_status) === 0 ? 1 : raw.shipping_status,
+        shipping_status:
+          Number(raw.shipping_status) === 0 ? 1 : raw.shipping_status,
         received_time: now,
       },
     });
@@ -662,12 +778,12 @@ export class OrderService {
    * @returns 订单统计
    */
   async getOrderStats(userId: number) {
-  // 统计口径对齐：
-  // awaitPay: pay_status=0 & order_status=0
-  // awaitShipping: 已支付 & order_status=1 & shipping_status=0
-  // awaitReceived: 已发货(含部分) & 非取消/完成
-  // awaitComment: order_status=3 & comment_status=0
-  // orderCompleted: order_status=3
+    // 统计口径对齐：
+    // awaitPay: pay_status=0 & order_status=0
+    // awaitShipping: 已支付 & order_status=1 & shipping_status=0
+    // awaitReceived: 已发货(含部分) & 非取消/完成
+    // awaitComment: order_status=3 & comment_status=0
+    // orderCompleted: order_status=3
     // productCollect: collect_product.count
     // shopCollect: collect_shop.count
     // awaitAftersalesCollect: 用户发起的售后单（仅统计进行中） -> aftersales.status IN (0,1,2?) 暂假设 status != 3 代表进行中
@@ -682,11 +798,28 @@ export class OrderService {
       shopCollect,
       awaitAftersalesCollect,
     ] = await Promise.all([
-  this.prisma.order.count({ where: { user_id: userId, pay_status: 0, order_status: 0 } }),
-  this.prisma.order.count({ where: { user_id: userId, pay_status: { in: [1, 2] }, order_status: 1, shipping_status: 0 } }),
-  this.prisma.order.count({ where: { user_id: userId, shipping_status: { in: [1, 2] } as any, order_status: { not: { in: [2, 3] } } as any } }),
-  this.prisma.order.count({ where: { user_id: userId, order_status: 3, comment_status: 0 } }),
-  this.prisma.order.count({ where: { user_id: userId, order_status: 3 } }),
+      this.prisma.order.count({
+        where: { user_id: userId, pay_status: 0, order_status: 0 },
+      }),
+      this.prisma.order.count({
+        where: {
+          user_id: userId,
+          pay_status: { in: [1, 2] },
+          order_status: 1,
+          shipping_status: 0,
+        },
+      }),
+      this.prisma.order.count({
+        where: {
+          user_id: userId,
+          shipping_status: { in: [1, 2] } as any,
+          order_status: { not: { in: [2, 3] } } as any,
+        },
+      }),
+      this.prisma.order.count({
+        where: { user_id: userId, order_status: 3, comment_status: 0 },
+      }),
+      this.prisma.order.count({ where: { user_id: userId, order_status: 3 } }),
       this.prisma.collect_product.count({ where: { user_id: userId } }),
       this.prisma.collect_shop.count({ where: { user_id: userId } }),
       this.prisma.aftersales.count({
@@ -746,7 +879,12 @@ export class OrderService {
   }
 
   // ============ helpers ==========
-  private mapOrderRowToRecord(o: any, items: any[], userMap: Map<number, any>, shopMap: Map<number, any>) {
+  private mapOrderRowToRecord(
+    o: any,
+    items: any[],
+    userMap: Map<number, any>,
+    shopMap: Map<number, any>,
+  ) {
     const money = (v: any) => this.formatMoney(v);
     const addTimeText = this.formatUnixToTime(o.add_time);
     const regionIds = this.safeParseArray(o.region_ids);
@@ -762,7 +900,12 @@ export class OrderService {
     const shippingTypeName = o.shipping_type_name || "普通快递";
 
     return {
-  orderStatusName: this.getOrderStatusName(o.order_status, o.shipping_status, o.comment_status, o.pay_status),
+      orderStatusName: this.getOrderStatusName(
+        o.order_status,
+        o.shipping_status,
+        o.comment_status,
+        o.pay_status,
+      ),
       userAddress,
       shippingStatusName: this.getShippingStatusName(o.shipping_status),
       payStatusName: this.getPayStatusName(o.pay_status),
@@ -790,8 +933,12 @@ export class OrderService {
       shippingTypeId,
       shippingTypeName,
       trackingNo: o.tracking_no,
-      shippingTime: o.shipping_time ? this.formatUnixToTime(o.shipping_time) : "",
-      receivedTime: o.received_time ? this.formatUnixToTime(o.received_time) : "",
+      shippingTime: o.shipping_time
+        ? this.formatUnixToTime(o.shipping_time)
+        : "",
+      receivedTime: o.received_time
+        ? this.formatUnixToTime(o.received_time)
+        : "",
       payTypeId: o.pay_type_id,
       payTime: o.pay_time ? this.formatUnixToTime(o.pay_time) : "",
       usePoints: o.use_points,
@@ -825,7 +972,12 @@ export class OrderService {
       orderType: o.order_type ?? 1,
       mark: o.mark ?? 0,
       vendorId: o.vendor_id ?? 0,
-  availableActions: this.getAvailableActions(o.order_status, o.pay_status, o.shipping_status, o.comment_status),
+      availableActions: this.getAvailableActions(
+        o.order_status,
+        o.pay_status,
+        o.shipping_status,
+        o.comment_status,
+      ),
       autoDeliveryDays: null,
       items: items.map((it) => this.mapOrderItem(it)),
       user: user
@@ -897,8 +1049,13 @@ export class OrderService {
       skuValue,
       // 额外补齐以匹配 PHP 返回
       stock: (it as any).sku_stock ?? null,
-      subtotal: money((Number(it.price || 0) || 0) * (Number(it.quantity || 0) || 0)),
-      allowDeliverNum: Math.max(0, Number(it.quantity || 0) - Number(it.delivery_quantity || 0)),
+      subtotal: money(
+        (Number(it.price || 0) || 0) * (Number(it.quantity || 0) || 0),
+      ),
+      allowDeliverNum: Math.max(
+        0,
+        Number(it.quantity || 0) - Number(it.delivery_quantity || 0),
+      ),
       aftersalesItem: null,
       eCard: [],
     };
@@ -925,24 +1082,45 @@ export class OrderService {
   }
 
   private mapOrderExtension(ext: any) {
-    if (!ext) return { couponAmount: [], discountAmount: [], shippingFee: [], shippingType: [] };
+    if (!ext)
+      return {
+        couponAmount: [],
+        discountAmount: [],
+        shippingFee: [],
+        shippingType: [],
+      };
     // 直接返回解析结果，尽量与示例结构保持一致（数组或按 shopId 的对象）
     return ext;
   }
 
-  private getOrderStatusName(status: number, shippingStatus?: number, commentStatus?: number, payStatus?: number) {
+  private getOrderStatusName(
+    status: number,
+    shippingStatus?: number,
+    commentStatus?: number,
+    payStatus?: number,
+  ) {
     // 与管理端一致的显示逻辑
     try {
-      const util = require('../common/order-status.util');
-      return util.getOrderStatusNameDisplay(status, shippingStatus, commentStatus, payStatus);
+      const util = require("../common/order-status.util");
+      return util.getOrderStatusNameDisplay(
+        status,
+        shippingStatus,
+        commentStatus,
+        payStatus,
+      );
     } catch {
       const s = Number(status);
       const ship = Number(shippingStatus);
-      if (s === 0) return Number(payStatus) > 0 ? (ship > 0 ? '待收货' : '待发货') : '待支付';
-      if (s === 1) return ship > 0 ? '待收货' : '待发货';
-      if (s === 2) return '已取消';
-      if (s === 3) return Number(commentStatus) === 0 ? '待评价' : '已完成';
-      return '';
+      if (s === 0)
+        return Number(payStatus) > 0
+          ? ship > 0
+            ? "待收货"
+            : "待发货"
+          : "待支付";
+      if (s === 1) return ship > 0 ? "待收货" : "待发货";
+      if (s === 2) return "已取消";
+      if (s === 3) return Number(commentStatus) === 0 ? "待评价" : "已完成";
+      return "";
     }
   }
 
@@ -983,20 +1161,48 @@ export class OrderService {
     const completed = Number(order.order_status) === 3;
     const steps = [
       { title: "提交订单", description: addDesc },
-      { title: paid ? "已支付" : "待支付", description: paid ? this.formatUnixToTime(order.pay_time) : "" },
-      { title: shippedFull ? "已发货" : (shippedPartial ? "部分发货" : (Number(order.order_status) === 3 ? "已取消" : "待发货")), description: (shippedFull || shippedPartial) ? this.formatUnixToTime(order.shipping_time) : "" },
+      {
+        title: paid ? "已支付" : "待支付",
+        description: paid ? this.formatUnixToTime(order.pay_time) : "",
+      },
+      {
+        title: shippedFull
+          ? "已发货"
+          : shippedPartial
+            ? "部分发货"
+            : Number(order.order_status) === 3
+              ? "已取消"
+              : "待发货",
+        description:
+          shippedFull || shippedPartial
+            ? this.formatUnixToTime(order.shipping_time)
+            : "",
+      },
     ];
     if (completed) {
-      steps.push({ title: Number(order.comment_status) === 0 ? '待评价' : '已完成', description: order.received_time ? this.formatUnixToTime(order.received_time) : '' });
+      steps.push({
+        title: Number(order.comment_status) === 0 ? "待评价" : "已完成",
+        description: order.received_time
+          ? this.formatUnixToTime(order.received_time)
+          : "",
+      });
     }
     let current = 1;
-    if (completed) current = steps.length; else if (shippedFull || shippedPartial) current = 3; else if (paid) current = 2; else current = 1;
+    if (completed) current = steps.length;
+    else if (shippedFull || shippedPartial) current = 3;
+    else if (paid) current = 2;
+    else current = 1;
     return { current, status: "process", steps };
   }
 
-  private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number, commentStatus?: number) {
-  const isPaid = Number(payStatus) >= 1;
-   const os = Number(orderStatus);
+  private getAvailableActions(
+    orderStatus: number,
+    payStatus: number,
+    shippingStatus: number,
+    commentStatus?: number,
+  ) {
+    const isPaid = Number(payStatus) >= 1;
+    const os = Number(orderStatus);
     const ps = Number(payStatus);
     const ss = Number(shippingStatus);
     const isPendingPay = os === 0 && ps === 0; // 待支付
@@ -1013,7 +1219,7 @@ export class OrderService {
       toPay: isPendingPay,
       setPaid: isPendingPay,
       setUnpaid: false,
-      cancelOrder:  (isPendingPay || isPaidUnshipped) && !isCompleted, // 部分/全部发货均禁止取消
+      cancelOrder: (isPendingPay || isPaidUnshipped) && !isCompleted, // 部分/全部发货均禁止取消
       delOrder: isCancelled,
       deliver: isPaid && (ss === 0 || isShippedPartial), // 部分发货仍可继续发剩余商品
       confirmReceipt: isShippedFull && !isCompleted && !isCancelled, // 仅全部发货允许确认收货
@@ -1032,7 +1238,7 @@ export class OrderService {
   private formatMoney(v: any): string {
     const n = Number(v ?? 0);
     return n.toFixed(2);
-    }
+  }
 
   private formatUnixToTime(v: any): string {
     const ts = Number(v || 0);
@@ -1068,7 +1274,8 @@ export class OrderService {
     } catch (e) {
       // 兼容以逗号分隔的字符串
       const str = String(s);
-      if (str.includes(",")) return str.split(",").map((x) => (isNaN(Number(x)) ? x : Number(x)));
+      if (str.includes(","))
+        return str.split(",").map((x) => (isNaN(Number(x)) ? x : Number(x)));
       return [];
     }
   }

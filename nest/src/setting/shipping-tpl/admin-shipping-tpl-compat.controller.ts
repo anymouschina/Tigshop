@@ -70,8 +70,12 @@ export class AdminShippingTplCompatController {
   @Authorities("shippingTplManage")
   @ApiOperation({ summary: "创建运费模板（admin 兼容）" })
   async create(@Body() body: any, @Req() req: any) {
-    const shopId = Number(req?.headers?.["x-shop-id"]) || Number(body.shopId) || 0;
-    const created = await this.shippingTplService.createCompat({ ...body, shopId });
+    const shopId =
+      Number(req?.headers?.["x-shop-id"]) || Number(body.shopId) || 0;
+    const created = await this.shippingTplService.createCompat({
+      ...body,
+      shopId,
+    });
     return {
       code: 0,
       message: "success",
@@ -85,9 +89,14 @@ export class AdminShippingTplCompatController {
   @Authorities("shippingTplManage")
   @ApiOperation({ summary: "更新运费模板（admin 兼容）" })
   async update(@Body() body: any, @Req() req: any) {
-    const tplId = Number(body?.id ?? body?.shippingTplId ?? body?.shipping_tpl_id) || 0;
-    const shopId = Number(req?.headers?.["x-shop-id"]) || Number(body.shopId) || 0;
-    const updated = await this.shippingTplService.updateCompat(tplId, { ...body, shopId });
+    const tplId =
+      Number(body?.id ?? body?.shippingTplId ?? body?.shipping_tpl_id) || 0;
+    const shopId =
+      Number(req?.headers?.["x-shop-id"]) || Number(body.shopId) || 0;
+    const updated = await this.shippingTplService.updateCompat(tplId, {
+      ...body,
+      shopId,
+    });
     return {
       code: 0,
       message: "success",

@@ -8,7 +8,11 @@ import { UserFeedbackApiCompatController } from "./user-feedback.api-compat.cont
 
 @Module({
   imports: [],
-  controllers: [FeedbackController, UserFeedbackController, UserFeedbackApiCompatController],
+  controllers: [
+    FeedbackController,
+    UserFeedbackController,
+    UserFeedbackApiCompatController,
+  ],
   providers: [FeedbackService, UserFeedbackService],
   exports: [FeedbackService, UserFeedbackService],
 })

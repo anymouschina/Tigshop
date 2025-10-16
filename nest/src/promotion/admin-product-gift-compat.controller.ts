@@ -1,5 +1,15 @@
 // @ts-nocheck
-import { Controller, Get, Post, Put, Delete, Query, Param, Body, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Query,
+  Param,
+  Body,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -76,7 +86,9 @@ export class AdminProductGiftCompatController {
   @Authorities("promotionManage")
   @ApiOperation({ summary: "可用赠品列表（兼容 /adminapi）" })
   async available(@Query("product_id") productId?: number) {
-    const list = await this.svc.getAvailableGifts(productId ? Number(productId) : undefined);
+    const list = await this.svc.getAvailableGifts(
+      productId ? Number(productId) : undefined,
+    );
     return ResponseUtil.success(list);
   }
 }

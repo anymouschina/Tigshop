@@ -1,5 +1,11 @@
 // @ts-nocheck
-import { CanActivate, ExecutionContext, Injectable, HttpException, Logger } from "@nestjs/common";
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  HttpException,
+  Logger,
+} from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 
@@ -24,7 +30,9 @@ export class AuthorityGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    this.logger?.debug(`AuthorityGuard: user=${JSON.stringify(user)}, requiredAuthorities=${requiredAuthorities.join(",")}`);
+    this.logger?.debug(
+      `AuthorityGuard: user=${JSON.stringify(user)}, requiredAuthorities=${requiredAuthorities.join(",")}`,
+    );
     if (!user || !user.userId) {
       const body = {
         code: 401,
@@ -99,7 +107,9 @@ export class AuthorityGuard implements CanActivate {
     }
 
     // 检查是否有所需权限
-    const pass = requiredAuthorities.some((authority) => authList.includes(authority));
+    const pass = requiredAuthorities.some((authority) =>
+      authList.includes(authority),
+    );
     if (!pass) {
       const body = {
         code: 403,

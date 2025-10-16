@@ -45,7 +45,11 @@ export class ShopProductCategoryService {
     if (shopId !== undefined && shopId !== null) where.shop_id = Number(shopId);
     const rows = await this.prisma.shop_product_category.findMany({
       where,
-      orderBy: [{ parent_id: "asc" }, { sort_order: "asc" }, { category_id: "asc" }],
+      orderBy: [
+        { parent_id: "asc" },
+        { sort_order: "asc" },
+        { category_id: "asc" },
+      ],
     });
     // build tree
     const map = new Map<number, any>();
@@ -88,33 +92,47 @@ export class ShopProductCategoryService {
 
   async delete(id: number) {
     // 如果有子类，阻止删除
-    const child = await this.prisma.shop_product_category.count({ where: { parent_id: id } });
+    const child = await this.prisma.shop_product_category.count({
+      where: { parent_id: id },
+    });
     if (child > 0) throw new Error("该分类下有子分类，无法删除");
     // 商品关联转移到 0
-    await this.prisma.product.updateMany({ where: { shop_category_id: id }, data: { shop_category_id: 0 } });
-    await this.prisma.shop_product_category.delete({ where: { category_id: id } });
+    await this.prisma.product.updateMany({
+      where: { shop_category_id: id },
+      data: { shop_category_id: 0 },
+    });
+    await this.prisma.shop_product_category.delete({
+      where: { category_id: id },
+    });
     return true;
   }
 
   async moveCat(id: number, targetId: number) {
     // 将商品从 id 转移到 targetId
-    await this.prisma.product.updateMany({ where: { shop_category_id: id }, data: { shop_category_id: targetId } });
+    await this.prisma.product.updateMany({
+      where: { shop_category_id: id },
+      data: { shop_category_id: targetId },
+    });
     return true;
   }
 
   async findById(id: number) {
     if (!id) return null;
-    return this.prisma.shop_product_category.findUnique({ where: { category_id: id } });
+    return this.prisma.shop_product_category.findUnique({
+      where: { category_id: id },
+    });
   }
 
   async countChildren(id: number) {
-    return this.prisma.shop_product_category.count({ where: { parent_id: id } });
+    return this.prisma.shop_product_category.count({
+      where: { parent_id: id },
+    });
   }
 
   async listByShopAndParent(shopId: number, parentId: number) {
     return this.prisma.shop_product_category.findMany({
       where: { shop_id: Number(shopId), parent_id: Number(parentId) },
-      orderBy: [{ sort_order: 'asc' }, { category_id: 'asc' }],
+      orderBy: [{ sort_order: "asc" }, { category_id: "asc" }],
     });
   }
 }

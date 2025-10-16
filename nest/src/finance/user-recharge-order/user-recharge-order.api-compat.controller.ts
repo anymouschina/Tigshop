@@ -76,11 +76,7 @@ export class UserRechargeOrderApiCompatController {
   @ApiOperation({ summary: "充值支付方式列表（兼容）" })
   async paymentList() {
     // 基础列表，后续根据配置开关过滤
-    let paymentList = [
-      "wechat",
-      "alipay",
-      "paypal",
-    ];
+    let paymentList = ["wechat", "alipay", "paypal"];
     // 读取支付宝、线下支付的开关
     try {
       const [aliCfg, offlineCfg] = await Promise.all([
@@ -89,12 +85,20 @@ export class UserRechargeOrderApiCompatController {
       ]);
       const ali = aliCfg || {};
       const useAlipay = ali.useAlipay;
-      const aliEnabled = useAlipay === 1 || useAlipay === true || useAlipay === "1";
+      const aliEnabled =
+        useAlipay === 1 || useAlipay === true || useAlipay === "1";
       if (!aliEnabled) {
         paymentList = paymentList.filter((p) => p !== "alipay");
       }
       const off = offlineCfg || {};
-      const flag = off?.isOpen ?? off?.open ?? off?.enabled ?? off?.enable ?? off?.status ?? off?.useOffline ?? off?.useOfflinePay;
+      const flag =
+        off?.isOpen ??
+        off?.open ??
+        off?.enabled ??
+        off?.enable ??
+        off?.status ??
+        off?.useOffline ??
+        off?.useOfflinePay;
       const offlineEnabled = flag === 1 || flag === true || flag === "1";
       if (!offlineEnabled) {
         paymentList = paymentList.filter((p) => p !== "offline");
@@ -116,12 +120,17 @@ export class UserRechargeOrderApiCompatController {
     try {
       const aliCfg = await this.settingConfig.getJsonConfig("aliPaySettings");
       const useAlipay = (aliCfg || {}).useAlipay;
-      const aliEnabled = useAlipay === 1 || useAlipay === true || useAlipay === "1";
+      const aliEnabled =
+        useAlipay === 1 || useAlipay === true || useAlipay === "1";
       if (!aliEnabled) {
         paymentList = paymentList.filter((p) => p !== "alipay");
       }
     } catch {}
-    return { code: 0, message: "success", data: { order, payment_list: paymentList } };
+    return {
+      code: 0,
+      message: "success",
+      data: { order, payment_list: paymentList },
+    };
   }
 
   // POST /api/user/rechargeOrder/create  创建充值支付
@@ -133,9 +142,18 @@ export class UserRechargeOrderApiCompatController {
     const type = String(body.type || "");
     const code = body.code as string | undefined;
     if (!type) return { code: 1, message: "未选择支付方式", data: null };
-    const res = await this.service.createRechargePayment({ orderId: id, payType: type, userId, code });
+    const res = await this.service.createRechargePayment({
+      orderId: id,
+      payType: type,
+      userId,
+      code,
+    });
     if ((res as any).error) {
-      return { code: 1, message: (res as any).message || "创建支付失败", data: null };
+      return {
+        code: 1,
+        message: (res as any).message || "创建支付失败",
+        data: null,
+      };
     }
     return {
       code: 0,

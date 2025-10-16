@@ -15,16 +15,41 @@ import { PrismaModule } from "src/prisma/prisma.module";
 import { PanelModule } from "src/panel/panel.module";
 import { SettingModule } from "src/setting/setting.module";
 import { WechatPayV3Service } from "src/payment/services/wechat-pay-v3.service";
-import { PickupNoService } from './pickup-no.service';
-import { DineOrderService } from './dine-order.service';
-import { DineOrderController } from './dine-order.controller';
-import { DineOrderEventsService } from './dine-order-events.service';
-import { RedisModule } from '../redis/redis.module';
+import { PickupNoService } from "./pickup-no.service";
+import { DineOrderService } from "./dine-order.service";
+import { DineOrderController } from "./dine-order.controller";
+import { DineOrderEventsService } from "./dine-order-events.service";
+import { RedisModule } from "../redis/redis.module";
 
 @Module({
   imports: [CartModule, PrismaModule, PanelModule, SettingModule, RedisModule],
-  controllers: [OrderController, OrderCheckController, AftersalesController, AdminOrderCompatController, PayController, DineOrderController],
-  providers: [OrderService, OrderCheckService, AftersalesService, AdminOrderCompatService, PayService, WechatPayV3Service, PickupNoService, DineOrderService, DineOrderEventsService],
-  exports: [OrderService, OrderCheckService, AftersalesService, PayService, PickupNoService, DineOrderService, DineOrderEventsService],
+  controllers: [
+    OrderController,
+    OrderCheckController,
+    AftersalesController,
+    AdminOrderCompatController,
+    PayController,
+    DineOrderController,
+  ],
+  providers: [
+    OrderService,
+    OrderCheckService,
+    AftersalesService,
+    AdminOrderCompatService,
+    PayService,
+    WechatPayV3Service,
+    PickupNoService,
+    DineOrderService,
+    DineOrderEventsService,
+  ],
+  exports: [
+    OrderService,
+    OrderCheckService,
+    AftersalesService,
+    PayService,
+    PickupNoService,
+    DineOrderService,
+    DineOrderEventsService,
+  ],
 })
 export class OrderModule {}

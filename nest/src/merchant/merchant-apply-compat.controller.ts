@@ -1,6 +1,20 @@
-import { Controller, Get, Post, Param, Body, Query, UseGuards, ParseIntPipe } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
-import { ApplyAuditDto, ApplyBatchDto, ApplyDelDto, ApplyListQueryDto } from "./dto/merchant-apply.dto";
+import {
+  ApplyAuditDto,
+  ApplyBatchDto,
+  ApplyDelDto,
+  ApplyListQueryDto,
+} from "./dto/merchant-apply.dto";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
@@ -44,7 +58,11 @@ export class MerchantApplyCompatController {
       });
       userIdIn = users.map((u) => u.user_id);
       if (userIdIn.length === 0) {
-        return { code: 0, message: "success", data: { records: [], total: 0, size, current: page, pages: 0 } };
+        return {
+          code: 0,
+          message: "success",
+          data: { records: [], total: 0, size, current: page, pages: 0 },
+        };
       }
       where.user_id = { in: userIdIn };
     }
@@ -55,7 +73,9 @@ export class MerchantApplyCompatController {
       const field = String(query.sortField);
       const allowed = new Set(["add_time", "merchant_apply_id"]);
       if (allowed.has(field)) {
-        orderBy = { [field]: String(query.sortOrder) === "ascend" ? "asc" : "desc" };
+        orderBy = {
+          [field]: String(query.sortOrder) === "ascend" ? "asc" : "desc",
+        };
       }
     }
 
@@ -65,14 +85,31 @@ export class MerchantApplyCompatController {
     ]);
 
     // 组装 user 信息
-    const uidSet = Array.from(new Set(records.map((r) => r.user_id).filter(Boolean))) as number[];
+    const uidSet = Array.from(
+      new Set(records.map((r) => r.user_id).filter(Boolean)),
+    ) as number[];
     const users = uidSet.length
-      ? await this.prisma.user.findMany({ where: { user_id: { in: uidSet } }, select: { user_id: true, username: true } })
+      ? await this.prisma.user.findMany({
+          where: { user_id: { in: uidSet } },
+          select: { user_id: true, username: true },
+        })
       : [];
     const userMap = new Map(users.map((u) => [u.user_id, u]));
 
-    const data = records.map((r) => this.transformApply(r, userMap.get(r.user_id || 0)));
-    return { code: 0, message: "success", data: { records: data, total, size, current: page, pages: Math.ceil(total / size) } };
+    const data = records.map((r) =>
+      this.transformApply(r, userMap.get(r.user_id || 0)),
+    );
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: data,
+        total,
+        size,
+        current: page,
+        pages: Math.ceil(total / size),
+      },
+    };
   }
 
   @Get("config")
@@ -93,12 +130,21 @@ export class MerchantApplyCompatController {
   @ApiOperation({ summary: "商户入驻申请详情" })
   @Authorities("merchantApplyDetail")
   async detail(@Param("id", ParseIntPipe) id: number) {
-    const apply = await this.prisma.merchant_apply.findUnique({ where: { merchant_apply_id: id } });
+    const apply = await this.prisma.merchant_apply.findUnique({
+      where: { merchant_apply_id: id },
+    });
     if (!apply) return { code: 404, message: "申请不存在", data: null };
     const user = apply.user_id
-      ? await this.prisma.user.findUnique({ where: { user_id: apply.user_id }, select: { user_id: true, username: true } })
+      ? await this.prisma.user.findUnique({
+          where: { user_id: apply.user_id },
+          select: { user_id: true, username: true },
+        })
       : null;
-    return { code: 0, message: "success", data: this.transformApply(apply, user || undefined) };
+    return {
+      code: 0,
+      message: "success",
+      data: this.transformApply(apply, user || undefined),
+    };
   }
 
   /** 删除（支持批量） POST /adminapi/merchant/apply/del body: { ids: number[] } */
@@ -107,12 +153,16 @@ export class MerchantApplyCompatController {
   @Authorities("merchantApplyDelete")
   async del(@Body() body: ApplyDelDto) {
     const ids: number[] = Array.isArray(body?.ids)
-      ? (body.ids as number[]).map((x: any) => Number(x)).filter((x: any) => x > 0)
+      ? (body.ids as number[])
+          .map((x: any) => Number(x))
+          .filter((x: any) => x > 0)
       : body?.id
         ? [Number(body.id)]
         : [];
     if (!ids.length) return { code: 400, message: "缺少ID", data: false };
-    await this.prisma.merchant_apply.deleteMany({ where: { merchant_apply_id: { in: ids } } });
+    await this.prisma.merchant_apply.deleteMany({
+      where: { merchant_apply_id: { in: ids } },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -126,7 +176,9 @@ export class MerchantApplyCompatController {
     if (!id || ![10, 20].includes(status)) {
       return { code: 400, message: "参数错误", data: false };
     }
-    const apply = await this.prisma.merchant_apply.findUnique({ where: { merchant_apply_id: id } });
+    const apply = await this.prisma.merchant_apply.findUnique({
+      where: { merchant_apply_id: id },
+    });
     if (!apply) return { code: 404, message: "申请不存在", data: false };
     const now = Math.floor(Date.now() / 1000);
     await this.prisma.merchant_apply.update({
@@ -136,7 +188,9 @@ export class MerchantApplyCompatController {
 
     // 通过则创建 merchant（若未创建过）
     if (status === 10) {
-      const existing = await this.prisma.merchant.findFirst({ where: { merchant_apply_id: id } });
+      const existing = await this.prisma.merchant.findFirst({
+        where: { merchant_apply_id: id },
+      });
       if (!existing) {
         await this.prisma.merchant.create({
           data: {
@@ -163,23 +217,32 @@ export class MerchantApplyCompatController {
   @Authorities("merchantApplyBatch")
   async batch(@Body() body: ApplyBatchDto) {
     const type = body.type;
-    const ids: number[] = Array.isArray(body.ids) ? body.ids.map((x: any) => Number(x)).filter((x: any) => x > 0) : [];
-    if (!type || !ids.length) return { code: 400, message: "缺少参数", data: false };
+    const ids: number[] = Array.isArray(body.ids)
+      ? body.ids.map((x: any) => Number(x)).filter((x: any) => x > 0)
+      : [];
+    if (!type || !ids.length)
+      return { code: 400, message: "缺少参数", data: false };
     if (type === "delete") {
-      await this.prisma.merchant_apply.deleteMany({ where: { merchant_apply_id: { in: ids } } });
+      await this.prisma.merchant_apply.deleteMany({
+        where: { merchant_apply_id: { in: ids } },
+      });
       return { code: 0, message: "success", data: true };
     }
     const now = Math.floor(Date.now() / 1000);
     if (type === "auditPass" || type === "auditReject") {
       const status = type === "auditPass" ? 10 : 20;
-      const applies = await this.prisma.merchant_apply.findMany({ where: { merchant_apply_id: { in: ids } } });
+      const applies = await this.prisma.merchant_apply.findMany({
+        where: { merchant_apply_id: { in: ids } },
+      });
       for (const apply of applies) {
         await this.prisma.merchant_apply.update({
           where: { merchant_apply_id: apply.merchant_apply_id },
           data: { status, audit_time: now },
         });
         if (status === 10) {
-          const existing = await this.prisma.merchant.findFirst({ where: { merchant_apply_id: apply.merchant_apply_id } });
+          const existing = await this.prisma.merchant.findFirst({
+            where: { merchant_apply_id: apply.merchant_apply_id },
+          });
           if (!existing) {
             await this.prisma.merchant.create({
               data: {
@@ -205,10 +268,20 @@ export class MerchantApplyCompatController {
 
   private transformApply(a: any, user?: { user_id: number; username: string }) {
     let baseData, merchantData, shopData;
-    try { if (a.base_data) baseData = JSON.parse(a.base_data); } catch (e) {}
-    try { if (a.merchant_data) merchantData = JSON.parse(a.merchant_data); } catch (e) {}
-    try { if (a.shop_data) shopData = JSON.parse(a.shop_data); } catch (e) {}
-    const statusTextMap: Record<number, string> = { 1: "待审核", 10: "已通过", 20: "已拒绝" };
+    try {
+      if (a.base_data) baseData = JSON.parse(a.base_data);
+    } catch (e) {}
+    try {
+      if (a.merchant_data) merchantData = JSON.parse(a.merchant_data);
+    } catch (e) {}
+    try {
+      if (a.shop_data) shopData = JSON.parse(a.shop_data);
+    } catch (e) {}
+    const statusTextMap: Record<number, string> = {
+      1: "待审核",
+      10: "已通过",
+      20: "已拒绝",
+    };
     return {
       merchantApplyId: a.merchant_apply_id,
       userId: a.user_id,
@@ -224,7 +297,9 @@ export class MerchantApplyCompatController {
       baseData,
       merchantData,
       shopData,
-      user: user ? { userId: user.user_id, username: user.username } : undefined,
+      user: user
+        ? { userId: user.user_id, username: user.username }
+        : undefined,
     };
   }
 }

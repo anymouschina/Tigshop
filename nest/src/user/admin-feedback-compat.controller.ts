@@ -20,7 +20,11 @@ export class AdminFeedbackCompatController {
     const page = Number(q.page || 1);
     const size = Number(q.size || 15);
     const sortField = (q.sort_field ?? "id").toString();
-    const sortOrder = ((q.sort_order ?? "desc").toString().toLowerCase() === "asc" ? "asc" : "desc") as any;
+    const sortOrder = (
+      (q.sort_order ?? "desc").toString().toLowerCase() === "asc"
+        ? "asc"
+        : "desc"
+    ) as any;
     const keyword = (q.keyword || "").trim();
     const type = q.type !== undefined ? Number(q.type) : undefined;
     const status = q.status !== undefined ? Number(q.status) : undefined;
@@ -34,17 +38,34 @@ export class AdminFeedbackCompatController {
         { mobile: { contains: keyword } },
       ];
     }
-    if (!Number.isNaN(type) && type !== undefined && type !== -1) where.type = type;
-    if (!Number.isNaN(status) && status !== undefined && status !== -1) where.status = status;
+    if (!Number.isNaN(type) && type !== undefined && type !== -1)
+      where.type = type;
+    if (!Number.isNaN(status) && status !== undefined && status !== -1)
+      where.status = status;
 
     const orderBy: any = { [sortField]: sortOrder };
     const skip = (page - 1) * size;
     const [rows, total] = await Promise.all([
-      (this.prisma as any).feedback.findMany({ where, orderBy, skip, take: size }),
+      (this.prisma as any).feedback.findMany({
+        where,
+        orderBy,
+        skip,
+        take: size,
+      }),
       (this.prisma as any).feedback.count({ where }),
     ]);
 
-    return { code: 0, message: "success", data: { records: rows, total, size, current: page, pages: Math.ceil(total / size) } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: rows,
+        total,
+        size,
+        current: page,
+        pages: Math.ceil(total / size),
+      },
+    };
   }
 
   @Get("detail")
@@ -53,7 +74,9 @@ export class AdminFeedbackCompatController {
   async detail(@Query("id") idStr?: string) {
     const id = Number(idStr);
     if (!id) return { code: 0, message: "success", data: null };
-    const item = await (this.prisma as any).feedback.findUnique({ where: { id } });
+    const item = await (this.prisma as any).feedback.findUnique({
+      where: { id },
+    });
     return { code: 0, message: "success", data: item };
   }
 
@@ -68,7 +91,9 @@ export class AdminFeedbackCompatController {
       email: dto.email || "",
       content: dto.content || "",
       mobile: dto.mobile || "",
-      feedback_pics: Array.isArray(dto.feedback_pics) ? JSON.stringify(dto.feedback_pics) : (dto.feedback_pics || null),
+      feedback_pics: Array.isArray(dto.feedback_pics)
+        ? JSON.stringify(dto.feedback_pics)
+        : dto.feedback_pics || null,
       product_id: Number(dto.product_id || 0),
       order_id: Number(dto.order_id || 0),
       add_time: now,
@@ -87,13 +112,18 @@ export class AdminFeedbackCompatController {
     const id = Number(dto.id);
     if (!id) return { code: 400, message: "id required", data: null };
     const data: any = {};
-    ["title", "email", "content", "mobile"].forEach((k) => dto[k] !== undefined && (data[k] = dto[k]));
+    ["title", "email", "content", "mobile"].forEach(
+      (k) => dto[k] !== undefined && (data[k] = dto[k]),
+    );
     if (dto.parent_id !== undefined) data.parent_id = Number(dto.parent_id);
     if (dto.product_id !== undefined) data.product_id = Number(dto.product_id);
     if (dto.order_id !== undefined) data.order_id = Number(dto.order_id);
     if (dto.status !== undefined) data.status = Number(dto.status);
     if (dto.type !== undefined) data.type = Number(dto.type);
-    if (dto.feedback_pics !== undefined) data.feedback_pics = Array.isArray(dto.feedback_pics) ? JSON.stringify(dto.feedback_pics) : dto.feedback_pics;
+    if (dto.feedback_pics !== undefined)
+      data.feedback_pics = Array.isArray(dto.feedback_pics)
+        ? JSON.stringify(dto.feedback_pics)
+        : dto.feedback_pics;
     await (this.prisma as any).feedback.update({ where: { id }, data });
     return { code: 0, message: "success", data: true };
   }
@@ -112,10 +142,14 @@ export class AdminFeedbackCompatController {
   @ApiOperation({ summary: "批量操作（兼容，仅支持 del）" })
   @Authorities("feedbackModifyManage")
   async batch(@Body() body: any) {
-    const ids: number[] = Array.isArray(body.ids) ? body.ids.map((x: any) => Number(x)).filter(Boolean) : [];
+    const ids: number[] = Array.isArray(body.ids)
+      ? body.ids.map((x: any) => Number(x)).filter(Boolean)
+      : [];
     if (!ids.length) return { code: 400, message: "未选择项目", data: null };
     if (body.type === "del") {
-      await (this.prisma as any).feedback.deleteMany({ where: { id: { in: ids } } });
+      await (this.prisma as any).feedback.deleteMany({
+        where: { id: { in: ids } },
+      });
       return { code: 0, message: "success", data: true };
     }
     return { code: 400, message: "#type 错误", data: null };

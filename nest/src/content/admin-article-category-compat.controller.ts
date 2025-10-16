@@ -49,23 +49,29 @@ export class AdminArticleCategoryCompatController {
       if (!Number.isNaN(pid)) where.parent_id = pid;
     }
 
-    const allowed = new Set([
-      "article_category_id",
-      "sort_order",
-    ]);
-    const sortField = query.sort_field && allowed.has(query.sort_field)
-      ? query.sort_field
-      : "article_category_id";
-    const sortOrder = query.sort_order === "asc" || query.sort_order === "ascend" ? "asc" : "desc";
+    const allowed = new Set(["article_category_id", "sort_order"]);
+    const sortField =
+      query.sort_field && allowed.has(query.sort_field)
+        ? query.sort_field
+        : "article_category_id";
+    const sortOrder =
+      query.sort_order === "asc" || query.sort_order === "ascend"
+        ? "asc"
+        : "desc";
 
     const [recordsRaw, total] = await Promise.all([
-      this.prisma.article_category.findMany({ where, skip, take: size, orderBy: { [sortField]: sortOrder } }),
+      this.prisma.article_category.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { [sortField]: sortOrder },
+      }),
       this.prisma.article_category.count({ where }),
     ]);
 
     // 计算 has_children，增强前端可用性（与 PHP 接口一致）
     const ids = recordsRaw.map((r) => r.article_category_id);
-    let childrenCountMap = new Map<number, number>();
+    const childrenCountMap = new Map<number, number>();
     if (ids.length) {
       const children = await this.prisma.article_category.findMany({
         where: { parent_id: { in: ids } },
@@ -91,7 +97,9 @@ export class AdminArticleCategoryCompatController {
   async detail(@Query("id") idParam: string) {
     const id = Number(idParam || 0);
     if (!id) return { code: 400, message: "参数错误", data: null };
-    const item = await this.prisma.article_category.findUnique({ where: { article_category_id: id } });
+    const item = await this.prisma.article_category.findUnique({
+      where: { article_category_id: id },
+    });
     if (!item) return { code: 404, message: "分类不存在", data: null };
     return { code: 0, message: "success", data: item };
   }
@@ -110,7 +118,9 @@ export class AdminArticleCategoryCompatController {
       byParent[c.parent_id].push({ ...c, children: [] });
     }
     const build = (parentId: number): any[] => {
-      const list = (byParent[parentId] || []).sort((a, b) => a.sort_order - b.sort_order);
+      const list = (byParent[parentId] || []).sort(
+        (a, b) => a.sort_order - b.sort_order,
+      );
       for (const node of list) node.children = build(node.article_category_id);
       return list;
     };
@@ -124,19 +134,22 @@ export class AdminArticleCategoryCompatController {
   @Authorities("articleCategoryModifyManage")
   async create(@Body() body: any) {
     // 支持 parentId/parent_id 为数组（取最后一个）或数字
-    const parentInput = body.parent_id !== undefined ? body.parent_id : body.parentId;
+    const parentInput =
+      body.parent_id !== undefined ? body.parent_id : body.parentId;
     const parent_id = Array.isArray(parentInput)
       ? Number(parentInput[parentInput.length - 1] || 0)
       : Number(parentInput ?? 0);
 
     const data: any = {
       parent_id: Number.isNaN(parent_id) ? 0 : parent_id,
-      article_category_name: String((body.article_category_name ?? body.articleCategoryName) || ""),
+      article_category_name: String(
+        (body.article_category_name ?? body.articleCategoryName) || "",
+      ),
       category_sn: String((body.category_sn ?? body.categorySn) || ""),
       // 与数据库默认值对齐（1），避免前端看不到该分类
       category_type: Number(body.category_type ?? body.categoryType ?? 1),
-      keywords: String((body.keywords ?? "")),
-      description: String((body.description ?? "")),
+      keywords: String(body.keywords ?? ""),
+      description: String(body.description ?? ""),
       sort_order: Number(body.sort_order ?? body.sortOrder ?? 50),
     };
     await this.prisma.article_category.create({ data });
@@ -148,12 +161,15 @@ export class AdminArticleCategoryCompatController {
   @ApiOperation({ summary: "更新分类（兼容）" })
   @Authorities("articleCategoryModifyManage")
   async update(@Body() body: any) {
-    const id = Number(body.id || body.article_category_id || body.articleCategoryId || 0);
+    const id = Number(
+      body.id || body.article_category_id || body.articleCategoryId || 0,
+    );
     if (!id) return { code: 400, message: "参数错误", data: null };
     // 处理 parentId/parent_id 为数组或数字
     let resolvedParentId: number | undefined = undefined;
     if (body.parent_id !== undefined || body.parentId !== undefined) {
-      const parentInput = body.parent_id !== undefined ? body.parent_id : body.parentId;
+      const parentInput =
+        body.parent_id !== undefined ? body.parent_id : body.parentId;
       if (Array.isArray(parentInput)) {
         const last = Number(parentInput[parentInput.length - 1] || 0);
         if (last === 0) {
@@ -168,25 +184,29 @@ export class AdminArticleCategoryCompatController {
 
     const data: any = {
       parent_id: resolvedParentId,
-      article_category_name: body.article_category_name ?? body.articleCategoryName,
+      article_category_name:
+        body.article_category_name ?? body.articleCategoryName,
       category_sn: body.category_sn ?? body.categorySn,
       category_type:
         body.category_type !== undefined
           ? Number(body.category_type)
           : body.categoryType !== undefined
-          ? Number(body.categoryType)
-          : undefined,
+            ? Number(body.categoryType)
+            : undefined,
       keywords: body.keywords,
       description: body.description,
       sort_order:
         body.sort_order !== undefined
           ? Number(body.sort_order)
           : body.sortOrder !== undefined
-          ? Number(body.sortOrder)
-          : undefined,
+            ? Number(body.sortOrder)
+            : undefined,
     };
     Object.keys(data).forEach((k) => data[k] === undefined && delete data[k]);
-    await this.prisma.article_category.update({ where: { article_category_id: id }, data });
+    await this.prisma.article_category.update({
+      where: { article_category_id: id },
+      data,
+    });
     return { code: 0, message: "success", data: null };
   }
 
@@ -197,7 +217,9 @@ export class AdminArticleCategoryCompatController {
   async del(@Body() body: any) {
     const id = Number(body.id || 0);
     if (!id) return { code: 400, message: "参数错误", data: null };
-    await this.prisma.article_category.delete({ where: { article_category_id: id } });
+    await this.prisma.article_category.delete({
+      where: { article_category_id: id },
+    });
     return { code: 0, message: "success", data: null };
   }
 
@@ -210,11 +232,21 @@ export class AdminArticleCategoryCompatController {
     const field = String(body.field || "");
     const val = body.val;
     if (!id) return { code: 400, message: "参数错误", data: null };
-    const allow = new Set(["article_category_name", "category_sn", "sort_order"]);
-    if (!allow.has(field)) return { code: 400, message: "#field 错误", data: null };
+    const allow = new Set([
+      "article_category_name",
+      "category_sn",
+      "sort_order",
+    ]);
+    if (!allow.has(field))
+      return { code: 400, message: "#field 错误", data: null };
     const numeric = new Set(["sort_order"]);
-    const data: any = numeric.has(field) ? { [field]: Number(val) } : { [field]: String(val ?? "") };
-    await this.prisma.article_category.update({ where: { article_category_id: id }, data });
+    const data: any = numeric.has(field)
+      ? { [field]: Number(val) }
+      : { [field]: String(val ?? "") };
+    await this.prisma.article_category.update({
+      where: { article_category_id: id },
+      data,
+    });
     return { code: 0, message: "success", data: null };
   }
 
@@ -224,12 +256,16 @@ export class AdminArticleCategoryCompatController {
   @Authorities("articleCategoryModifyManage")
   async batch(@Body() body: any) {
     const ids: number[] = Array.isArray(body.ids)
-      ? body.ids.map((x: any) => Number(x)).filter((x: number) => !Number.isNaN(x))
+      ? body.ids
+          .map((x: any) => Number(x))
+          .filter((x: number) => !Number.isNaN(x))
       : [];
     const type = String(body.type || "");
     if (!ids.length) return { code: 400, message: "未选择项目", data: null };
     if (type !== "del") return { code: 400, message: "#type 错误", data: null };
-    await this.prisma.article_category.deleteMany({ where: { article_category_id: { in: ids } } });
+    await this.prisma.article_category.deleteMany({
+      where: { article_category_id: { in: ids } },
+    });
     return { code: 0, message: "success", data: null };
   }
 }

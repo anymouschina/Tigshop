@@ -33,10 +33,19 @@ export class UserArticleCategoryPublicController {
         byParent[c.parent_id] ??= [];
         byParent[c.parent_id].push(c);
       }
-      return { code: 0, message: "success", data: roots.map((r) => ({ ...r, children: byParent[r.article_category_id] || [] })) };
+      return {
+        code: 0,
+        message: "success",
+        data: roots.map((r) => ({
+          ...r,
+          children: byParent[r.article_category_id] || [],
+        })),
+      };
     }
 
-    const parent = await this.prisma.article_category.findFirst({ where: { category_sn: String(category_sn) } });
+    const parent = await this.prisma.article_category.findFirst({
+      where: { category_sn: String(category_sn) },
+    });
     if (!parent) return { code: 0, message: "success", data: [] };
     const children = await this.prisma.article_category.findMany({
       where: { parent_id: parent.article_category_id },
@@ -54,10 +63,15 @@ export class UserArticleCategoryPublicController {
   @ApiOperation({ summary: "首页帮助分类与文章" })
   @ApiQuery({ name: "category_size", required: false })
   @ApiQuery({ name: "article_size", required: false })
-  async indexBzzxList(@Query("category_size") category_size?: number, @Query("article_size") article_size?: number) {
+  async indexBzzxList(
+    @Query("category_size") category_size?: number,
+    @Query("article_size") article_size?: number,
+  ) {
     const cs = Number(category_size) || 5;
     const as = Number(article_size) || 4;
-    const bzzx = await this.prisma.article_category.findFirst({ where: { category_sn: "bzzx" } });
+    const bzzx = await this.prisma.article_category.findFirst({
+      where: { category_sn: "bzzx" },
+    });
     if (!bzzx) return { code: 0, message: "success", data: [] };
     const children = await this.prisma.article_category.findMany({
       where: { parent_id: bzzx.article_category_id },

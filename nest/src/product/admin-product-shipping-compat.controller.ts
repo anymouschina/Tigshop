@@ -23,6 +23,10 @@ export class AdminApiProductShippingCompatController {
     const keyword = String(query.keyword || "");
     const result = await this.shippingSvc.getList({ page, size, keyword });
     // 兼容数据结构：records/total
-    return { code: 0, message: "success", data: { records: result.records, total: result.total } };
+    return {
+      code: 0,
+      message: "success",
+      data: { records: result.records, total: result.total },
+    };
   }
 }

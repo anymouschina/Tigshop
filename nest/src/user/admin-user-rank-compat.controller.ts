@@ -21,7 +21,11 @@ export class AdminUserRankCompatController {
     const page = Number(q.page || 1);
     const size = Number(q.size || 15);
     const sortField = (q.sortField ?? q.sort_field ?? "rank_id").toString();
-    const sortOrder = ((q.sortOrder ?? q.sort_order ?? "asc").toString().toLowerCase() === "desc" ? "desc" : "asc") as any;
+    const sortOrder = (
+      (q.sortOrder ?? q.sort_order ?? "asc").toString().toLowerCase() === "desc"
+        ? "desc"
+        : "asc"
+    ) as any;
     const rankName = ((q.rankName ?? q.rank_name) || "").toString().trim();
 
     const where: any = {};
@@ -29,7 +33,12 @@ export class AdminUserRankCompatController {
 
     const skip = (page - 1) * size;
     const [rows, total] = await Promise.all([
-      (this.prisma as any).user_rank.findMany({ where, skip, take: size, orderBy: { [sortField]: sortOrder } }),
+      (this.prisma as any).user_rank.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { [sortField]: sortOrder },
+      }),
       (this.prisma as any).user_rank.count({ where }),
     ]);
 
@@ -37,7 +46,8 @@ export class AdminUserRankCompatController {
     const mapDiscount = (v: any) => {
       if (v === undefined || v === null) return "0.0";
       try {
-        if (typeof v === "object" && typeof v.toString === "function") return v.toString();
+        if (typeof v === "object" && typeof v.toString === "function")
+          return v.toString();
         return String(v);
       } catch {
         return "0.0";
@@ -77,18 +87,26 @@ export class AdminUserRankCompatController {
     }));
 
     // 读取 rank_config
-    let cfg = await (this.prisma as any).config.findFirst({ where: { biz_code: "rank_config" } });
+    let cfg = await (this.prisma as any).config.findFirst({
+      where: { biz_code: "rank_config" },
+    });
     let cfgData: any = { type: 2, rankAfterMonth: 12, useMonth: 12 };
     if (cfg?.biz_val) {
       try {
         const parsed = JSON.parse(cfg.biz_val);
-        if (parsed && typeof parsed === "object") cfgData = { ...cfgData, ...parsed };
+        if (parsed && typeof parsed === "object")
+          cfgData = { ...cfgData, ...parsed };
       } catch {}
     }
     if (!cfg) {
       const nowSec = BigInt(Math.floor(Date.now() / 1000));
       cfg = await (this.prisma as any).config.create({
-        data: { biz_code: "rank_config", biz_val: JSON.stringify(cfgData), create_time: nowSec, update_time: nowSec },
+        data: {
+          biz_code: "rank_config",
+          biz_val: JSON.stringify(cfgData),
+          create_time: nowSec,
+          update_time: nowSec,
+        },
       });
     }
     const rankConfig = {
@@ -102,7 +120,11 @@ export class AdminUserRankCompatController {
       },
     };
 
-    return { code: 0, message: "success", data: { userRank: { records, total }, rankConfig } };
+    return {
+      code: 0,
+      message: "success",
+      data: { userRank: { records, total }, rankConfig },
+    };
   }
 
   // 兼容前端可能调用的 /listByPro 路由（别名，返回同 list）
@@ -114,7 +136,11 @@ export class AdminUserRankCompatController {
     const page = Number(q.page || 1);
     const size = Number(q.size || 15);
     const sortField = (q.sortField ?? q.sort_field ?? "rank_id").toString();
-    const sortOrder = ((q.sortOrder ?? q.sort_order ?? "asc").toString().toLowerCase() === "desc" ? "desc" : "asc") as any;
+    const sortOrder = (
+      (q.sortOrder ?? q.sort_order ?? "asc").toString().toLowerCase() === "desc"
+        ? "desc"
+        : "asc"
+    ) as any;
     const rankName = ((q.rankName ?? q.rank_name) || "").toString().trim();
 
     const where: any = {};
@@ -122,14 +148,20 @@ export class AdminUserRankCompatController {
 
     const skip = (page - 1) * size;
     const [rows, total] = await Promise.all([
-      (this.prisma as any).user_rank.findMany({ where, skip, take: size, orderBy: { [sortField]: sortOrder } }),
+      (this.prisma as any).user_rank.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { [sortField]: sortOrder },
+      }),
       (this.prisma as any).user_rank.count({ where }),
     ]);
 
     const mapDiscount = (v: any) => {
       if (v === undefined || v === null) return "0.0";
       try {
-        if (typeof v === "object" && typeof v.toString === "function") return v.toString();
+        if (typeof v === "object" && typeof v.toString === "function")
+          return v.toString();
         return String(v);
       } catch {
         return "0.0";
@@ -168,18 +200,26 @@ export class AdminUserRankCompatController {
       rankLevel: String(r.rank_level ?? ""),
     }));
 
-    let cfg = await (this.prisma as any).config.findFirst({ where: { biz_code: "rank_config" } });
+    let cfg = await (this.prisma as any).config.findFirst({
+      where: { biz_code: "rank_config" },
+    });
     let cfgData: any = { type: 2, rankAfterMonth: 12, useMonth: 12 };
     if (cfg?.biz_val) {
       try {
         const parsed = JSON.parse(cfg.biz_val);
-        if (parsed && typeof parsed === "object") cfgData = { ...cfgData, ...parsed };
+        if (parsed && typeof parsed === "object")
+          cfgData = { ...cfgData, ...parsed };
       } catch {}
     }
     if (!cfg) {
       const nowSec = BigInt(Math.floor(Date.now() / 1000));
       cfg = await (this.prisma as any).config.create({
-        data: { biz_code: "rank_config", biz_val: JSON.stringify(cfgData), create_time: nowSec, update_time: nowSec },
+        data: {
+          biz_code: "rank_config",
+          biz_val: JSON.stringify(cfgData),
+          create_time: nowSec,
+          update_time: nowSec,
+        },
       });
     }
     const rankConfig = {
@@ -193,7 +233,11 @@ export class AdminUserRankCompatController {
       },
     };
 
-    return { code: 0, message: "success", data: { userRank: { records, total }, rankConfig } };
+    return {
+      code: 0,
+      message: "success",
+      data: { userRank: { records, total }, rankConfig },
+    };
   }
 
   @Get("detail")
@@ -235,52 +279,56 @@ export class AdminUserRankCompatController {
       return [];
     };
 
-    const userRankList = (userRanks && userRanks.length > 0)
-      ? userRanks.map((r: any) => ({
-          rankId: Number(r.rank_id),
-          rankName: r.rank_name ?? "",
-          // 保持单位为“分”（整数），避免前端重复换算导致回显放大
-          minGrowthPoints: Number(r.min_growth_points ?? 0),
-          maxGrowthPoints: Number(r.max_growth_points ?? 0),
-          discount: mapDiscount(r.discount), // 字符串
-          showPrice: Number(r.show_price ?? 1),
-          rankType: 0, // 与 PHP 示例保持一致
-          rankLogo: r.rank_logo ?? "",
-          rankIco: r.rank_ico ?? "",
-          rankBg: r.rank_bg ?? "",
-          rankPoint: r.rank_point ?? "0",
-          freeShipping: Number(r.free_shipping ?? 0),
-          rankCardType: Number(r.rank_card_type ?? 1),
-          rights: parseRights(r.rights), // 数组
-          rankLevel: String(r.rank_level ?? ""),
-        }))
-      : [
-          {
-            rankId: 1,
-            rankName: "普通会员",
-            minGrowthPoints: 0,
-            maxGrowthPoints: 0,
-            discount: "0.0",
-            showPrice: 1,
-            rankType: 0,
-            rankLogo: "",
-            rankIco: "",
-            rankBg: "",
-            rankPoint: "0",
-            freeShipping: 0,
-            rankCardType: 1,
-            rights: [],
-            rankLevel: "1",
-          },
-        ];
+    const userRankList =
+      userRanks && userRanks.length > 0
+        ? userRanks.map((r: any) => ({
+            rankId: Number(r.rank_id),
+            rankName: r.rank_name ?? "",
+            // 保持单位为“分”（整数），避免前端重复换算导致回显放大
+            minGrowthPoints: Number(r.min_growth_points ?? 0),
+            maxGrowthPoints: Number(r.max_growth_points ?? 0),
+            discount: mapDiscount(r.discount), // 字符串
+            showPrice: Number(r.show_price ?? 1),
+            rankType: 0, // 与 PHP 示例保持一致
+            rankLogo: r.rank_logo ?? "",
+            rankIco: r.rank_ico ?? "",
+            rankBg: r.rank_bg ?? "",
+            rankPoint: r.rank_point ?? "0",
+            freeShipping: Number(r.free_shipping ?? 0),
+            rankCardType: Number(r.rank_card_type ?? 1),
+            rights: parseRights(r.rights), // 数组
+            rankLevel: String(r.rank_level ?? ""),
+          }))
+        : [
+            {
+              rankId: 1,
+              rankName: "普通会员",
+              minGrowthPoints: 0,
+              maxGrowthPoints: 0,
+              discount: "0.0",
+              showPrice: 1,
+              rankType: 0,
+              rankLogo: "",
+              rankIco: "",
+              rankBg: "",
+              rankPoint: "0",
+              freeShipping: 0,
+              rankCardType: 1,
+              rights: [],
+              rankLevel: "1",
+            },
+          ];
 
     // 2) 读取/初始化 rank_config（从 config 表 biz_code=rank_config）
-    let rc = await (this.prisma as any).config.findFirst({ where: { biz_code: "rank_config" } });
+    let rc = await (this.prisma as any).config.findFirst({
+      where: { biz_code: "rank_config" },
+    });
     let rcData: any = { type: 2, rankAfterMonth: 12, useMonth: 12 };
     if (rc?.biz_val) {
       try {
         const parsed = JSON.parse(rc.biz_val);
-        if (parsed && typeof parsed === "object") rcData = { ...rcData, ...parsed };
+        if (parsed && typeof parsed === "object")
+          rcData = { ...rcData, ...parsed };
       } catch {}
     }
     if (!rc) {
@@ -294,8 +342,8 @@ export class AdminUserRankCompatController {
         },
       });
     }
-  // 顶层 rankType：以传入值优先，其次默认 1（与 PHP 示例一致），不强制跟随配置 type
-  const resolvedRankType = Number(rankTypeParam || 1);
+    // 顶层 rankType：以传入值优先，其次默认 1（与 PHP 示例一致），不强制跟随配置 type
+    const resolvedRankType = Number(rankTypeParam || 1);
     const userRankConfig = {
       id: typeof rc.id === "bigint" ? Number(rc.id) : Number(rc.id ?? 0),
       code: "rank_config",
@@ -308,7 +356,9 @@ export class AdminUserRankCompatController {
     };
 
     // 3) 读取成长配置 grow_config（如不存在则给空对象/默认规则）
-    const gc = await (this.prisma as any).config.findFirst({ where: { biz_code: "grow_config" } });
+    const gc = await (this.prisma as any).config.findFirst({
+      where: { biz_code: "grow_config" },
+    });
     let growUpSetting: any = {};
     if (gc?.biz_val) {
       try {
@@ -360,7 +410,9 @@ export class AdminUserRankCompatController {
         rankAfterMonth: Number(userRankConfig?.rankAfterMonth ?? 12),
         useMonth: Number(userRankConfig?.useMonth ?? 12),
       };
-      const existed = await (this.prisma as any).config.findFirst({ where: { biz_code: "rank_config" } });
+      const existed = await (this.prisma as any).config.findFirst({
+        where: { biz_code: "rank_config" },
+      });
       const nowSec = BigInt(Math.floor(Date.now() / 1000));
       const biz_val = JSON.stringify(cfgPayload);
       if (existed) {
@@ -370,20 +422,37 @@ export class AdminUserRankCompatController {
         });
       } else {
         await (this.prisma as any).config.create({
-          data: { biz_code: "rank_config", biz_val, create_time: nowSec, update_time: nowSec },
+          data: {
+            biz_code: "rank_config",
+            biz_val,
+            create_time: nowSec,
+            update_time: nowSec,
+          },
         });
       }
     }
 
     // 2) 更新 grow_config（若提供）
     if (growUpSetting && typeof growUpSetting === "object") {
-      const existed = await (this.prisma as any).config.findFirst({ where: { biz_code: "grow_config" } });
+      const existed = await (this.prisma as any).config.findFirst({
+        where: { biz_code: "grow_config" },
+      });
       const nowSec = BigInt(Math.floor(Date.now() / 1000));
       const biz_val = JSON.stringify(growUpSetting);
       if (existed) {
-        await (this.prisma as any).config.update({ where: { id: existed.id }, data: { biz_val, update_time: nowSec } });
+        await (this.prisma as any).config.update({
+          where: { id: existed.id },
+          data: { biz_val, update_time: nowSec },
+        });
       } else {
-        await (this.prisma as any).config.create({ data: { biz_code: "grow_config", biz_val, create_time: nowSec, update_time: nowSec } });
+        await (this.prisma as any).config.create({
+          data: {
+            biz_code: "grow_config",
+            biz_val,
+            create_time: nowSec,
+            update_time: nowSec,
+          },
+        });
       }
     }
 
@@ -392,11 +461,13 @@ export class AdminUserRankCompatController {
       const n = Number(v);
       return Number.isFinite(n) ? n : d;
     };
-    const toStringOrEmpty = (v: any) => (v === undefined || v === null ? "" : String(v));
+    const toStringOrEmpty = (v: any) =>
+      v === undefined || v === null ? "" : String(v);
     const toDiscountString = (v: any) => {
       if (v === undefined || v === null || v === "") return "0.0";
       try {
-        if (typeof v === "object" && typeof v.toString === "function") return v.toString();
+        if (typeof v === "object" && typeof v.toString === "function")
+          return v.toString();
         return String(v);
       } catch {
         return "0.0";
@@ -407,18 +478,31 @@ export class AdminUserRankCompatController {
         if (!v) return JSON.stringify([]);
         if (typeof v === "string") {
           // 尝试验证是否为 JSON；若非 JSON，则包一层文本
-          try { JSON.parse(v); return v; } catch { return JSON.stringify([]); }
+          try {
+            JSON.parse(v);
+            return v;
+          } catch {
+            return JSON.stringify([]);
+          }
         }
         return JSON.stringify(v);
-      } catch { return JSON.stringify([]); }
+      } catch {
+        return JSON.stringify([]);
+      }
     };
 
     for (const it of items) {
       const rankId = toNumber(it.rankId ?? it.rank_id ?? 0, 0);
       const payload: any = {
         rank_name: toStringOrEmpty(it.rankName ?? it.rank_name),
-        min_growth_points: toNumber(it.minGrowthPoints ?? it.min_growth_points, 0),
-        max_growth_points: toNumber(it.maxGrowthPoints ?? it.max_growth_points, 0),
+        min_growth_points: toNumber(
+          it.minGrowthPoints ?? it.min_growth_points,
+          0,
+        ),
+        max_growth_points: toNumber(
+          it.maxGrowthPoints ?? it.max_growth_points,
+          0,
+        ),
         discount: toDiscountString(it.discount),
         show_price: toNumber(it.showPrice ?? it.show_price, 1),
         rank_type: toNumber(it.rankType ?? it.rank_type ?? rankType ?? 0, 0),
@@ -434,7 +518,10 @@ export class AdminUserRankCompatController {
 
       if (rankId > 0) {
         // 更新
-        await (this.prisma as any).user_rank.update({ where: { rank_id: rankId }, data: payload });
+        await (this.prisma as any).user_rank.update({
+          where: { rank_id: rankId },
+          data: payload,
+        });
       } else {
         // 新建
         await (this.prisma as any).user_rank.create({ data: payload });

@@ -27,8 +27,23 @@ export class AdminLocalesCompatController {
     }
     const [total, records] = await this.prisma.$transaction([
       this.prisma.locales.count({ where }),
-      this.prisma.locales.findMany({ where, orderBy: { sort: "asc" }, skip, take: size }),
+      this.prisma.locales.findMany({
+        where,
+        orderBy: { sort: "asc" },
+        skip,
+        take: size,
+      }),
     ]);
-    return { code: 0, message: "success", data: { records, total, page, size, totalPages: Math.ceil(total / size) || 1 } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records,
+        total,
+        page,
+        size,
+        totalPages: Math.ceil(total / size) || 1,
+      },
+    };
   }
 }

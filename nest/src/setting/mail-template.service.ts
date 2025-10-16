@@ -35,8 +35,8 @@ export class MailTemplateService {
   }
 
   async getFilterCount(filter: any): Promise<number> {
-  const where = this.buildWhereClause(filter);
-  return this.prisma.mail_templates.count({ where });
+    const where = this.buildWhereClause(filter);
+    return this.prisma.mail_templates.count({ where });
   }
 
   private buildWhereClause(filter: any): any {
@@ -252,8 +252,7 @@ export class MailTemplateService {
       }
     }
 
-    const normalized: any =
-      field === "is_html" ? (value ? 1 : 0) : value;
+    const normalized: any = field === "is_html" ? (value ? 1 : 0) : value;
     const result = await this.prisma.mail_templates.update({
       where: { template_id: templateId },
       data: {

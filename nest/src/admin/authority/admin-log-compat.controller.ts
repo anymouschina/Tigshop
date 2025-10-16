@@ -17,7 +17,10 @@ export class AdminLogCompatController {
   async list(@Query() query: any) {
     const page = Number(query.page) || 1;
     const size = Number(query.size) || 15;
-    const paging = query.paging !== undefined ? query.paging !== "false" && query.paging !== false : true;
+    const paging =
+      query.paging !== undefined
+        ? query.paging !== "false" && query.paging !== false
+        : true;
     const skip = (page - 1) * size;
 
     const keyword = (query.keyword ?? "").trim();
@@ -28,18 +31,36 @@ export class AdminLogCompatController {
     const where: any = {};
     if (keyword) where.log_info = { contains: keyword };
     if (userId) where.user_id = userId;
-    if (start || end) where.log_time = { gte: start || 0, lte: (end || 0) > 0 ? end : undefined };
+    if (start || end)
+      where.log_time = {
+        gte: start || 0,
+        lte: (end || 0) > 0 ? end : undefined,
+      };
 
     if (!paging) {
-      const records = await this.prisma.admin_log.findMany({ where, orderBy: { log_id: "desc" } });
+      const records = await this.prisma.admin_log.findMany({
+        where,
+        orderBy: { log_id: "desc" },
+      });
       return { code: 0, message: "success", data: records };
     }
 
     const [records, total] = await Promise.all([
-      this.prisma.admin_log.findMany({ where, skip, take: size, orderBy: { log_id: "desc" } }),
+      this.prisma.admin_log.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { log_id: "desc" },
+      }),
       this.prisma.admin_log.count({ where }),
     ]);
-    const data = { records, total, size, current: page, pages: Math.max(1, Math.ceil((total || 0) / size)) };
+    const data = {
+      records,
+      total,
+      size,
+      current: page,
+      pages: Math.max(1, Math.ceil((total || 0) / size)),
+    };
     return { code: 0, message: "success", data };
   }
 }

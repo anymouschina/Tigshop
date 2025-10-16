@@ -1,6 +1,12 @@
 // @ts-nocheck
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from "@nestjs/swagger";
+import {
+  IsArray,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from "class-validator";
 
 export class ProductPromotionListDto {
   @IsOptional() @IsString() keyword?: string;
@@ -9,7 +15,7 @@ export class ProductPromotionListDto {
   @IsOptional() @IsInt() page?: number;
   @IsOptional() @IsInt() size?: number;
   @IsOptional() @IsString() sort_field?: string;
-  @IsOptional() @IsString() sort_order?: 'asc' | 'desc';
+  @IsOptional() @IsString() sort_order?: "asc" | "desc";
 }
 
 export class ProductPromotionCountDto {

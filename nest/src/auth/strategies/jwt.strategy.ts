@@ -137,7 +137,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // 方便调试一次性确认返回结构（只打印关键字段，避免日志过大）
     this.logger.debug(
-      `Unified user object keys: ${Object.keys(unifiedUser).slice(0,30).join(', ')}...`,
+      `Unified user object keys: ${Object.keys(unifiedUser).slice(0, 30).join(", ")}...`,
     );
 
     return unifiedUser;

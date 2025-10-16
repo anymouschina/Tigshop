@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, Request, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Request,
+  UseGuards,
+} from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -38,15 +46,27 @@ export class AdminECardCompatController {
     if (groupId) {
       const shopId = await this.panel.getUserShopId(req.user?.userId);
       if (shopId > 0) {
-        const group = await this.prisma.e_card_group.findFirst({ where: { group_id: groupId, shop_id: shopId }, select: { group_id: true } });
+        const group = await this.prisma.e_card_group.findFirst({
+          where: { group_id: groupId, shop_id: shopId },
+          select: { group_id: true },
+        });
         if (!group) {
-          return { code: 0, message: "success", data: { records: [], total: 0 } };
+          return {
+            code: 0,
+            message: "success",
+            data: { records: [], total: 0 },
+          };
         }
       }
     }
 
     const [records, total] = await Promise.all([
-      this.prisma.e_card.findMany({ where, orderBy: { card_id: "desc" }, skip, take: size }),
+      this.prisma.e_card.findMany({
+        where,
+        orderBy: { card_id: "desc" },
+        skip,
+        take: size,
+      }),
       this.prisma.e_card.count({ where }),
     ]);
 
@@ -70,13 +90,18 @@ export class AdminECardCompatController {
   async detail(@Query("id") id: string, @Request() req: any) {
     const cardId = Number(id);
     if (!cardId) return { code: 400, message: "id required", data: null };
-    const card = await this.prisma.e_card.findUnique({ where: { card_id: cardId } });
+    const card = await this.prisma.e_card.findUnique({
+      where: { card_id: cardId },
+    });
     if (!card) return { code: 404, message: "not found", data: null };
 
     // 店铺隔离：检查卡片所属分组是否属于当前店铺
     const shopId = await this.panel.getUserShopId(req.user?.userId);
     if (shopId > 0) {
-      const group = await this.prisma.e_card_group.findFirst({ where: { group_id: card.group_id, shop_id: shopId }, select: { group_id: true } });
+      const group = await this.prisma.e_card_group.findFirst({
+        where: { group_id: card.group_id, shop_id: shopId },
+        select: { group_id: true },
+      });
       if (!group) return { code: 404, message: "not found", data: null };
     }
 
@@ -104,7 +129,10 @@ export class AdminECardCompatController {
     // 店铺隔离：确认 group 属于当前店铺
     const shopId = await this.panel.getUserShopId(req.user?.userId);
     if (shopId > 0) {
-      const group = await this.prisma.e_card_group.findFirst({ where: { group_id: groupId, shop_id: shopId }, select: { group_id: true } });
+      const group = await this.prisma.e_card_group.findFirst({
+        where: { group_id: groupId, shop_id: shopId },
+        select: { group_id: true },
+      });
       if (!group) return { code: 404, message: "group not found", data: null };
     }
 
@@ -127,23 +155,34 @@ export class AdminECardCompatController {
     const id = Number(body.id || body.cardId || body.card_id);
     if (!id) return { code: 400, message: "id required", data: null };
 
-    const exists = await this.prisma.e_card.findUnique({ where: { card_id: id } });
+    const exists = await this.prisma.e_card.findUnique({
+      where: { card_id: id },
+    });
     if (!exists) return { code: 404, message: "not found", data: null };
 
     // 店铺隔离
     const shopId = await this.panel.getUserShopId(req.user?.userId);
     if (shopId > 0) {
-      const group = await this.prisma.e_card_group.findFirst({ where: { group_id: exists.group_id, shop_id: shopId }, select: { group_id: true } });
+      const group = await this.prisma.e_card_group.findFirst({
+        where: { group_id: exists.group_id, shop_id: shopId },
+        select: { group_id: true },
+      });
       if (!group) return { code: 404, message: "not found", data: null };
     }
 
     const data: any = {
       card_number: body.cardNumber ?? body.card_number,
       card_pwd: body.cardPwd ?? body.card_pwd,
-      is_use: typeof body.isUse !== "undefined" || typeof body.is_use !== "undefined" ? Boolean(body.isUse ?? body.is_use) : undefined,
+      is_use:
+        typeof body.isUse !== "undefined" || typeof body.is_use !== "undefined"
+          ? Boolean(body.isUse ?? body.is_use)
+          : undefined,
       up_time: Math.floor(Date.now() / 1000),
     };
-    const updated = await this.prisma.e_card.update({ where: { card_id: id }, data });
+    const updated = await this.prisma.e_card.update({
+      where: { card_id: id },
+      data,
+    });
     return { code: 0, message: "success", data: { cardId: updated.card_id } };
   }
 
@@ -154,11 +193,16 @@ export class AdminECardCompatController {
     if (!cardId) return { code: 400, message: "id required", data: null };
 
     // 店铺隔离
-    const card = await this.prisma.e_card.findUnique({ where: { card_id: cardId } });
+    const card = await this.prisma.e_card.findUnique({
+      where: { card_id: cardId },
+    });
     if (!card) return { code: 404, message: "not found", data: null };
     const shopId = await this.panel.getUserShopId(req.user?.userId);
     if (shopId > 0) {
-      const group = await this.prisma.e_card_group.findFirst({ where: { group_id: card.group_id, shop_id: shopId }, select: { group_id: true } });
+      const group = await this.prisma.e_card_group.findFirst({
+        where: { group_id: card.group_id, shop_id: shopId },
+        select: { group_id: true },
+      });
       if (!group) return { code: 404, message: "not found", data: null };
     }
 
@@ -183,23 +227,38 @@ export class AdminECardCompatController {
       cardPwd: "card_pwd",
     };
     const dbField = map[field];
-    if (!dbField) return { code: 400, message: "unsupported field", data: null };
+    if (!dbField)
+      return { code: 400, message: "unsupported field", data: null };
 
-    const card = await this.prisma.e_card.findUnique({ where: { card_id: id } });
+    const card = await this.prisma.e_card.findUnique({
+      where: { card_id: id },
+    });
     if (!card) return { code: 404, message: "not found", data: null };
     const shopId = await this.panel.getUserShopId(req.user?.userId);
     if (shopId > 0) {
-      const group = await this.prisma.e_card_group.findFirst({ where: { group_id: card.group_id, shop_id: shopId }, select: { group_id: true } });
+      const group = await this.prisma.e_card_group.findFirst({
+        where: { group_id: card.group_id, shop_id: shopId },
+        select: { group_id: true },
+      });
       if (!group) return { code: 404, message: "not found", data: null };
     }
 
     let normalized = val;
     if (dbField === "is_use") {
       const v = String(val).toLowerCase();
-      normalized = v === "1" || v === "true" || v === "yes" || v === "on" || val === 1 || val === true;
+      normalized =
+        v === "1" ||
+        v === "true" ||
+        v === "yes" ||
+        v === "on" ||
+        val === 1 ||
+        val === true;
     }
 
-    await this.prisma.e_card.update({ where: { card_id: id }, data: { [dbField]: normalized, up_time: Math.floor(Date.now() / 1000) } });
+    await this.prisma.e_card.update({
+      where: { card_id: id },
+      data: { [dbField]: normalized, up_time: Math.floor(Date.now() / 1000) },
+    });
     return { code: 0, message: "success", data: true };
   }
 }

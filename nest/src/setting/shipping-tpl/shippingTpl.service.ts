@@ -19,7 +19,13 @@ export class ShippingTplService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(queryDto: ShippingTplQueryDto) {
-    const { keyword, page = 1, size = 15, sortField = "tpl_id", sortOrder = "desc" } = queryDto;
+    const {
+      keyword,
+      page = 1,
+      size = 15,
+      sortField = "tpl_id",
+      sortOrder = "desc",
+    } = queryDto;
     const offset = Math.max(0, (page - 1) * size);
 
     // Prisma schema marks shipping_tpl as @@ignore (no delegate). Use raw SQL safely.
@@ -32,7 +38,8 @@ export class ShippingTplService {
       pricing_type: "pricing_type",
       is_free: "is_free",
     };
-    const orderCol = allowedSortMap[String(sortField).toLowerCase()] || "shipping_tpl_id";
+    const orderCol =
+      allowedSortMap[String(sortField).toLowerCase()] || "shipping_tpl_id";
     const orderDir = String(sortOrder).toLowerCase() === "asc" ? "ASC" : "DESC";
 
     const whereSql = keyword ? "WHERE `shipping_tpl_name` LIKE ?" : "";
@@ -47,11 +54,16 @@ export class ShippingTplService {
     const countSql = `SELECT COUNT(*) as total FROM \`shipping_tpl\` ${whereSql}`;
 
     const [records, countRows]: [any[], any[]] = await Promise.all([
-      this.prisma.$queryRawUnsafe(listSql, ...whereParams, Number(size), Number(offset)),
+      this.prisma.$queryRawUnsafe(
+        listSql,
+        ...whereParams,
+        Number(size),
+        Number(offset),
+      ),
       this.prisma.$queryRawUnsafe(countSql, ...whereParams),
     ]);
 
-    const total = Number((countRows?.[0]?.total) || 0);
+    const total = Number(countRows?.[0]?.total || 0);
     return { records, total, page, size, totalPages: Math.ceil(total / size) };
   }
 
@@ -97,11 +109,16 @@ export class ShippingTplService {
   }
 
   async createCompat(data: any) {
-    const name = (data?.name || data?.shipping_tpl_name || data?.Name || "").toString().trim();
+    const name = (data?.name || data?.shipping_tpl_name || data?.Name || "")
+      .toString()
+      .trim();
     if (!name) {
       throw new BadRequestException("名称不能为空");
     }
-    const isDefault = Number(data?.is_default ?? data?.isDefault ?? data?.IsDefault ?? 0) === 1 ? 1 : 0;
+    const isDefault =
+      Number(data?.is_default ?? data?.isDefault ?? data?.IsDefault ?? 0) === 1
+        ? 1
+        : 0;
     const isFree = Number(data?.is_free ?? data?.isFree ?? 0) === 1 ? 1 : 0;
     const pricingType = Number(data?.pricing_type ?? 1) || 1;
     const shopId = Number(data?.shopId ?? data?.shop_id ?? 0) || 0;
@@ -144,10 +161,7 @@ export class ShippingTplService {
       fields.push("is_free = ?");
       params.push(Number(data?.is_free ?? data?.isFree ?? 0) === 1 ? 1 : 0);
     }
-    if (
-      data?.pricing_type !== undefined ||
-      data?.pricingType !== undefined
-    ) {
+    if (data?.pricing_type !== undefined || data?.pricingType !== undefined) {
       fields.push("pricing_type = ?");
       params.push(Number(data?.pricing_type ?? data?.pricingType ?? 1) || 1);
     }
@@ -158,9 +172,8 @@ export class ShippingTplService {
     ) {
       fields.push("is_default = ?");
       params.push(
-        Number(
-          data?.is_default ?? data?.isDefault ?? data?.IsDefault ?? 0,
-        ) === 1
+        Number(data?.is_default ?? data?.isDefault ?? data?.IsDefault ?? 0) ===
+          1
           ? 1
           : 0,
       );

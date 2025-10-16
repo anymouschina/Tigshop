@@ -198,7 +198,8 @@ export class UserRechargeOrderService {
     const updateData: any = {};
 
     if (updateDto.status !== undefined) {
-      const toPaid = Number(updateDto.status) === (RechargeOrderStatus.PAID as number);
+      const toPaid =
+        Number(updateDto.status) === (RechargeOrderStatus.PAID as number);
       const wasPaid = !!order.status;
       updateData.status = toPaid ? true : false;
 
@@ -231,7 +232,11 @@ export class UserRechargeOrderService {
       select: { user_id: true, username: true, email: true, mobile: true },
     });
 
-    return { ...updatedOrder, user: user || null, username: user?.username || "" };
+    return {
+      ...updatedOrder,
+      user: user || null,
+      username: user?.username || "",
+    };
   }
 
   /**
@@ -315,7 +320,8 @@ export class UserRechargeOrderService {
     if (queryDto) {
       if (queryDto.status !== undefined) {
         // schema 使用 Boolean 状态：已支付 => true，其他 => false
-        where.status = Number(queryDto.status) === (RechargeOrderStatus.PAID as number);
+        where.status =
+          Number(queryDto.status) === (RechargeOrderStatus.PAID as number);
       }
       if (queryDto.userId) {
         where.user_id = queryDto.userId;
@@ -465,11 +471,17 @@ export class UserRechargeOrderService {
    * @param userId 当前用户
    * @returns order_id
    */
-  async rechargeOperation(id: number, amount: number, userId: number): Promise<number> {
+  async rechargeOperation(
+    id: number,
+    amount: number,
+    userId: number,
+  ): Promise<number> {
     let finalAmount = amount;
     if (id && id > 0) {
       // 查找充值设置
-      const setting = await this.prisma.recharge_setting.findUnique({ where: { recharge_id: id } });
+      const setting = await this.prisma.recharge_setting.findUnique({
+        where: { recharge_id: id },
+      });
       if (!setting) {
         throw new BadRequestException("充值设置不存在");
       }
@@ -497,9 +509,16 @@ export class UserRechargeOrderService {
   /**
    * 兼容 PHP：创建充值支付，返回模拟第三方支付参数
    */
-  async createRechargePayment(params: { orderId: number; payType: string; userId: number; code?: string }) {
+  async createRechargePayment(params: {
+    orderId: number;
+    payType: string;
+    userId: number;
+    code?: string;
+  }) {
     const { orderId, payType, userId } = params;
-    const order = await this.prisma.user_recharge_order.findUnique({ where: { order_id: orderId } });
+    const order = await this.prisma.user_recharge_order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order || order.user_id !== userId) {
       throw new NotFoundException("订单不存在");
     }

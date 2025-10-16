@@ -58,9 +58,18 @@ export class AdminApiBrandController {
     const size = Number(query.size) || 15;
     const mappedFilter = {
       keyword: query.keyword ?? "",
-      is_show: query.isShow !== undefined && query.isShow !== "" ? Number(query.isShow) : undefined,
-      status: query.status !== undefined && query.status !== "" ? Number(query.status) : undefined,
-      brand_is_hot: query.brandIsHot !== undefined && query.brandIsHot !== "" ? Number(query.brandIsHot) : undefined,
+      is_show:
+        query.isShow !== undefined && query.isShow !== ""
+          ? Number(query.isShow)
+          : undefined,
+      status:
+        query.status !== undefined && query.status !== ""
+          ? Number(query.status)
+          : undefined,
+      brand_is_hot:
+        query.brandIsHot !== undefined && query.brandIsHot !== ""
+          ? Number(query.brandIsHot)
+          : undefined,
       first_word: query.firstWord || undefined,
       shop_id: query.shopId ? Number(query.shopId) : undefined,
       sort_field: query.sortField || undefined,
@@ -90,7 +99,9 @@ export class AdminApiBrandController {
           status: r.check_status,
           statusText: r.status_text,
           rejectRemark: r.reject_remark,
-          shop: r.shop ? { shopId: r.shop.shop_id, shopTitle: r.shop.shop_title } : undefined,
+          shop: r.shop
+            ? { shopId: r.shop.shop_id, shopTitle: r.shop.shop_title }
+            : undefined,
         })),
         filter: { page },
         total,
@@ -217,7 +228,9 @@ export class AdminApiBrandController {
   @ApiOperation({ summary: "批量操作品牌（admin）" })
   async batch(@Body() body: any) {
     const type = body.type;
-    const ids = Array.isArray(body.ids) ? body.ids.map((n: any) => Number(n)) : [];
+    const ids = Array.isArray(body.ids)
+      ? body.ids.map((n: any) => Number(n))
+      : [];
     if (type === "del" && ids.length > 0) {
       await this.brandService.batchDelete(ids);
       return { code: 0, message: "success" };

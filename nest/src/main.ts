@@ -24,7 +24,10 @@ async function bootstrap() {
   // 设置日志级别
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: process.env.NODE_ENV === "development" ? ["error", "warn", "log", "debug", "verbose"] : ["error", "warn", "log"],
+    logger:
+      process.env.NODE_ENV === "development"
+        ? ["error", "warn", "log", "debug", "verbose"]
+        : ["error", "warn", "log"],
   });
 
   // 注册自定义 ws 适配器（使用 ws 库，而不是 socket.io），复用同一个 HTTP server
@@ -37,7 +40,10 @@ async function bootstrap() {
     wsAdapter.setHttpServer(app.getHttpServer());
   } catch (e) {
     // 理论上此处应该总是成功；若失败仍然继续，后续 listen 后不会再做重绑，避免重复 server
-    new Logger('Application').warn('Pre-binding httpServer to WsAdapter failed (will fallback standalone): ' + (e as any)?.message);
+    new Logger("Application").warn(
+      "Pre-binding httpServer to WsAdapter failed (will fallback standalone): " +
+        (e as any)?.message,
+    );
   }
   app.useWebSocketAdapter(wsAdapter);
 

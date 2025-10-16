@@ -16,7 +16,10 @@ export class DecorateDiscreteCompatController {
   @Get("detail")
   @ApiOperation({ summary: "获取离散装修片段详情（兼容）" })
   @Authorities("decorateDiscreteDetail")
-  async detail(@Query("decorateSn") decorateSn: string, @Query("shopId") shopId?: number) {
+  async detail(
+    @Query("decorateSn") decorateSn: string,
+    @Query("shopId") shopId?: number,
+  ) {
     if (!decorateSn) {
       return { code: 0, message: "success", data: null };
     }

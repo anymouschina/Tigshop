@@ -39,7 +39,7 @@ import { AdminUserCompanyCompatController } from "./admin-user-company-compat.co
     UserCouponModule,
     UserHistoryModule,
     UploadModule,
-  UserCommentModule, // 注册用户评论相关路由
+    UserCommentModule, // 注册用户评论相关路由
   ],
   controllers: [
     UserController,

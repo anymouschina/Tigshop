@@ -20,7 +20,12 @@ import { RedisModule } from "../redis/redis.module";
       signOptions: { expiresIn: "24h" },
     }),
   ],
-  controllers: [AdminController, AdminApiCsrfController, AdminLoginController, AdminAccountCompatController],
+  controllers: [
+    AdminController,
+    AdminApiCsrfController,
+    AdminLoginController,
+    AdminAccountCompatController,
+  ],
   providers: [AdminService],
   exports: [AdminService],
 })

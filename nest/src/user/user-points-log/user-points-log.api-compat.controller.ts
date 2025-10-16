@@ -25,7 +25,9 @@ export class UserPointsLogApiCompatController {
     };
     // 仅当前用户的日志
     const all = await this.svc.getFilterResult(filter);
-    const rows = (all as any[]).filter((r) => Number(r.user_id) === Number(userId));
+    const rows = (all as any[]).filter(
+      (r) => Number(r.user_id) === Number(userId),
+    );
     const total = rows.length;
     const start = (filter.page - 1) * filter.size;
     const paged = rows.slice(start, start + filter.size);

@@ -20,7 +20,11 @@ export class AdminUserMessageLogCompatController {
     const page = Number(q.page || 1);
     const size = Number(q.size || 15);
     const sortField = (q.sort_field ?? "message_log_id").toString();
-    const sortOrder = ((q.sort_order ?? "desc").toString().toLowerCase() === "asc" ? "asc" : "desc") as any;
+    const sortOrder = (
+      (q.sort_order ?? "desc").toString().toLowerCase() === "asc"
+        ? "asc"
+        : "desc"
+    ) as any;
     const keyword = (q.keyword || "").trim();
 
     const where: any = {};
@@ -34,11 +38,26 @@ export class AdminUserMessageLogCompatController {
     const orderBy: any = { [sortField]: sortOrder };
     const skip = (page - 1) * size;
     const [rows, total] = await Promise.all([
-      (this.prisma as any).user_message_log.findMany({ where, orderBy, skip, take: size }),
+      (this.prisma as any).user_message_log.findMany({
+        where,
+        orderBy,
+        skip,
+        take: size,
+      }),
       (this.prisma as any).user_message_log.count({ where }),
     ]);
 
-    return { code: 0, message: "success", data: { records: rows, total, size, current: page, pages: Math.ceil(total / size) } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: rows,
+        total,
+        size,
+        current: page,
+        pages: Math.ceil(total / size),
+      },
+    };
   }
 
   @Get("detail")
@@ -47,7 +66,9 @@ export class AdminUserMessageLogCompatController {
   async detail(@Query("id") idStr?: string) {
     const id = Number(idStr);
     if (!id) return { code: 0, message: "success", data: null };
-    const item = await (this.prisma as any).user_message_log.findUnique({ where: { message_log_id: id } });
+    const item = await (this.prisma as any).user_message_log.findUnique({
+      where: { message_log_id: id },
+    });
     return { code: 0, message: "success", data: item };
   }
 
@@ -66,8 +87,14 @@ export class AdminUserMessageLogCompatController {
       send_time: now,
       is_recall: 0,
     };
-    const created = await (this.prisma as any).user_message_log.create({ data });
-    return { code: 0, message: "success", data: { id: created.message_log_id } };
+    const created = await (this.prisma as any).user_message_log.create({
+      data,
+    });
+    return {
+      code: 0,
+      message: "success",
+      data: { id: created.message_log_id },
+    };
   }
 
   @Post("update")
@@ -85,8 +112,13 @@ export class AdminUserMessageLogCompatController {
       user_rank: "user_rank",
       user_ids: "user_ids",
     };
-    Object.keys(map).forEach((k) => dto[k] !== undefined && (data[map[k]] = dto[k]));
-    await (this.prisma as any).user_message_log.update({ where: { message_log_id: id }, data });
+    Object.keys(map).forEach(
+      (k) => dto[k] !== undefined && (data[map[k]] = dto[k]),
+    );
+    await (this.prisma as any).user_message_log.update({
+      where: { message_log_id: id },
+      data,
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -96,7 +128,9 @@ export class AdminUserMessageLogCompatController {
   async del(@Body("id") id: any) {
     const num = Number(id);
     if (!num) return { code: 400, message: "id required", data: null };
-    await (this.prisma as any).user_message_log.delete({ where: { message_log_id: num } });
+    await (this.prisma as any).user_message_log.delete({
+      where: { message_log_id: num },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -106,7 +140,10 @@ export class AdminUserMessageLogCompatController {
   async recall(@Body("id") id: any) {
     const num = Number(id);
     if (!num) return { code: 400, message: "id required", data: null };
-    await (this.prisma as any).user_message_log.update({ where: { message_log_id: num }, data: { is_recall: 1 } });
+    await (this.prisma as any).user_message_log.update({
+      where: { message_log_id: num },
+      data: { is_recall: 1 },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -114,12 +151,19 @@ export class AdminUserMessageLogCompatController {
   @ApiOperation({ summary: "批量操作（兼容：del/recall）" })
   @Authorities("userMessageLogModifyManage")
   async batch(@Body() body: any) {
-    const ids: number[] = Array.isArray(body.ids) ? body.ids.map((x: any) => Number(x)).filter(Boolean) : [];
+    const ids: number[] = Array.isArray(body.ids)
+      ? body.ids.map((x: any) => Number(x)).filter(Boolean)
+      : [];
     if (!ids.length) return { code: 400, message: "未选择项目", data: null };
     if (body.type === "del") {
-      await (this.prisma as any).user_message_log.deleteMany({ where: { message_log_id: { in: ids } } });
+      await (this.prisma as any).user_message_log.deleteMany({
+        where: { message_log_id: { in: ids } },
+      });
     } else if (body.type === "recall") {
-      await (this.prisma as any).user_message_log.updateMany({ where: { message_log_id: { in: ids } }, data: { is_recall: 1 } });
+      await (this.prisma as any).user_message_log.updateMany({
+        where: { message_log_id: { in: ids } },
+        data: { is_recall: 1 },
+      });
     } else {
       return { code: 400, message: "#type 错误", data: null };
     }

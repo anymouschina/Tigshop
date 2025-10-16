@@ -37,7 +37,10 @@ export class ProductPricingService {
     };
   }
 
-  async getAmount(productId: number, items: Array<{ skuId: number; num: number }>) {
+  async getAmount(
+    productId: number,
+    items: Array<{ skuId: number; num: number }>,
+  ) {
     let count = 0;
     let total = 0;
     for (const it of items) {
@@ -56,7 +59,8 @@ export class ProductPricingService {
   }
 
   async getBatchAvailability(skuIds: number[]) {
-    if (skuIds.length === 0) return {} as Record<string, { price: string; stock: number }>;
+    if (skuIds.length === 0)
+      return {} as Record<string, { price: string; stock: number }>;
     const skus = await this.prisma.product_sku.findMany({
       where: { sku_id: { in: skuIds } },
       select: { sku_id: true, sku_price: true, sku_stock: true },
@@ -64,7 +68,10 @@ export class ProductPricingService {
     const result: Record<string, { price: string; stock: number }> = {};
     for (const sku of skus) {
       const key = String(sku.sku_id);
-      result[key] = { price: toMoneyString(sku.sku_price), stock: Number(sku.sku_stock ?? 0) };
+      result[key] = {
+        price: toMoneyString(sku.sku_price),
+        stock: Number(sku.sku_stock ?? 0),
+      };
     }
     return result;
   }
@@ -75,13 +82,19 @@ export class ProductPricingService {
         try {
           const product = await this.prisma.product.findFirst({
             where: { product_id: item.productId },
-            select: { market_price: true, product_price: true, product_stock: true },
+            select: {
+              market_price: true,
+              product_price: true,
+              product_stock: true,
+            },
           });
           const sku = await this.prisma.product_sku.findFirst({
             where: { product_id: item.productId, sku_id: item.skuId },
             select: { sku_price: true, sku_stock: true },
           });
-          const originPrice = Number(product?.market_price || product?.product_price || 0);
+          const originPrice = Number(
+            product?.market_price || product?.product_price || 0,
+          );
           const price = Number((sku?.sku_price ?? product?.product_price) || 0);
           const stock = Number((sku?.sku_stock ?? product?.product_stock) || 0);
           return {
@@ -93,7 +106,14 @@ export class ProductPricingService {
             product_id: item.productId,
           };
         } catch (_) {
-          return { origin_price: 0, price: 0, stock: 0, promotion: null, sku_id: item.skuId, product_id: item.productId };
+          return {
+            origin_price: 0,
+            price: 0,
+            stock: 0,
+            promotion: null,
+            sku_id: item.skuId,
+            product_id: item.productId,
+          };
         }
       }),
     );

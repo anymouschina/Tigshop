@@ -1,12 +1,5 @@
 // @ts-nocheck
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -65,12 +58,17 @@ export class AdminUserWithdrawApplyCompatController {
       if (accountData && typeof accountData === "object") {
         accountData = {
           accountType:
-            accountData.accountType ?? accountData.account_type ?? accountData.type,
+            accountData.accountType ??
+            accountData.account_type ??
+            accountData.type,
           accountName:
-            accountData.accountName ?? accountData.account_name ?? accountData.name,
+            accountData.accountName ??
+            accountData.account_name ??
+            accountData.name,
           accountNo:
             accountData.accountNo ?? accountData.account_no ?? accountData.no,
-          bankName: accountData.bankName ?? accountData.bank_name ?? accountData.bank,
+          bankName:
+            accountData.bankName ?? accountData.bank_name ?? accountData.bank,
         };
       }
       const statusNum = Number(r.status ? 1 : 0);
@@ -128,10 +126,28 @@ export class AdminUserWithdrawApplyCompatController {
     }
     if (accountData && typeof accountData === "object") {
       accountData = {
-        accountName: accountData.accountName ?? accountData.account_name ?? accountData.name ?? null,
-        accountNo: accountData.accountNo ?? accountData.account_no ?? accountData.account ?? null,
-        accountType: Number(accountData.accountType ?? accountData.account_type ?? accountData.type ?? 0) || 0,
-        bankName: accountData.bankName ?? accountData.bank_name ?? accountData.bank ?? null,
+        accountName:
+          accountData.accountName ??
+          accountData.account_name ??
+          accountData.name ??
+          null,
+        accountNo:
+          accountData.accountNo ??
+          accountData.account_no ??
+          accountData.account ??
+          null,
+        accountType:
+          Number(
+            accountData.accountType ??
+              accountData.account_type ??
+              accountData.type ??
+              0,
+          ) || 0,
+        bankName:
+          accountData.bankName ??
+          accountData.bank_name ??
+          accountData.bank ??
+          null,
         identity: accountData.identity ?? null,
       };
     }
@@ -139,14 +155,18 @@ export class AdminUserWithdrawApplyCompatController {
     const statusNum = item.status ? 1 : 0; // Boolean -> 0/1
     const statusType = statusNum === 0 ? "待处理" : "已完成";
     const amountNumDetail = Number(
-      typeof item.amount === "string" ? Number(item.amount) : (item.amount?.toNumber ? item.amount.toNumber() : item.amount || 0)
+      typeof item.amount === "string"
+        ? Number(item.amount)
+        : item.amount?.toNumber
+          ? item.amount.toNumber()
+          : item.amount || 0,
     );
 
     const data = {
       id: item.id,
       userId: item.user_id,
       username: item.user?.username || "",
-  amount: Number(amountNumDetail.toFixed(2)),
+      amount: Number(amountNumDetail.toFixed(2)),
       addTime: mapTime(item.add_time),
       finishedTime: mapTime(item.finished_time),
       postscript: item.postscript || "",
@@ -182,24 +202,33 @@ export class AdminUserWithdrawApplyCompatController {
     const id = Number(body.id);
     if (!id) return { code: 1, message: "缺少 id", data: null };
     // 与 PHP 版对齐：状态仅使用 0(待处理) 1(处理成功/完成) 2(拒绝)
-    const targetStatus = body.status !== undefined ? Number(body.status) : undefined;
-    if (targetStatus === undefined || ![0,1,2].includes(targetStatus)) {
+    const targetStatus =
+      body.status !== undefined ? Number(body.status) : undefined;
+    if (targetStatus === undefined || ![0, 1, 2].includes(targetStatus)) {
       return { code: 1, message: "status 不合法(允许 0|1|2)", data: null };
     }
     const prisma: any = (this as any).userWithdrawApplyService.prisma;
-    const apply = await prisma.user_withdraw_apply.findUnique({ where: { id } });
+    const apply = await prisma.user_withdraw_apply.findUnique({
+      where: { id },
+    });
     if (!apply) return { code: 1, message: "记录不存在", data: null };
-    if (apply.status) { // 已完成(布尔 true) 不允许再次修改
+    if (apply.status) {
+      // 已完成(布尔 true) 不允许再次修改
       return { code: 1, message: "该笔提现申请已完成，不能修改", data: null };
     }
-    const user = apply.user_id ? await prisma.user.findUnique({ where: { user_id: apply.user_id } }) : null;
+    const user = apply.user_id
+      ? await prisma.user.findUnique({ where: { user_id: apply.user_id } })
+      : null;
     if (!user) return { code: 1, message: "用户不存在", data: null };
 
     const now = Math.floor(Date.now() / 1000);
     const amountNum = Number(apply.amount);
 
     // 读取 account_data 中冻结标记
-    let accountDataRaw: any = {}; try { accountDataRaw = apply.account_data ? JSON.parse(apply.account_data) : {}; } catch {}
+    let accountDataRaw: any = {};
+    try {
+      accountDataRaw = apply.account_data ? JSON.parse(apply.account_data) : {};
+    } catch {}
     const freezeApplied = !!accountDataRaw.freezeApplied; // 在创建阶段应该已经冻结、扣减余额
 
     // 余额操作策略：
@@ -221,18 +250,29 @@ export class AdminUserWithdrawApplyCompatController {
 
     const updated = await prisma.$transaction(async (tx: any) => {
       // 更新主记录
-      const upd = await tx.user_withdraw_apply.update({ where: { id }, data: updateData });
+      const upd = await tx.user_withdraw_apply.update({
+        where: { id },
+        data: updateData,
+      });
       // 余额相关
       if (freezeApplied) {
         if (targetStatus === 1) {
           // 完成：减冻结
-          await tx.user.update({ where: { user_id: user.user_id }, data: { frozen_balance: (Number(user.frozen_balance || 0) - amountNum) } });
+          await tx.user.update({
+            where: { user_id: user.user_id },
+            data: {
+              frozen_balance: Number(user.frozen_balance || 0) - amountNum,
+            },
+          });
         } else if (targetStatus === 2) {
           // 拒绝：返还余额 & 减冻结
-            await tx.user.update({ where: { user_id: user.user_id }, data: {
+          await tx.user.update({
+            where: { user_id: user.user_id },
+            data: {
               balance: Number(user.balance) + amountNum,
               frozen_balance: Number(user.frozen_balance || 0) - amountNum,
-            }});
+            },
+          });
         }
       } else if (targetStatus === 2) {
         // 如果未标记冻结仍拒绝，无需资金操作
@@ -244,12 +284,21 @@ export class AdminUserWithdrawApplyCompatController {
             user_id: user.user_id,
             balance: user.balance,
             frozen_balance: user.frozen_balance || 0,
-            new_balance: targetStatus === 2 ? (Number(user.balance) + amountNum) : user.balance,
-            new_frozen_balance: targetStatus === 1 || targetStatus === 2 ? (Number(user.frozen_balance || 0) - amountNum) : user.frozen_balance || 0,
+            new_balance:
+              targetStatus === 2
+                ? Number(user.balance) + amountNum
+                : user.balance,
+            new_frozen_balance:
+              targetStatus === 1 || targetStatus === 2
+                ? Number(user.frozen_balance || 0) - amountNum
+                : user.frozen_balance || 0,
             change_time: now,
-            change_desc: targetStatus === 1 ? `提现完成 扣减冻结 ${amountNum.toFixed(2)}` : `提现拒绝 返还余额 ${amountNum.toFixed(2)}`,
+            change_desc:
+              targetStatus === 1
+                ? `提现完成 扣减冻结 ${amountNum.toFixed(2)}`
+                : `提现拒绝 返还余额 ${amountNum.toFixed(2)}`,
             change_type: 0,
-          }
+          },
         });
       }
       return upd;
@@ -258,11 +307,22 @@ export class AdminUserWithdrawApplyCompatController {
     // 解析 account_data 获取 rawStatus
     let rawStatus: number | undefined = undefined;
     try {
-      const parsed = updated.account_data ? JSON.parse(updated.account_data) : {};
+      const parsed = updated.account_data
+        ? JSON.parse(updated.account_data)
+        : {};
       rawStatus = Number(parsed.rawStatus);
     } catch {}
-    const actualStatusCode = rawStatus !== undefined && !isNaN(rawStatus) ? rawStatus : (updated.status ? 1 : 0);
-    const statusTypeMap: Record<number, string> = { 0: "待处理", 1: "已完成", 2: "已拒绝" };
+    const actualStatusCode =
+      rawStatus !== undefined && !isNaN(rawStatus)
+        ? rawStatus
+        : updated.status
+          ? 1
+          : 0;
+    const statusTypeMap: Record<number, string> = {
+      0: "待处理",
+      1: "已完成",
+      2: "已拒绝",
+    };
     const mapTime = (sec?: number) => {
       const s = Number(sec || 0);
       if (!s) return null;
@@ -271,27 +331,51 @@ export class AdminUserWithdrawApplyCompatController {
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     };
     const amountNumOut = Number(
-      typeof updated.amount === "string" ? Number(updated.amount) : (updated.amount?.toNumber ? updated.amount.toNumber() : updated.amount || 0)
+      typeof updated.amount === "string"
+        ? Number(updated.amount)
+        : updated.amount?.toNumber
+          ? updated.amount.toNumber()
+          : updated.amount || 0,
     );
     let accountData: any = {};
-    try { if (updated.account_data) accountData = JSON.parse(updated.account_data); } catch {}
+    try {
+      if (updated.account_data) accountData = JSON.parse(updated.account_data);
+    } catch {}
     accountData = {
-      accountName: accountData.accountName ?? accountData.account_name ?? accountData.name ?? null,
-      accountNo: accountData.accountNo ?? accountData.account_no ?? accountData.account ?? null,
-      accountType: Number(accountData.accountType ?? accountData.account_type ?? accountData.type ?? 0) || 0,
-      bankName: accountData.bankName ?? accountData.bank_name ?? accountData.bank ?? null,
+      accountName:
+        accountData.accountName ??
+        accountData.account_name ??
+        accountData.name ??
+        null,
+      accountNo:
+        accountData.accountNo ??
+        accountData.account_no ??
+        accountData.account ??
+        null,
+      accountType:
+        Number(
+          accountData.accountType ??
+            accountData.account_type ??
+            accountData.type ??
+            0,
+        ) || 0,
+      bankName:
+        accountData.bankName ??
+        accountData.bank_name ??
+        accountData.bank ??
+        null,
       identity: accountData.identity ?? null,
     };
     const formatted = {
       id: updated.id,
       userId: updated.user_id,
       username: updated.user?.username || "",
-  amount: Number(amountNumOut.toFixed(2)),
+      amount: Number(amountNumOut.toFixed(2)),
       addTime: mapTime(updated.add_time),
       finishedTime: mapTime(updated.finished_time),
       postscript: updated.postscript || "",
-  status: actualStatusCode, // 与 PHP 输出保持：0/1/2
-  statusType: statusTypeMap[actualStatusCode] || "待处理",
+      status: actualStatusCode, // 与 PHP 输出保持：0/1/2
+      statusType: statusTypeMap[actualStatusCode] || "待处理",
       accountData,
     };
     return { code: 0, message: "success", data: formatted };

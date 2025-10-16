@@ -1,8 +1,19 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Request } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+} from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { UserMessageService } from "./user-message.service";
-import { GetUserMessageListDto, UpdateMessageReadDto } from "./dto/user-message.dto";
+import {
+  GetUserMessageListDto,
+  UpdateMessageReadDto,
+} from "./dto/user-message.dto";
 import { ResponseUtil } from "../../common/utils/response.util";
 
 @ApiTags("用户站内信（API兼容）")
@@ -16,7 +27,10 @@ export class UserMessageApiCompatController {
   @Get("list")
   async getMessageList(@Request() req, @Query() query: GetUserMessageListDto) {
     const userId = req.user.user_id || req.user.userId || req.user.sub;
-    const result = await this.userMessageService.getUserMessageList(userId, query);
+    const result = await this.userMessageService.getUserMessageList(
+      userId,
+      query,
+    );
     return ResponseUtil.success(result);
   }
 
@@ -33,7 +47,9 @@ export class UserMessageApiCompatController {
   async updateMessageRead(@Request() req, @Body() body: UpdateMessageReadDto) {
     const userId = req.user.user_id || req.user.userId || req.user.sub;
     const ok = await this.userMessageService.markMessageAsRead(body.id, userId);
-    return ok ? ResponseUtil.success() : ResponseUtil.error("标记失败或消息不存在");
+    return ok
+      ? ResponseUtil.success()
+      : ResponseUtil.error("标记失败或消息不存在");
   }
 
   @ApiOperation({ summary: "删除消息(兼容)" })
@@ -41,6 +57,8 @@ export class UserMessageApiCompatController {
   async deleteMessage(@Request() req, @Body() body: UpdateMessageReadDto) {
     const userId = req.user.user_id || req.user.userId || req.user.sub;
     const ok = await this.userMessageService.deleteMessage(body.id, userId);
-    return ok ? ResponseUtil.success() : ResponseUtil.error("删除失败或消息不存在");
+    return ok
+      ? ResponseUtil.success()
+      : ResponseUtil.error("删除失败或消息不存在");
   }
 }

@@ -23,7 +23,9 @@ export class UserStatisticsService {
 
   private parseRange(query: { start_date?: string; end_date?: string }) {
     const now = new Date();
-    const start = query?.start_date ? new Date(query.start_date) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const start = query?.start_date
+      ? new Date(query.start_date)
+      : new Date(now.getFullYear(), now.getMonth(), 1);
     const end = query?.end_date ? new Date(query.end_date) : new Date();
     const startTs = this.startOfDayTs(start);
     const endTs = this.endOfDayTs(end);
@@ -37,34 +39,47 @@ export class UserStatisticsService {
 
   async getNewUsersToday(shopId: number) {
     const startTs = this.startOfDayTs(new Date());
-    return this.prisma.user.count({ where: { reg_time: { gte: startTs } } as any });
+    return this.prisma.user.count({
+      where: { reg_time: { gte: startTs } } as any,
+    });
   }
 
   async getActiveUsers(shopId: number) {
     // 近7天登录过的用户
     const sinceTs = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
-    return this.prisma.user.count({ where: { last_login: { gte: sinceTs } } as any });
+    return this.prisma.user.count({
+      where: { last_login: { gte: sinceTs } } as any,
+    });
   }
 
   async getUserGrowth(shopId: number) {
     // 最近30天注册用户数
     const sinceTs = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
-    const count = await this.prisma.user.count({ where: { reg_time: { gte: sinceTs } } as any });
+    const count = await this.prisma.user.count({
+      where: { reg_time: { gte: sinceTs } } as any,
+    });
     return { last30Days: count } as any;
   }
 
   async getUserTrend(
     shopId: number,
-    query: { period?: "day" | "week" | "month" | "year"; start_date?: string; end_date?: string },
+    query: {
+      period?: "day" | "week" | "month" | "year";
+      start_date?: string;
+      end_date?: string;
+    },
   ) {
     const { period = "day" } = query || {};
     const { startTs, endTs } = this.parseRange(query || {});
 
     // 使用 user.reg_time 统计注册趋势（平台维度）
     let groupExpr = Prisma.sql`DATE(FROM_UNIXTIME(reg_time))`;
-    if (period === "month") groupExpr = Prisma.sql`DATE_FORMAT(FROM_UNIXTIME(reg_time), '%Y-%m')`;
-    if (period === "year") groupExpr = Prisma.sql`DATE_FORMAT(FROM_UNIXTIME(reg_time), '%Y')`;
-    if (period === "week") groupExpr = Prisma.sql`YEARWEEK(FROM_UNIXTIME(reg_time), 1)`; // ISO 周
+    if (period === "month")
+      groupExpr = Prisma.sql`DATE_FORMAT(FROM_UNIXTIME(reg_time), '%Y-%m')`;
+    if (period === "year")
+      groupExpr = Prisma.sql`DATE_FORMAT(FROM_UNIXTIME(reg_time), '%Y')`;
+    if (period === "week")
+      groupExpr = Prisma.sql`YEARWEEK(FROM_UNIXTIME(reg_time), 1)`; // ISO 周
 
     const rows = (await this.prisma.$queryRawUnsafe(
       `SELECT ${period === "week" ? "YEARWEEK(FROM_UNIXTIME(reg_time), 1)" : period === "month" ? "DATE_FORMAT(FROM_UNIXTIME(reg_time), '%Y-%m')" : period === "year" ? "DATE_FORMAT(FROM_UNIXTIME(reg_time), '%Y')" : "DATE(FROM_UNIXTIME(reg_time))"} AS period, COUNT(*) AS count
@@ -76,7 +91,10 @@ export class UserStatisticsService {
       endTs,
     )) as Array<{ period: any; count: any }>;
 
-    return rows.map((r) => ({ period: String(r.period), count: Number(r.count) }));
+    return rows.map((r) => ({
+      period: String(r.period),
+      count: Number(r.count),
+    }));
   }
 
   async getUserDistribution(
@@ -94,7 +112,10 @@ export class UserStatisticsService {
          LIMIT 50`,
         shopId,
       )) as Array<{ region: string; userCount: any }>;
-      return rows.map((r) => ({ name: r.region || "未知", value: Number(r.userCount) }));
+      return rows.map((r) => ({
+        name: r.region || "未知",
+        value: Number(r.userCount),
+      }));
     }
 
     if (type === "source") {
@@ -107,7 +128,10 @@ export class UserStatisticsService {
          ORDER BY userCount DESC`,
         shopId,
       )) as Array<{ source: string; userCount: any }>;
-      return rows.map((r) => ({ name: r.source || "unknown", value: Number(r.userCount) }));
+      return rows.map((r) => ({
+        name: r.source || "unknown",
+        value: Number(r.userCount),
+      }));
     }
 
     // 设备分布暂无数据来源
@@ -118,7 +142,10 @@ export class UserStatisticsService {
     const rows = (await this.prisma.$queryRawUnsafe(
       `SELECT rank_id AS rankId, COUNT(*) AS userCount FROM \`user\` GROUP BY rank_id ORDER BY userCount DESC`,
     )) as Array<{ rankId: number; userCount: any }>;
-    return rows.map((r) => ({ rankId: Number(r.rankId), count: Number(r.userCount) }));
+    return rows.map((r) => ({
+      rankId: Number(r.rankId),
+      count: Number(r.userCount),
+    }));
   }
 
   async getUserActivity(shopId: number, period: "day" | "week" | "month") {
@@ -159,7 +186,8 @@ export class UserStatisticsService {
       now,
     )) as Array<{ user_id: number }>;
 
-    if (currentUsers.length === 0) return { retentionRate: 0, currentUsers: 0, retainedUsers: 0 } as any;
+    if (currentUsers.length === 0)
+      return { retentionRate: 0, currentUsers: 0, retainedUsers: 0 } as any;
 
     const prevUsers = (await this.prisma.$queryRawUnsafe(
       `SELECT DISTINCT o.user_id FROM \`order\` o WHERE o.is_del = 0 AND o.shop_id = ? AND o.add_time BETWEEN ? AND ? AND o.user_id > 0`,
@@ -171,12 +199,21 @@ export class UserStatisticsService {
     const prevSet = new Set(prevUsers.map((u) => u.user_id));
     const retained = currentUsers.filter((u) => prevSet.has(u.user_id)).length;
     const rate = currentUsers.length ? retained / currentUsers.length : 0;
-    return { retentionRate: rate, currentUsers: currentUsers.length, retainedUsers: retained } as any;
+    return {
+      retentionRate: rate,
+      currentUsers: currentUsers.length,
+      retainedUsers: retained,
+    } as any;
   }
 
   async exportUserStatistics(
     shopId: number,
-    query: { type: "overview" | "trend" | "distribution"; format?: "excel" | "csv"; start_date?: string; end_date?: string },
+    query: {
+      type: "overview" | "trend" | "distribution";
+      format?: "excel" | "csv";
+      start_date?: string;
+      end_date?: string;
+    },
   ) {
     const fmt = (query.format || "csv").toLowerCase();
     const type = query.type;
@@ -196,7 +233,10 @@ export class UserStatisticsService {
       ];
     } else if (type === "trend") {
       const trend = await this.getUserTrend(shopId, query as any);
-      rows = (trend as any[]).map((r) => ({ period: r.period, count: r.count }));
+      rows = (trend as any[]).map((r) => ({
+        period: r.period,
+        count: r.count,
+      }));
     } else if (type === "distribution") {
       const region = await this.getUserDistribution(shopId, "region");
       rows = (region as any[]).map((r) => ({ name: r.name, value: r.value }));

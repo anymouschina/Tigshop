@@ -23,15 +23,30 @@ export class AdminMemberCompatController {
     const isPage = query.is_page == 0 ? 0 : 1;
 
     const keyword = (query.keyword || "").trim();
-    const fromTag = query.from_tag !== undefined ? Number(query.from_tag) : (query.fromTag !== undefined ? Number(query.fromTag) : undefined);
-    const rankId = query.rank_id !== undefined ? Number(query.rank_id) : (query.rankId !== undefined ? Number(query.rankId) : undefined);
+    const fromTag =
+      query.from_tag !== undefined
+        ? Number(query.from_tag)
+        : query.fromTag !== undefined
+          ? Number(query.fromTag)
+          : undefined;
+    const rankId =
+      query.rank_id !== undefined
+        ? Number(query.rank_id)
+        : query.rankId !== undefined
+          ? Number(query.rankId)
+          : undefined;
     const balanceRaw = query.balance; // 可为阈值，或 1/true 表示 >0
-    const pointsGt = query.points_gt !== undefined ? Number(query.points_gt) : undefined;
-    const pointsLt = query.points_lt !== undefined ? Number(query.points_lt) : undefined;
+    const pointsGt =
+      query.points_gt !== undefined ? Number(query.points_gt) : undefined;
+    const pointsLt =
+      query.points_lt !== undefined ? Number(query.points_lt) : undefined;
 
     // 排序白名单
     const sortField = (query.sort_field || "user_id").toString();
-    const sortOrder = (query.sort_order || "desc").toString().toLowerCase() === "asc" ? "asc" : "desc";
+    const sortOrder =
+      (query.sort_order || "desc").toString().toLowerCase() === "asc"
+        ? "asc"
+        : "desc";
     const sortWhitelist: Record<string, string> = {
       user_id: "user_id",
       reg_time: "reg_time",
@@ -51,8 +66,10 @@ export class AdminMemberCompatController {
       ];
     }
     // PHP 行为：仅当 >0 时才应用来源/等级筛选
-    if (fromTag !== undefined && !Number.isNaN(fromTag) && fromTag > 0) where.from_tag = fromTag;
-    if (rankId !== undefined && !Number.isNaN(rankId) && rankId > 0) where.rank_id = rankId;
+    if (fromTag !== undefined && !Number.isNaN(fromTag) && fromTag > 0)
+      where.from_tag = fromTag;
+    if (rankId !== undefined && !Number.isNaN(rankId) && rankId > 0)
+      where.rank_id = rankId;
 
     // 余额筛选：支持传阈值（balance=100 表示 >100），或传 1/true 表示 >0
     if (balanceRaw !== undefined) {
@@ -64,10 +81,14 @@ export class AdminMemberCompatController {
         if (!Number.isNaN(balNum)) where.balance = { gt: balNum };
       }
     }
-    if (pointsGt !== undefined && !Number.isNaN(pointsGt)) where.points = { ...(where.points || {}), gt: pointsGt };
-    if (pointsLt !== undefined && !Number.isNaN(pointsLt)) where.points = { ...(where.points || {}), lt: pointsLt };
+    if (pointsGt !== undefined && !Number.isNaN(pointsGt))
+      where.points = { ...(where.points || {}), gt: pointsGt };
+    if (pointsLt !== undefined && !Number.isNaN(pointsLt))
+      where.points = { ...(where.points || {}), lt: pointsLt };
 
-    const orderBy: any = sortWhitelist[sortField] ? { [sortWhitelist[sortField]]: sortOrder } : { user_id: "desc" };
+    const orderBy: any = sortWhitelist[sortField]
+      ? { [sortWhitelist[sortField]]: sortOrder }
+      : { user_id: "desc" };
 
     const select = {
       user_id: true,
@@ -92,19 +113,36 @@ export class AdminMemberCompatController {
 
     const skip = (page - 1) * size;
     const [records, total] = await Promise.all([
-      this.prisma.user.findMany({ where, orderBy, skip: isPage ? skip : 0, take: isPage ? size : undefined, select }),
+      this.prisma.user.findMany({
+        where,
+        orderBy,
+        skip: isPage ? skip : 0,
+        take: isPage ? size : undefined,
+        select,
+      }),
       this.prisma.user.count({ where }),
     ]);
 
     // 批量加载等级信息
-    const rankIds = Array.from(new Set(records.map((r) => r.rank_id).filter((x) => Number(x) > 0)));
+    const rankIds = Array.from(
+      new Set(records.map((r) => r.rank_id).filter((x) => Number(x) > 0)),
+    );
     const rankMap = new Map<number, any>();
     if (rankIds.length) {
-      const ranks = await this.prisma.user_rank.findMany({ where: { rank_id: { in: rankIds } } });
+      const ranks = await this.prisma.user_rank.findMany({
+        where: { rank_id: { in: rankIds } },
+      });
       ranks.forEach((rk) => rankMap.set(rk.rank_id, rk));
     }
 
-    const fromTagNameMap: Record<number, string> = { 1: "公众号", 2: "小程序", 3: "H5", 4: "PC", 5: "Android", 6: "IOS" };
+    const fromTagNameMap: Record<number, string> = {
+      1: "公众号",
+      2: "小程序",
+      3: "H5",
+      4: "PC",
+      5: "Android",
+      6: "IOS",
+    };
     const mapDecimal = (v: any) => (v != null ? Number(v) : 0);
     const dataRecords = records.map((r) => {
       const rk = r.rank_id ? rankMap.get(r.rank_id) : null;
@@ -145,7 +183,13 @@ export class AdminMemberCompatController {
       code: 0,
       message: "success",
       data: isPage
-        ? { records: dataRecords, total, size, current: page, pages: Math.ceil(total / size) }
+        ? {
+            records: dataRecords,
+            total,
+            size,
+            current: page,
+            pages: Math.ceil(total / size),
+          }
         : { records: dataRecords, total },
     };
   }
@@ -161,7 +205,9 @@ export class AdminMemberCompatController {
 
     // rank 详情（等同 PHP 绑定 user_rank 字段）
     const [rank, address] = await Promise.all([
-      r.rank_id ? this.prisma.user_rank.findUnique({ where: { rank_id: r.rank_id } }) : null,
+      r.rank_id
+        ? this.prisma.user_rank.findUnique({ where: { rank_id: r.rank_id } })
+        : null,
       this.prisma.user_address.findFirst({
         where: { user_id: id, is_default: 1 },
         select: {
@@ -258,8 +304,11 @@ export class AdminMemberCompatController {
   @Authorities("userCreateManage")
   async create(@Body() dto: any) {
     // 基础校验：用户名唯一
-    if (!dto.username) return { code: 400, message: "username required", data: null };
-    const existed = await this.prisma.user.findUnique({ where: { username: dto.username } });
+    if (!dto.username)
+      return { code: 400, message: "username required", data: null };
+    const existed = await this.prisma.user.findUnique({
+      where: { username: dto.username },
+    });
     if (existed) return { code: 400, message: "username exists", data: null };
     const now = Math.floor(Date.now() / 1000);
     const data: any = {
@@ -315,7 +364,9 @@ export class AdminMemberCompatController {
   }
 
   @Post("updateField")
-  @ApiOperation({ summary: "单字段更新（兼容，仅限 username/nickname/status）" })
+  @ApiOperation({
+    summary: "单字段更新（兼容，仅限 username/nickname/status）",
+  })
   @Authorities("userModifyFieldManage")
   async updateField(@Body() dto: any) {
     const id = Number(dto.id || dto.userId);
@@ -328,8 +379,12 @@ export class AdminMemberCompatController {
       status: "status",
     };
     const dbField = allowed[field];
-    if (!dbField) return { code: 400, message: "unsupported field", data: null };
-    await this.prisma.user.update({ where: { user_id: id }, data: { [dbField]: value } });
+    if (!dbField)
+      return { code: 400, message: "unsupported field", data: null };
+    await this.prisma.user.update({
+      where: { user_id: id },
+      data: { [dbField]: value },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -359,7 +414,10 @@ export class AdminMemberCompatController {
     } else if (type === "set_rank") {
       const rankId = Number(dto.rank_id || dto.rankId);
       if (!rankId) return { code: 400, message: "rankId required", data: null };
-      await this.prisma.user.updateMany({ where: { user_id: { in: ids } }, data: { rank_id: rankId } });
+      await this.prisma.user.updateMany({
+        where: { user_id: { in: ids } },
+        data: { rank_id: rankId },
+      });
     }
     return { code: 0, message: "success", data: true };
   }
@@ -380,24 +438,43 @@ export class AdminMemberCompatController {
       },
       take: 20,
       orderBy: { user_id: "desc" },
-      select: { user_id: true, username: true, mobile: true, email: true, nickname: true },
+      select: {
+        user_id: true,
+        username: true,
+        mobile: true,
+        email: true,
+        nickname: true,
+      },
     });
     return {
       code: 0,
       message: "success",
-      data: users.map((u) => ({ userId: u.user_id, username: u.username, mobile: u.mobile, email: u.email, nickname: u.nickname })),
+      data: users.map((u) => ({
+        userId: u.user_id,
+        username: u.username,
+        mobile: u.mobile,
+        email: u.email,
+        nickname: u.nickname,
+      })),
     };
   }
 
   @Get("userFundDetail")
-  @ApiOperation({ summary: "资金明细（兼容：from_tag 切换余额/冻结/成长/积分，支持分页）" })
+  @ApiOperation({
+    summary: "资金明细（兼容：from_tag 切换余额/冻结/成长/积分，支持分页）",
+  })
   @Authorities("userManage")
   async userFundDetail(@Query() q: any) {
     const userId = Number(q.user_id ?? q.userId);
     if (!userId) return { code: 400, message: "user_id required", data: null };
     const page = Number(q.page || 1);
     const size = Number(q.size || 15);
-    const fromTag = q.from_tag !== undefined ? Number(q.from_tag) : (q.fromTag !== undefined ? Number(q.fromTag) : undefined);
+    const fromTag =
+      q.from_tag !== undefined
+        ? Number(q.from_tag)
+        : q.fromTag !== undefined
+          ? Number(q.fromTag)
+          : undefined;
 
     // 如果提供 from_tag，则返回对应分类的分页列表结构 {records,total}
     if ([1, 2, 3, 4].includes(Number(fromTag))) {
@@ -407,21 +484,36 @@ export class AdminMemberCompatController {
         if (fromTag === 1) where.balance = { not: 0 };
         if (fromTag === 2) where.frozen_balance = { not: 0 };
         const [records, total] = await Promise.all([
-          this.prisma.user_balance_log.findMany({ where, orderBy: { log_id: "desc" }, skip, take: size }),
+          this.prisma.user_balance_log.findMany({
+            where,
+            orderBy: { log_id: "desc" },
+            skip,
+            take: size,
+          }),
           this.prisma.user_balance_log.count({ where }),
         ]);
         return { code: 0, message: "success", data: { records, total } };
       } else if (fromTag === 3) {
         const where: any = { user_id: userId };
         const [records, total] = await Promise.all([
-          this.prisma.user_growth_points_log.findMany({ where, orderBy: { log_id: "desc" }, skip, take: size }),
+          this.prisma.user_growth_points_log.findMany({
+            where,
+            orderBy: { log_id: "desc" },
+            skip,
+            take: size,
+          }),
           this.prisma.user_growth_points_log.count({ where }),
         ]);
         return { code: 0, message: "success", data: { records, total } };
       } else if (fromTag === 4) {
         const where: any = { user_id: userId };
         const [records, total] = await Promise.all([
-          this.prisma.user_points_log.findMany({ where, orderBy: { log_id: "desc" }, skip, take: size }),
+          this.prisma.user_points_log.findMany({
+            where,
+            orderBy: { log_id: "desc" },
+            skip,
+            take: size,
+          }),
           this.prisma.user_points_log.count({ where }),
         ]);
         return { code: 0, message: "success", data: { records, total } };
@@ -430,11 +522,27 @@ export class AdminMemberCompatController {
 
     // 兼容：未提供 from_tag 时，返回三类明细的最近 50 条合并结构
     const [balanceLogs, pointsLogs, growthLogs] = await Promise.all([
-      this.prisma.user_balance_log.findMany({ where: { user_id: userId }, orderBy: { log_id: "desc" }, take: 50 }),
-      this.prisma.user_points_log.findMany({ where: { user_id: userId }, orderBy: { log_id: "desc" }, take: 50 }),
-      this.prisma.user_growth_points_log.findMany({ where: { user_id: userId }, orderBy: { log_id: "desc" }, take: 50 }),
+      this.prisma.user_balance_log.findMany({
+        where: { user_id: userId },
+        orderBy: { log_id: "desc" },
+        take: 50,
+      }),
+      this.prisma.user_points_log.findMany({
+        where: { user_id: userId },
+        orderBy: { log_id: "desc" },
+        take: 50,
+      }),
+      this.prisma.user_growth_points_log.findMany({
+        where: { user_id: userId },
+        orderBy: { log_id: "desc" },
+        take: 50,
+      }),
     ]);
-    return { code: 0, message: "success", data: { balanceLogs, pointsLogs, growthLogs } };
+    return {
+      code: 0,
+      message: "success",
+      data: { balanceLogs, pointsLogs, growthLogs },
+    };
   }
 
   @Post("fundManagement")
@@ -444,12 +552,21 @@ export class AdminMemberCompatController {
     // 兼容 PHP 管理端 payload：
     // { id, changeDesc, typeBalance, balance, typeFrozenBalance, frozenBalance, typePoints, points, typeGrowthPoints, growthPoints }
     // 也兼容旧版：{ user_id/userId, change_type, amount, remark }
-    const userId = Number(dto.id || dto.user_id || dto.userId || (q ? q.id || q.user_id || q.userId : undefined));
+    const userId = Number(
+      dto.id ||
+        dto.user_id ||
+        dto.userId ||
+        (q ? q.id || q.user_id || q.userId : undefined),
+    );
     if (!userId) return { code: 400, message: "userId required", data: null };
-    const remark = String(dto.changeDesc || dto.remark || dto.change_desc || "人工调整");
+    const remark = String(
+      dto.changeDesc || dto.remark || dto.change_desc || "人工调整",
+    );
     const now = Math.floor(Date.now() / 1000);
 
-    const user = await this.prisma.user.findUnique({ where: { user_id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: userId },
+    });
     if (!user) return { code: 404, message: "user not found", data: null };
 
     // 若传了旧版单字段形式，则走旧逻辑
@@ -460,7 +577,10 @@ export class AdminMemberCompatController {
         const newBalance = Number(user.balance) + amount;
         const newFrozen = Number(user.frozen_balance);
         await this.prisma.$transaction([
-          this.prisma.user.update({ where: { user_id: userId }, data: { balance: newBalance } }),
+          this.prisma.user.update({
+            where: { user_id: userId },
+            data: { balance: newBalance },
+          }),
           this.prisma.user_balance_log.create({
             data: {
               user_id: userId,
@@ -478,18 +598,36 @@ export class AdminMemberCompatController {
         const delta = Math.trunc(amount);
         const newPoints = Number(user.points) + delta;
         await this.prisma.$transaction([
-          this.prisma.user.update({ where: { user_id: userId }, data: { points: newPoints } }),
+          this.prisma.user.update({
+            where: { user_id: userId },
+            data: { points: newPoints },
+          }),
           this.prisma.user_points_log.create({
-            data: { user_id: userId, points: delta, change_time: now, change_desc: remark, change_type: 0 },
+            data: {
+              user_id: userId,
+              points: delta,
+              change_time: now,
+              change_desc: remark,
+              change_type: 0,
+            },
           }),
         ]);
       } else if (changeType === "growth" || changeType === "growthPoints") {
         const delta = Math.trunc(amount);
         const newGrowth = Number(user.growth_points) + delta;
         await this.prisma.$transaction([
-          this.prisma.user.update({ where: { user_id: userId }, data: { growth_points: newGrowth } }),
+          this.prisma.user.update({
+            where: { user_id: userId },
+            data: { growth_points: newGrowth },
+          }),
           this.prisma.user_growth_points_log.create({
-            data: { user_id: userId, points: delta, change_time: now, change_desc: remark, change_type: 0 },
+            data: {
+              user_id: userId,
+              points: delta,
+              change_time: now,
+              change_desc: remark,
+              change_type: 0,
+            },
           }),
         ]);
       } else {
@@ -507,7 +645,10 @@ export class AdminMemberCompatController {
       const newBalance = Number(user.balance) + delta;
       const newFrozen = Number(user.frozen_balance);
       ops.push(
-        this.prisma.user.update({ where: { user_id: userId }, data: { balance: newBalance } }),
+        this.prisma.user.update({
+          where: { user_id: userId },
+          data: { balance: newBalance },
+        }),
         this.prisma.user_balance_log.create({
           data: {
             user_id: userId,
@@ -529,7 +670,10 @@ export class AdminMemberCompatController {
       const newFrozen = Number(user.frozen_balance) + delta;
       const newBalance = Number(user.balance);
       ops.push(
-        this.prisma.user.update({ where: { user_id: userId }, data: { frozen_balance: newFrozen } }),
+        this.prisma.user.update({
+          where: { user_id: userId },
+          data: { frozen_balance: newFrozen },
+        }),
         this.prisma.user_balance_log.create({
           data: {
             user_id: userId,
@@ -550,26 +694,46 @@ export class AdminMemberCompatController {
       const delta = Math.trunc(Number(dto.points)) * (type === 2 ? -1 : 1);
       const newPoints = Number(user.points) + delta;
       ops.push(
-        this.prisma.user.update({ where: { user_id: userId }, data: { points: newPoints } }),
+        this.prisma.user.update({
+          where: { user_id: userId },
+          data: { points: newPoints },
+        }),
         this.prisma.user_points_log.create({
-          data: { user_id: userId, points: delta, change_time: now, change_desc: remark, change_type: 0 },
+          data: {
+            user_id: userId,
+            points: delta,
+            change_time: now,
+            change_desc: remark,
+            change_type: 0,
+          },
         }),
       );
     }
     // 成长值 growth_points
     if (dto.typeGrowthPoints != null && dto.growthPoints != null) {
       const type = Number(dto.typeGrowthPoints); // 1 加，2 减
-      const delta = Math.trunc(Number(dto.growthPoints)) * (type === 2 ? -1 : 1);
+      const delta =
+        Math.trunc(Number(dto.growthPoints)) * (type === 2 ? -1 : 1);
       const newGrowth = Number(user.growth_points) + delta;
       ops.push(
-        this.prisma.user.update({ where: { user_id: userId }, data: { growth_points: newGrowth } }),
+        this.prisma.user.update({
+          where: { user_id: userId },
+          data: { growth_points: newGrowth },
+        }),
         this.prisma.user_growth_points_log.create({
-          data: { user_id: userId, points: delta, change_time: now, change_desc: remark, change_type: 0 },
+          data: {
+            user_id: userId,
+            points: delta,
+            change_time: now,
+            change_desc: remark,
+            change_type: 0,
+          },
         }),
       );
     }
 
-    if (ops.length === 0) return { code: 400, message: "no changes", data: null };
+    if (ops.length === 0)
+      return { code: 400, message: "no changes", data: null };
     await this.prisma.$transaction(ops);
     return { code: 0, message: "success", data: true };
   }

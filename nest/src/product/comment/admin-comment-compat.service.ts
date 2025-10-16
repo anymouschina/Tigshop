@@ -1,5 +1,9 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
@@ -52,7 +56,8 @@ export class AdminCommentCompatService {
     try {
       const parsed = JSON.parse(s);
       if (Array.isArray(parsed)) return parsed.length > 0;
-      if (parsed && typeof parsed === "object") return Object.keys(parsed).length > 0;
+      if (parsed && typeof parsed === "object")
+        return Object.keys(parsed).length > 0;
     } catch (_) {
       // not JSON, but non-empty string -> consider true
       return true;
@@ -80,7 +85,12 @@ export class AdminCommentCompatService {
     const sortField = filter.sort_field || "comment_id";
     const sortOrder = filter.sort_order || "desc";
     orderBy[sortField] = sortOrder;
-    const rows = await this.prisma.comment.findMany({ where, orderBy, skip, take: size });
+    const rows = await this.prisma.comment.findMany({
+      where,
+      orderBy,
+      skip,
+      take: size,
+    });
     return rows.map((r) => this.mapRow(r));
   }
 
@@ -101,7 +111,9 @@ export class AdminCommentCompatService {
   }
 
   async getDetail(id: number) {
-    const r = await this.prisma.comment.findUnique({ where: { comment_id: id } });
+    const r = await this.prisma.comment.findUnique({
+      where: { comment_id: id },
+    });
     if (!r) throw new NotFoundException("评论不存在");
     return this.mapRow(r);
   }
@@ -135,12 +147,16 @@ export class AdminCommentCompatService {
   }
 
   async update(id: number, body: any) {
-    const exists = await this.prisma.comment.findUnique({ where: { comment_id: id } });
+    const exists = await this.prisma.comment.findUnique({
+      where: { comment_id: id },
+    });
     if (!exists) throw new NotFoundException("评论不存在");
     const data: any = {};
-    if (body.username !== undefined) data.username = String(body.username || "");
+    if (body.username !== undefined)
+      data.username = String(body.username || "");
     if (body.avatar !== undefined) data.avatar = String(body.avatar || "");
-    if (body.commentRank !== undefined) data.comment_rank = Number(body.commentRank);
+    if (body.commentRank !== undefined)
+      data.comment_rank = Number(body.commentRank);
     if (body.content !== undefined) data.content = String(body.content || "");
     if (body.showPics !== undefined || body.show_pics !== undefined) {
       data.show_pics = this.serializeShowPics(body.showPics ?? body.show_pics);
@@ -152,19 +168,28 @@ export class AdminCommentCompatService {
       }
     }
     if (body.sortOrder !== undefined) data.sort_order = Number(body.sortOrder);
-    if (body.isRecommend !== undefined) data.is_recommend = Number(body.isRecommend);
+    if (body.isRecommend !== undefined)
+      data.is_recommend = Number(body.isRecommend);
     if (body.isTop !== undefined) data.is_top = Number(body.isTop);
     if (body.isShowed !== undefined) data.is_showed = Number(body.isShowed);
     if (body.productId !== undefined) data.product_id = Number(body.productId);
     if (body.orderId !== undefined) data.order_id = Number(body.orderId);
-    if (body.orderItemId !== undefined) data.order_item_id = Number(body.orderItemId);
+    if (body.orderItemId !== undefined)
+      data.order_item_id = Number(body.orderItemId);
     await this.prisma.comment.update({ where: { comment_id: id }, data });
     return true;
   }
 
   async updateField(id: number, field: string, val: any) {
-    const whitelist = ["is_recommend", "sort_order", "is_top", "comment_rank", "is_showed"];
-    if (!whitelist.includes(field)) throw new BadRequestException("#field 错误");
+    const whitelist = [
+      "is_recommend",
+      "sort_order",
+      "is_top",
+      "comment_rank",
+      "is_showed",
+    ];
+    if (!whitelist.includes(field))
+      throw new BadRequestException("#field 错误");
     const data: any = {};
     data[field] = Number(val);
     await this.prisma.comment.update({ where: { comment_id: id }, data });
@@ -177,14 +202,18 @@ export class AdminCommentCompatService {
   }
 
   async batchDelete(ids: number[]) {
-    await this.prisma.comment.deleteMany({ where: { comment_id: { in: ids } } });
+    await this.prisma.comment.deleteMany({
+      where: { comment_id: { in: ids } },
+    });
     return true;
   }
 
   async replyComment(body: any) {
     const commentId = Number(body.comment_id || body.commentId);
     const content = String(body.content || "");
-    const parent = await this.prisma.comment.findUnique({ where: { comment_id: commentId } });
+    const parent = await this.prisma.comment.findUnique({
+      where: { comment_id: commentId },
+    });
     if (!parent) throw new NotFoundException("原评论不存在");
     const now = Math.floor(Date.now() / 1000);
     const reply = await this.prisma.comment.create({

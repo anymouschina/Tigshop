@@ -11,7 +11,9 @@ export class AccessStatisticsService {
 
   async getTotalVisits(shopId: number) {
     // 以订单总数近似访问次数（无埋点数据时的退化方案）
-    return this.prisma.order.count({ where: { shop_id: shopId, is_del: 0 } as any });
+    return this.prisma.order.count({
+      where: { shop_id: shopId, is_del: 0 } as any,
+    });
   }
 
   async getUniqueVisitors(shopId: number) {
@@ -34,19 +36,31 @@ export class AccessStatisticsService {
 
   async getAccessTrend(
     shopId: number,
-    query: { period?: "hour" | "day" | "week" | "month"; start_date?: string; end_date?: string },
+    query: {
+      period?: "hour" | "day" | "week" | "month";
+      start_date?: string;
+      end_date?: string;
+    },
   ) {
     const { period = "day" } = query || {};
     const now = new Date();
-    const start = query?.start_date ? new Date(query.start_date) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const start = query?.start_date
+      ? new Date(query.start_date)
+      : new Date(now.getFullYear(), now.getMonth(), 1);
     const end = query?.end_date ? new Date(query.end_date) : now;
-    const startTs = Math.floor(new Date(start.setHours(0, 0, 0, 0)).getTime() / 1000);
-    const endTs = Math.floor(new Date(end.setHours(23, 59, 59, 999)).getTime() / 1000);
+    const startTs = Math.floor(
+      new Date(start.setHours(0, 0, 0, 0)).getTime() / 1000,
+    );
+    const endTs = Math.floor(
+      new Date(end.setHours(23, 59, 59, 999)).getTime() / 1000,
+    );
 
     let groupExpr = "DATE(FROM_UNIXTIME(add_time))";
-    if (period === "hour") groupExpr = "DATE_FORMAT(FROM_UNIXTIME(add_time), '%Y-%m-%d %H:00')";
+    if (period === "hour")
+      groupExpr = "DATE_FORMAT(FROM_UNIXTIME(add_time), '%Y-%m-%d %H:00')";
     if (period === "week") groupExpr = "YEARWEEK(FROM_UNIXTIME(add_time), 1)";
-    if (period === "month") groupExpr = "DATE_FORMAT(FROM_UNIXTIME(add_time), '%Y-%m')";
+    if (period === "month")
+      groupExpr = "DATE_FORMAT(FROM_UNIXTIME(add_time), '%Y-%m')";
 
     const rows = (await this.prisma.$queryRawUnsafe(
       `SELECT ${groupExpr} AS period, COUNT(*) AS pv, COUNT(DISTINCT user_id) AS uv
@@ -59,7 +73,11 @@ export class AccessStatisticsService {
       endTs,
     )) as Array<{ period: any; pv: any; uv: any }>;
 
-    return rows.map((r) => ({ period: String(r.period), pv: Number(r.pv), uv: Number(r.uv) }));
+    return rows.map((r) => ({
+      period: String(r.period),
+      pv: Number(r.pv),
+      uv: Number(r.uv),
+    }));
   }
 
   async getPageStatistics(shopId: number, limit: number) {
@@ -74,7 +92,10 @@ export class AccessStatisticsService {
       shopId,
       Number(limit) || 10,
     )) as Array<{ page: string; cnt: any }>;
-    return rows.map((r) => ({ page: r.page || "unknown", count: Number(r.cnt) }));
+    return rows.map((r) => ({
+      page: r.page || "unknown",
+      count: Number(r.cnt),
+    }));
   }
 
   async getAccessSources(shopId: number) {
@@ -110,7 +131,10 @@ export class AccessStatisticsService {
          LIMIT 100`,
         shopId,
       )) as Array<{ province: string; uv: any }>;
-      return rows.map((r) => ({ name: r.province || "未知", value: Number(r.uv) }));
+      return rows.map((r) => ({
+        name: r.province || "未知",
+        value: Number(r.uv),
+      }));
     }
     // city
     const rows = (await this.prisma.$queryRawUnsafe(
@@ -142,14 +166,21 @@ export class AccessStatisticsService {
     return rows.map((r) => ({ minute: r.m, pv: Number(r.pv) }));
   }
 
-  async getConversionStatistics(shopId: number, period: "day" | "week" | "month") {
+  async getConversionStatistics(
+    shopId: number,
+    period: "day" | "week" | "month",
+  ) {
     const now = new Date();
     let days = 1;
     if (period === "week") days = 7;
     if (period === "month") days = 30;
     const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    const startTs = Math.floor(new Date(start.setHours(0, 0, 0, 0)).getTime() / 1000);
-    const endTs = Math.floor(new Date(now.setHours(23, 59, 59, 999)).getTime() / 1000);
+    const startTs = Math.floor(
+      new Date(start.setHours(0, 0, 0, 0)).getTime() / 1000,
+    );
+    const endTs = Math.floor(
+      new Date(now.setHours(23, 59, 59, 999)).getTime() / 1000,
+    );
     const [totalRows, completedRows] = await Promise.all([
       this.prisma.$queryRawUnsafe(
         `SELECT COUNT(*) AS c FROM \`order\` WHERE is_del = 0 AND shop_id = ? AND add_time BETWEEN ? AND ?`,
@@ -172,7 +203,12 @@ export class AccessStatisticsService {
 
   async exportAccessStatistics(
     shopId: number,
-    query: { type: "overview" | "trend" | "pages" | "sources"; format?: "excel" | "csv"; start_date?: string; end_date?: string },
+    query: {
+      type: "overview" | "trend" | "pages" | "sources";
+      format?: "excel" | "csv";
+      start_date?: string;
+      end_date?: string;
+    },
   ) {
     const type = query.type;
     let rows: any[] = [];
@@ -185,11 +221,18 @@ export class AccessStatisticsService {
       rows = [
         { metric: "pv", value: pv },
         { metric: "uv", value: uv },
-        ...(pages as any[]).map((p) => ({ metric: `page:${p.page}`, value: p.count })),
+        ...(pages as any[]).map((p) => ({
+          metric: `page:${p.page}`,
+          value: p.count,
+        })),
       ];
     } else if (type === "trend") {
       const trend = await this.getAccessTrend(shopId, query as any);
-      rows = (trend as any[]).map((t) => ({ period: t.period, pv: t.pv, uv: t.uv }));
+      rows = (trend as any[]).map((t) => ({
+        period: t.period,
+        pv: t.pv,
+        uv: t.uv,
+      }));
     } else if (type === "pages" || type === "sources") {
       const pages = await this.getPageStatistics(shopId, 20);
       rows = (pages as any[]).map((p) => ({ page: p.page, count: p.count }));

@@ -24,7 +24,8 @@ export class UserFeedbackApiCompatController {
   @ApiOperation({ summary: "获取反馈列表（兼容）" })
   async list(
     @Request() req,
-    @Query() query: { page?: number; size?: number; type?: number; status?: number },
+    @Query()
+    query: { page?: number; size?: number; type?: number; status?: number },
   ) {
     const userId = req.user.userId;
     return this.userFeedbackService.getUserFeedbackList(userId, query);

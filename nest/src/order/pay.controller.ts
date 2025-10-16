@@ -54,13 +54,17 @@ export class PayController {
     }
     // 补单闭环：在拉取支付日志前尝试主动查询一次（非阻塞重试逻辑，单次直查）
     try {
-      await this.payService['activeQueryAndReconcile']?.( // 访问私有方法（已 @ts-nocheck）
+      await this.payService["activeQueryAndReconcile"]?.(
+        // 访问私有方法（已 @ts-nocheck）
         // 通过 orderId 先拿到 order_sn，再用 order_sn 主动查询
         await (async () => {
-          const order = await (this.payService as any).prisma.order.findUnique({ where: { order_id: orderId }, select: { order_sn: true, pay_status: true } });
+          const order = await (this.payService as any).prisma.order.findUnique({
+            where: { order_id: orderId },
+            select: { order_sn: true, pay_status: true },
+          });
           if (order && order.pay_status !== 1) return order.order_sn;
           return null;
-        })()
+        })(),
       );
     } catch (e) {
       // 忽略主动查询异常，保持接口幂等
@@ -80,9 +84,13 @@ export class PayController {
   @ApiOperation({ summary: "检测订单支付状态" })
   async checkStatus(@Query() query: { id?: number; paylog_id?: number }) {
     const idNum = query?.id != null ? Number((query as any).id) : undefined;
-    const paylogIdNum = query?.paylog_id != null ? Number((query as any).paylog_id) : undefined;
+    const paylogIdNum =
+      query?.paylog_id != null ? Number((query as any).paylog_id) : undefined;
 
-    if ((idNum == null || isNaN(idNum)) && (paylogIdNum == null || isNaN(paylogIdNum))) {
+    if (
+      (idNum == null || isNaN(idNum)) &&
+      (paylogIdNum == null || isNaN(paylogIdNum))
+    ) {
       throw new HttpException("参数缺失", HttpStatus.BAD_REQUEST);
     }
 
@@ -90,7 +98,9 @@ export class PayController {
     if (idNum != null && !isNaN(idNum)) {
       payStatus = await this.payService.getPayStatusByOrderId(idNum);
     } else {
-      payStatus = await this.payService.getPayStatusByPayLogId(paylogIdNum as number);
+      payStatus = await this.payService.getPayStatusByPayLogId(
+        paylogIdNum as number,
+      );
     }
 
     return payStatus > 0 ? 1 : 0;
@@ -103,7 +113,10 @@ export class PayController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "创建支付" })
-  async create(@Request() req, @Query() query: { id: number; type: string; code?: string }) {
+  async create(
+    @Request() req,
+    @Query() query: { id: number; type: string; code?: string },
+  ) {
     const userId = Number(req.user?.userId || 0);
     const id = Number((query as any)?.id || 0);
     const type = String((query as any)?.type || "");
@@ -114,7 +127,13 @@ export class PayController {
       throw new HttpException("未选择支付方式", HttpStatus.BAD_REQUEST);
     }
 
-    return this.payService.createPayment(userId, Number(id), String(type), code, clientType);
+    return this.payService.createPayment(
+      userId,
+      Number(id),
+      String(type),
+      code,
+      clientType,
+    );
   }
 
   /**

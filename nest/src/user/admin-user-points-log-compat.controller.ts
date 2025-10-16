@@ -64,7 +64,10 @@ export class AdminUserPointsLogCompatController {
   async getPoints(@Query("user_id") userId?: string) {
     const id = Number(userId);
     if (!id) return { code: 1, message: "缺少 user_id", data: null };
-    const user = await (this.service as any).prisma.user.findUnique({ where: { user_id: id }, select: { points: true } });
+    const user = await (this.service as any).prisma.user.findUnique({
+      where: { user_id: id },
+      select: { points: true },
+    });
     return { code: 0, message: "success", data: [user?.points || 0] };
   }
 

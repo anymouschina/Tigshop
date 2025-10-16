@@ -1,5 +1,10 @@
 // @ts-nocheck
-import { Injectable, Logger, BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
@@ -22,15 +27,22 @@ export class AdminOrderCompatService {
     }
     // 补充 shopId / vendorId / userId 精确过滤（管理端常见）
     const shopId = query.shopId ?? query.shop_id;
-    if (shopId !== undefined && shopId !== "") (where as any).shop_id = Number(shopId);
+    if (shopId !== undefined && shopId !== "")
+      (where as any).shop_id = Number(shopId);
     const vendorId = query.vendorId ?? query.vendor_id;
-    if (vendorId !== undefined && vendorId !== "") (where as any).vendor_id = Number(vendorId);
+    if (vendorId !== undefined && vendorId !== "")
+      (where as any).vendor_id = Number(vendorId);
     const userId = query.userId ?? query.user_id;
-    if (userId !== undefined && userId !== "") (where as any).user_id = Number(userId);
+    if (userId !== undefined && userId !== "")
+      (where as any).user_id = Number(userId);
 
     // 排序：支持 sortField/sortOrder，字段名按 PHP 约定映射
     const sortField = String(query.sortField || query.sort_field || "addTime");
-    const sortOrder = String(query.sortOrder || query.sort_order || "desc").toLowerCase() === "asc" ? "asc" : "desc";
+    const sortOrder =
+      String(query.sortOrder || query.sort_order || "desc").toLowerCase() ===
+      "asc"
+        ? "asc"
+        : "desc";
     const sortMap: Record<string, string> = {
       orderId: "order_id",
       orderSn: "order_sn",
@@ -47,28 +59,61 @@ export class AdminOrderCompatService {
     const sortCol = sortMap[sortField] || "add_time";
 
     const [orders, total] = await Promise.all([
-      this.prisma.order.findMany({ where, orderBy: { [sortCol]: sortOrder as any }, skip, take: size }),
+      this.prisma.order.findMany({
+        where,
+        orderBy: { [sortCol]: sortOrder as any },
+        skip,
+        take: size,
+      }),
       this.prisma.order.count({ where }),
     ]);
 
     if (!orders.length) {
-      return { records: [], total, size, current: page, pages: Math.max(1, Math.ceil((total || 0) / size)) };
+      return {
+        records: [],
+        total,
+        size,
+        current: page,
+        pages: Math.max(1, Math.ceil((total || 0) / size)),
+      };
     }
 
     // 关联查询：订单项、用户、店铺、商品与 SKU 库存
     const orderIds = orders.map((o) => o.order_id);
-  const userIds = Array.from(new Set(orders.map((o) => o.user_id).filter((x) => x > 0)));
-  const shopIds = Array.from(new Set(orders.map((o) => o.shop_id).filter((x) => x > 0)));
+    const userIds = Array.from(
+      new Set(orders.map((o) => o.user_id).filter((x) => x > 0)),
+    );
+    const shopIds = Array.from(
+      new Set(orders.map((o) => o.shop_id).filter((x) => x > 0)),
+    );
 
-    const items = await this.prisma.order_item.findMany({ where: { order_id: { in: orderIds } } });
-  const skuIds = Array.from(new Set(items.map((it) => it.sku_id).filter((x) => x > 0)));
-  const productIds = Array.from(new Set(items.map((it) => it.product_id).filter((x) => x > 0)));
+    const items = await this.prisma.order_item.findMany({
+      where: { order_id: { in: orderIds } },
+    });
+    const skuIds = Array.from(
+      new Set(items.map((it) => it.sku_id).filter((x) => x > 0)),
+    );
+    const productIds = Array.from(
+      new Set(items.map((it) => it.product_id).filter((x) => x > 0)),
+    );
 
     const [users, shops, skus, products] = await Promise.all([
-      userIds.length ? this.prisma.user.findMany({ where: { user_id: { in: userIds } } }) : Promise.resolve([]),
-      shopIds.length ? this.prisma.shop.findMany({ where: { shop_id: { in: shopIds } } }) : Promise.resolve([]),
-      skuIds.length ? this.prisma.product_sku.findMany({ where: { sku_id: { in: skuIds } } }) : Promise.resolve([]),
-      productIds.length ? this.prisma.product.findMany({ where: { product_id: { in: productIds } } }) : Promise.resolve([]),
+      userIds.length
+        ? this.prisma.user.findMany({ where: { user_id: { in: userIds } } })
+        : Promise.resolve([]),
+      shopIds.length
+        ? this.prisma.shop.findMany({ where: { shop_id: { in: shopIds } } })
+        : Promise.resolve([]),
+      skuIds.length
+        ? this.prisma.product_sku.findMany({
+            where: { sku_id: { in: skuIds } },
+          })
+        : Promise.resolve([]),
+      productIds.length
+        ? this.prisma.product.findMany({
+            where: { product_id: { in: productIds } },
+          })
+        : Promise.resolve([]),
     ]);
 
     const userMap = new Map(users.map((u: any) => [u.user_id, u]));
@@ -84,16 +129,18 @@ export class AdminOrderCompatService {
       const p = productMap.get(it.product_id);
       (it as any).sku_stock = s ? Number(s.sku_stock || 0) : null;
       (it as any).product_stock = p ? Number(p.product_stock || 0) : null;
-      (it as any).sku_value_str = s ? (s.sku_value || null) : null;
+      (it as any).sku_value_str = s ? s.sku_value || null : null;
       arr.push(it);
       itemMap.set(it.order_id, arr);
     }
 
     // 默认合并拆单：无 shopId/vendorId 精确过滤，且 mergeSplit != 0
-    const mergeSplit = String(query.mergeSplit ?? query.merge_split ?? '1') !== '0';
+    const mergeSplit =
+      String(query.mergeSplit ?? query.merge_split ?? "1") !== "0";
     const explicitShopFilter = where.shop_id !== undefined;
     const explicitVendorFilter = where.vendor_id !== undefined;
-    const needMerge = mergeSplit && !explicitShopFilter && !explicitVendorFilter;
+    const needMerge =
+      mergeSplit && !explicitShopFilter && !explicitVendorFilter;
 
     // 构建父订单 -> 子订单项聚合
     const childrenItemsByParent = new Map<number, any[]>();
@@ -111,16 +158,38 @@ export class AdminOrderCompatService {
     let mergedOrders = orders;
     if (needMerge) {
       // 过滤掉子订单，只保留父订单；父订单若拆分，将其 items 设为聚合后的子订单项
-      mergedOrders = orders.filter((o) => !o.parent_order_id || o.parent_order_id === 0);
+      mergedOrders = orders.filter(
+        (o) => !o.parent_order_id || o.parent_order_id === 0,
+      );
       for (const o of mergedOrders) {
-        if (o.is_store_splited && o.order_id && childrenItemsByParent.has(o.order_id)) {
+        if (
+          o.is_store_splited &&
+          o.order_id &&
+          childrenItemsByParent.has(o.order_id)
+        ) {
           itemMap.set(o.order_id, childrenItemsByParent.get(o.order_id)!);
         }
       }
     }
 
-    const records = mergedOrders.map((o) => this.mapOrderRowToRecord(o, itemMap.get(o.order_id) || [], userMap, shopMap));
-    return { records, total: needMerge ? mergedOrders.length : total, size, current: page, pages: Math.max(1, Math.ceil(((needMerge ? mergedOrders.length : total) || 0) / size)) };
+    const records = mergedOrders.map((o) =>
+      this.mapOrderRowToRecord(
+        o,
+        itemMap.get(o.order_id) || [],
+        userMap,
+        shopMap,
+      ),
+    );
+    return {
+      records,
+      total: needMerge ? mergedOrders.length : total,
+      size,
+      current: page,
+      pages: Math.max(
+        1,
+        Math.ceil(((needMerge ? mergedOrders.length : total) || 0) / size),
+      ),
+    };
   }
 
   async detail(id: number) {
@@ -130,27 +199,56 @@ export class AdminOrderCompatService {
     // 若为父订单且已拆分，需要读取所有子订单项聚合；否则只读自身
     let items: any[] = [];
     if (o.is_store_splited && o.parent_order_id === 0) {
-      const children = await this.prisma.order.findMany({ where: { parent_order_id: o.order_id } });
-      const childIds = children.map(c => c.order_id);
+      const children = await this.prisma.order.findMany({
+        where: { parent_order_id: o.order_id },
+      });
+      const childIds = children.map((c) => c.order_id);
       if (childIds.length) {
-        const childItems = await this.prisma.order_item.findMany({ where: { order_id: { in: childIds } } });
+        const childItems = await this.prisma.order_item.findMany({
+          where: { order_id: { in: childIds } },
+        });
         items.push(...childItems);
       }
     } else {
-      items = await this.prisma.order_item.findMany({ where: { order_id: id } });
+      items = await this.prisma.order_item.findMany({
+        where: { order_id: id },
+      });
     }
-    const logs = await this.prisma.order_log.findMany({ where: { order_id: id }, orderBy: { log_id: "desc" } });
+    const logs = await this.prisma.order_log.findMany({
+      where: { order_id: id },
+      orderBy: { log_id: "desc" },
+    });
 
     // 关联数据：用户、店铺、商品、SKU
     const [user, shop] = await Promise.all([
-      o.user_id ? this.prisma.user.findUnique({ where: { user_id: o.user_id } }).catch(() => null) : Promise.resolve(null),
-      o.shop_id ? this.prisma.shop.findUnique({ where: { shop_id: o.shop_id } }).catch(() => null) : Promise.resolve(null),
+      o.user_id
+        ? this.prisma.user
+            .findUnique({ where: { user_id: o.user_id } })
+            .catch(() => null)
+        : Promise.resolve(null),
+      o.shop_id
+        ? this.prisma.shop
+            .findUnique({ where: { shop_id: o.shop_id } })
+            .catch(() => null)
+        : Promise.resolve(null),
     ]);
-    const productIds = Array.from(new Set(items.map((it) => it.product_id).filter((x) => x > 0)));
-    const skuIds = Array.from(new Set(items.map((it) => it.sku_id).filter((x) => x > 0)));
+    const productIds = Array.from(
+      new Set(items.map((it) => it.product_id).filter((x) => x > 0)),
+    );
+    const skuIds = Array.from(
+      new Set(items.map((it) => it.sku_id).filter((x) => x > 0)),
+    );
     const [products, skus] = await Promise.all([
-      productIds.length ? this.prisma.product.findMany({ where: { product_id: { in: productIds } } }) : Promise.resolve([]),
-      skuIds.length ? this.prisma.product_sku.findMany({ where: { sku_id: { in: skuIds } } }) : Promise.resolve([]),
+      productIds.length
+        ? this.prisma.product.findMany({
+            where: { product_id: { in: productIds } },
+          })
+        : Promise.resolve([]),
+      skuIds.length
+        ? this.prisma.product_sku.findMany({
+            where: { sku_id: { in: skuIds } },
+          })
+        : Promise.resolve([]),
     ]);
     const userMap = new Map(user ? [[user.user_id, user]] : []);
     const shopMap = new Map(shop ? [[shop.shop_id, shop]] : []);
@@ -163,11 +261,16 @@ export class AdminOrderCompatService {
       const p = productMap.get(it.product_id);
       (it as any).sku_stock = s ? Number(s.sku_stock || 0) : null;
       (it as any).product_stock = p ? Number(p.product_stock || 0) : null;
-      (it as any).sku_value_str = s ? (s.sku_value || null) : null;
+      (it as any).sku_value_str = s ? s.sku_value || null : null;
       return it;
     });
 
-    const record = this.mapOrderRowToRecord(o, itemsWithStock, userMap, shopMap);
+    const record = this.mapOrderRowToRecord(
+      o,
+      itemsWithStock,
+      userMap,
+      shopMap,
+    );
     // 追加 admin 详情期望字段
     const stepStatus = this.buildStepStatus(o);
     const totalProductWeight = itemsWithStock.reduce((sum, it) => {
@@ -175,14 +278,24 @@ export class AdminOrderCompatService {
       const w = p ? Number(p.product_weight || 0) : 0;
       return sum + w * Number(it.quantity || 0);
     }, 0);
-  // 面单能力：先返回 true 标识可用（后续接 SDK 时可联调）
-  const wayBill = true;
-  // 预售/预订单状态：按示例/PHP 语义，pay_status=2 时视作预单已取消
-  let preOrderStatus: number | null = null;
-  let preOrderStatusDesc: string | null = null;
-  if (Number(o.pay_status) === 2) { preOrderStatus = 3; preOrderStatusDesc = "已取消"; }
-  else if (Number(o.order_status) === 2) { preOrderStatus = 3; preOrderStatusDesc = "已取消"; }
-  const isChangeOrderStatus = (Number(o.pay_status) >= 1 || Number(o.order_status) === 2 || Number(o.order_status) === 3) ? 1 : 0;
+    // 面单能力：先返回 true 标识可用（后续接 SDK 时可联调）
+    const wayBill = true;
+    // 预售/预订单状态：按示例/PHP 语义，pay_status=2 时视作预单已取消
+    let preOrderStatus: number | null = null;
+    let preOrderStatusDesc: string | null = null;
+    if (Number(o.pay_status) === 2) {
+      preOrderStatus = 3;
+      preOrderStatusDesc = "已取消";
+    } else if (Number(o.order_status) === 2) {
+      preOrderStatus = 3;
+      preOrderStatusDesc = "已取消";
+    }
+    const isChangeOrderStatus =
+      Number(o.pay_status) >= 1 ||
+      Number(o.order_status) === 2 ||
+      Number(o.order_status) === 3
+        ? 1
+        : 0;
     const mappedLogs = logs.map((lg) => ({
       logId: lg.log_id,
       orderId: lg.order_id,
@@ -194,7 +307,16 @@ export class AdminOrderCompatService {
       shopId: lg.shop_id,
     }));
 
-    return { ...record, logs: mappedLogs, stepStatus, totalProductWeight, wayBill, preOrderStatus, preOrderStatusDesc, isChangeOrderStatus };
+    return {
+      ...record,
+      logs: mappedLogs,
+      stepStatus,
+      totalProductWeight,
+      wayBill,
+      preOrderStatus,
+      preOrderStatusDesc,
+      isChangeOrderStatus,
+    };
   }
 
   async updateField(id: number, field: string, value: any) {
@@ -211,36 +333,70 @@ export class AdminOrderCompatService {
       throw new Error("不支持的字段");
     }
     // 类型处理
-    if (["order_status", "pay_status", "shipping_status", "logistics_id"].includes(field)) {
+    if (
+      [
+        "order_status",
+        "pay_status",
+        "shipping_status",
+        "logistics_id",
+      ].includes(field)
+    ) {
       if (typeof value === "string") value = parseInt(value, 10);
       if (!Number.isFinite(value)) value = 0;
     }
-    await this.prisma.order.update({ where: { order_id: id }, data: { [field]: value } });
+    await this.prisma.order.update({
+      where: { order_id: id },
+      data: { [field]: value },
+    });
     return true;
   }
 
-  async getLogs(orderId: number, page = 1, size = 15, opts?: { keyword?: string }) {
+  async getLogs(
+    orderId: number,
+    page = 1,
+    size = 15,
+    opts?: { keyword?: string },
+  ) {
     const skip = (page - 1) * size;
-    const where: any = { };
+    const where: any = {};
     if (orderId) where.order_id = orderId;
     if (opts?.keyword) {
       where.description = { contains: opts.keyword };
     }
     const [records, total] = await Promise.all([
-      this.prisma.order_log.findMany({ where, orderBy: { log_id: "desc" }, skip, take: size }),
+      this.prisma.order_log.findMany({
+        where,
+        orderBy: { log_id: "desc" },
+        skip,
+        take: size,
+      }),
       this.prisma.order_log.count({ where }),
     ]);
 
     // 为 operator 补充用户名（模仿 PHP accessor: admin 优先，其次 user）
     // 收集需要查询的 admin_id / user_id
-    const adminIds = Array.from(new Set(records.map(r => r.admin_id).filter((id: number) => id > 0)));
-    const userIds = Array.from(new Set(records.map(r => r.user_id).filter((id: number) => id > 0)));
+    const adminIds = Array.from(
+      new Set(records.map((r) => r.admin_id).filter((id: number) => id > 0)),
+    );
+    const userIds = Array.from(
+      new Set(records.map((r) => r.user_id).filter((id: number) => id > 0)),
+    );
     const [adminUsers, users] = await Promise.all([
-      adminIds.length ? this.prisma.admin_user.findMany({ where: { admin_id: { in: adminIds } }, select: { admin_id: true, username: true } }) : Promise.resolve([]),
-      userIds.length ? this.prisma.user.findMany({ where: { user_id: { in: userIds } }, select: { user_id: true, username: true } }) : Promise.resolve([]),
+      adminIds.length
+        ? this.prisma.admin_user.findMany({
+            where: { admin_id: { in: adminIds } },
+            select: { admin_id: true, username: true },
+          })
+        : Promise.resolve([]),
+      userIds.length
+        ? this.prisma.user.findMany({
+            where: { user_id: { in: userIds } },
+            select: { user_id: true, username: true },
+          })
+        : Promise.resolve([]),
     ]);
-    const adminMap = new Map(adminUsers.map(u => [u.admin_id, u.username]));
-    const userMap = new Map(users.map(u => [u.user_id, u.username]));
+    const adminMap = new Map(adminUsers.map((u) => [u.admin_id, u.username]));
+    const userMap = new Map(users.map((u) => [u.user_id, u.username]));
 
     // 映射为与 PHP 输出一致的字段
     const mapped = records.map((r: any) => {
@@ -259,16 +415,32 @@ export class AdminOrderCompatService {
         shopId: r.shop_id,
       };
     });
-    return { records: mapped, total, size, current: page, pages: Math.max(1, Math.ceil((total || 0) / size)) };
+    return {
+      records: mapped,
+      total,
+      size,
+      current: page,
+      pages: Math.max(1, Math.ceil((total || 0) / size)),
+    };
   }
 
-  async addLog(orderId: number, content: string, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+  async addLog(
+    orderId: number,
+    content: string,
+    adminName?: string,
+    adminId?: number,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     // 如果没有显式传入 adminId，则根据 adminName 反查（一次查询，避免滥用）
     let resolvedAdminId = adminId || 0;
     if (!resolvedAdminId && adminName) {
-      const adm = await this.prisma.admin_user.findFirst({ where: { username: adminName }, select: { admin_id: true } });
+      const adm = await this.prisma.admin_user.findFirst({
+        where: { username: adminName },
+        select: { admin_id: true },
+      });
       if (adm) resolvedAdminId = adm.admin_id;
     }
     await this.prisma.order_log.create({
@@ -289,10 +461,12 @@ export class AdminOrderCompatService {
     // 存储到 admin_user.order_export
     if (!adminId) return true;
     const payload = JSON.stringify(exportItems || []);
-    await this.prisma.admin_user.update({
-      where: { admin_id: adminId },
-      data: { order_export: payload },
-    }).catch(() => undefined);
+    await this.prisma.admin_user
+      .update({
+        where: { admin_id: adminId },
+        data: { order_export: payload },
+      })
+      .catch(() => undefined);
     this.logger.log(`saveExportItem admin=${adminId} items=${payload}`);
     return true;
   }
@@ -305,16 +479,22 @@ export class AdminOrderCompatService {
    * - 将原订单标记 is_store_splited=1
    */
   async splitStoreOrder(orderId: number): Promise<boolean> {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     if (order.is_store_splited) return true;
 
-    const items = await this.prisma.order_item.findMany({ where: { order_id: orderId } });
+    const items = await this.prisma.order_item.findMany({
+      where: { order_id: orderId },
+    });
     if (!items.length) return true;
 
     // 选择分组键：优先 vendor_id，其次 shop_id
     const hasVendorSplit = items.some((it) => (it.vendor_id ?? 0) > 0);
-    const key: "vendor_id" | "shop_id" = hasVendorSplit ? "vendor_id" : "shop_id";
+    const key: "vendor_id" | "shop_id" = hasVendorSplit
+      ? "vendor_id"
+      : "shop_id";
     const groups = new Map<number, typeof items>();
     for (const it of items) {
       const k = Number((it as any)[key] || 0);
@@ -326,7 +506,10 @@ export class AdminOrderCompatService {
     if (groups.size <= 1) {
       // 单店铺/供应商订单，不需要拆单，不标记 is_store_splited
       if (order.is_store_splited !== 0) {
-        await this.prisma.order.update({ where: { order_id: orderId }, data: { is_store_splited: 0 } });
+        await this.prisma.order.update({
+          where: { order_id: orderId },
+          data: { is_store_splited: 0 },
+        });
       }
       return true;
     }
@@ -338,20 +521,21 @@ export class AdminOrderCompatService {
       const subtotal = arr.reduce((acc, it) => acc + itemSubtotal(it), 0);
       return { key: k, items: arr, subtotal };
     });
-    const totalSubtotal = groupList.reduce((acc, g) => acc + g.subtotal, 0) || 1;
+    const totalSubtotal =
+      groupList.reduce((acc, g) => acc + g.subtotal, 0) || 1;
 
-  // 原金额（全量字段，后续按比分摊）
-  const oShipping = Number(order.shipping_fee || 0);
-  const oProduct = Number(order.product_amount || 0);
-  const oTotal = Number(order.total_amount || 0);
-  const oPaid = Number(order.paid_amount || 0);
-  const oUnpaid = Number(order.unpaid_amount || 0);
-  const oCoupon = Number(order.coupon_amount || 0);
-  const oPoints = Number(order.points_amount || 0);
-  const oDiscount = Number(order.discount_amount || 0);
-  const oBalance = Number(order.balance || 0);
-  const oService = Number(order.service_fee || 0);
-  const oInvoice = Number(order.invoice_fee || 0);
+    // 原金额（全量字段，后续按比分摊）
+    const oShipping = Number(order.shipping_fee || 0);
+    const oProduct = Number(order.product_amount || 0);
+    const oTotal = Number(order.total_amount || 0);
+    const oPaid = Number(order.paid_amount || 0);
+    const oUnpaid = Number(order.unpaid_amount || 0);
+    const oCoupon = Number(order.coupon_amount || 0);
+    const oPoints = Number(order.points_amount || 0);
+    const oDiscount = Number(order.discount_amount || 0);
+    const oBalance = Number(order.balance || 0);
+    const oService = Number(order.service_fee || 0);
+    const oInvoice = Number(order.invoice_fee || 0);
 
     // 生成子单并迁移明细
     const now = Math.floor(Date.now() / 1000);
@@ -362,7 +546,9 @@ export class AdminOrderCompatService {
       for (let i = 0; i < 5; i++) {
         const base = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
         const sn = base.slice(-20);
-        const exists = await this.prisma.order.findUnique({ where: { order_sn: sn } }).catch(() => null);
+        const exists = await this.prisma.order
+          .findUnique({ where: { order_sn: sn } })
+          .catch(() => null);
         if (!exists) return sn;
       }
       // 兜底：原单号+时间尾巴裁剪
@@ -370,8 +556,17 @@ export class AdminOrderCompatService {
       return fallback;
     };
 
-    let shipAssigned = 0, paidAssigned = 0, unpaidAssigned = 0, totalAssigned = 0, productAssigned = 0,
-      couponAssigned = 0, pointsAssigned = 0, discountAssigned = 0, balanceAssigned = 0, serviceAssigned = 0, invoiceAssigned = 0;
+    let shipAssigned = 0,
+      paidAssigned = 0,
+      unpaidAssigned = 0,
+      totalAssigned = 0,
+      productAssigned = 0,
+      couponAssigned = 0,
+      pointsAssigned = 0,
+      discountAssigned = 0,
+      balanceAssigned = 0,
+      serviceAssigned = 0,
+      invoiceAssigned = 0;
     await this.prisma.$transaction(async (tx) => {
       for (let idx = 0; idx < groupList.length; idx++) {
         const g = groupList[idx];
@@ -379,20 +574,51 @@ export class AdminOrderCompatService {
         const ratio = g.subtotal / totalSubtotal;
 
         // 分摊金额，最后一个吃尾差
-  const product_amount = isLast ? (oProduct - productAssigned) : Number((oProduct * ratio).toFixed(2));
-  const shipping_fee = isLast ? (oShipping - shipAssigned) : Number((oShipping * ratio).toFixed(2));
-  const total_amount = isLast ? (oTotal - totalAssigned) : Number((oTotal * ratio).toFixed(2));
-  const paid_amount = isLast ? (oPaid - paidAssigned) : Number((oPaid * ratio).toFixed(2));
-  const unpaid_amount = isLast ? (oUnpaid - unpaidAssigned) : Number((oUnpaid * ratio).toFixed(2));
-  const coupon_amount = isLast ? (oCoupon - couponAssigned) : Number((oCoupon * ratio).toFixed(2));
-  const points_amount = isLast ? (oPoints - pointsAssigned) : Number((oPoints * ratio).toFixed(2));
-  const discount_amount = isLast ? (oDiscount - discountAssigned) : Number((oDiscount * ratio).toFixed(2));
-  const balance = isLast ? (oBalance - balanceAssigned) : Number((oBalance * ratio).toFixed(2));
-  const service_fee = isLast ? (oService - serviceAssigned) : Number((oService * ratio).toFixed(2));
-  const invoice_fee = isLast ? (oInvoice - invoiceAssigned) : Number((oInvoice * ratio).toFixed(2));
+        const product_amount = isLast
+          ? oProduct - productAssigned
+          : Number((oProduct * ratio).toFixed(2));
+        const shipping_fee = isLast
+          ? oShipping - shipAssigned
+          : Number((oShipping * ratio).toFixed(2));
+        const total_amount = isLast
+          ? oTotal - totalAssigned
+          : Number((oTotal * ratio).toFixed(2));
+        const paid_amount = isLast
+          ? oPaid - paidAssigned
+          : Number((oPaid * ratio).toFixed(2));
+        const unpaid_amount = isLast
+          ? oUnpaid - unpaidAssigned
+          : Number((oUnpaid * ratio).toFixed(2));
+        const coupon_amount = isLast
+          ? oCoupon - couponAssigned
+          : Number((oCoupon * ratio).toFixed(2));
+        const points_amount = isLast
+          ? oPoints - pointsAssigned
+          : Number((oPoints * ratio).toFixed(2));
+        const discount_amount = isLast
+          ? oDiscount - discountAssigned
+          : Number((oDiscount * ratio).toFixed(2));
+        const balance = isLast
+          ? oBalance - balanceAssigned
+          : Number((oBalance * ratio).toFixed(2));
+        const service_fee = isLast
+          ? oService - serviceAssigned
+          : Number((oService * ratio).toFixed(2));
+        const invoice_fee = isLast
+          ? oInvoice - invoiceAssigned
+          : Number((oInvoice * ratio).toFixed(2));
 
-  shipAssigned += shipping_fee; paidAssigned += paid_amount; unpaidAssigned += unpaid_amount; totalAssigned += total_amount; productAssigned += product_amount;
-  couponAssigned += coupon_amount; pointsAssigned += points_amount; discountAssigned += discount_amount; balanceAssigned += balance; serviceAssigned += service_fee; invoiceAssigned += invoice_fee;
+        shipAssigned += shipping_fee;
+        paidAssigned += paid_amount;
+        unpaidAssigned += unpaid_amount;
+        totalAssigned += total_amount;
+        productAssigned += product_amount;
+        couponAssigned += coupon_amount;
+        pointsAssigned += points_amount;
+        discountAssigned += discount_amount;
+        balanceAssigned += balance;
+        serviceAssigned += service_fee;
+        invoiceAssigned += invoice_fee;
 
         const childSn = await genSn();
         const child = await tx.order.create({
@@ -456,20 +682,31 @@ export class AdminOrderCompatService {
             is_exchange_order: order.is_exchange_order ?? false,
             order_type: order.order_type ?? 1,
             mark: order.mark ?? 0,
-            vendor_id: key === "vendor_id" ? (g.key || null) : order.vendor_id,
+            vendor_id: key === "vendor_id" ? g.key || null : order.vendor_id,
           },
         });
         children.push(child.order_id);
 
         // 迁移明细
         await tx.order_item.updateMany({
-          where: { order_id: order.order_id, item_id: { in: g.items.map((it) => it.item_id) } },
-          data: { order_id: child.order_id, order_sn: child.order_sn, shop_id: child.shop_id, vendor_id: child.vendor_id ?? undefined },
+          where: {
+            order_id: order.order_id,
+            item_id: { in: g.items.map((it) => it.item_id) },
+          },
+          data: {
+            order_id: child.order_id,
+            order_sn: child.order_sn,
+            shop_id: child.shop_id,
+            vendor_id: child.vendor_id ?? undefined,
+          },
         });
       }
 
       // 标记原单已拆分
-      await tx.order.update({ where: { order_id: order.order_id }, data: { is_store_splited: 1 } });
+      await tx.order.update({
+        where: { order_id: order.order_id },
+        data: { is_store_splited: 1 },
+      });
     });
     return true;
   }
@@ -483,34 +720,79 @@ export class AdminOrderCompatService {
   async getShopOrderStats(shopId: number) {
     const sid = Number(shopId);
     if (!Number.isFinite(sid) || sid <= 0) {
-      throw new BadRequestException('无效的店铺ID');
+      throw new BadRequestException("无效的店铺ID");
     }
     // 订单记录：该店铺的订单（子订单）或未拆分单（shop_id=sid & is_store_splited=0）
     // 由于拆分逻辑中子订单 shop_id 已指向店铺，直接按 shop_id 过滤即可；父订单 shop_id=0 不会被计入。
-    const paidStatuses = [1,2];
-    const [orderCount, paidOrders, productAgg, shippingAgg, couponAgg, discountAgg, pointsAgg, balanceAgg] = await Promise.all([
+    const paidStatuses = [1, 2];
+    const [
+      orderCount,
+      paidOrders,
+      productAgg,
+      shippingAgg,
+      couponAgg,
+      discountAgg,
+      pointsAgg,
+      balanceAgg,
+    ] = await Promise.all([
       this.prisma.order.count({ where: { shop_id: sid } }),
-      this.prisma.order.findMany({ where: { shop_id: sid, pay_status: { in: paidStatuses as any } }, select: { paid_amount: true, total_amount: true, product_amount: true, shipping_fee: true } }),
-      this.prisma.order.aggregate({ _sum: { product_amount: true }, where: { shop_id: sid } }),
-      this.prisma.order.aggregate({ _sum: { shipping_fee: true }, where: { shop_id: sid } }),
-      this.prisma.order.aggregate({ _sum: { coupon_amount: true }, where: { shop_id: sid } }),
-      this.prisma.order.aggregate({ _sum: { discount_amount: true }, where: { shop_id: sid } }),
-      this.prisma.order.aggregate({ _sum: { points_amount: true }, where: { shop_id: sid } }),
-      this.prisma.order.aggregate({ _sum: { balance: true }, where: { shop_id: sid } }),
+      this.prisma.order.findMany({
+        where: { shop_id: sid, pay_status: { in: paidStatuses as any } },
+        select: {
+          paid_amount: true,
+          total_amount: true,
+          product_amount: true,
+          shipping_fee: true,
+        },
+      }),
+      this.prisma.order.aggregate({
+        _sum: { product_amount: true },
+        where: { shop_id: sid },
+      }),
+      this.prisma.order.aggregate({
+        _sum: { shipping_fee: true },
+        where: { shop_id: sid },
+      }),
+      this.prisma.order.aggregate({
+        _sum: { coupon_amount: true },
+        where: { shop_id: sid },
+      }),
+      this.prisma.order.aggregate({
+        _sum: { discount_amount: true },
+        where: { shop_id: sid },
+      }),
+      this.prisma.order.aggregate({
+        _sum: { points_amount: true },
+        where: { shop_id: sid },
+      }),
+      this.prisma.order.aggregate({
+        _sum: { balance: true },
+        where: { shop_id: sid },
+      }),
     ]);
 
     const toNumber = (v: any) => Number(v ?? 0);
-    const paidAmount = paidOrders.reduce((acc, o: any) => acc + toNumber(o.paid_amount), 0);
-    const grossAmount = paidOrders.reduce((acc, o: any) => acc + toNumber(o.total_amount), 0);
+    const paidAmount = paidOrders.reduce(
+      (acc, o: any) => acc + toNumber(o.paid_amount),
+      0,
+    );
+    const grossAmount = paidOrders.reduce(
+      (acc, o: any) => acc + toNumber(o.total_amount),
+      0,
+    );
     return {
       shopId: sid,
       orderCount,
       paidAmount: Number(paidAmount.toFixed(2)),
       grossAmount: Number(grossAmount.toFixed(2)),
-      productAmount: Number(toNumber(productAgg._sum.product_amount).toFixed(2)),
+      productAmount: Number(
+        toNumber(productAgg._sum.product_amount).toFixed(2),
+      ),
       shippingFee: Number(toNumber(shippingAgg._sum.shipping_fee).toFixed(2)),
       couponAmount: Number(toNumber(couponAgg._sum.coupon_amount).toFixed(2)),
-      discountAmount: Number(toNumber(discountAgg._sum.discount_amount).toFixed(2)),
+      discountAmount: Number(
+        toNumber(discountAgg._sum.discount_amount).toFixed(2),
+      ),
       pointsAmount: Number(toNumber(pointsAgg._sum.points_amount).toFixed(2)),
       balanceUsed: Number(toNumber(balanceAgg._sum.balance).toFixed(2)),
       paidOrderCount: paidOrders.length,
@@ -567,12 +849,18 @@ export class AdminOrderCompatService {
   async getExportItemList() {
     const dict = this.getExportFieldDict();
     // 返回 [{ key, name }]
-    return Object.entries(dict).map(([key, meta]) => ({ key, name: meta.name }));
+    return Object.entries(dict).map(([key, meta]) => ({
+      key,
+      name: meta.name,
+    }));
   }
 
   async getExportItemInfo(adminId: number) {
     if (!adminId) return this.getDefaultExportFields();
-    const row = await this.prisma.admin_user.findUnique({ where: { admin_id: adminId }, select: { order_export: true } });
+    const row = await this.prisma.admin_user.findUnique({
+      where: { admin_id: adminId },
+      select: { order_export: true },
+    });
     if (!row?.order_export) return this.getDefaultExportFields();
     try {
       const arr = JSON.parse(row.order_export || "[]");
@@ -595,7 +883,8 @@ export class AdminOrderCompatService {
         try {
           const parsed: any = JSON.parse(trimmed);
           if (Array.isArray(parsed)) parsed.forEach(pushId);
-          else if (parsed && Array.isArray(parsed.ids)) parsed.ids.forEach(pushId);
+          else if (parsed && Array.isArray(parsed.ids))
+            parsed.ids.forEach(pushId);
         } catch {
           trimmed.split(",").forEach(pushId);
         }
@@ -616,10 +905,16 @@ export class AdminOrderCompatService {
     const endTime = query.endTime ?? query.end_time;
     const orderSource = query.orderSource ?? query.order_source; // 新增: 来源过滤
     const isDelParam = query.isDel ?? query.is_del; // 新增: 是否包含已删除
-    const ids = this.parseIdsParam(query.ids ?? query.rangeIds ?? query.orderIds);
+    const ids = this.parseIdsParam(
+      query.ids ?? query.rangeIds ?? query.orderIds,
+    );
     // 默认只查未删除(is_del=0)，当 isDel=-1/all 时查询全部，当 isDel=1 时只看已删除
     const where: any = {};
-    if (isDelParam === undefined || isDelParam === "" || String(isDelParam) === "0") {
+    if (
+      isDelParam === undefined ||
+      isDelParam === "" ||
+      String(isDelParam) === "0"
+    ) {
       where.is_del = 0;
     } else if (String(isDelParam) === "1") {
       where.is_del = 1;
@@ -632,15 +927,37 @@ export class AdminOrderCompatService {
         { consignee: { contains: keyword } },
       ];
     }
-    if (orderStatus !== undefined && orderStatus !== "" && String(orderStatus) !== "-1") where.order_status = Number(orderStatus);
-    if (payStatus !== undefined && payStatus !== "" && String(payStatus) !== "-1") where.pay_status = Number(payStatus);
-    if (shippingStatus !== undefined && shippingStatus !== "" && String(shippingStatus) !== "-1") where.shipping_status = Number(shippingStatus);
+    if (
+      orderStatus !== undefined &&
+      orderStatus !== "" &&
+      String(orderStatus) !== "-1"
+    )
+      where.order_status = Number(orderStatus);
+    if (
+      payStatus !== undefined &&
+      payStatus !== "" &&
+      String(payStatus) !== "-1"
+    )
+      where.pay_status = Number(payStatus);
+    if (
+      shippingStatus !== undefined &&
+      shippingStatus !== "" &&
+      String(shippingStatus) !== "-1"
+    )
+      where.shipping_status = Number(shippingStatus);
     if (startTime || endTime) {
-      const from = startTime ? Math.floor(new Date(startTime).getTime() / 1000) : undefined;
-      const to = endTime ? Math.floor(new Date(endTime).getTime() / 1000) : undefined;
-      where.add_time = { ...(from !== undefined && { gte: from }), ...(to !== undefined && { lte: to }) };
+      const from = startTime
+        ? Math.floor(new Date(startTime).getTime() / 1000)
+        : undefined;
+      const to = endTime
+        ? Math.floor(new Date(endTime).getTime() / 1000)
+        : undefined;
+      where.add_time = {
+        ...(from !== undefined && { gte: from }),
+        ...(to !== undefined && { lte: to }),
+      };
     }
-    if (orderSource && orderSource !== 'all' && orderSource !== '-1') {
+    if (orderSource && orderSource !== "all" && orderSource !== "-1") {
       // 仅当明确指明来源且不是 all/-1 时才过滤
       where.order_source = String(orderSource);
     }
@@ -648,7 +965,12 @@ export class AdminOrderCompatService {
   }
 
   // ====== 列表项格式化（对齐 PHP 返回） ======
-  private mapOrderRowToRecord(o: any, items: any[], userMap: Map<number, any>, shopMap: Map<number, any>) {
+  private mapOrderRowToRecord(
+    o: any,
+    items: any[],
+    userMap: Map<number, any>,
+    shopMap: Map<number, any>,
+  ) {
     const money = (v: any) => this.formatMoney(v);
     const addTimeText = this.formatUnixToTime(o.add_time);
     const regionIds = this.safeParseArray(o.region_ids);
@@ -664,7 +986,12 @@ export class AdminOrderCompatService {
     const shippingTypeName = o.shipping_type_name || "普通快递";
 
     return {
-      orderStatusName: this.getOrderStatusName(o.order_status, o.shipping_status, o.comment_status, o.pay_status),
+      orderStatusName: this.getOrderStatusName(
+        o.order_status,
+        o.shipping_status,
+        o.comment_status,
+        o.pay_status,
+      ),
       userAddress,
       shippingStatusName: this.getShippingStatusName(o.shipping_status),
       payStatusName: this.getPayStatusName(o.pay_status),
@@ -692,8 +1019,12 @@ export class AdminOrderCompatService {
       shippingTypeId,
       shippingTypeName,
       trackingNo: o.tracking_no,
-      shippingTime: o.shipping_time ? this.formatUnixToTime(o.shipping_time) : "",
-      receivedTime: o.received_time ? this.formatUnixToTime(o.received_time) : "",
+      shippingTime: o.shipping_time
+        ? this.formatUnixToTime(o.shipping_time)
+        : "",
+      receivedTime: o.received_time
+        ? this.formatUnixToTime(o.received_time)
+        : "",
       payTypeId: o.pay_type_id,
       payTime: o.pay_time ? this.formatUnixToTime(o.pay_time) : "",
       usePoints: o.use_points,
@@ -727,7 +1058,12 @@ export class AdminOrderCompatService {
       orderType: o.order_type ?? 1,
       mark: o.mark ?? 0,
       vendorId: o.vendor_id ?? 0,
-  availableActions: this.getAvailableActions(o.order_status, o.pay_status, o.shipping_status, o.is_store_splited),
+      availableActions: this.getAvailableActions(
+        o.order_status,
+        o.pay_status,
+        o.shipping_status,
+        o.is_store_splited,
+      ),
       autoDeliveryDays: null,
       preOrderStatus: null,
       preOrderStatusDesc: null,
@@ -735,7 +1071,12 @@ export class AdminOrderCompatService {
       vendorName: "",
       items: items.map((it) => this.mapOrderItem(it)),
       user: user
-        ? { username: user.username, nickname: user.nickname || "", userId: user.user_id, mobile: user.mobile || "" }
+        ? {
+            username: user.username,
+            nickname: user.nickname || "",
+            userId: user.user_id,
+            mobile: user.mobile || "",
+          }
         : null,
       shop: shop
         ? {
@@ -756,7 +1097,11 @@ export class AdminOrderCompatService {
     this.logger.debug(`mapOrderItem item=${JSON.stringify(it)}`);
     const money = (v: any) => this.formatMoney(v);
     const skuData = this.safeParseArray(it.sku_data);
-  let skuValue = this.buildSkuValue(skuData, this.safeParseArray(it.extra_sku_data), (it as any).sku_value_str);
+    const skuValue = this.buildSkuValue(
+      skuData,
+      this.safeParseArray(it.extra_sku_data),
+      (it as any).sku_value_str,
+    );
     return {
       itemId: it.item_id,
       orderId: it.order_id,
@@ -797,8 +1142,13 @@ export class AdminOrderCompatService {
       skuValue,
       // 额外对齐
       stock: (it as any).product_stock ?? null,
-      subtotal: money((Number(it.price || 0) || 0) * (Number(it.quantity || 0) || 0)),
-      allowDeliverNum: Math.max(0, Number(it.quantity || 0) - Number(it.delivery_quantity || 0)),
+      subtotal: money(
+        (Number(it.price || 0) || 0) * (Number(it.quantity || 0) || 0),
+      ),
+      allowDeliverNum: Math.max(
+        0,
+        Number(it.quantity || 0) - Number(it.delivery_quantity || 0),
+      ),
       aftersalesItem: null,
       eCard: [],
     };
@@ -809,12 +1159,15 @@ export class AdminOrderCompatService {
     const tryPush = (e: any) => {
       if (!e || typeof e !== "object") return;
       let name = e.name ?? e.attrName ?? e.k ?? e.key ?? e.label ?? "";
-      let value = e.value ?? e.attrValue ?? e.v ?? e.val ?? e.valueId ?? e.id ?? "";
+      let value =
+        e.value ?? e.attrValue ?? e.v ?? e.val ?? e.valueId ?? e.id ?? "";
       name = name == null ? "" : String(name).trim();
       value = value == null ? "" : String(value).trim();
       if (name && value) pairs.push(`${name}:${value}`);
     };
-    this.logger.debug(`buildSkuValue skuData=${JSON.stringify(skuData)} extra=${JSON.stringify(extra)} skuValueStr=${skuValueStr}`);
+    this.logger.debug(
+      `buildSkuValue skuData=${JSON.stringify(skuData)} extra=${JSON.stringify(extra)} skuValueStr=${skuValueStr}`,
+    );
     if (Array.isArray(skuData)) skuData.forEach(tryPush);
     if (!pairs.length && Array.isArray(extra)) extra.forEach(tryPush);
     if (pairs.length) return pairs.join("|");
@@ -835,11 +1188,19 @@ export class AdminOrderCompatService {
     const shipped = Number(order.shipping_status) > 0;
     const steps = [
       { title: "提交订单", description: addDesc },
-      { title: paid ? "已支付" : "待支付", description: paid ? this.formatUnixToTime(order.pay_time) : "" },
-      { title: shipped ? "已发货" : "待发货", description: shipped ? this.formatUnixToTime(order.shipping_time) : "" },
+      {
+        title: paid ? "已支付" : "待支付",
+        description: paid ? this.formatUnixToTime(order.pay_time) : "",
+      },
+      {
+        title: shipped ? "已发货" : "待发货",
+        description: shipped ? this.formatUnixToTime(order.shipping_time) : "",
+      },
     ];
     let current = 1;
-    if (shipped) current = 3; else if (paid) current = 2; else current = 1;
+    if (shipped) current = 3;
+    else if (paid) current = 2;
+    else current = 1;
     return { current, status: "process", steps };
   }
 
@@ -864,22 +1225,40 @@ export class AdminOrderCompatService {
   }
 
   private mapOrderExtension(ext: any) {
-    if (!ext) return { couponAmount: [], discountAmount: [], shippingFee: [], shippingType: [] };
+    if (!ext)
+      return {
+        couponAmount: [],
+        discountAmount: [],
+        shippingFee: [],
+        shippingType: [],
+      };
     return ext;
   }
 
-  private getOrderStatusName(status: number, shippingStatus?: number, commentStatus?: number, payStatus?: number) {
+  private getOrderStatusName(
+    status: number,
+    shippingStatus?: number,
+    commentStatus?: number,
+    payStatus?: number,
+  ) {
     // 与用户端一致的显示规则
     try {
-      const util = require('../common/order-status.util');
-      return util.getOrderStatusNameDisplay(status, shippingStatus, commentStatus, payStatus);
+      const util = require("../common/order-status.util");
+      return util.getOrderStatusNameDisplay(
+        status,
+        shippingStatus,
+        commentStatus,
+        payStatus,
+      );
     } catch {
       // 回退（不建议走到这里）
-      if (Number(status) === 0) return '待支付';
-      if (Number(status) === 1) return Number(shippingStatus) > 0 ? '待收货' : '待发货';
-      if (Number(status) === 2) return '已取消';
-      if (Number(status) === 3) return Number(commentStatus) === 0 ? '待评价' : '已完成';
-      return '';
+      if (Number(status) === 0) return "待支付";
+      if (Number(status) === 1)
+        return Number(shippingStatus) > 0 ? "待收货" : "待发货";
+      if (Number(status) === 2) return "已取消";
+      if (Number(status) === 3)
+        return Number(commentStatus) === 0 ? "待评价" : "已完成";
+      return "";
     }
   }
 
@@ -909,7 +1288,12 @@ export class AdminOrderCompatService {
     }
   }
 
-  private getAvailableActions(orderStatus: number, payStatus: number, shippingStatus: number, isStoreSplited?: any) {
+  private getAvailableActions(
+    orderStatus: number,
+    payStatus: number,
+    shippingStatus: number,
+    isStoreSplited?: any,
+  ) {
     const os = Number(orderStatus);
     const ps = Number(payStatus);
     const ss = Number(shippingStatus);
@@ -967,7 +1351,11 @@ export class AdminOrderCompatService {
   private safeParseJson(s: any) {
     if (!s) return null;
     if (typeof s === "object") return s;
-    try { return JSON.parse(String(s)); } catch { return null; }
+    try {
+      return JSON.parse(String(s));
+    } catch {
+      return null;
+    }
   }
 
   private safeParseArray(s: any) {
@@ -979,7 +1367,8 @@ export class AdminOrderCompatService {
       return Array.isArray(parsed) ? parsed : [];
     } catch {
       const str = String(s);
-      if (str.includes(",")) return str.split(",").map((x) => (isNaN(Number(x)) ? x : Number(x)));
+      if (str.includes(","))
+        return str.split(",").map((x) => (isNaN(Number(x)) ? x : Number(x)));
       return [];
     }
   }
@@ -999,7 +1388,9 @@ export class AdminOrderCompatService {
       const d = new Date((Number(ts) || 0) * 1000);
       const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    } catch { return ""; }
+    } catch {
+      return "";
+    }
   }
 
   private normalizeAddress(order: any) {
@@ -1018,11 +1409,20 @@ export class AdminOrderCompatService {
     const dict = this.getExportFieldDict();
     const where = this.buildOrderWhereFromQuery(query);
     // 拉取订单
-    const orders = await this.prisma.order.findMany({ where, orderBy: { add_time: "desc" } });
-    if (!orders.length) return { headers: fields.map((k) => dict[k]?.name || k), rows: [] as string[][] };
+    const orders = await this.prisma.order.findMany({
+      where,
+      orderBy: { add_time: "desc" },
+    });
+    if (!orders.length)
+      return {
+        headers: fields.map((k) => dict[k]?.name || k),
+        rows: [] as string[][],
+      };
     // 拉取订单项以便汇总
     const ids = orders.map((o: any) => o.order_id);
-    const items = await this.prisma.order_item.findMany({ where: { order_id: { in: ids } } });
+    const items = await this.prisma.order_item.findMany({
+      where: { order_id: { in: ids } },
+    });
     const itemMap = new Map<number, any[]>();
     for (const it of items) {
       const arr = itemMap.get(it.order_id) || [];
@@ -1033,33 +1433,75 @@ export class AdminOrderCompatService {
     const rows: string[][] = [];
     for (const o of orders) {
       const its = itemMap.get(o.order_id) || [];
-      const productNames = its.map((it: any) => `${it.product_name}x${it.product_nums}`).join(" | ");
-      const itemsCount = its.reduce((sum, it: any) => sum + Number(it.product_nums || 0), 0);
+      const productNames = its
+        .map((it: any) => `${it.product_name}x${it.product_nums}`)
+        .join(" | ");
+      const itemsCount = its.reduce(
+        (sum, it: any) => sum + Number(it.product_nums || 0),
+        0,
+      );
       const address = this.normalizeAddress(o);
       const line: string[] = [];
       for (const key of fields) {
         switch (key) {
-          case "orderSn": line.push(o.order_sn || ""); break;
-          case "addTime": line.push(this.tsToStr(o.add_time)); break;
-          case "orderStatus": line.push(this.num(o.order_status)); break;
-          case "payStatus": line.push(this.num(o.pay_status)); break;
-          case "shippingStatus": line.push(this.num(o.shipping_status)); break;
-          case "consignee": line.push(o.consignee || ""); break;
-          case "mobile": line.push(o.mobile || ""); break;
-          case "address": line.push(address); break;
-          case "logisticsName": line.push(o.logistics_name || ""); break;
-          case "trackingNo": line.push(o.tracking_no || ""); break;
-          case "itemsCount": line.push(String(itemsCount)); break;
-          case "productNames": line.push(productNames); break;
-          case "totalAmount": line.push(this.num(o.total_amount)); break;
-          case "shippingFee": line.push(this.num(o.shipping_fee)); break;
-          case "paidAmount": line.push(this.num(o.paid_amount)); break;
-          case "unpaidAmount": line.push(this.num(o.unpaid_amount)); break;
-          case "buyerNote": line.push(o.buyer_note || ""); break;
-          case "adminNote": line.push(o.admin_note || ""); break;
+          case "orderSn":
+            line.push(o.order_sn || "");
+            break;
+          case "addTime":
+            line.push(this.tsToStr(o.add_time));
+            break;
+          case "orderStatus":
+            line.push(this.num(o.order_status));
+            break;
+          case "payStatus":
+            line.push(this.num(o.pay_status));
+            break;
+          case "shippingStatus":
+            line.push(this.num(o.shipping_status));
+            break;
+          case "consignee":
+            line.push(o.consignee || "");
+            break;
+          case "mobile":
+            line.push(o.mobile || "");
+            break;
+          case "address":
+            line.push(address);
+            break;
+          case "logisticsName":
+            line.push(o.logistics_name || "");
+            break;
+          case "trackingNo":
+            line.push(o.tracking_no || "");
+            break;
+          case "itemsCount":
+            line.push(String(itemsCount));
+            break;
+          case "productNames":
+            line.push(productNames);
+            break;
+          case "totalAmount":
+            line.push(this.num(o.total_amount));
+            break;
+          case "shippingFee":
+            line.push(this.num(o.shipping_fee));
+            break;
+          case "paidAmount":
+            line.push(this.num(o.paid_amount));
+            break;
+          case "unpaidAmount":
+            line.push(this.num(o.unpaid_amount));
+            break;
+          case "buyerNote":
+            line.push(o.buyer_note || "");
+            break;
+          case "adminNote":
+            line.push(o.admin_note || "");
+            break;
           default: {
             const meta = dict[key];
-            if (meta?.col && Object.prototype.hasOwnProperty.call(o, meta.col)) line.push(String((o as any)[meta.col] ?? ""));
+            if (meta?.col && Object.prototype.hasOwnProperty.call(o, meta.col))
+              line.push(String((o as any)[meta.col] ?? ""));
             else line.push("");
           }
         }
@@ -1070,22 +1512,41 @@ export class AdminOrderCompatService {
   }
 
   // ---------- 订单操作实现（基础版本，支持传入目标状态，默认常用值） ----------
-  async deliver(orderId: number, data: { trackingNo?: string; logisticsId?: any; logisticsName?: string; shippingStatus?: any }, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+  async deliver(
+    orderId: number,
+    data: {
+      trackingNo?: string;
+      logisticsId?: any;
+      logisticsName?: string;
+      shippingStatus?: any;
+    },
+    adminName?: string,
+    adminId?: number,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     const now = Math.floor(Date.now() / 1000);
-    const shipping_status = data?.shippingStatus != null ? Number(data.shippingStatus) : 1; // 默认 1=已发货
+    const shipping_status =
+      data?.shippingStatus != null ? Number(data.shippingStatus) : 1; // 默认 1=已发货
     // 若是父订单且已拆分，级联更新所有子订单
-    const isParent = order.parent_order_id === 0 && order.is_store_splited === 1;
+    const isParent =
+      order.parent_order_id === 0 && order.is_store_splited === 1;
     if (isParent) {
-      const children = await this.prisma.order.findMany({ where: { parent_order_id: order.order_id } });
+      const children = await this.prisma.order.findMany({
+        where: { parent_order_id: order.order_id },
+      });
       await this.prisma.$transaction(async (tx) => {
         // 更新父订单
         await tx.order.update({
           where: { order_id: order.order_id },
           data: {
             tracking_no: data?.trackingNo ?? order.tracking_no,
-            logistics_id: data?.logisticsId != null ? Number(data.logisticsId) : order.logistics_id,
+            logistics_id:
+              data?.logisticsId != null
+                ? Number(data.logisticsId)
+                : order.logistics_id,
             logistics_name: data?.logisticsName ?? order.logistics_name,
             shipping_time: now,
             shipping_status,
@@ -1102,8 +1563,15 @@ export class AdminOrderCompatService {
           });
         }
       });
-      await this.addLog(orderId, `父订单发货并级联子订单：物流=${data?.logisticsName ?? order.logistics_name} 单号=${data?.trackingNo ?? order.tracking_no}`, adminName, adminId);
-      for (const c of await this.prisma.order.findMany({ where: { parent_order_id: order.order_id } })) {
+      await this.addLog(
+        orderId,
+        `父订单发货并级联子订单：物流=${data?.logisticsName ?? order.logistics_name} 单号=${data?.trackingNo ?? order.tracking_no}`,
+        adminName,
+        adminId,
+      );
+      for (const c of await this.prisma.order.findMany({
+        where: { parent_order_id: order.order_id },
+      })) {
         await this.addLog(c.order_id, `继承父订单发货状态`, adminName, adminId);
       }
     } else {
@@ -1111,28 +1579,55 @@ export class AdminOrderCompatService {
         where: { order_id: orderId },
         data: {
           tracking_no: data?.trackingNo ?? order.tracking_no,
-          logistics_id: data?.logisticsId != null ? Number(data.logisticsId) : order.logistics_id,
+          logistics_id:
+            data?.logisticsId != null
+              ? Number(data.logisticsId)
+              : order.logistics_id,
           logistics_name: data?.logisticsName ?? order.logistics_name,
           shipping_time: now,
           shipping_status,
         },
       });
-      await this.addLog(orderId, `发货：物流=${data?.logisticsName ?? order.logistics_name} 单号=${data?.trackingNo ?? order.tracking_no}`, adminName, adminId);
+      await this.addLog(
+        orderId,
+        `发货：物流=${data?.logisticsName ?? order.logistics_name} 单号=${data?.trackingNo ?? order.tracking_no}`,
+        adminName,
+        adminId,
+      );
       // 若为子订单，判断所有兄弟是否已发货，若都发货则提升父订单 shipping_status
       if (order.parent_order_id) {
-        const siblings = await this.prisma.order.findMany({ where: { parent_order_id: order.parent_order_id } });
-        const allShipped = siblings.every(s => Number(s.shipping_status) === 1);
+        const siblings = await this.prisma.order.findMany({
+          where: { parent_order_id: order.parent_order_id },
+        });
+        const allShipped = siblings.every(
+          (s) => Number(s.shipping_status) === 1,
+        );
         if (allShipped) {
-          await this.prisma.order.update({ where: { order_id: order.parent_order_id }, data: { shipping_status: 1, shipping_time: now } });
-          await this.addLog(order.parent_order_id, '所有子订单已发货，父订单标记为已发货', adminName, adminId);
+          await this.prisma.order.update({
+            where: { order_id: order.parent_order_id },
+            data: { shipping_status: 1, shipping_time: now },
+          });
+          await this.addLog(
+            order.parent_order_id,
+            "所有子订单已发货，父订单标记为已发货",
+            adminName,
+            adminId,
+          );
         }
       }
     }
     return true;
   }
 
-  async confirmReceipt(orderId: number, shippingStatus?: any, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+  async confirmReceipt(
+    orderId: number,
+    shippingStatus?: any,
+    adminName?: string,
+    adminId?: number,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     const now = Math.floor(Date.now() / 1000);
     // PHP 行为：确认收货 => order_status=3(已完成) + shipping_status=1(已发货) + received_time
@@ -1147,18 +1642,42 @@ export class AdminOrderCompatService {
     }
     const targetShipping = shippingStatus != null ? Number(shippingStatus) : 1;
     const targetStatus = targetShipping === 0 ? 1 : targetShipping;
-    const isParent = order.parent_order_id === 0 && order.is_store_splited === 1;
+    const isParent =
+      order.parent_order_id === 0 && order.is_store_splited === 1;
     if (isParent) {
-      const children = await this.prisma.order.findMany({ where: { parent_order_id: order.order_id } });
+      const children = await this.prisma.order.findMany({
+        where: { parent_order_id: order.order_id },
+      });
       await this.prisma.$transaction(async (tx) => {
-        await tx.order.update({ where: { order_id: order.order_id }, data: { order_status: 3, shipping_status: targetStatus, received_time: now } });
+        await tx.order.update({
+          where: { order_id: order.order_id },
+          data: {
+            order_status: 3,
+            shipping_status: targetStatus,
+            received_time: now,
+          },
+        });
         for (const c of children) {
-          await tx.order.update({ where: { order_id: c.order_id }, data: { order_status: 3, shipping_status: targetStatus, received_time: now } });
+          await tx.order.update({
+            where: { order_id: c.order_id },
+            data: {
+              order_status: 3,
+              shipping_status: targetStatus,
+              received_time: now,
+            },
+          });
         }
       });
-      await this.addLog(orderId, '父订单确认收货并级联子订单', adminName, adminId);
-      for (const c of await this.prisma.order.findMany({ where: { parent_order_id: order.order_id } })) {
-        await this.addLog(c.order_id, '继承父订单确认收货', adminName, adminId);
+      await this.addLog(
+        orderId,
+        "父订单确认收货并级联子订单",
+        adminName,
+        adminId,
+      );
+      for (const c of await this.prisma.order.findMany({
+        where: { parent_order_id: order.order_id },
+      })) {
+        await this.addLog(c.order_id, "继承父订单确认收货", adminName, adminId);
       }
     } else {
       await this.prisma.order.update({
@@ -1172,35 +1691,65 @@ export class AdminOrderCompatService {
       await this.addLog(orderId, "确认收货，订单已完成", adminName, adminId);
       // 子订单完成后检查同父订单其他子单是否也完成
       if (order.parent_order_id) {
-        const siblings = await this.prisma.order.findMany({ where: { parent_order_id: order.parent_order_id } });
-        const allDone = siblings.every(s => Number(s.order_status) === 3);
+        const siblings = await this.prisma.order.findMany({
+          where: { parent_order_id: order.parent_order_id },
+        });
+        const allDone = siblings.every((s) => Number(s.order_status) === 3);
         if (allDone) {
-          await this.prisma.order.update({ where: { order_id: order.parent_order_id }, data: { order_status: 3, shipping_status: 1, received_time: now } });
-          await this.addLog(order.parent_order_id, '全部子订单完成，父订单标记完成', adminName, adminId);
+          await this.prisma.order.update({
+            where: { order_id: order.parent_order_id },
+            data: { order_status: 3, shipping_status: 1, received_time: now },
+          });
+          await this.addLog(
+            order.parent_order_id,
+            "全部子订单完成，父订单标记完成",
+            adminName,
+            adminId,
+          );
         }
       }
     }
     return true;
   }
 
-  async setPaid(orderId: number, payStatus?: any, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+  async setPaid(
+    orderId: number,
+    payStatus?: any,
+    adminName?: string,
+    adminId?: number,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     const now = Math.floor(Date.now() / 1000);
     const status = payStatus != null ? Number(payStatus) : 1; // 默认 1=已支付
-    await this.prisma.order.update({ where: { order_id: orderId }, data: { pay_status: status, pay_time: now } });
+    await this.prisma.order.update({
+      where: { order_id: orderId },
+      data: { pay_status: status, pay_time: now },
+    });
     await this.addLog(orderId, "设置已支付", adminName, adminId);
     return true;
   }
 
-  async cancelOrder(orderId: number, reason?: string, orderStatus?: any, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+  async cancelOrder(
+    orderId: number,
+    reason?: string,
+    orderStatus?: any,
+    adminName?: string,
+    adminId?: number,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
 
-  // 对齐 PHP：未发货阶段（shipping_status=0）取消时恢复库存
-  const shouldRestore = Number(order.shipping_status) === 0;
+    // 对齐 PHP：未发货阶段（shipping_status=0）取消时恢复库存
+    const shouldRestore = Number(order.shipping_status) === 0;
     if (shouldRestore) {
-      const items = await this.prisma.order_item.findMany({ where: { order_id: orderId } });
+      const items = await this.prisma.order_item.findMany({
+        where: { order_id: orderId },
+      });
       const now = Math.floor(Date.now() / 1000);
       await this.prisma.$transaction(async (tx) => {
         for (const it of items as any[]) {
@@ -1213,13 +1762,29 @@ export class AdminOrderCompatService {
 
           if (isGift) {
             if (productId > 0) {
-              const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
+              const prod = await tx.product.findFirst({
+                where: { product_id: productId },
+                select: { product_stock: true },
+              });
               if (prod) {
                 const oldNum = Number(prod.product_stock || 0);
                 const newNum = oldNum + quantity;
-                await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
+                await tx.product.updateMany({
+                  where: { product_id: productId },
+                  data: { product_stock: newNum },
+                });
                 await tx.product_inventory_log.create({
-                  data: { product_id: productId, spec_id: 0, number: quantity, add_time: now, old_number: oldNum, type: true as any, change_number: quantity, desc: "取消订单恢复库存", shop_id: shopId },
+                  data: {
+                    product_id: productId,
+                    spec_id: 0,
+                    number: quantity,
+                    add_time: now,
+                    old_number: oldNum,
+                    type: true as any,
+                    change_number: quantity,
+                    desc: "取消订单恢复库存",
+                    shop_id: shopId,
+                  },
                 });
               }
             }
@@ -1227,85 +1792,175 @@ export class AdminOrderCompatService {
           }
 
           if (skuId > 0) {
-            const sku = await tx.product_sku.findUnique({ where: { sku_id: skuId }, select: { sku_stock: true, product_id: true } });
+            const sku = await tx.product_sku.findUnique({
+              where: { sku_id: skuId },
+              select: { sku_stock: true, product_id: true },
+            });
             if (sku) {
               const oldSku = Number(sku.sku_stock || 0);
               const newSku = oldSku + quantity;
-              await tx.product_sku.update({ where: { sku_id: skuId }, data: { sku_stock: newSku } });
+              await tx.product_sku.update({
+                where: { sku_id: skuId },
+                data: { sku_stock: newSku },
+              });
 
               const pId = Number(sku.product_id || productId || 0);
               if (pId > 0) {
-                const prod = await tx.product.findFirst({ where: { product_id: pId }, select: { product_stock: true } });
+                const prod = await tx.product.findFirst({
+                  where: { product_id: pId },
+                  select: { product_stock: true },
+                });
                 if (prod) {
                   const oldProd = Number(prod.product_stock || 0);
                   const newProd = oldProd + quantity;
-                  await tx.product.updateMany({ where: { product_id: pId }, data: { product_stock: newProd } });
+                  await tx.product.updateMany({
+                    where: { product_id: pId },
+                    data: { product_stock: newProd },
+                  });
                   await tx.product_inventory_log.create({
-                    data: { product_id: pId, spec_id: skuId, number: quantity, add_time: now, old_number: oldSku, type: true as any, change_number: quantity, desc: "取消订单恢复库存", shop_id: shopId },
+                    data: {
+                      product_id: pId,
+                      spec_id: skuId,
+                      number: quantity,
+                      add_time: now,
+                      old_number: oldSku,
+                      type: true as any,
+                      change_number: quantity,
+                      desc: "取消订单恢复库存",
+                      shop_id: shopId,
+                    },
                   });
                 }
               }
             }
           } else if (productId > 0) {
-            const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
+            const prod = await tx.product.findFirst({
+              where: { product_id: productId },
+              select: { product_stock: true },
+            });
             if (prod) {
               const oldNum = Number(prod.product_stock || 0);
               const newNum = oldNum + quantity;
-              await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
+              await tx.product.updateMany({
+                where: { product_id: productId },
+                data: { product_stock: newNum },
+              });
               await tx.product_inventory_log.create({
-                data: { product_id: productId, spec_id: 0, number: quantity, add_time: now, old_number: oldNum, type: true as any, change_number: quantity, desc: "取消订单恢复库存", shop_id: shopId },
+                data: {
+                  product_id: productId,
+                  spec_id: 0,
+                  number: quantity,
+                  add_time: now,
+                  old_number: oldNum,
+                  type: true as any,
+                  change_number: quantity,
+                  desc: "取消订单恢复库存",
+                  shop_id: shopId,
+                },
               });
             }
           }
         }
 
-        await tx.order.update({ where: { order_id: orderId }, data: { order_status: 2 } });
+        await tx.order.update({
+          where: { order_id: orderId },
+          data: { order_status: 2 },
+        });
       });
     } else {
       const status = orderStatus != null ? Number(orderStatus) : 2; // 默认 2=已取消
-      await this.prisma.order.update({ where: { order_id: orderId }, data: { order_status: status } });
+      await this.prisma.order.update({
+        where: { order_id: orderId },
+        data: { order_status: status },
+      });
     }
 
-    await this.addLog(orderId, `取消订单${reason ? `：${reason}` : ""}`, adminName, adminId);
+    await this.addLog(
+      orderId,
+      `取消订单${reason ? `：${reason}` : ""}`,
+      adminName,
+      adminId,
+    );
     return true;
   }
 
-  async setConfirm(orderId: number, orderStatus?: any, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+  async setConfirm(
+    orderId: number,
+    orderStatus?: any,
+    adminName?: string,
+    adminId?: number,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     const status = orderStatus != null ? Number(orderStatus) : 1; // 默认 1=已确认
-    await this.prisma.order.update({ where: { order_id: orderId }, data: { order_status: status } });
+    await this.prisma.order.update({
+      where: { order_id: orderId },
+      data: { order_status: status },
+    });
     await this.addLog(orderId, "设置已确认", adminName, adminId);
     return true;
   }
 
   async delOrder(orderId: number, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
-    await this.prisma.order.update({ where: { order_id: orderId }, data: { is_del: 1 } });
+    await this.prisma.order.update({
+      where: { order_id: orderId },
+      data: { is_del: 1 },
+    });
     await this.addLog(orderId, "删除订单（软删）", adminName, adminId);
     return true;
   }
 
-  async modifyMoney(orderId: number, patch: Record<string, any>, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+  async modifyMoney(
+    orderId: number,
+    patch: Record<string, any>,
+    adminName?: string,
+    adminId?: number,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     const numericKeys = [
-      "total_amount","shipping_fee","discount_amount","coupon_amount","invoice_fee","service_fee","product_amount"
+      "total_amount",
+      "shipping_fee",
+      "discount_amount",
+      "coupon_amount",
+      "invoice_fee",
+      "service_fee",
+      "product_amount",
     ];
     const data: any = {};
     for (const k of numericKeys) {
       const val = patch[k] ?? patch[this.camelToSnake(k)];
       if (val != null && val !== "") data[k] = Number(val);
     }
-    if (Object.keys(data).length === 0) throw new BadRequestException("未提供可变更金额字段");
+    if (Object.keys(data).length === 0)
+      throw new BadRequestException("未提供可变更金额字段");
     await this.prisma.order.update({ where: { order_id: orderId }, data });
-    await this.addLog(orderId, `修改金额：${JSON.stringify(data)}`, adminName, adminId);
+    await this.addLog(
+      orderId,
+      `修改金额：${JSON.stringify(data)}`,
+      adminName,
+      adminId,
+    );
     return true;
   }
 
-  async modifyConsignee(orderId: number, patch: Record<string, any>, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+  async modifyConsignee(
+    orderId: number,
+    patch: Record<string, any>,
+    adminName?: string,
+    adminId?: number,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     const data: any = {};
     const map = {
@@ -1320,14 +1975,22 @@ export class AdminOrderCompatService {
       const v = patch[inKey] ?? patch[this.snakeToCamel(col)];
       if (v != null) data[col] = typeof v === "object" ? JSON.stringify(v) : v;
     }
-    if (Object.keys(data).length === 0) throw new BadRequestException("未提供修改项");
+    if (Object.keys(data).length === 0)
+      throw new BadRequestException("未提供修改项");
     await this.prisma.order.update({ where: { order_id: orderId }, data });
     await this.addLog(orderId, `修改收货信息`, adminName, adminId);
     return true;
   }
 
-  async modifyShipping(orderId: number, patch: Record<string, any>, adminName?: string, adminId?: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+  async modifyShipping(
+    orderId: number,
+    patch: Record<string, any>,
+    adminName?: string,
+    adminId?: number,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     const data: any = {};
     const map = {
@@ -1340,35 +2003,72 @@ export class AdminOrderCompatService {
     } as const;
     for (const [inKey, col] of Object.entries(map)) {
       const v = patch[inKey] ?? patch[this.snakeToCamel(col)];
-      if (v != null) data[col] = typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v;
+      if (v != null)
+        data[col] = typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v;
     }
-    if (patch.shippingStatus != null) data.shipping_status = Number(patch.shippingStatus);
-    if (Object.keys(data).length === 0) throw new BadRequestException("未提供修改项");
+    if (patch.shippingStatus != null)
+      data.shipping_status = Number(patch.shippingStatus);
+    if (Object.keys(data).length === 0)
+      throw new BadRequestException("未提供修改项");
     await this.prisma.order.update({ where: { order_id: orderId }, data });
     await this.addLog(orderId, `修改配送信息`, adminName, adminId);
     return true;
   }
 
-  async setAdminNote(orderId: number, note: string, adminName?: string, adminId?: number) {
-    await this.prisma.order.update({ where: { order_id: orderId }, data: { admin_note: note ?? "" } });
+  async setAdminNote(
+    orderId: number,
+    note: string,
+    adminName?: string,
+    adminId?: number,
+  ) {
+    await this.prisma.order.update({
+      where: { order_id: orderId },
+      data: { admin_note: note ?? "" },
+    });
     await this.addLog(orderId, `设置商家备注`, adminName, adminId);
     return true;
   }
 
   async shippingInfo(orderId: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
-    const { logistics_id, logistics_name, tracking_no, shipping_status, shipping_time, received_time } = order as any;
-    return { logistics_id, logistics_name, tracking_no, shipping_status, shipping_time, received_time };
+    const {
+      logistics_id,
+      logistics_name,
+      tracking_no,
+      shipping_status,
+      shipping_time,
+      received_time,
+    } = order as any;
+    return {
+      logistics_id,
+      logistics_name,
+      tracking_no,
+      shipping_status,
+      shipping_time,
+      received_time,
+    };
   }
 
   // ---------- 扩展：打印/面单/父订单/批量/页面配置 ----------
   async getParentDetail(orderId: number) {
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
-    const parentId = order.parent_order_id && order.parent_order_id > 0 ? order.parent_order_id : order.order_id;
-    const parent = await this.prisma.order.findUnique({ where: { order_id: parentId } });
-    const children = await this.prisma.order.findMany({ where: { parent_order_id: parentId }, orderBy: { order_id: "asc" } });
+    const parentId =
+      order.parent_order_id && order.parent_order_id > 0
+        ? order.parent_order_id
+        : order.order_id;
+    const parent = await this.prisma.order.findUnique({
+      where: { order_id: parentId },
+    });
+    const children = await this.prisma.order.findMany({
+      where: { parent_order_id: parentId },
+      orderBy: { order_id: "asc" },
+    });
     return { parent, children };
   }
 
@@ -1378,7 +2078,10 @@ export class AdminOrderCompatService {
     // 简化：返回打印所需关键信息
     const address = this.normalizeAddress(base);
     const summary = {
-      totalQuantity: (base.items || []).reduce((s: number, it: any) => s + Number(it.product_nums || 0), 0),
+      totalQuantity: (base.items || []).reduce(
+        (s: number, it: any) => s + Number(it.product_nums || 0),
+        0,
+      ),
       totalAmount: base.total_amount,
       paidAmount: base.paid_amount,
       unpaidAmount: base.unpaid_amount,
@@ -1407,7 +2110,9 @@ export class AdminOrderCompatService {
 
   async getOrderWayBill(orderId: number) {
     // 电子面单数据（仅组装数据，未对接第三方）
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     const address = this.normalizeAddress(order);
     return {
@@ -1428,38 +2133,68 @@ export class AdminOrderCompatService {
     return { ...bill, template: "default" };
   }
 
-  async batchOperation(type: string, ids: number[], data: any, adminName?: string) {
-    if (!Array.isArray(ids) || !ids.length) throw new BadRequestException("ids 不能为空");
+  async batchOperation(
+    type: string,
+    ids: number[],
+    data: any,
+    adminName?: string,
+  ) {
+    if (!Array.isArray(ids) || !ids.length)
+      throw new BadRequestException("ids 不能为空");
     const results: Record<number, boolean> = {};
     for (const id of ids) {
       try {
         switch (type) {
           case "del":
           case "delete":
-            await this.delOrder(id, adminName); break;
+            await this.delOrder(id, adminName);
+            break;
           case "confirm":
           case "setConfirm":
-            await this.setConfirm(id, data?.orderStatus ?? data?.order_status, adminName); break;
+            await this.setConfirm(
+              id,
+              data?.orderStatus ?? data?.order_status,
+              adminName,
+            );
+            break;
           case "paid":
           case "setPaid":
-            await this.setPaid(id, data?.payStatus ?? data?.pay_status, adminName); break;
+            await this.setPaid(
+              id,
+              data?.payStatus ?? data?.pay_status,
+              adminName,
+            );
+            break;
           case "deliver":
-            await this.deliver(id, {
-              trackingNo: data?.trackingNo ?? data?.tracking_no,
-              logisticsId: data?.logisticsId ?? data?.logistics_id,
-              logisticsName: data?.logisticsName ?? data?.logistics_name,
-              shippingStatus: data?.shippingStatus ?? data?.shipping_status,
-            }, adminName); break;
+            await this.deliver(
+              id,
+              {
+                trackingNo: data?.trackingNo ?? data?.tracking_no,
+                logisticsId: data?.logisticsId ?? data?.logistics_id,
+                logisticsName: data?.logisticsName ?? data?.logistics_name,
+                shippingStatus: data?.shippingStatus ?? data?.shipping_status,
+              },
+              adminName,
+            );
+            break;
           case "cancel":
           case "cancelOrder":
-            await this.cancelOrder(id, data?.reason ?? data?.remark, data?.orderStatus ?? data?.order_status, adminName); break;
+            await this.cancelOrder(
+              id,
+              data?.reason ?? data?.remark,
+              data?.orderStatus ?? data?.order_status,
+              adminName,
+            );
+            break;
           default:
             // 未知操作：记录日志但不中断
             await this.addLog(id, `批量操作(${type}) 未实现，忽略`, adminName);
         }
         results[id] = true;
       } catch (e) {
-        this.logger.error(`batchOperation id=${id} type=${type} err=${(e as Error).message}`);
+        this.logger.error(
+          `batchOperation id=${id} type=${type} err=${(e as Error).message}`,
+        );
         results[id] = false;
       }
     }
@@ -1468,9 +2203,13 @@ export class AdminOrderCompatService {
 
   async getSeveralDetail(ids: number[]) {
     if (!ids?.length) return [] as any[];
-    const orders = await this.prisma.order.findMany({ where: { order_id: { in: ids } } });
+    const orders = await this.prisma.order.findMany({
+      where: { order_id: { in: ids } },
+    });
     // 附带各自的订单项数量与金额
-    const items = await this.prisma.order_item.findMany({ where: { order_id: { in: ids } } });
+    const items = await this.prisma.order_item.findMany({
+      where: { order_id: { in: ids } },
+    });
     const grouped = new Map<number, any[]>();
     for (const it of items) {
       const arr = grouped.get(it.order_id) || [];
@@ -1479,8 +2218,13 @@ export class AdminOrderCompatService {
     }
     return orders.map((o: any) => {
       const its = grouped.get(o.order_id) || [];
-      const itemsCount = its.reduce((s, it: any) => s + Number(it.product_nums || 0), 0);
-      const productNames = its.map((it: any) => `${it.product_name}x${it.product_nums}`).join(" | ");
+      const itemsCount = its.reduce(
+        (s, it: any) => s + Number(it.product_nums || 0),
+        0,
+      );
+      const productNames = its
+        .map((it: any) => `${it.product_name}x${it.product_nums}`)
+        .join(" | ");
       return {
         order_id: o.order_id,
         order_sn: o.order_sn,
@@ -1512,18 +2256,28 @@ export class AdminOrderCompatService {
 
   async modifyProduct(orderId: number, payload: any, adminName?: string) {
     // 复杂度较高，当前仅记录日志，提示前端未真正变更
-    await this.addLog(orderId, `修改商品（占位）：${JSON.stringify(payload).slice(0, 500)}`, adminName);
+    await this.addLog(
+      orderId,
+      `修改商品（占位）：${JSON.stringify(payload).slice(0, 500)}`,
+      adminName,
+    );
     return true;
   }
 
   async getAddProductInfo(orderId: number) {
     // 返回最小必要信息，允许前端展示可添加提示
-    const order = await this.prisma.order.findUnique({ where: { order_id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: orderId },
+    });
     if (!order) throw new NotFoundException("订单不存在");
     return { allowAdd: true, orderSn: order.order_sn };
   }
 
   // ---------- 工具 ----------
-  private snakeToCamel(s: string) { return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase()); }
-  private camelToSnake(s: string) { return s.replace(/[A-Z]/g, (m) => "_" + m.toLowerCase()); }
+  private snakeToCamel(s: string) {
+    return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  }
+  private camelToSnake(s: string) {
+    return s.replace(/[A-Z]/g, (m) => "_" + m.toLowerCase());
+  }
 }

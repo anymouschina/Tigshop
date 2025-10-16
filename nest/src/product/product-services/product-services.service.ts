@@ -21,7 +21,8 @@ export class ProductServicesService {
     }
 
     const sortFieldMap: Record<string, string> = { id: "product_service_id" };
-    const resolvedSortField = sortFieldMap[sort_field] || sort_field || "product_service_id";
+    const resolvedSortField =
+      sortFieldMap[sort_field] || sort_field || "product_service_id";
     const orderBy: any = { [resolvedSortField]: sort_order || "desc" };
 
     const skip = (page - 1) * size;
@@ -53,18 +54,37 @@ export class ProductServicesService {
 
   async createProductServices(createData: CreateProductServicesDto) {
     try {
-      const name = (createData as any).product_service_name ?? (createData as any).productServiceName ?? (createData as any).name ?? "";
-      const desc = (createData as any).product_service_desc ?? (createData as any).productServiceDesc ?? (createData as any).desc ?? "";
-      const icon = (createData as any).ico_img ?? (createData as any).icoImg ?? (createData as any).icon ?? "";
-      const sortOrderRaw = (createData as any).sort_order ?? (createData as any).sortOrder ?? 50;
-      const sortOrder = typeof sortOrderRaw === 'string' ? parseInt(sortOrderRaw, 10) : sortOrderRaw;
-      let defaultOnRaw = (createData as any).default_on ?? (createData as any).defaultOn ?? 0;
-      if (typeof defaultOnRaw === 'string') {
-        defaultOnRaw = defaultOnRaw === '1' || defaultOnRaw.toLowerCase() === 'true' ? 1 : 0;
+      const name =
+        (createData as any).product_service_name ??
+        (createData as any).productServiceName ??
+        (createData as any).name ??
+        "";
+      const desc =
+        (createData as any).product_service_desc ??
+        (createData as any).productServiceDesc ??
+        (createData as any).desc ??
+        "";
+      const icon =
+        (createData as any).ico_img ??
+        (createData as any).icoImg ??
+        (createData as any).icon ??
+        "";
+      const sortOrderRaw =
+        (createData as any).sort_order ?? (createData as any).sortOrder ?? 50;
+      const sortOrder =
+        typeof sortOrderRaw === "string"
+          ? parseInt(sortOrderRaw, 10)
+          : sortOrderRaw;
+      let defaultOnRaw =
+        (createData as any).default_on ?? (createData as any).defaultOn ?? 0;
+      if (typeof defaultOnRaw === "string") {
+        defaultOnRaw =
+          defaultOnRaw === "1" || defaultOnRaw.toLowerCase() === "true" ? 1 : 0;
       } else {
         defaultOnRaw = defaultOnRaw ? 1 : 0;
       }
-      const shopId = (createData as any).shop_id ?? (createData as any).shopId ?? 0;
+      const shopId =
+        (createData as any).shop_id ?? (createData as any).shopId ?? 0;
 
       const result = await this.prisma.product_services.create({
         data: {
@@ -91,21 +111,62 @@ export class ProductServicesService {
       const result = await this.prisma.product_services.update({
         where: { product_service_id: id },
         data: {
-          ...(updateData as any).product_service_name !== undefined && { product_service_name: (updateData as any).product_service_name },
-          ...(updateData as any).productServiceName !== undefined && { product_service_name: (updateData as any).productServiceName },
-          ...(updateData as any).name !== undefined && { product_service_name: (updateData as any).name },
-          ...(updateData as any).product_service_desc !== undefined && { product_service_desc: (updateData as any).product_service_desc },
-          ...(updateData as any).productServiceDesc !== undefined && { product_service_desc: (updateData as any).productServiceDesc },
-          ...(updateData as any).desc !== undefined && { product_service_desc: (updateData as any).desc },
-          ...(updateData as any).ico_img !== undefined && { ico_img: (updateData as any).ico_img },
-          ...(updateData as any).icoImg !== undefined && { ico_img: (updateData as any).icoImg },
-          ...(updateData as any).icon !== undefined && { ico_img: (updateData as any).icon },
-          ...(updateData as any).sort_order !== undefined && { sort_order: (updateData as any).sort_order },
-          ...(updateData as any).sortOrder !== undefined && { sort_order: typeof (updateData as any).sortOrder === 'string' ? parseInt((updateData as any).sortOrder, 10) : (updateData as any).sortOrder },
-          ...(updateData as any).default_on !== undefined && { default_on: (updateData as any).default_on },
-          ...(updateData as any).defaultOn !== undefined && { default_on: (typeof (updateData as any).defaultOn === 'string') ? (((updateData as any).defaultOn === '1' || String((updateData as any).defaultOn).toLowerCase() === 'true') ? 1 : 0) : ((updateData as any).defaultOn ? 1 : 0) },
-          ...(updateData as any).shop_id !== undefined && { shop_id: (updateData as any).shop_id },
-          ...(updateData as any).shopId !== undefined && { shop_id: (updateData as any).shopId },
+          ...((updateData as any).product_service_name !== undefined && {
+            product_service_name: (updateData as any).product_service_name,
+          }),
+          ...((updateData as any).productServiceName !== undefined && {
+            product_service_name: (updateData as any).productServiceName,
+          }),
+          ...((updateData as any).name !== undefined && {
+            product_service_name: (updateData as any).name,
+          }),
+          ...((updateData as any).product_service_desc !== undefined && {
+            product_service_desc: (updateData as any).product_service_desc,
+          }),
+          ...((updateData as any).productServiceDesc !== undefined && {
+            product_service_desc: (updateData as any).productServiceDesc,
+          }),
+          ...((updateData as any).desc !== undefined && {
+            product_service_desc: (updateData as any).desc,
+          }),
+          ...((updateData as any).ico_img !== undefined && {
+            ico_img: (updateData as any).ico_img,
+          }),
+          ...((updateData as any).icoImg !== undefined && {
+            ico_img: (updateData as any).icoImg,
+          }),
+          ...((updateData as any).icon !== undefined && {
+            ico_img: (updateData as any).icon,
+          }),
+          ...((updateData as any).sort_order !== undefined && {
+            sort_order: (updateData as any).sort_order,
+          }),
+          ...((updateData as any).sortOrder !== undefined && {
+            sort_order:
+              typeof (updateData as any).sortOrder === "string"
+                ? parseInt((updateData as any).sortOrder, 10)
+                : (updateData as any).sortOrder,
+          }),
+          ...((updateData as any).default_on !== undefined && {
+            default_on: (updateData as any).default_on,
+          }),
+          ...((updateData as any).defaultOn !== undefined && {
+            default_on:
+              typeof (updateData as any).defaultOn === "string"
+                ? (updateData as any).defaultOn === "1" ||
+                  String((updateData as any).defaultOn).toLowerCase() === "true"
+                  ? 1
+                  : 0
+                : (updateData as any).defaultOn
+                  ? 1
+                  : 0,
+          }),
+          ...((updateData as any).shop_id !== undefined && {
+            shop_id: (updateData as any).shop_id,
+          }),
+          ...((updateData as any).shopId !== undefined && {
+            shop_id: (updateData as any).shopId,
+          }),
         },
       });
       return result;

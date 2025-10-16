@@ -39,7 +39,10 @@ export class AdminShopAccountCompatController {
 
     // Sorting
     const sortFieldInput = query.sort_field ?? query.sortField ?? "add_time";
-    const sortOrder: "asc" | "desc" = (query.sort_order ?? query.sortOrder ?? "desc").toLowerCase() === "asc" ? "asc" : "desc";
+    const sortOrder: "asc" | "desc" =
+      (query.sort_order ?? query.sortOrder ?? "desc").toLowerCase() === "asc"
+        ? "asc"
+        : "desc";
     const sortFieldMap: Record<string, string> = {
       add_time: "add_time",
       addTime: "add_time",
@@ -53,7 +56,12 @@ export class AdminShopAccountCompatController {
 
     const [total, records] = await this.prisma.$transaction([
       this.prisma.shop_account_log.count({ where }),
-      this.prisma.shop_account_log.findMany({ where, skip, take: size, orderBy: { [orderByField]: sortOrder } }),
+      this.prisma.shop_account_log.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { [orderByField]: sortOrder },
+      }),
     ]);
 
     return { code: 0, message: "success", data: { records, total } };

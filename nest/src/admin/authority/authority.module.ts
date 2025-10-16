@@ -12,7 +12,14 @@ import { AdminLogCompatController } from "./admin-log-compat.controller";
 
 @Module({
   imports: [PrismaModule, AuthModule],
-  controllers: [AuthorityController, AdminUserController, SuppliersCompatController, AdminRoleCompatController, AuthorityCompatController, AdminLogCompatController],
+  controllers: [
+    AuthorityController,
+    AdminUserController,
+    SuppliersCompatController,
+    AdminRoleCompatController,
+    AuthorityCompatController,
+    AdminLogCompatController,
+  ],
   providers: [AuthorityService, AdminRoleService],
   exports: [AuthorityService],
 })

@@ -1,5 +1,14 @@
 // @ts-nocheck
-import { Controller, Get, Post, Put, Delete, Body, Query, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -21,7 +30,10 @@ export class AdminProductTeamCompatController {
       keyword: query.keyword || "",
       page: Number(query.page || 1),
       size: Number(query.size || 15),
-      status: query.status === undefined || query.status === "" ? undefined : Number(query.status),
+      status:
+        query.status === undefined || query.status === ""
+          ? undefined
+          : Number(query.status),
       sort_field: query.sortField || query.sort_field || "product_team_id",
       sort_order: query.sortOrder || query.sort_order || "desc",
     } as any;
@@ -29,7 +41,11 @@ export class AdminProductTeamCompatController {
       this.svc.getFilterResult(filter),
       this.svc.getFilterCount(filter),
     ]);
-    return ResponseUtil.success({ records, total, status_list: GROUPON_STATUS_NAME });
+    return ResponseUtil.success({
+      records,
+      total,
+      status_list: GROUPON_STATUS_NAME,
+    });
   }
 
   @Get("config")
@@ -60,9 +76,14 @@ export class AdminProductTeamCompatController {
   @Authorities("promotionManage")
   @ApiOperation({ summary: "更新团购活动（兼容 /adminapi）" })
   async update(@Body() body: any) {
-    const id = Number(body.id || body.product_team_id || body.team_id || body.teamId);
+    const id = Number(
+      body.id || body.product_team_id || body.team_id || body.teamId,
+    );
     const data = { ...body };
-    delete (data as any).id; delete (data as any).team_id; delete (data as any).teamId; delete (data as any).product_team_id;
+    delete (data as any).id;
+    delete (data as any).team_id;
+    delete (data as any).teamId;
+    delete (data as any).product_team_id;
     const r = await this.svc.update(id, data);
     return ResponseUtil.success(r);
   }
@@ -80,7 +101,8 @@ export class AdminProductTeamCompatController {
   @ApiOperation({ summary: "批量操作（兼容 /adminapi）" })
   async batch(@Body() body: any) {
     const { type, ids } = body;
-    if (!Array.isArray(ids) || ids.length === 0) return ResponseUtil.error("未选择项目");
+    if (!Array.isArray(ids) || ids.length === 0)
+      return ResponseUtil.error("未选择项目");
     if (type === "del") {
       await this.svc.batchDelete(ids.map(Number));
       return ResponseUtil.success();

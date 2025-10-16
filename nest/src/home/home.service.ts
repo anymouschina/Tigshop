@@ -19,12 +19,12 @@ export class HomeService {
   }) {
     // 同时兼容驼峰和下划线参数名
     let previewId = Number(query.previewId ?? query.preview_id ?? 0) || 0;
-    let decorateId = Number(query.decorateId ?? query.decorate_id ?? 0) || 0;
+    const decorateId = Number(query.decorateId ?? query.decorate_id ?? 0) || 0;
 
     // 对齐 PHP: 支持 DEMO_DEFAULT_DECORATE_ID 覆盖预览
-  const demoPreview = Number(process.env.DEMO_DEFAULT_DECORATE_ID || 0);
-  // 仅当未显式传入预览参数时使用 DEMO 覆盖，避免开发态干扰
-  if (previewId <= 0 && demoPreview > 0) previewId = demoPreview;
+    const demoPreview = Number(process.env.DEMO_DEFAULT_DECORATE_ID || 0);
+    // 仅当未显式传入预览参数时使用 DEMO 覆盖，避免开发态干扰
+    if (previewId <= 0 && demoPreview > 0) previewId = demoPreview;
 
     if (previewId > 0) {
       const data = await this.getAppPreviewDecorate(previewId);
@@ -46,8 +46,8 @@ export class HomeService {
     previewId?: number;
     decorateId?: number;
   }) {
-    let previewId = Number(query.previewId ?? query.preview_id ?? 0) || 0;
-    let decorateId = Number(query.decorateId ?? query.decorate_id ?? 0) || 0;
+    const previewId = Number(query.previewId ?? query.preview_id ?? 0) || 0;
+    const decorateId = Number(query.decorateId ?? query.decorate_id ?? 0) || 0;
 
     if (previewId > 0) {
       const data = await this.getPcPreviewDecorate(previewId);
@@ -72,17 +72,23 @@ export class HomeService {
       });
 
       if (!decorate) {
-        this.logger.warn('首页装修模板不存在，返回空结构');
+        this.logger.warn("首页装修模板不存在，返回空结构");
         return { decorateId: 0, moduleList: [], pageModule: {} };
       }
 
       // 预览规则：moduleList 来自 draft_data，pageModule 来自 data（对齐 PHP）
       let draftParsed: any = null;
       let pubParsed: any = null;
-      try { draftParsed = decorate.draft_data ? JSON.parse(decorate.draft_data) : null; } catch (e) {
+      try {
+        draftParsed = decorate.draft_data
+          ? JSON.parse(decorate.draft_data)
+          : null;
+      } catch (e) {
         this.logger.warn("draft_data 解析失败", e);
       }
-      try { pubParsed = decorate.data ? JSON.parse(decorate.data) : null; } catch (e) {
+      try {
+        pubParsed = decorate.data ? JSON.parse(decorate.data) : null;
+      } catch (e) {
         this.logger.warn("data 解析失败", e);
       }
 
@@ -117,7 +123,11 @@ export class HomeService {
 
       const dataToParse = decorate.draft_data || decorate.data;
       if (!dataToParse) {
-        return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
+        return {
+          decorate_id: decorate.decorate_id,
+          module_list: [],
+          backgroundImage: "",
+        };
       }
 
       try {
@@ -125,7 +135,11 @@ export class HomeService {
         return parsed;
       } catch (e) {
         this.logger.warn("PC 预览装修数据解析失败", e);
-        return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
+        return {
+          decorate_id: decorate.decorate_id,
+          module_list: [],
+          backgroundImage: "",
+        };
       }
     } catch (error) {
       this.logger.error("获取 PC 预览装修失败", error);
@@ -186,8 +200,13 @@ export class HomeService {
         orderBy: [{ update_time: "desc" }, { decorate_id: "desc" }],
       });
 
-      if (!decorate) throw new Error('模板不存在');
-      if (!decorate.data) return { decorateId: decorate.decorate_id, moduleList: [], pageModule: {} };
+      if (!decorate) throw new Error("模板不存在");
+      if (!decorate.data)
+        return {
+          decorateId: decorate.decorate_id,
+          moduleList: [],
+          pageModule: {},
+        };
 
       try {
         const parsed = JSON.parse(decorate.data);
@@ -209,11 +228,16 @@ export class HomeService {
         orderBy: [{ update_time: "desc" }, { decorate_id: "desc" }],
       });
 
-  if (!decorate) {
-    this.logger.warn('PC 首页装修模板不存在，返回空结构');
-    return { decorate_id: 0, module_list: [], backgroundImage: '' };
-  }
-      if (!decorate.data) return { decorate_id: decorate.decorate_id, module_list: [], backgroundImage: "" };
+      if (!decorate) {
+        this.logger.warn("PC 首页装修模板不存在，返回空结构");
+        return { decorate_id: 0, module_list: [], backgroundImage: "" };
+      }
+      if (!decorate.data)
+        return {
+          decorate_id: decorate.decorate_id,
+          module_list: [],
+          backgroundImage: "",
+        };
 
       try {
         const parsed = JSON.parse(decorate.data);
@@ -244,9 +268,15 @@ export class HomeService {
     const previewId = Number(query.previewId ?? query.preview_id ?? 0) || 0;
 
     if (previewId > 0) {
-      return this.getPreviewDecorateModuleData(decorateId, moduleIndex, { page, size: 10 });
+      return this.getPreviewDecorateModuleData(decorateId, moduleIndex, {
+        page,
+        size: 10,
+      });
     }
-    return this.getDecorateModuleData(decorateId, moduleIndex, { page, size: 10 });
+    return this.getDecorateModuleData(decorateId, moduleIndex, {
+      page,
+      size: 10,
+    });
   }
 
   private async getPreviewDecorateModuleData(
@@ -261,7 +291,11 @@ export class HomeService {
     const [list, total] = await this.prisma.$transaction([
       this.prisma.product.findMany({
         where,
-        orderBy: [{ is_hot: "desc" }, { sort_order: "asc" }, { product_id: "desc" }],
+        orderBy: [
+          { is_hot: "desc" },
+          { sort_order: "asc" },
+          { product_id: "desc" },
+        ],
         skip,
         take: size,
         select: {
@@ -299,7 +333,11 @@ export class HomeService {
     pagination: { page: number; size: number },
   ) {
     // 同 getPreviewDecorateModuleData，占位真实商品列表
-    return this.getPreviewDecorateModuleData(decorateId, moduleIndex, pagination);
+    return this.getPreviewDecorateModuleData(
+      decorateId,
+      moduleIndex,
+      pagination,
+    );
   }
 
   // -------- 秒杀 --------
@@ -350,7 +388,12 @@ export class HomeService {
     for (const it of items) {
       if (!it.product_id) continue;
       if (!productMap[it.product_id]) {
-        productMap[it.product_id] = { items: [], totalStock: 0, totalSales: 0, firstSku: it };
+        productMap[it.product_id] = {
+          items: [],
+          totalStock: 0,
+          totalSales: 0,
+          firstSku: it,
+        };
       }
       productMap[it.product_id].items.push(it);
       productMap[it.product_id].totalStock += it.seckill_stock ?? 0;
@@ -358,7 +401,11 @@ export class HomeService {
     }
 
     const products = await this.prisma.product.findMany({
-      where: { product_id: { in: productIds }, is_delete: 0, product_status: 1 },
+      where: {
+        product_id: { in: productIds },
+        is_delete: 0,
+        product_status: 1,
+      },
       select: {
         product_id: true,
         product_name: true,
@@ -371,20 +418,33 @@ export class HomeService {
     });
 
     const records = products.map((p) => {
-      const agg = productMap[p.product_id] || { totalStock: 0, totalSales: 0, firstSku: {} };
+      const agg = productMap[p.product_id] || {
+        totalStock: 0,
+        totalSales: 0,
+        firstSku: {},
+      };
       const firstSku = agg.firstSku;
       return {
         product_id: p.product_id,
         product_name: p.product_name,
         product_image: p.pic_thumb,
-        market_price: this.formatAmount(Number(firstSku?.seckill_price ?? p.market_price)),
+        market_price: this.formatAmount(
+          Number(firstSku?.seckill_price ?? p.market_price),
+        ),
         product_price: this.formatAmount(Number(p.product_price)),
-        seckill_limit_num: seckills.find(s => s.product_id === p.product_id)?.seckill_limit_num || 0,
+        seckill_limit_num:
+          seckills.find((s) => s.product_id === p.product_id)
+            ?.seckill_limit_num || 0,
         seckill_sales: agg.totalSales,
         seckill_stock: agg.totalStock,
         sku_id: firstSku?.sku_id || 0,
-        seckill_start_time: firstSku?.seckill_start_time || seckills.find(s => s.product_id === p.product_id)?.seckill_start_time,
-        seckill_end_time: firstSku?.seckill_end_time || seckills.find(s => s.product_id === p.product_id)?.seckill_end_time,
+        seckill_start_time:
+          firstSku?.seckill_start_time ||
+          seckills.find((s) => s.product_id === p.product_id)
+            ?.seckill_start_time,
+        seckill_end_time:
+          firstSku?.seckill_end_time ||
+          seckills.find((s) => s.product_id === p.product_id)?.seckill_end_time,
       };
     });
 
@@ -406,7 +466,11 @@ export class HomeService {
     };
     if (typeof shopId === "number" && shopId > -1) where.shop_id = shopId;
 
-    const list = await this.prisma.coupon.findMany({ where, orderBy: [{ add_time: "desc" }], take: 5 });
+    const list = await this.prisma.coupon.findMany({
+      where,
+      orderBy: [{ add_time: "desc" }],
+      take: 5,
+    });
     return list.map((c) => ({
       ...c,
       coupon_money: this.formatAmount(Number(c.coupon_money || 0)),
@@ -426,7 +490,9 @@ export class HomeService {
   // -------- 移动端导航 --------
   async getMobileNav(decorateSn: string) {
     try {
-      const item = await this.prisma.decorate_discrete.findFirst({ where: { decorate_sn: decorateSn } });
+      const item = await this.prisma.decorate_discrete.findFirst({
+        where: { decorate_sn: decorateSn },
+      });
       if (!item) return null;
 
       let data = item.data as any;
@@ -448,7 +514,9 @@ export class HomeService {
   // -------- 个人中心 --------
   async getMemberDecorate(decorateSn: string) {
     try {
-      const item = await this.prisma.decorate_discrete.findFirst({ where: { decorate_sn: decorateSn } });
+      const item = await this.prisma.decorate_discrete.findFirst({
+        where: { decorate_sn: decorateSn },
+      });
       if (!item) return {};
 
       let data = item.data as any;
@@ -471,7 +539,13 @@ export class HomeService {
   async getCustomerServiceConfig() {
     // 对齐 PHP: 走 config 表 (biz_code) 读取；ENV 仅兜底
     const codes = [
-      'kefuType','kefuYzfType','kefuYzfSign','corpId','kefuWorkwxId','kefuCode','h5Domain'
+      "kefuType",
+      "kefuYzfType",
+      "kefuYzfSign",
+      "corpId",
+      "kefuWorkwxId",
+      "kefuCode",
+      "h5Domain",
     ];
     const rows = await this.prisma.config.findMany({
       where: { biz_code: { in: codes }, OR: [{ is_del: 0 }, { is_del: null }] },
@@ -479,41 +553,42 @@ export class HomeService {
     });
     const cfg: Record<string, string> = {};
     for (const r of rows) {
-      if (r.biz_code) cfg[r.biz_code] = r.biz_val ?? '';
+      if (r.biz_code) cfg[r.biz_code] = r.biz_val ?? "";
     }
-    const get = (k: string, envFallback?: string, def: any = ''): string => {
+    const get = (k: string, envFallback?: string, def: any = ""): string => {
       return (cfg[k] ?? envFallback ?? def) as string;
     };
     const num = (v: any, d = 0) => {
-      const n = Number(v); return Number.isFinite(n) ? n : d;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : d;
     };
-    const serviceType = num(get('kefuType', process.env.KEFU_TYPE, 0));
-    let openType = num(get('kefuYzfType', process.env.KEFU_YZF_TYPE, 0));
-    const yzfSign = get('kefuYzfSign', process.env.KEFU_YZF_SIGN, '');
-    const corpId = get('corpId', process.env.CORP_ID, '');
-    const workwxId = get('kefuWorkwxId', process.env.KEFU_WORKWX_ID, '');
-    const kefuCode = get('kefuCode', process.env.KEFU_CODE, '');
-    const h5Domain = get('h5Domain', process.env.H5_DOMAIN, '');
+    const serviceType = num(get("kefuType", process.env.KEFU_TYPE, 0));
+    let openType = num(get("kefuYzfType", process.env.KEFU_YZF_TYPE, 0));
+    const yzfSign = get("kefuYzfSign", process.env.KEFU_YZF_SIGN, "");
+    const corpId = get("corpId", process.env.CORP_ID, "");
+    const workwxId = get("kefuWorkwxId", process.env.KEFU_WORKWX_ID, "");
+    const kefuCode = get("kefuCode", process.env.KEFU_CODE, "");
+    const h5Domain = get("h5Domain", process.env.H5_DOMAIN, "");
 
-    let url = '';
+    let url = "";
     switch (serviceType) {
       case 0:
         break;
       case 1: // 易支付/yzf
-        url = `${process.env.YZF_URL ?? 'https://yzf.qq.com/'}${yzfSign}`;
+        url = `${process.env.YZF_URL ?? "https://yzf.qq.com/"}${yzfSign}`;
         break;
       case 2: // 企业微信
-        url = `${process.env.WORKWX_URL ?? 'https://work.weixin.qq.com/kfid/'}${workwxId}`;
+        url = `${process.env.WORKWX_URL ?? "https://work.weixin.qq.com/kfid/"}${workwxId}`;
         openType = 0; // PHP 逻辑：企业微信强制 open_type=0
         break;
       case 3: // 自定义代码/链接
         url = kefuCode;
         break;
       case 4: // 关闭 / 预留
-        url = '';
+        url = "";
         break;
       default:
-        url = '';
+        url = "";
     }
 
     return {
@@ -534,7 +609,10 @@ export class HomeService {
 
   // -------- 友情链接 --------
   async getFriendLinks() {
-    return this.prisma.friend_links.findMany({ orderBy: [{ sort_order: "desc" }], take: 20 });
+    return this.prisma.friend_links.findMany({
+      orderBy: [{ sort_order: "desc" }],
+      take: 20,
+    });
   }
 
   // ========== 工具 ==========
@@ -543,18 +621,29 @@ export class HomeService {
   }
 
   // 预留：模块格式化（尚未移植 PHP modules 下各 Service）
-  private formatModule(type: string, module: any, params?: any, decorate?: any) { return module; }
+  private formatModule(
+    type: string,
+    module: any,
+    params?: any,
+    decorate?: any,
+  ) {
+    return module;
+  }
 
   private normalizeDecorateData(input: any, fallbackDecorateId?: number) {
     if (!input || typeof input !== "object") {
-  return { decorateId: fallbackDecorateId ?? 0, moduleList: [], pageModule: {} };
+      return {
+        decorateId: fallbackDecorateId ?? 0,
+        moduleList: [],
+        pageModule: {},
+      };
     }
     const alreadyCamel = "decorateId" in input || "moduleList" in input;
     if (alreadyCamel) {
       return {
         decorateId: input.decorateId ?? fallbackDecorateId ?? 0,
         moduleList: input.moduleList ?? [],
-  pageModule: input.pageModule ?? {},
+        pageModule: input.pageModule ?? {},
       };
     }
     return {

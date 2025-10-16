@@ -62,8 +62,12 @@ export class RecommendController {
       ids: query.ids,
       categoryId: toNumber(query.category_id),
       brandId: toNumber(query.brand_id),
-      sortField: sortFieldRaw ? snakeToCamelSort[sortFieldRaw] || sortFieldRaw : "productId",
-      sortOrder: (query.sort_order?.toString().toLowerCase() === "asc" ? "asc" : "desc") as "asc" | "desc",
+      sortField: sortFieldRaw
+        ? snakeToCamelSort[sortFieldRaw] || sortFieldRaw
+        : "productId",
+      sortOrder: (query.sort_order?.toString().toLowerCase() === "asc"
+        ? "asc"
+        : "desc") as "asc" | "desc",
     };
 
     // intro_type -> isHot/isBest/isNew

@@ -34,9 +34,7 @@ export class UserBalanceLogService {
     const where: any = {};
 
     if (keyword) {
-      where.OR = [
-        { change_desc: { contains: keyword } },
-      ];
+      where.OR = [{ change_desc: { contains: keyword } }];
     }
 
     if (user_id > 0) {
@@ -55,13 +53,17 @@ export class UserBalanceLogService {
 
     if (start_date || end_date) {
       where.change_time = {};
-      if (start_date) where.change_time.gte = Math.floor(new Date(start_date).getTime() / 1000);
-      if (end_date) where.change_time.lte = Math.floor(new Date(end_date).getTime() / 1000);
+      if (start_date)
+        where.change_time.gte = Math.floor(
+          new Date(start_date).getTime() / 1000,
+        );
+      if (end_date)
+        where.change_time.lte = Math.floor(new Date(end_date).getTime() / 1000);
     }
 
-  const sortKey = sort_field === "id" ? "log_id" : sort_field;
-  const orderBy: any = {};
-  orderBy[sortKey] = sort_order;
+    const sortKey = sort_field === "id" ? "log_id" : sort_field;
+    const orderBy: any = {};
+    orderBy[sortKey] = sort_order;
 
     const skip = (page - 1) * size;
 
@@ -149,14 +151,19 @@ export class UserBalanceLogService {
 
     const updateData: any = {};
     if (data.balance !== undefined) updateData.balance = data.balance;
-    if (data.frozen_balance !== undefined) updateData.frozen_balance = data.frozen_balance;
-    if (data.new_balance !== undefined) updateData.new_balance = data.new_balance;
-    if (data.new_frozen_balance !== undefined) updateData.new_frozen_balance = data.new_frozen_balance;
-    if (data.description !== undefined) updateData.change_desc = data.description;
-    if (data.change_type !== undefined) updateData.change_type = data.change_type;
+    if (data.frozen_balance !== undefined)
+      updateData.frozen_balance = data.frozen_balance;
+    if (data.new_balance !== undefined)
+      updateData.new_balance = data.new_balance;
+    if (data.new_frozen_balance !== undefined)
+      updateData.new_frozen_balance = data.new_frozen_balance;
+    if (data.description !== undefined)
+      updateData.change_desc = data.description;
+    if (data.change_type !== undefined)
+      updateData.change_type = data.change_type;
 
     // 移除id字段，不允许更新ID
-  delete (updateData as any).id;
+    delete (updateData as any).id;
 
     const updatedUserBalanceLog = await this.prisma.user_balance_log.update({
       where: { log_id: Number(data.id) },

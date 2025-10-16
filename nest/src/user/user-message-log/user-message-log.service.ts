@@ -148,7 +148,9 @@ export class UserMessageLogService {
 
     const [total, unread, byType] = await Promise.all([
       (this.prisma as any).user_message_log.count({ where: whereLog }),
-      (this.prisma as any).user_message.count({ where: { ...whereMsg, is_read: 0 } }),
+      (this.prisma as any).user_message.count({
+        where: { ...whereMsg, is_read: 0 },
+      }),
       (this.prisma as any).user_message_log.groupBy({
         by: ["message_type"],
         where: whereLog,
@@ -169,7 +171,12 @@ export class UserMessageLogService {
     };
   }
 
-  async sendUserMessage(userId: number, title: string, content: string, messageType: number) {
+  async sendUserMessage(
+    userId: number,
+    title: string,
+    content: string,
+    messageType: number,
+  ) {
     // map to user_message table
     return (this.prisma as any).user_message.create({
       data: {
@@ -182,7 +189,12 @@ export class UserMessageLogService {
     });
   }
 
-  async sendBatchMessage(userIds: number[], title: string, content: string, messageType: number) {
+  async sendBatchMessage(
+    userIds: number[],
+    title: string,
+    content: string,
+    messageType: number,
+  ) {
     const messages = userIds.map((userId) => ({
       user_id: userId,
       title,

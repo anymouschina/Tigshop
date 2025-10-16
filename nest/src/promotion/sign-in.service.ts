@@ -26,7 +26,7 @@ export class SignInService {
 
   async getFilterCount(filter: any): Promise<number> {
     const where = this.buildWhereClause(filter);
-  return this.prisma.sign_in_setting.count({ where });
+    return this.prisma.sign_in_setting.count({ where });
   }
 
   private buildWhereClause(filter: any): any {
@@ -48,7 +48,9 @@ export class SignInService {
 
   private buildOrderBy(filter: any): any {
     const allowed = new Set(["id", "name", "points", "day_num"]);
-    const sortField = allowed.has(filter?.sort_field) ? filter.sort_field : "id";
+    const sortField = allowed.has(filter?.sort_field)
+      ? filter.sort_field
+      : "id";
     const sortOrder = filter?.sort_order === "asc" ? "asc" : "desc";
     return { [sortField]: sortOrder };
   }

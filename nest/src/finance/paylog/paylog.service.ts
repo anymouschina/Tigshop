@@ -21,7 +21,8 @@ export class PaylogService {
     } = filter;
 
     const skip = (page - 1) * size;
-    const sortKey = !sort_field || sort_field === "id" ? "paylog_id" : sort_field;
+    const sortKey =
+      !sort_field || sort_field === "id" ? "paylog_id" : sort_field;
     const orderBy: any = { [sortKey]: sort_order };
 
     const where: any = {};
@@ -43,8 +44,10 @@ export class PaylogService {
     }
     if (start_time || end_time) {
       where.add_time = {};
-      if (start_time) where.add_time.gte = Math.floor(new Date(start_time).getTime() / 1000);
-      if (end_time) where.add_time.lte = Math.floor(new Date(end_time).getTime() / 1000);
+      if (start_time)
+        where.add_time.gte = Math.floor(new Date(start_time).getTime() / 1000);
+      if (end_time)
+        where.add_time.lte = Math.floor(new Date(end_time).getTime() / 1000);
     }
     const records = await this.prisma.paylog.findMany({
       where,
@@ -89,8 +92,10 @@ export class PaylogService {
     }
     if (start_time || end_time) {
       where.add_time = {};
-      if (start_time) where.add_time.gte = Math.floor(new Date(start_time).getTime() / 1000);
-      if (end_time) where.add_time.lte = Math.floor(new Date(end_time).getTime() / 1000);
+      if (start_time)
+        where.add_time.gte = Math.floor(new Date(start_time).getTime() / 1000);
+      if (end_time)
+        where.add_time.lte = Math.floor(new Date(end_time).getTime() / 1000);
     }
 
     return this.prisma.paylog.count({ where });

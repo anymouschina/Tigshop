@@ -13,14 +13,18 @@ import {
 
 export class ApplyListQueryDto {
   @IsOptional()
-  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === "" || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number = 1;
 
   @IsOptional()
-  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === "" || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -28,7 +32,9 @@ export class ApplyListQueryDto {
 
   // -1 不筛选 | 1 待审核 | 10 已通过 | 20 已拒绝
   @IsOptional()
-  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === "" || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsNumber()
   @IsIn([-1, 1, 10, 20])
@@ -53,7 +59,9 @@ export class ApplyListQueryDto {
 
 export class ApplyDelDto {
   @IsOptional()
-  @Transform(({ value }) => (value === "" || value === null ? undefined : value))
+  @Transform(({ value }) =>
+    value === "" || value === null ? undefined : value,
+  )
   @Type(() => Number)
   @IsInt()
   @IsPositive()
@@ -61,7 +69,8 @@ export class ApplyDelDto {
 
   @IsOptional()
   @Transform(({ value }) => {
-    if (Array.isArray(value)) return value.map((v) => Number(v)).filter((v) => !Number.isNaN(v));
+    if (Array.isArray(value))
+      return value.map((v) => Number(v)).filter((v) => !Number.isNaN(v));
     return value;
   })
   @IsArray()

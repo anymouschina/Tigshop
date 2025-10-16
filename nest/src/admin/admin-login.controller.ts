@@ -70,7 +70,11 @@ export class AdminLoginController {
         transformOptions: { enableImplicitConversion: true },
       }),
     )
-    body: { mobile: string; event?: string; verifyToken?: string },
+    body: {
+      mobile: string;
+      event?: string;
+      verifyToken?: string;
+    },
   ) {
     const { mobile, event, verifyToken } = body || {};
     if (!mobile) {
@@ -80,13 +84,19 @@ export class AdminLoginController {
     // if (!verifyToken) {
     //   throw new HttpException('验证令牌缺失', HttpStatus.BAD_REQUEST);
     // }
-    const normalized = mobile.startsWith("86") && mobile.length > 11 ? mobile.substring(2) : mobile;
+    const normalized =
+      mobile.startsWith("86") && mobile.length > 11
+        ? mobile.substring(2)
+        : mobile;
     const finalEvent = event || "adminLogin";
     // 频率限制
     const rateKey = `admin:mobileCode:rate:${normalized}`;
     const existRate = await this.redisService.get(rateKey);
     if (existRate) {
-      throw new HttpException("发送过于频繁，请稍后再试", HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        "发送过于频繁，请稍后再试",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
     // 生成验证码 (测试环境固定, 生产可改为随机)
     const code = process.env.ADMIN_LOGIN_SMS_CODE || "000000";

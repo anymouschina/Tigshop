@@ -44,7 +44,11 @@ export class AdminApiProductAttributesTplCompatController {
       return { ...r, tpl_data: tplDataParsed };
     });
     const pages = Math.max(1, Math.ceil((total || 0) / size));
-    return { code: 0, message: "success", data: { records, total, size, current: page, pages } };
+    return {
+      code: 0,
+      message: "success",
+      data: { records, total, size, current: page, pages },
+    };
   }
 
   @Get("detail")
@@ -106,7 +110,9 @@ export class AdminApiProductAttributesTplCompatController {
       return { code: 400, message: "未选择项目" };
     }
     if (String(body.type) === "del") {
-      await this.svc.batchDeleteProductAttributesTpl(body.ids.map((x) => Number(x)));
+      await this.svc.batchDeleteProductAttributesTpl(
+        body.ids.map((x) => Number(x)),
+      );
       return { code: 0, message: "success" };
     }
     return { code: 400, message: "#type 错误" };

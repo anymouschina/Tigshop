@@ -36,9 +36,17 @@ export class CommonUtilController {
   @ApiOperation({ summary: "获取小程序二维码(Base64)" })
   @ApiQuery({ name: "path", required: false })
   @ApiQuery({ name: "id", required: false, description: "产品ID或场景参数" })
-  async getMiniProgramCode(@Query("path") path = "pages/index/index", @Query("id") id?: string) {
+  async getMiniProgramCode(
+    @Query("path") path = "pages/index/index",
+    @Query("id") id?: string,
+  ) {
     const scene = id ? String(id) : "0";
-    const buffer = await this.wechatService.generateMiniProgramQrCode(path, scene, 430, "release");
+    const buffer = await this.wechatService.generateMiniProgramQrCode(
+      path,
+      scene,
+      430,
+      "release",
+    );
     const base64 = buffer.toString("base64");
     return { code: 0, message: "success", data: base64 };
   }

@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Req } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,7 +20,10 @@ import { ResponseUtil } from "src/common/utils/response.util";
 @Controller("adminapi/promotion/seckill")
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class AdminSeckillCompatController {
-  constructor(private readonly svc: SeckillService, private readonly panel: PanelService) {}
+  constructor(
+    private readonly svc: SeckillService,
+    private readonly panel: PanelService,
+  ) {}
 
   @Get("list")
   @Authorities("promotionManage")
@@ -22,7 +33,10 @@ export class AdminSeckillCompatController {
     const shopId = await this.panel.getUserShopId(Number(userId));
     const filter = {
       keyword: query.keyword || "",
-      status: query.status === undefined || query.status === "" ? undefined : Number(query.status),
+      status:
+        query.status === undefined || query.status === ""
+          ? undefined
+          : Number(query.status),
       page: Number(query.page || 1),
       size: Number(query.size || 15),
       sort_field: query.sortField || query.sort_field || "seckill_id",
@@ -33,7 +47,11 @@ export class AdminSeckillCompatController {
       this.svc.getFilterResult(filter),
       this.svc.getFilterCount(filter),
     ]);
-    return ResponseUtil.success({ records, total, status_list: SECKILL_STATUS_NAME });
+    return ResponseUtil.success({
+      records,
+      total,
+      status_list: SECKILL_STATUS_NAME,
+    });
   }
 
   @Get("config")
@@ -82,7 +100,9 @@ export class AdminSeckillCompatController {
     const payload: any = {
       seckill_name: body.seckill_name ?? body.seckillName,
       seckill_remark: body.seckill_remark ?? body.seckillRemark ?? "",
-      start_time: toTs(body.start_time ?? body.startTime ?? body.seckill_start_time),
+      start_time: toTs(
+        body.start_time ?? body.startTime ?? body.seckill_start_time,
+      ),
       end_time: toTs(body.end_time ?? body.endTime ?? body.seckill_end_time),
       seckill_limit_num: body.seckill_limit_num ?? body.seckillLimitNum ?? 0,
       product_id: body.product_id ?? body.productId ?? 0,
@@ -90,8 +110,10 @@ export class AdminSeckillCompatController {
       items: Array.isArray(body.items)
         ? body.items
         : Array.isArray(body.seckill_item)
-        ? body.seckill_item.filter((it: any) => it.seconds_seckill ? true : true)
-        : [],
+          ? body.seckill_item.filter((it: any) =>
+              it.seconds_seckill ? true : true,
+            )
+          : [],
     };
     const r = await this.svc.create(payload);
     return ResponseUtil.success(r);
@@ -112,10 +134,15 @@ export class AdminSeckillCompatController {
     };
     const id = Number(body.seckill_id || body.seckillId || body.id);
     const data: any = { ...body };
-    delete data.seckill_id; delete data.seckillId; delete data.id;
-    if (data.start_time == null) data.start_time = toTs(data.startTime ?? data.seckill_start_time);
-    if (data.end_time == null) data.end_time = toTs(data.endTime ?? data.seckill_end_time);
-    if (!Array.isArray(data.items) && Array.isArray(data.seckill_item)) data.items = data.seckill_item;
+    delete data.seckill_id;
+    delete data.seckillId;
+    delete data.id;
+    if (data.start_time == null)
+      data.start_time = toTs(data.startTime ?? data.seckill_start_time);
+    if (data.end_time == null)
+      data.end_time = toTs(data.endTime ?? data.seckill_end_time);
+    if (!Array.isArray(data.items) && Array.isArray(data.seckill_item))
+      data.items = data.seckill_item;
     const r = await this.svc.update(id, data);
     return ResponseUtil.success(r);
   }
@@ -144,7 +171,8 @@ export class AdminSeckillCompatController {
   @ApiOperation({ summary: "批量操作（兼容 /adminapi）" })
   async batch(@Body() body: any) {
     const { type, ids } = body;
-    if (!Array.isArray(ids) || ids.length === 0) return ResponseUtil.error("未选择项目");
+    if (!Array.isArray(ids) || ids.length === 0)
+      return ResponseUtil.error("未选择项目");
     if (type === "del") {
       await this.svc.batchDelete(ids.map(Number));
       return ResponseUtil.success();

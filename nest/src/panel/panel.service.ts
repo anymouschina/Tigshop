@@ -61,7 +61,10 @@ export class PanelService {
   async getAddUserTrends(
     dateType: string,
     startEndTime: string,
-  ): Promise<{ horizontalAxis: Array<string | number>; longitudinalAxis: number[] }> {
+  ): Promise<{
+    horizontalAxis: Array<string | number>;
+    longitudinalAxis: number[];
+  }> {
     const dt = String(dateType);
     if (!startEndTime) throw new Error("请选择日期");
 
@@ -78,13 +81,15 @@ export class PanelService {
       end = new Date(year, 11, 31, 23, 59, 59, 999);
       const isCurrentYear = year === new Date().getFullYear();
       const monthCount = isCurrentYear ? new Date().getMonth() + 1 : 12;
-      for (let m = 1; m <= monthCount; m++) horizontalAxis.push(String(m).padStart(2, "0"));
+      for (let m = 1; m <= monthCount; m++)
+        horizontalAxis.push(String(m).padStart(2, "0"));
     } else if (dt === "2") {
       // 月：YYYY-MM -> 当月1日至当月最后一天
       const [yStr, mStr] = startEndTime.split("-");
       const y = Number(yStr);
       const m = Number(mStr) - 1; // JS 月份 0-11
-      if (!Number.isFinite(y) || !Number.isFinite(m) || m < 0 || m > 11) throw new Error("月份格式不正确");
+      if (!Number.isFinite(y) || !Number.isFinite(m) || m < 0 || m > 11)
+        throw new Error("月份格式不正确");
       start = new Date(y, m, 1, 0, 0, 0, 0);
       // 当月天数
       const lastDay = new Date(y, m + 1, 0).getDate();
@@ -123,7 +128,8 @@ export class PanelService {
     // 归档到桶
     const buckets = new Map<string, number>();
     // 初始化所有桶为0
-    for (const label of horizontalAxis) buckets.set(String(label).padStart(2, "0"), 0);
+    for (const label of horizontalAxis)
+      buckets.set(String(label).padStart(2, "0"), 0);
 
     for (const u of users) {
       const regDate = new Date((u.reg_time ?? 0) * 1000);
@@ -144,7 +150,9 @@ export class PanelService {
     }
 
     // 输出纵轴（按照横轴顺序映射）
-    const longitudinalAxis = horizontalAxis.map((label) => buckets.get(String(label).padStart(2, "0")) ?? 0);
+    const longitudinalAxis = horizontalAxis.map(
+      (label) => buckets.get(String(label).padStart(2, "0")) ?? 0,
+    );
 
     return { horizontalAxis, longitudinalAxis };
   }
@@ -716,8 +724,14 @@ export class PanelService {
     ]);
 
     // 转化率（访客-支付转化率：新增用户数/访客数*100）
-    const visitToUser = visitNum > 0 && addUserNum > 0 ? Number(((addUserNum / visitNum) * 100).toFixed(2)) : 0;
-    const prevVisitToUser = prevVisitNum > 0 && prevAddUserNum > 0 ? Number(((prevAddUserNum / prevVisitNum) * 100).toFixed(2)) : 0;
+    const visitToUser =
+      visitNum > 0 && addUserNum > 0
+        ? Number(((addUserNum / visitNum) * 100).toFixed(2))
+        : 0;
+    const prevVisitToUser =
+      prevVisitNum > 0 && prevAddUserNum > 0
+        ? Number(((prevAddUserNum / prevVisitNum) * 100).toFixed(2))
+        : 0;
 
     return {
       visitNum, // 前端类型允许 number|string
@@ -769,7 +783,8 @@ export class PanelService {
       throw new Error("日期格式不正确");
     }
 
-    const days = Math.floor((end.getTime() - start.getTime()) / (24 * 3600 * 1000)) + 1;
+    const days =
+      Math.floor((end.getTime() - start.getTime()) / (24 * 3600 * 1000)) + 1;
     const horizontalAxis: string[] = [];
     for (let i = 0; i < days; i++) {
       const d = new Date(start.getTime() + i * 24 * 3600 * 1000);
@@ -794,7 +809,9 @@ export class PanelService {
     for (const r of rows) {
       if (!r.date) continue;
       const key = new Date(r.date).toISOString().split("T")[0];
-      const val = isHits ? Number(r.click_count ?? 0) : Number(r.visitor_count ?? 0);
+      const val = isHits
+        ? Number(r.click_count ?? 0)
+        : Number(r.visitor_count ?? 0);
       dataMap.set(key, val);
     }
 
@@ -819,8 +836,21 @@ export class PanelService {
       sortOrder?: string;
       isExport?: string;
     },
-  ): Promise<{ records: Array<{ username: string; mobile: string; orderNum: number; orderAmount: string }>; total: number } | any> {
-    const start = params.startTime ? this.startOfDay(new Date(params.startTime)) : null;
+  ): Promise<
+    | {
+        records: Array<{
+          username: string;
+          mobile: string;
+          orderNum: number;
+          orderAmount: string;
+        }>;
+        total: number;
+      }
+    | any
+  > {
+    const start = params.startTime
+      ? this.startOfDay(new Date(params.startTime))
+      : null;
     const end = params.endTime ? this.endOfDay(new Date(params.endTime)) : null;
     const tsStart = start ? Math.floor(start.getTime() / 1000) : undefined;
     const tsEnd = end ? Math.floor(end.getTime() / 1000) : undefined;
@@ -858,23 +888,21 @@ export class PanelService {
 
     // 通过原生 SQL 实现 group by user_id，统计订单数与金额，并关联 user 表取用户名与手机
     // 注意：order 为保留字，使用反引号；金额求和为 decimal，转换为字符串输出以匹配前端类型
-    const sortField = params.sortField === "orderNum" ? "order_num" : "order_amount"; // 默认按金额
-    const sortOrder = params.sortOrder?.toLowerCase() === "asc" ? "ASC" : "DESC";
+    const sortField =
+      params.sortField === "orderNum" ? "order_num" : "order_amount"; // 默认按金额
+    const sortOrder =
+      params.sortOrder?.toLowerCase() === "asc" ? "ASC" : "DESC";
     const offset = Math.max((params.page - 1) * params.size, 0);
     const limit = Math.max(params.size, 1);
 
     // 拼接可选 user_id in 过滤
-    const userIdInClause = userIdFilter && userIdFilter.length > 0
-      ? this.prisma.$queryRawUnsafe(
-          userIdFilter.map(() => "?").join(","),
-        )
-      : null;
+    const userIdInClause =
+      userIdFilter && userIdFilter.length > 0
+        ? this.prisma.$queryRawUnsafe(userIdFilter.map(() => "?").join(","))
+        : null;
 
     // 由于 $queryRaw 安全性与可读性，构建 where 的动态片段
-    const conditions: string[] = [
-      "o.is_del = 0",
-      "o.pay_status = 2",
-    ];
+    const conditions: string[] = ["o.is_del = 0", "o.pay_status = 2"];
     const paramsArr: any[] = [];
     if (shopId > 0) {
       conditions.push("o.shop_id = ?");
@@ -885,10 +913,14 @@ export class PanelService {
       paramsArr.push(tsStart, tsEnd);
     }
     if (userIdFilter && userIdFilter.length) {
-      conditions.push(`o.user_id IN (${userIdFilter.map(() => "?").join(",")})`);
+      conditions.push(
+        `o.user_id IN (${userIdFilter.map(() => "?").join(",")})`,
+      );
       paramsArr.push(...userIdFilter);
     }
-    const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    const whereSql = conditions.length
+      ? `WHERE ${conditions.join(" AND ")}`
+      : "";
 
     // 统计总数（按用户分组后的行数）
     const countSql = `
@@ -899,7 +931,10 @@ export class PanelService {
         GROUP BY o.user_id
       ) t
     `;
-    const countRes = (await this.prisma.$queryRawUnsafe(countSql, ...paramsArr)) as Array<{ total: bigint }>;
+    const countRes = (await this.prisma.$queryRawUnsafe(
+      countSql,
+      ...paramsArr,
+    )) as Array<{ total: bigint }>;
     const total = Number(countRes?.[0]?.total ?? 0);
 
     // 查询分页数据
@@ -915,7 +950,10 @@ export class PanelService {
       LIMIT ? OFFSET ?
     `;
     const dataParams = [...paramsArr, limit, offset];
-    const rows = (await this.prisma.$queryRawUnsafe(dataSql, ...dataParams)) as Array<{
+    const rows = (await this.prisma.$queryRawUnsafe(
+      dataSql,
+      ...dataParams,
+    )) as Array<{
       username: string | null;
       mobile: string | null;
       order_num: bigint | number;
@@ -926,7 +964,10 @@ export class PanelService {
       username: r.username || "",
       mobile: r.mobile || "",
       orderNum: Number(r.order_num || 0),
-      orderAmount: (typeof r.order_amount === "number" ? r.order_amount : Number(r.order_amount || 0)).toFixed(2),
+      orderAmount: (typeof r.order_amount === "number"
+        ? r.order_amount
+        : Number(r.order_amount || 0)
+      ).toFixed(2),
     }));
 
     // 导出占位（前端使用同一路径 isExport=1 下载二进制）

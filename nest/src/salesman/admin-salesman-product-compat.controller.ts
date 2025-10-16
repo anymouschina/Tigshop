@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,7 +20,10 @@ import { PanelService } from "src/panel/panel.service";
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class AdminSalesmanProductCompatController {
-  constructor(private prisma: PrismaService, private panel: PanelService) {}
+  constructor(
+    private prisma: PrismaService,
+    private panel: PanelService,
+  ) {}
 
   private coerceNumber(v: any, dft = 0) {
     const n = Number(v);
@@ -70,12 +81,23 @@ export class AdminSalesmanProductCompatController {
     const productIds = products.map((p) => p.product_id);
     const [spList, galleries] = await Promise.all([
       // 同店铺范围内的分销商品配置
-      this.prisma.salesman_product.findMany({ where: { product_id: { in: productIds }, shop_id: shopId } }),
+      this.prisma.salesman_product.findMany({
+        where: { product_id: { in: productIds }, shop_id: shopId },
+      }),
       productIds.length
         ? this.prisma.product_gallery.findMany({
             where: { product_id: { in: productIds } },
             orderBy: { sort_order: "asc" },
-            select: { pic_id: true, product_id: true, pic_url: true, pic_desc: true, pic_thumb: true, pic_original: true, pic_large: true, sort_order: true },
+            select: {
+              pic_id: true,
+              product_id: true,
+              pic_url: true,
+              pic_desc: true,
+              pic_thumb: true,
+              pic_original: true,
+              pic_large: true,
+              sort_order: true,
+            },
           })
         : Promise.resolve([]),
     ]);
@@ -104,7 +126,10 @@ export class AdminSalesmanProductCompatController {
         product_id: sp.product_id,
         is_join: sp.is_join ?? 0,
         commission_type: sp.commission_type ?? 1,
-        commission_data: typeof sp.commission_data === "string" ? sp.commission_data : JSON.stringify(sp.commission_data ?? {}),
+        commission_data:
+          typeof sp.commission_data === "string"
+            ? sp.commission_data
+            : JSON.stringify(sp.commission_data ?? {}),
         add_time: sp.add_time ?? 0,
         update_time: sp.update_time ?? 0,
         shop_id: sp.shop_id ?? shopId,
@@ -117,10 +142,12 @@ export class AdminSalesmanProductCompatController {
         let levelArr: any[] = [];
         if (Array.isArray(parsed)) {
           // 形如 [{ levelArr: [...] }]
-          if (parsed.length && parsed[0]?.levelArr) levelArr = parsed[0].levelArr;
+          if (parsed.length && parsed[0]?.levelArr)
+            levelArr = parsed[0].levelArr;
           else levelArr = parsed;
         } else if (parsed && typeof parsed === "object") {
-          if (Array.isArray((parsed as any).levelArr)) levelArr = (parsed as any).levelArr;
+          if (Array.isArray((parsed as any).levelArr))
+            levelArr = (parsed as any).levelArr;
           else {
             const mapKeys = [
               { key: "one", level: 1 },
@@ -133,12 +160,18 @@ export class AdminSalesmanProductCompatController {
               { key: "level4", level: 4 },
             ];
             for (const mk of mapKeys) {
-              if (parsed[mk.key] != null) levelArr.push({ level: mk.level, rate: parsed[mk.key] });
+              if (parsed[mk.key] != null)
+                levelArr.push({ level: mk.level, rate: parsed[mk.key] });
             }
           }
         }
 
-        const levelText: Record<number, string> = { 1: "普通分销员", 2: "银牌分销员", 3: "金牌分销员", 4: "钻石分销员" };
+        const levelText: Record<number, string> = {
+          1: "普通分销员",
+          2: "银牌分销员",
+          3: "金牌分销员",
+          4: "钻石分销员",
+        };
         const unit = out.commission_type === 1 ? "%" : "";
         const parts: string[] = [];
         for (const item of levelArr) {
@@ -147,10 +180,17 @@ export class AdminSalesmanProductCompatController {
           let rateVal = item.rate;
           // 尽量保持原始小数展示；若为数字再补单位
           if (rateVal == null) continue;
-          if (typeof rateVal === "number") rateVal = out.commission_type === 1 ? String(rateVal) : this.toAmountStr(rateVal, 2);
+          if (typeof rateVal === "number")
+            rateVal =
+              out.commission_type === 1
+                ? String(rateVal)
+                : this.toAmountStr(rateVal, 2);
           parts.push(`${levelText[lv] || `L${lv}`}佣金:${rateVal}${unit};`);
         }
-        out.product_commission = { product_commission: parts.join(""), sub_commission: "" };
+        out.product_commission = {
+          product_commission: parts.join(""),
+          sub_commission: "",
+        };
       } catch {}
 
       return out;
@@ -180,8 +220,12 @@ export class AdminSalesmanProductCompatController {
     const productId = this.coerceNumber(id, 0);
     if (!productId) return { code: 0, message: "success", data: null };
     // product 使用了复合主键，不能用 findUnique 单字段查询，改用 findFirst
-    const product = await this.prisma.product.findFirst({ where: { product_id: productId } });
-    const sp = await this.prisma.salesman_product.findFirst({ where: { product_id: productId } });
+    const product = await this.prisma.product.findFirst({
+      where: { product_id: productId },
+    });
+    const sp = await this.prisma.salesman_product.findFirst({
+      where: { product_id: productId },
+    });
     const item = {
       product_id: product?.product_id,
       is_join: sp?.is_join || 0,
@@ -198,18 +242,29 @@ export class AdminSalesmanProductCompatController {
   async create(@Req() req: any, @Body() body: any) {
     const shopId = await this.panel.getUserShopId(req.user?.userId);
     const productId = this.coerceNumber(body.productId || body.product_id, 0);
-    if (!productId) return { code: 400, message: "productId required", data: null };
+    if (!productId)
+      return { code: 400, message: "productId required", data: null };
     const data = {
       product_id: productId,
       is_join: this.coerceNumber(body.isJoin ?? body.is_join, 0),
-      commission_type: this.coerceNumber(body.commissionType ?? body.commission_type, 1),
-      commission_data: JSON.stringify(body.commissionData ?? body.commission_data ?? {}),
+      commission_type: this.coerceNumber(
+        body.commissionType ?? body.commission_type,
+        1,
+      ),
+      commission_data: JSON.stringify(
+        body.commissionData ?? body.commission_data ?? {},
+      ),
       shop_id: shopId,
       update_time: Math.floor(Date.now() / 1000),
     } as any;
-    const exists = await this.prisma.salesman_product.findFirst({ where: { product_id: productId } });
+    const exists = await this.prisma.salesman_product.findFirst({
+      where: { product_id: productId },
+    });
     if (exists) {
-      await this.prisma.salesman_product.update({ where: { salesman_product_id: exists.salesman_product_id }, data });
+      await this.prisma.salesman_product.update({
+        where: { salesman_product_id: exists.salesman_product_id },
+        data,
+      });
     } else {
       data.add_time = Math.floor(Date.now() / 1000);
       await this.prisma.salesman_product.create({ data });
@@ -227,14 +282,24 @@ export class AdminSalesmanProductCompatController {
     const data = {
       product_id: productId,
       is_join: this.coerceNumber(body.isJoin ?? body.is_join, 0),
-      commission_type: this.coerceNumber(body.commissionType ?? body.commission_type, 1),
-      commission_data: JSON.stringify(body.commissionData ?? body.commission_data ?? {}),
+      commission_type: this.coerceNumber(
+        body.commissionType ?? body.commission_type,
+        1,
+      ),
+      commission_data: JSON.stringify(
+        body.commissionData ?? body.commission_data ?? {},
+      ),
       shop_id: shopId,
       update_time: Math.floor(Date.now() / 1000),
     } as any;
-    const exists = await this.prisma.salesman_product.findFirst({ where: { product_id: productId } });
+    const exists = await this.prisma.salesman_product.findFirst({
+      where: { product_id: productId },
+    });
     if (exists) {
-      await this.prisma.salesman_product.update({ where: { salesman_product_id: exists.salesman_product_id }, data });
+      await this.prisma.salesman_product.update({
+        where: { salesman_product_id: exists.salesman_product_id },
+        data,
+      });
     } else {
       data.add_time = Math.floor(Date.now() / 1000);
       await this.prisma.salesman_product.create({ data });
@@ -252,10 +317,17 @@ export class AdminSalesmanProductCompatController {
     const val = body.val;
     if (!id) return { code: 1, message: "#id 错误", data: null };
     const allowed = ["is_join", "commission_type", "commission_data"];
-    if (!allowed.includes(field)) return { code: 1, message: "#field 错误", data: null };
+    if (!allowed.includes(field))
+      return { code: 1, message: "#field 错误", data: null };
     const data: any = {};
-    data[field] = field === "commission_data" ? JSON.stringify(val ?? {}) : this.coerceNumber(val, 0);
-    await this.prisma.salesman_product.update({ where: { salesman_product_id: id }, data });
+    data[field] =
+      field === "commission_data"
+        ? JSON.stringify(val ?? {})
+        : this.coerceNumber(val, 0);
+    await this.prisma.salesman_product.update({
+      where: { salesman_product_id: id },
+      data,
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -264,11 +336,15 @@ export class AdminSalesmanProductCompatController {
   @ApiOperation({ summary: "分销商品批量（兼容）" })
   @Authorities("salesmanProductManage")
   async batch(@Body() body: any) {
-    const ids: number[] = (body.ids || []).map((x) => this.coerceNumber(x, 0)).filter(Boolean);
+    const ids: number[] = (body.ids || [])
+      .map((x) => this.coerceNumber(x, 0))
+      .filter(Boolean);
     const type: string = body.type || body.act || "";
     if (!ids.length) return { code: 1, message: "未选择项目", data: null };
     if (type === "del" || type === "delete") {
-      await this.prisma.salesman_product.deleteMany({ where: { salesman_product_id: { in: ids } } });
+      await this.prisma.salesman_product.deleteMany({
+        where: { salesman_product_id: { in: ids } },
+      });
       return { code: 0, message: "批量操作执行成功！", data: true };
     }
     return { code: 1, message: "#type 错误", data: null };

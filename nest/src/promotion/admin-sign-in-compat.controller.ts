@@ -1,5 +1,14 @@
 // @ts-nocheck
-import { Controller, Get, Post, Put, Delete, Body, Query, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -61,7 +70,8 @@ export class AdminSignInCompatController {
   @ApiOperation({ summary: "批量删除签到设置（兼容 /adminapi）" })
   async batch(@Body() body: any) {
     const { type, ids } = body;
-    if (!Array.isArray(ids) || ids.length === 0) return ResponseUtil.error("未选择项目");
+    if (!Array.isArray(ids) || ids.length === 0)
+      return ResponseUtil.error("未选择项目");
     if (type === "del") {
       const ok = await this.svc.batchDelete(ids.map(Number));
       return ok ? ResponseUtil.success() : ResponseUtil.error("删除失败");

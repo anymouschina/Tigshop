@@ -70,10 +70,13 @@ export class OrderInvoiceService {
         where: { user_id: { in: userIds } },
         select: { user_id: true, username: true, mobile: true, email: true },
       });
-      userMap = users.reduce((acc: any, u: any) => {
-        acc[u.user_id] = u;
-        return acc;
-      }, {} as Record<number, any>);
+      userMap = users.reduce(
+        (acc: any, u: any) => {
+          acc[u.user_id] = u;
+          return acc;
+        },
+        {} as Record<number, any>,
+      );
     }
 
     let orderMap: Record<number, any> = {};
@@ -82,10 +85,13 @@ export class OrderInvoiceService {
         where: { order_id: { in: orderIds } },
         select: { order_id: true, order_sn: true, total_amount: true },
       });
-      orderMap = orders.reduce((acc: any, o: any) => {
-        acc[o.order_id] = o;
-        return acc;
-      }, {} as Record<number, any>);
+      orderMap = orders.reduce(
+        (acc: any, o: any) => {
+          acc[o.order_id] = o;
+          return acc;
+        },
+        {} as Record<number, any>,
+      );
     }
 
     return rawRecords.map((r: any) => ({
@@ -232,10 +238,13 @@ export class OrderInvoiceService {
         where: { order_id: { in: orderIds } },
         select: { order_id: true, order_sn: true, total_amount: true },
       });
-      orderMap = orders.reduce((acc: any, o: any) => {
-        acc[o.order_id] = o;
-        return acc;
-      }, {} as Record<number, any>);
+      orderMap = orders.reduce(
+        (acc: any, o: any) => {
+          acc[o.order_id] = o;
+          return acc;
+        },
+        {} as Record<number, any>,
+      );
     }
     return raw.map((r: any) => ({ ...r, order: orderMap[r.order_id] || null }));
   }

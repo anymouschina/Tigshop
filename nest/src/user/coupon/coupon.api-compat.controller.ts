@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Request } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+} from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { UserCouponService } from "./coupon.service";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
@@ -28,7 +36,10 @@ export class UserCouponApiCompatController {
     @Request() req,
     @Query() userCouponListDto: UserCouponListDto,
   ): Promise<CouponListResponse> {
-    return this.userCouponService.getUserCouponList(req.user.userId, userCouponListDto);
+    return this.userCouponService.getUserCouponList(
+      req.user.userId,
+      userCouponListDto,
+    );
   }
 
   // 对齐 PHP user/coupon/getList 为公开可领券列表
@@ -38,7 +49,9 @@ export class UserCouponApiCompatController {
   async getAvailableCouponList(
     @Query() availableCouponListDto: AvailableCouponListDto,
   ): Promise<CouponListResponse> {
-    return this.userCouponService.getAvailableCouponList(availableCouponListDto);
+    return this.userCouponService.getAvailableCouponList(
+      availableCouponListDto,
+    );
   }
 
   // 领取需要登录
@@ -62,7 +75,10 @@ export class UserCouponApiCompatController {
     @Request() req,
     @Body() deleteCouponDto: DeleteCouponDto,
   ): Promise<SuccessResponse> {
-    return this.userCouponService.deleteUserCoupon(req.user.userId, deleteCouponDto);
+    return this.userCouponService.deleteUserCoupon(
+      req.user.userId,
+      deleteCouponDto,
+    );
   }
 
   // 详情需要登录（按PHP路由中间件）
@@ -74,6 +90,9 @@ export class UserCouponApiCompatController {
     @Request() req,
     @Query() couponDetailDto: CouponDetailDto,
   ): Promise<CouponResponse> {
-    return this.userCouponService.getCouponDetail(req.user.userId, couponDetailDto);
+    return this.userCouponService.getCouponDetail(
+      req.user.userId,
+      couponDetailDto,
+    );
   }
 }

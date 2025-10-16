@@ -122,7 +122,10 @@ export class MerchantShopController {
       select: { shop_id: true, shop_title: true },
     });
     // 与 PHP 版本对齐：下拉选择接口直接返回数组，不带分页元信息
-    const items = records.map((r) => ({ shopId: r.shop_id, shopTitle: r.shop_title }));
+    const items = records.map((r) => ({
+      shopId: r.shop_id,
+      shopTitle: r.shop_title,
+    }));
     return { code: 0, message: "success", data: items };
   }
 
@@ -262,9 +265,13 @@ export class MerchantShopController {
     const userId = req.user?.userId;
     if (!userId) throw new Error("用户未登录");
     // 兼容前端通过 header x-shop-id 传入店铺
-    const rawHeaderShopId = req.headers?.['x-shop-id'] ?? req.headers?.['x-shopid'];
+    const rawHeaderShopId =
+      req.headers?.["x-shop-id"] ?? req.headers?.["x-shopid"];
     const headerShopId = Number(rawHeaderShopId);
-    const shopId = Number.isFinite(headerShopId) && headerShopId > 0 ? headerShopId : undefined;
+    const shopId =
+      Number.isFinite(headerShopId) && headerShopId > 0
+        ? headerShopId
+        : undefined;
     return this.merchantShopService.getCurrentShopDetail(userId, shopId);
   }
 

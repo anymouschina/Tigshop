@@ -69,7 +69,11 @@ export class MessageTypeService {
     }
 
     // 发送类型筛选
-    if (filter.send_type !== undefined && filter.send_type !== null && filter.send_type !== "") {
+    if (
+      filter.send_type !== undefined &&
+      filter.send_type !== null &&
+      filter.send_type !== ""
+    ) {
       // schema 中 send_type 为 Boolean?，前端传 1/2（会员/商家）时做兼容，非 0 视为 true
       const val = Number(filter.send_type);
       if (!Number.isNaN(val)) {
@@ -280,7 +284,9 @@ export class MessageTypeService {
     }
 
     // 检查是否有关联的消息模板
-    const relatedTemplates = await (this.prisma as any)["message_template"].count({
+    const relatedTemplates = await (this.prisma as any)[
+      "message_template"
+    ].count({
       where: {
         message_id: messageType.message_id,
       },
@@ -300,7 +306,9 @@ export class MessageTypeService {
 
   async batchDelete(messageIds: number[]): Promise<boolean> {
     // 检查是否有关联的消息模板
-    const relatedTemplates = await (this.prisma as any)["message_template"].count({
+    const relatedTemplates = await (this.prisma as any)[
+      "message_template"
+    ].count({
       where: {
         message_id: { in: messageIds },
       },

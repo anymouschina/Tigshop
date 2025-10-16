@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Req } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,7 +20,10 @@ import { ResponseUtil } from "src/common/utils/response.util";
 @Controller("adminapi/promotion/coupon")
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class AdminCouponCompatController {
-  constructor(private readonly svc: CouponService, private readonly panel: PanelService) {}
+  constructor(
+    private readonly svc: CouponService,
+    private readonly panel: PanelService,
+  ) {}
 
   @Get("list")
   @Authorities("promotionManage")
@@ -100,7 +111,8 @@ export class AdminCouponCompatController {
   @ApiOperation({ summary: "批量操作（兼容 /adminapi）" })
   async batch(@Body() body: any) {
     const { type, ids } = body;
-    if (!Array.isArray(ids) || ids.length === 0) return ResponseUtil.error("未选择项目");
+    if (!Array.isArray(ids) || ids.length === 0)
+      return ResponseUtil.error("未选择项目");
     if (type === "del") {
       await this.svc.batchDelete(ids.map(Number));
       return ResponseUtil.success();

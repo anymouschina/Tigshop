@@ -12,8 +12,16 @@ export class AdminGalleryController {
   // 列表，支持传 galleryId 查看子级
   @Get("list")
   @Authorities("galleryManage")
-  async list(@Query("galleryId") galleryId?: string, @Query("page") page?: string, @Query("size") size?: string) {
-    const data = await this.svc.getGalleryList({ gallery_id: Number(galleryId || 0), page: Number(page || 1), size: Number(size || 15) });
+  async list(
+    @Query("galleryId") galleryId?: string,
+    @Query("page") page?: string,
+    @Query("size") size?: string,
+  ) {
+    const data = await this.svc.getGalleryList({
+      gallery_id: Number(galleryId || 0),
+      page: Number(page || 1),
+      size: Number(size || 15),
+    });
     return { code: 0, message: "success", data };
   }
 
@@ -28,7 +36,11 @@ export class AdminGalleryController {
   @Authorities("galleryManage")
   async create(@Body() body: any) {
     const { parentId, galleryName, gallerySort } = body || {};
-    const res = await this.svc.createGallery({ parentId: Number(parentId || 0), galleryName, gallerySort: gallerySort != null ? Number(gallerySort) : undefined });
+    const res = await this.svc.createGallery({
+      parentId: Number(parentId || 0),
+      galleryName,
+      gallerySort: gallerySort != null ? Number(gallerySort) : undefined,
+    });
     return { code: 0, message: "success", data: res };
   }
 
@@ -36,7 +48,10 @@ export class AdminGalleryController {
   @Authorities("galleryManage")
   async update(@Body() body: any) {
     const { id, galleryName, gallerySort } = body || {};
-    await this.svc.updateGallery(Number(id), { galleryName, gallerySort: gallerySort != null ? Number(gallerySort) : undefined });
+    await this.svc.updateGallery(Number(id), {
+      galleryName,
+      gallerySort: gallerySort != null ? Number(gallerySort) : undefined,
+    });
     return { code: 0, message: "success" };
   }
 

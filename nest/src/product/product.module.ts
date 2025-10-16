@@ -42,9 +42,9 @@ import { ShopProductCategoryModule } from "src/merchant/shop-product-category/sh
     PriceInquiryModule,
     ProductAttributesTplModule,
     ProductServicesModule,
-  PanelModule,
-  // 为 admin 兼容分类接口提供店铺分类服务（支持 X-Shop-Id 过滤）
-  ShopProductCategoryModule,
+    PanelModule,
+    // 为 admin 兼容分类接口提供店铺分类服务（支持 X-Shop-Id 过滤）
+    ShopProductCategoryModule,
   ],
   controllers: [
     ProductController,

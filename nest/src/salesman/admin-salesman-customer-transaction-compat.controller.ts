@@ -36,7 +36,10 @@ export class AdminSalesmanCustomerTransactionCompatController {
   async export(@Res() res: Response) {
     const csv = "\uFEFFuserId,orderId,amount,addTime\r\n";
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename=\"customer-transactions.csv\"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=\"customer-transactions.csv\"`,
+    );
     res.send(csv);
   }
 }

@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,7 +20,10 @@ import { PanelService } from "src/panel/panel.service";
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class AdminSalesmanGroupCompatController {
-  constructor(private prisma: PrismaService, private panel: PanelService) {}
+  constructor(
+    private prisma: PrismaService,
+    private panel: PanelService,
+  ) {}
 
   private coerceNumber(v: any, dft = 0) {
     const n = Number(v);
@@ -26,7 +37,8 @@ export class AdminSalesmanGroupCompatController {
     if (input instanceof Date) ms = input.getTime();
     else if (typeof input === "string") {
       const n = Number(input);
-      if (Number.isFinite(n)) ms = n < 1e12 ? n * 1000 : n; // 可能是秒或毫秒
+      if (Number.isFinite(n))
+        ms = n < 1e12 ? n * 1000 : n; // 可能是秒或毫秒
       else return String(input);
     } else if (typeof input === "number") {
       ms = input < 1e12 ? input * 1000 : input;
@@ -56,7 +68,12 @@ export class AdminSalesmanGroupCompatController {
     const where: any = { shop_id: shopId };
     if (keyword) where.group_name = { contains: keyword };
     const [records, total] = await Promise.all([
-      this.prisma.salesman_group.findMany({ where, orderBy: { group_id: "desc" }, skip, take: size }),
+      this.prisma.salesman_group.findMany({
+        where,
+        orderBy: { group_id: "desc" },
+        skip,
+        take: size,
+      }),
       this.prisma.salesman_group.count({ where }),
     ]);
     // 转换 add_time 为格式化字符串；键名保持 snake_case，交由全局拦截器转为驼峰
@@ -71,8 +88,12 @@ export class AdminSalesmanGroupCompatController {
   @ApiOperation({ summary: "分销组详情（兼容）" })
   @Authorities("salesmanGroupManage")
   async detail(@Query("id") id: number) {
-    const record = await this.prisma.salesman_group.findUnique({ where: { group_id: this.coerceNumber(id, 0) } });
-    const data = record ? { ...record, add_time: this.formatDateTime((record as any).add_time) } : null;
+    const record = await this.prisma.salesman_group.findUnique({
+      where: { group_id: this.coerceNumber(id, 0) },
+    });
+    const data = record
+      ? { ...record, add_time: this.formatDateTime((record as any).add_time) }
+      : null;
     return { code: 0, message: "success", data };
   }
 
@@ -100,7 +121,10 @@ export class AdminSalesmanGroupCompatController {
     const id = this.coerceNumber(body.groupId || body.id, 0);
     await this.prisma.salesman_group.update({
       where: { group_id: id },
-      data: { group_name: body.groupName ?? undefined, describe: body.describe ?? undefined },
+      data: {
+        group_name: body.groupName ?? undefined,
+        describe: body.describe ?? undefined,
+      },
     });
     return { code: 0, message: "success", data: true };
   }
@@ -112,9 +136,15 @@ export class AdminSalesmanGroupCompatController {
     const id = this.coerceNumber(body.id, 0);
     const field = String(body.field || "");
     const val = body.value ?? body.val;
-    const map: Record<string, string> = { groupName: "group_name", describe: "describe" };
+    const map: Record<string, string> = {
+      groupName: "group_name",
+      describe: "describe",
+    };
     const dbField = map[field] || field;
-    await this.prisma.salesman_group.update({ where: { group_id: id }, data: { [dbField]: val } });
+    await this.prisma.salesman_group.update({
+      where: { group_id: id },
+      data: { [dbField]: val },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -122,7 +152,9 @@ export class AdminSalesmanGroupCompatController {
   @ApiOperation({ summary: "分销组删除（兼容）" })
   @Authorities("salesmanGroupManage")
   async del(@Body("id") id: number) {
-    await this.prisma.salesman_group.delete({ where: { group_id: this.coerceNumber(id, 0) } });
+    await this.prisma.salesman_group.delete({
+      where: { group_id: this.coerceNumber(id, 0) },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -130,11 +162,15 @@ export class AdminSalesmanGroupCompatController {
   @ApiOperation({ summary: "分销组批量（兼容）" })
   @Authorities("salesmanGroupManage")
   async batch(@Body() body: any) {
-    const ids: number[] = (body.ids || []).map((x) => this.coerceNumber(x, 0)).filter(Boolean);
+    const ids: number[] = (body.ids || [])
+      .map((x) => this.coerceNumber(x, 0))
+      .filter(Boolean);
     const type: string = body.type || body.act || "";
     if (!ids.length) return { code: 1, message: "未选择项目", data: null };
     if (["del", "delete"].includes(type)) {
-      await this.prisma.salesman_group.deleteMany({ where: { group_id: { in: ids } } });
+      await this.prisma.salesman_group.deleteMany({
+        where: { group_id: { in: ids } },
+      });
       return { code: 0, message: "批量删除成功", data: true };
     }
     return { code: 1, message: "#type 错误", data: null };

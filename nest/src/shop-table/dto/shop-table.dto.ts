@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min } from "class-validator";
 
 export class CreateShopTableDto {
   @IsInt()

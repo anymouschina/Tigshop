@@ -26,7 +26,17 @@ export class AdminRoleCompatController {
       sort_order: query.sort_order ?? "desc",
     } as any);
     // 兼容返回结构
-    return { code: 0, message: "success", data: { records: data.items, total: data.total, size, current: page, pages: Math.max(1, Math.ceil((data.total||0)/size)) } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: data.items,
+        total: data.total,
+        size,
+        current: page,
+        pages: Math.max(1, Math.ceil((data.total || 0) / size)),
+      },
+    };
   }
 
   @Get("detail")
@@ -42,7 +52,11 @@ export class AdminRoleCompatController {
     const created = await this.svc.create({
       name: body.role_name ?? body.name,
       description: body.role_desc ?? body.description ?? "",
-      permissions: Array.isArray(body.authority_list) ? body.authority_list : (body.authority_list ? String(body.authority_list).split(',').filter(Boolean) : []),
+      permissions: Array.isArray(body.authority_list)
+        ? body.authority_list
+        : body.authority_list
+          ? String(body.authority_list).split(",").filter(Boolean)
+          : [],
     } as any);
     return { code: 0, message: "success", data: created };
   }
@@ -54,7 +68,11 @@ export class AdminRoleCompatController {
       id: Number(body.id ?? body.role_id),
       name: body.role_name ?? body.name,
       description: body.role_desc ?? body.description,
-      permissions: Array.isArray(body.authority_list) ? body.authority_list : (body.authority_list ? String(body.authority_list).split(',').filter(Boolean) : undefined),
+      permissions: Array.isArray(body.authority_list)
+        ? body.authority_list
+        : body.authority_list
+          ? String(body.authority_list).split(",").filter(Boolean)
+          : undefined,
     } as any);
     return { code: 0, message: "success", data: updated };
   }
@@ -75,8 +93,17 @@ export class AdminRoleCompatController {
     const val = body.value ?? body.val;
     if (field === "status") {
       await this.svc.updateStatus(id, Number(val));
-    } else if (field === "role_name" || field === "name" || field === "role_desc" || field === "description") {
-      await this.svc.update({ id, name: field.includes("name") ? String(val) : undefined, description: field.includes("desc") ? String(val) : undefined } as any);
+    } else if (
+      field === "role_name" ||
+      field === "name" ||
+      field === "role_desc" ||
+      field === "description"
+    ) {
+      await this.svc.update({
+        id,
+        name: field.includes("name") ? String(val) : undefined,
+        description: field.includes("desc") ? String(val) : undefined,
+      } as any);
     }
     return { code: 0, message: "success" };
   }
@@ -87,15 +114,24 @@ export class AdminRoleCompatController {
     const act = String(body.act ?? body.type ?? "").toLowerCase();
     let ids: number[] = [];
     const raw = body.ids;
-    if (Array.isArray(raw)) ids = raw.map((x) => Number(x)).filter(Number.isFinite);
-    else if (typeof raw === "string") ids = raw.split(",").map((s) => Number(s.trim())).filter(Number.isFinite);
+    if (Array.isArray(raw))
+      ids = raw.map((x) => Number(x)).filter(Number.isFinite);
+    else if (typeof raw === "string")
+      ids = raw
+        .split(",")
+        .map((s) => Number(s.trim()))
+        .filter(Number.isFinite);
     else if (typeof raw === "number") ids = [raw];
 
     if (!ids.length) return { code: 0, message: "success", data: [] };
 
     if (act === "del" || act === "delete") {
       await this.svc.batchRemove(ids);
-      return { code: 0, message: "success", data: ids.map((id) => ({ id, ok: true })) };
+      return {
+        code: 0,
+        message: "success",
+        data: ids.map((id) => ({ id, ok: true })),
+      };
     }
 
     if (body.field != null) {
@@ -104,7 +140,17 @@ export class AdminRoleCompatController {
       const results: any[] = [];
       for (const id of ids) {
         if (field === "status") await this.svc.updateStatus(id, Number(value));
-        else if (field === "role_name" || field === "name" || field === "role_desc" || field === "description") await this.svc.update({ id, name: field.includes("name") ? String(value) : undefined, description: field.includes("desc") ? String(value) : undefined } as any);
+        else if (
+          field === "role_name" ||
+          field === "name" ||
+          field === "role_desc" ||
+          field === "description"
+        )
+          await this.svc.update({
+            id,
+            name: field.includes("name") ? String(value) : undefined,
+            description: field.includes("desc") ? String(value) : undefined,
+          } as any);
         results.push({ id, ok: true });
       }
       return { code: 0, message: "success", data: results };

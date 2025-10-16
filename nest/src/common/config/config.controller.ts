@@ -55,33 +55,39 @@ export class CommonConfigController {
   @ApiOperation({ summary: "获取售后服务政策（公共配置）" })
   async getAfterSalesService() {
     // 复用 product/product/afterSalesService 的内容，保持前端契约路径
-    return this.commonConfigService.getAfterSalesService?.() ?? {
-      policy: {
-        title: "售后服务政策",
-        content: "7天无理由退换货，15天质量问题换货，30天质量问题维修",
-      },
-      process: [
-        { step: 1, title: "申请售后", description: "在订单详情页申请售后服务" },
-        { step: 2, title: "审核处理", description: "客服审核售后申请" },
-        { step: 3, title: "寄回商品", description: "按照要求寄回商品" },
-        { step: 4, title: "处理完成", description: "完成售后处理" },
-      ],
-      contact: {
-        phone: "400-123-4567",
-        email: "service@example.com",
-        time: "周一至周日 9:00-21:00",
-      },
-      faq: [
-        {
-          question: "如何申请退换货？",
-          answer: "在订单详情页点击申请售后，填写相关信息即可",
+    return (
+      this.commonConfigService.getAfterSalesService?.() ?? {
+        policy: {
+          title: "售后服务政策",
+          content: "7天无理由退换货，15天质量问题换货，30天质量问题维修",
         },
-        {
-          question: "退换货需要什么条件？",
-          answer: "商品完好，包装齐全，不影响二次销售",
+        process: [
+          {
+            step: 1,
+            title: "申请售后",
+            description: "在订单详情页申请售后服务",
+          },
+          { step: 2, title: "审核处理", description: "客服审核售后申请" },
+          { step: 3, title: "寄回商品", description: "按照要求寄回商品" },
+          { step: 4, title: "处理完成", description: "完成售后处理" },
+        ],
+        contact: {
+          phone: "400-123-4567",
+          email: "service@example.com",
+          time: "周一至周日 9:00-21:00",
         },
-      ],
-    };
+        faq: [
+          {
+            question: "如何申请退换货？",
+            answer: "在订单详情页点击申请售后，填写相关信息即可",
+          },
+          {
+            question: "退换货需要什么条件？",
+            answer: "商品完好，包装齐全，不影响二次销售",
+          },
+        ],
+      }
+    );
   }
 
   // Placeholder for future POST methods

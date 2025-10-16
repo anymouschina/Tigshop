@@ -4,7 +4,10 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { CategoryService, CategoryTreeNode } from "./category.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Request } from "express";
-import { CurrentShopId, hasValidShopId } from "src/common/decorators/current-shop.decorator";
+import {
+  CurrentShopId,
+  hasValidShopId,
+} from "src/common/decorators/current-shop.decorator";
 import { ShopProductCategoryService } from "src/merchant/shop-product-category/shop-product-category.service";
 
 @ApiTags("Product Category")
@@ -20,14 +23,17 @@ export class CategoryController {
    * 请求: GET /api/shop/category/tree?shopId=xxx
    * 返回: [{ categoryId, parentId, categoryName, categoryPic, isStore }]
    */
-  @Get('shop/category/tree')
+  @Get("shop/category/tree")
   @Public()
-  @ApiOperation({ summary: '获取店铺顶级分类（shop/category/tree）' })
-  async shopCategoryTree(@Query('shopId') rawShopId: string, @CurrentShopId() decoShopId?: number) {
+  @ApiOperation({ summary: "获取店铺顶级分类（shop/category/tree）" })
+  async shopCategoryTree(
+    @Query("shopId") rawShopId: string,
+    @CurrentShopId() decoShopId?: number,
+  ) {
     // 优先显式传入的 shopId，其次装饰器解析
     const shopId = Number(rawShopId || decoShopId || 0) || 0;
     if (!hasValidShopId(shopId)) {
-      return { code: 0, message: 'success', data: [] };
+      return { code: 0, message: "success", data: [] };
     }
 
     const tree = await this.shopCatService.getAll(shopId);
@@ -37,10 +43,10 @@ export class CategoryController {
       categoryId: n.category_id,
       parentId: n.parent_id ?? 0,
       categoryName: n.category_name,
-      categoryPic: n.category_pic || '',
+      categoryPic: n.category_pic || "",
       isStore: 1,
     }));
-    return { code: 0, message: 'success', data: mapped };
+    return { code: 0, message: "success", data: mapped };
   }
 
   /**
@@ -48,32 +54,35 @@ export class CategoryController {
    * 语义：返回指定分类 (id) 的父级（目前示例中该分类本身为顶级），并附带所有顶级分类列表。
    * 示例返回结构参照 java-b2b2c-pro：data 数组里仅一个对象，catList 是所有顶级分类列表。
    */
-  @Get('shop/category/parentTree')
+  @Get("shop/category/parentTree")
   @Public()
-  @ApiOperation({ summary: '获取店铺分类父级结构（shop/category/parentTree）' })
-  async shopCategoryParentTree(
-    @Query('id') rawId: string,
-  ) {
+  @ApiOperation({ summary: "获取店铺分类父级结构（shop/category/parentTree）" })
+  async shopCategoryParentTree(@Query("id") rawId: string) {
     const categoryId = Number(rawId || 0) || 0;
-    if (!categoryId) return { code: 0, message: 'success', data: [] };
+    if (!categoryId) return { code: 0, message: "success", data: [] };
     // 根据分类直接查出记录（含 shop_id 与 parent_id）
     const record = await this.shopCatService.findById(categoryId);
-    if (!record) return { code: 0, message: 'success', data: [] };
+    if (!record) return { code: 0, message: "success", data: [] };
     // 查找同店铺同 parent_id 的同级列表（包含自身）
-    const siblings = await this.shopCatService.listByShopAndParent(record.shop_id, record.parent_id);
+    const siblings = await this.shopCatService.listByShopAndParent(
+      record.shop_id,
+      record.parent_id,
+    );
     const mappedSiblings = siblings.map((n: any) => ({
       categoryId: n.category_id,
       parentId: n.parent_id ?? 0,
       categoryName: n.category_name,
       catList: null,
     }));
-    const payload = [{
-      categoryId: record.category_id,
-      parentId: record.parent_id ?? 0,
-      categoryName: record.category_name,
-      catList: mappedSiblings,
-    }];
-    return { code: 0, message: 'success', data: payload };
+    const payload = [
+      {
+        categoryId: record.category_id,
+        parentId: record.parent_id ?? 0,
+        categoryName: record.category_name,
+        catList: mappedSiblings,
+      },
+    ];
+    return { code: 0, message: "success", data: payload };
   }
 
   /**
@@ -106,7 +115,10 @@ export class CategoryController {
   @Get("category/category/list")
   @Public()
   @ApiOperation({ summary: "根据上级获得指定分类" })
-  async list(@Query("id") id: string, @CurrentShopId() shopId?: number): Promise<any> {
+  async list(
+    @Query("id") id: string,
+    @CurrentShopId() shopId?: number,
+  ): Promise<any> {
     const categoryId = Number(id) || 0;
     const resolvedShopId = shopId; // 已使用统一装饰器解析
 
@@ -118,7 +130,9 @@ export class CategoryController {
         parentId: n.parent_id,
         categoryPic: n.category_pic || "",
         sortOrder: n.sort_order ?? 0,
-        ...(n.children && n.children.length ? { children: toCamel(n.children) } : {}),
+        ...(n.children && n.children.length
+          ? { children: toCamel(n.children) }
+          : {}),
       }));
 
     // If no shopId provided, fallback to original global behaviour
@@ -133,7 +147,7 @@ export class CategoryController {
       category_id: n.category_id,
       parent_id: n.parent_id,
       category_name: n.category_name,
-      category_pic: n.category_pic || '',
+      category_pic: n.category_pic || "",
       sort_order: n.sort_order ?? 0,
       children: (n.children || []).map(mapShopNode),
     });
@@ -146,7 +160,10 @@ export class CategoryController {
       targetList = shopTreeMapped.filter((n) => (n.parent_id ?? 0) === 0);
     } else {
       // Need to locate the node in the whole tree, not only root level.
-      const findNode = (nodes: CategoryTreeNode[], id: number): CategoryTreeNode | null => {
+      const findNode = (
+        nodes: CategoryTreeNode[],
+        id: number,
+      ): CategoryTreeNode | null => {
         for (const n of nodes) {
           if (n.category_id === id) return n;
           if (n.children && n.children.length) {
@@ -157,17 +174,17 @@ export class CategoryController {
         return null;
       };
       const node = findNode(shopTreeMapped, categoryId);
-      targetList = node ? (node.children || []) : [];
+      targetList = node ? node.children || [] : [];
     }
 
-    let source: 'shop' | 'global' = 'shop';
+    let source: "shop" | "global" = "shop";
     let fallback = false;
 
     if (!targetList.length) {
       // Fallback to global
       const data = await this.categoryService.getCategoryList(categoryId);
       targetList = data;
-      source = 'global';
+      source = "global";
       fallback = true;
     }
 
@@ -195,12 +212,14 @@ export class CategoryController {
         parentId: n.parent_id,
         categoryPic: n.category_pic || "",
         sortOrder: n.sort_order ?? 0,
-        ...(n.children && n.children.length ? { children: toCamel(n.children) } : {}),
+        ...(n.children && n.children.length
+          ? { children: toCamel(n.children) }
+          : {}),
       }));
 
     if (!hasValidShopId(resolvedShopId)) {
       const data = await this.categoryService.getAllCategories();
-      return { source: 'global', fallback: false, list: toCamel(data) };
+      return { source: "global", fallback: false, list: toCamel(data) };
     }
 
     const shopTree = await this.shopCatService.getAll(resolvedShopId);
@@ -208,17 +227,17 @@ export class CategoryController {
       category_id: n.category_id,
       parent_id: n.parent_id,
       category_name: n.category_name,
-      category_pic: n.category_pic || '',
+      category_pic: n.category_pic || "",
       sort_order: n.sort_order ?? 0,
       children: (n.children || []).map(mapShopNode),
     });
     let tree = shopTree.map(mapShopNode);
-    let source: 'shop' | 'global' = 'shop';
+    let source: "shop" | "global" = "shop";
     let fallback = false;
     if (!tree.length) {
       const data = await this.categoryService.getAllCategories();
       tree = data;
-      source = 'global';
+      source = "global";
       fallback = true;
     }
     return { source, fallback, shopId: resolvedShopId, list: toCamel(tree) };

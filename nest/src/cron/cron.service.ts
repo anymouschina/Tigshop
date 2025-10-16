@@ -14,7 +14,7 @@ export class CronService {
   constructor(
     private prisma: PrismaService,
     private redisService: RedisService,
-  private statisticsFacade: StatisticsFacadeService,
+    private statisticsFacade: StatisticsFacadeService,
     private logService: LogService,
     private notificationService: NotificationService,
   ) {}
@@ -68,7 +68,7 @@ export class CronService {
       });
 
       // 清除相关缓存
-  await this.statisticsFacade.clearCache();
+      await this.statisticsFacade.clearCache();
 
       this.logger.debug("Daily statistics job completed successfully");
     } catch (error) {

@@ -47,7 +47,11 @@ describe("ProductPricingService", () => {
       });
       expect(prisma.product.findFirst).toHaveBeenCalledWith({
         where: { product_id: 1001 },
-        select: { product_price: true, market_price: true, product_stock: true },
+        select: {
+          product_price: true,
+          market_price: true,
+          product_stock: true,
+        },
       });
     });
 
@@ -62,7 +66,10 @@ describe("ProductPricingService", () => {
         sku_price: 12.34,
       });
 
-      const res = await service.getAvailability({ productId: 1001, skuId: 2002 });
+      const res = await service.getAvailability({
+        productId: 1001,
+        skuId: 2002,
+      });
       expect(res).toEqual({
         stock: 3,
         priceStr: "12.34",
@@ -117,8 +124,16 @@ describe("ProductPricingService", () => {
   describe("getPriceInBatches", () => {
     it("returns combined origin price, sku price and stock per item", async () => {
       prisma.product.findFirst
-        .mockResolvedValueOnce({ market_price: 50, product_price: 40, product_stock: 100 })
-        .mockResolvedValueOnce({ market_price: 30, product_price: 25, product_stock: 10 });
+        .mockResolvedValueOnce({
+          market_price: 50,
+          product_price: 40,
+          product_stock: 100,
+        })
+        .mockResolvedValueOnce({
+          market_price: 30,
+          product_price: 25,
+          product_stock: 10,
+        });
 
       prisma.product_sku.findFirst
         .mockResolvedValueOnce({ sku_price: 35, sku_stock: 5 }) // for first item

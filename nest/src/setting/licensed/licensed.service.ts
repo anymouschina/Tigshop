@@ -118,7 +118,10 @@ export class LicensedService {
 
   async update(id: number, updateDto: UpdateLicensedDto) {
     // 支持多种字段命名（兼容老前端/DTO）：license | LicenseKey | licenseKey
-    const licenseKey = (updateDto as any).license ?? (updateDto as any).LicenseKey ?? (updateDto as any).licenseKey;
+    const licenseKey =
+      (updateDto as any).license ??
+      (updateDto as any).LicenseKey ??
+      (updateDto as any).licenseKey;
     const domain = (updateDto as any).Domain ?? (updateDto as any).domain;
 
     if (!licenseKey || typeof licenseKey !== "string") {
@@ -257,8 +260,14 @@ export class LicensedService {
     };
   }
 
-  private async upsertConfig(biz_code: string, biz_val: string, nowSec: number) {
-    const existed = await (this.prisma as any).config.findFirst({ where: { biz_code, is_del: 0 } });
+  private async upsertConfig(
+    biz_code: string,
+    biz_val: string,
+    nowSec: number,
+  ) {
+    const existed = await (this.prisma as any).config.findFirst({
+      where: { biz_code, is_del: 0 },
+    });
     if (existed) {
       await (this.prisma as any).config.update({
         where: { id: existed.id },
@@ -266,7 +275,13 @@ export class LicensedService {
       });
     } else {
       await (this.prisma as any).config.create({
-        data: { biz_code, biz_val, create_time: nowSec, update_time: nowSec, is_del: 0 },
+        data: {
+          biz_code,
+          biz_val,
+          create_time: nowSec,
+          update_time: nowSec,
+          is_del: 0,
+        },
       });
     }
   }

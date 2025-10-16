@@ -1,14 +1,14 @@
 // @ts-nocheck
-import { Injectable, Logger, Optional } from '@nestjs/common';
-import { ImGateway } from '../im/im.gateway';
+import { Injectable, Logger, Optional } from "@nestjs/common";
+import { ImGateway } from "../im/im.gateway";
 
 export type DineEventKind =
-  | 'CREATE'
-  | 'APPEND'
-  | 'CHANGE_TABLE'
-  | 'STATE_CHANGE'
-  | 'PAY'
-  | 'CANCEL';
+  | "CREATE"
+  | "APPEND"
+  | "CHANGE_TABLE"
+  | "STATE_CHANGE"
+  | "PAY"
+  | "CANCEL";
 
 export interface DineOrderEventPayload {
   kind: DineEventKind;
@@ -36,13 +36,15 @@ export class DineOrderEventsService {
     try {
       ev.ts = ev.ts || Date.now();
       const gw = (ImGateway.instance || this.gateway) as ImGateway | undefined;
-      if (!gw || typeof (gw as any).pushDineEvent !== 'function') {
+      if (!gw || typeof (gw as any).pushDineEvent !== "function") {
         // 允许在无网关场景静默
         return;
       }
       (gw as any).pushDineEvent(ev);
     } catch (e) {
-      this.logger.warn(`emit dine event failed kind=${ev?.kind} orderId=${ev?.orderId}: ${(e as any)?.message}`);
+      this.logger.warn(
+        `emit dine event failed kind=${ev?.kind} orderId=${ev?.orderId}: ${(e as any)?.message}`,
+      );
     }
   }
 }

@@ -64,7 +64,8 @@ export class OrderController {
   @ApiOperation({ summary: "取消订单" })
   async cancelOrder(
     @Request() req,
-    @Body() data: { orderId?: number; id?: number; order_id?: number; reason?: string },
+    @Body()
+    data: { orderId?: number; id?: number; order_id?: number; reason?: string },
   ) {
     const oid = Number(data.orderId ?? data.id ?? data.order_id);
     return this.orderService.cancelOrder(oid, req.user.userId, data.reason);
@@ -75,7 +76,10 @@ export class OrderController {
    */
   @Post("confirmReceipt")
   @ApiOperation({ summary: "确认收货" })
-  async confirmReceive(@Request() req, @Body() data: { orderId?: number; id?: number; order_id?: number }) {
+  async confirmReceive(
+    @Request() req,
+    @Body() data: { orderId?: number; id?: number; order_id?: number },
+  ) {
     const oid = Number(data.orderId ?? data.id ?? data.order_id);
     if (!oid || Number.isNaN(oid)) {
       return { code: 400, message: "订单ID无效" } as any;

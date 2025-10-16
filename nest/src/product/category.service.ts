@@ -109,9 +109,7 @@ export class CategoryService {
   }
 
   // 批量判断是否存在子分类，返回映射: { [category_id]: boolean }
-  async hasChildrenForIds(
-    ids: number[],
-  ): Promise<Record<number, boolean>> {
+  async hasChildrenForIds(ids: number[]): Promise<Record<number, boolean>> {
     if (!ids || ids.length === 0) return {};
     const children = await this.prisma.category.findMany({
       where: { parent_id: { in: ids } },
@@ -322,7 +320,7 @@ export class CategoryService {
       "is_show",
     ]);
     if (numericFields.has(field)) {
-      if (value === '' || value === null || value === undefined) {
+      if (value === "" || value === null || value === undefined) {
         value = 0;
       } else {
         const coerced = Number(value);
@@ -341,7 +339,7 @@ export class CategoryService {
   }
 
   private normalizeInt(raw: any): number {
-    if (raw === '' || raw === null || raw === undefined) return 0;
+    if (raw === "" || raw === null || raw === undefined) return 0;
     const n = Number(raw);
     return Number.isNaN(n) ? 0 : Math.trunc(n);
   }

@@ -34,7 +34,11 @@ export class UserWithdrawApplyApiCompatController {
       where: { user_id: Number(userId), account_type: accountType },
       orderBy: { account_id: "desc" },
     });
-    return { code: 0, message: "success", data: { records: rows, total: rows.length } };
+    return {
+      code: 0,
+      message: "success",
+      data: { records: rows, total: rows.length },
+    };
   }
 
   // POST /api/user/withdrawApply/createAccount
@@ -111,8 +115,11 @@ export class UserWithdrawApplyApiCompatController {
     const userId = req.user.userId || req.user.user_id || req.user.sub;
     const amount = Number(body.amount || 0);
     const accountData = body.account_data || body.accountData || {};
-    if (!accountData || (typeof accountData === 'object' && Object.keys(accountData).length === 0)) {
-      return { code: 1, message: '请填写提现账号信息', data: null };
+    if (
+      !accountData ||
+      (typeof accountData === "object" && Object.keys(accountData).length === 0)
+    ) {
+      return { code: 1, message: "请填写提现账号信息", data: null };
     }
     try {
       await this.svc.create({
@@ -122,9 +129,9 @@ export class UserWithdrawApplyApiCompatController {
         postscript: "",
         status: 0,
       } as any);
-      return { code: 0, message: 'success', data: true };
-    } catch (e:any) {
-      return { code: 1, message: e?.message || '提现申请失败', data: null };
+      return { code: 0, message: "success", data: true };
+    } catch (e: any) {
+      return { code: 1, message: e?.message || "提现申请失败", data: null };
     }
   }
 }

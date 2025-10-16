@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Controller, Get, Post, Put, Body, Query, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -15,7 +23,9 @@ export class AdminSignInSettingCompatController {
 
   @Get("list")
   @Authorities("promotionManage")
-  @ApiOperation({ summary: "签到设置列表（别名 /adminapi/promotion/signInSetting/*）" })
+  @ApiOperation({
+    summary: "签到设置列表（别名 /adminapi/promotion/signInSetting/*）",
+  })
   async list(@Query() query: any) {
     const [records, total] = await Promise.all([
       this.svc.getFilterResult(query),
@@ -61,7 +71,8 @@ export class AdminSignInSettingCompatController {
   @ApiOperation({ summary: "批量删除签到设置（别名）" })
   async batch(@Body() body: any) {
     const { type, ids } = body;
-    if (!Array.isArray(ids) || ids.length === 0) return ResponseUtil.error("未选择项目");
+    if (!Array.isArray(ids) || ids.length === 0)
+      return ResponseUtil.error("未选择项目");
     if (type === "del") {
       const ok = await this.svc.batchDelete(ids.map(Number));
       return ok ? ResponseUtil.success() : ResponseUtil.error("删除失败");

@@ -27,8 +27,23 @@ export class AdminCurrencyCompatController {
     }
     const [total, records] = await this.prisma.$transaction([
       this.prisma.currency.count({ where }),
-      this.prisma.currency.findMany({ where, orderBy: { id: "desc" }, skip, take: size }),
+      this.prisma.currency.findMany({
+        where,
+        orderBy: { id: "desc" },
+        skip,
+        take: size,
+      }),
     ]);
-    return { code: 0, message: "success", data: { records, total, page, size, totalPages: Math.ceil(total / size) || 1 } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records,
+        total,
+        page,
+        size,
+        totalPages: Math.ceil(total / size) || 1,
+      },
+    };
   }
 }

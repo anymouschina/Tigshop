@@ -71,12 +71,16 @@ export class PriceInquiryService {
       const result = await this.prisma.price_inquiry.create({
         data: {
           mobile: (createData as any).mobile || (createData as any).phone || "",
-          content: (createData as any).content || (createData as any).product_name || "",
+          content:
+            (createData as any).content ||
+            (createData as any).product_name ||
+            "",
           product_id: (createData as any).product_id || 0,
           remark: (createData as any).remark || "",
           status: (createData as any).status ?? 0,
           shop_id: (createData as any).shop_id || 0,
-          create_time: (createData as any).create_time ?? Math.floor(Date.now() / 1000),
+          create_time:
+            (createData as any).create_time ?? Math.floor(Date.now() / 1000),
         },
       });
       return result;
@@ -91,12 +95,24 @@ export class PriceInquiryService {
       const result = await this.prisma.price_inquiry.update({
         where: { id },
         data: {
-          ...(updateData as any).mobile !== undefined && { mobile: (updateData as any).mobile },
-          ...(updateData as any).phone !== undefined && { mobile: (updateData as any).phone },
-          ...(updateData as any).content !== undefined && { content: (updateData as any).content },
-          ...(updateData as any).product_id !== undefined && { product_id: (updateData as any).product_id },
-          ...(updateData as any).remark !== undefined && { remark: (updateData as any).remark },
-          ...(updateData as any).status !== undefined && { status: (updateData as any).status },
+          ...((updateData as any).mobile !== undefined && {
+            mobile: (updateData as any).mobile,
+          }),
+          ...((updateData as any).phone !== undefined && {
+            mobile: (updateData as any).phone,
+          }),
+          ...((updateData as any).content !== undefined && {
+            content: (updateData as any).content,
+          }),
+          ...((updateData as any).product_id !== undefined && {
+            product_id: (updateData as any).product_id,
+          }),
+          ...((updateData as any).remark !== undefined && {
+            remark: (updateData as any).remark,
+          }),
+          ...((updateData as any).status !== undefined && {
+            status: (updateData as any).status,
+          }),
         },
       });
       return result;
@@ -139,7 +155,8 @@ export class PriceInquiryService {
       const result = await this.prisma.price_inquiry.update({
         where: { id },
         data: {
-          remark: (replyData as any).reply_content ?? (replyData as any).remark ?? "",
+          remark:
+            (replyData as any).reply_content ?? (replyData as any).remark ?? "",
           status: 1, // 已回复
         },
       });

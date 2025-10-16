@@ -1,12 +1,22 @@
 // @ts-nocheck
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class AdminGalleryCompatService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getGalleryList(filter: { gallery_id?: number; page?: number; size?: number; sort_field?: string; sort_order?: "asc" | "desc" }) {
+  async getGalleryList(filter: {
+    gallery_id?: number;
+    page?: number;
+    size?: number;
+    sort_field?: string;
+    sort_order?: "asc" | "desc";
+  }) {
     const page = Number(filter.page || 1);
     const size = Number(filter.size || 15);
     const parentId = Number(filter.gallery_id || 0);
@@ -23,7 +33,7 @@ export class AdminGalleryCompatService {
 
     // 附带每个相册下的前4张图片（与 PHP 行为一致）
     const galleryIds = records.map((g) => g.gallery_id);
-    let picsMap: Record<number, any[]> = {};
+    const picsMap: Record<number, any[]> = {};
     if (galleryIds.length) {
       const pics = await this.prisma.gallery_pic.findMany({
         where: { gallery_id: { in: galleryIds as any } },
@@ -32,7 +42,11 @@ export class AdminGalleryCompatService {
       });
       // 由于 take 应用于整体，这里重新按相册单独查询保证每个相册最多4张
       const perGalleryPromises = galleryIds.map((gid) =>
-        this.prisma.gallery_pic.findMany({ where: { gallery_id: gid }, orderBy: { pic_id: "desc" }, take: 4 })
+        this.prisma.gallery_pic.findMany({
+          where: { gallery_id: gid },
+          orderBy: { pic_id: "desc" },
+          take: 4,
+        }),
       );
       const perGallery = await Promise.all(perGalleryPromises);
       perGallery.forEach((arr, idx) => {
@@ -63,7 +77,9 @@ export class AdminGalleryCompatService {
   }
 
   async getGalleryDetail(id: number) {
-    const g = await this.prisma.gallery.findUnique({ where: { gallery_id: id } });
+    const g = await this.prisma.gallery.findUnique({
+      where: { gallery_id: id },
+    });
     if (!g) throw new NotFoundException("相册不存在");
     return {
       galleryId: g.gallery_id,
@@ -76,7 +92,11 @@ export class AdminGalleryCompatService {
     };
   }
 
-  async createGallery(data: { parentId?: number; galleryName: string; gallerySort?: number }) {
+  async createGallery(data: {
+    parentId?: number;
+    galleryName: string;
+    gallerySort?: number;
+  }) {
     if (!data.galleryName) throw new BadRequestException("相册名称不能为空");
     const created = await this.prisma.gallery.create({
       data: {
@@ -88,8 +108,13 @@ export class AdminGalleryCompatService {
     return { id: created.gallery_id };
   }
 
-  async updateGallery(id: number, data: { galleryName?: string; gallerySort?: number }) {
-    const exists = await this.prisma.gallery.findUnique({ where: { gallery_id: id } });
+  async updateGallery(
+    id: number,
+    data: { galleryName?: string; gallerySort?: number },
+  ) {
+    const exists = await this.prisma.gallery.findUnique({
+      where: { gallery_id: id },
+    });
     if (!exists) throw new NotFoundException("相册不存在");
     await this.prisma.gallery.update({
       where: { gallery_id: id },
@@ -102,10 +127,16 @@ export class AdminGalleryCompatService {
   }
 
   async updateGalleryField(id: number, field: string, val: any) {
-    const allowed: Record<string, string> = { galleryName: "gallery_name", gallerySort: "gallery_sort" };
+    const allowed: Record<string, string> = {
+      galleryName: "gallery_name",
+      gallerySort: "gallery_sort",
+    };
     const column = allowed[field];
     if (!column) throw new BadRequestException("不支持的字段");
-    await this.prisma.gallery.update({ where: { gallery_id: id }, data: { [column]: val } as any });
+    await this.prisma.gallery.update({
+      where: { gallery_id: id },
+      data: { [column]: val } as any,
+    });
     return true;
   }
 
@@ -114,7 +145,12 @@ export class AdminGalleryCompatService {
     return true;
   }
 
-  async getGalleryPicList(filter: { gallery_id?: number; page?: number; size?: number; sort_order?: "asc" | "desc" }) {
+  async getGalleryPicList(filter: {
+    gallery_id?: number;
+    page?: number;
+    size?: number;
+    sort_order?: "asc" | "desc";
+  }) {
     const page = Number(filter.page || 1);
     const size = Number(filter.size || 15);
     const sortOrder = filter.sort_order || "desc";
@@ -128,13 +164,21 @@ export class AdminGalleryCompatService {
         skip,
         take: size,
       }),
-      this.prisma.gallery_pic.count({ where: galleryId > 0 ? { gallery_id: galleryId } : undefined }),
+      this.prisma.gallery_pic.count({
+        where: galleryId > 0 ? { gallery_id: galleryId } : undefined,
+      }),
     ]);
 
-    const childGalleryList = await this.prisma.gallery.findMany({ where: { parent_id: galleryId } });
+    const childGalleryList = await this.prisma.gallery.findMany({
+      where: { parent_id: galleryId },
+    });
     const childWithThumbs = await Promise.all(
       childGalleryList.map(async (g) => {
-        const four = await this.prisma.gallery_pic.findMany({ where: { gallery_id: g.gallery_id }, orderBy: { pic_id: "desc" }, take: 4 });
+        const four = await this.prisma.gallery_pic.findMany({
+          where: { gallery_id: g.gallery_id },
+          orderBy: { pic_id: "desc" },
+          take: 4,
+        });
         return {
           galleryId: g.gallery_id,
           parentId: g.parent_id,
@@ -143,13 +187,21 @@ export class AdminGalleryCompatService {
           gallerySort: g.gallery_sort,
           galleryThumb: g.gallery_thumb,
           shopId: g.shop_id,
-          galleryPics: four.map((p) => ({ picId: p.pic_id, picUrl: p.pic_url, picName: p.pic_name, picThumb: p.pic_thumb })),
+          galleryPics: four.map((p) => ({
+            picId: p.pic_id,
+            picUrl: p.pic_url,
+            picName: p.pic_name,
+            picThumb: p.pic_thumb,
+          })),
         };
-      })
+      }),
     );
 
     return {
-      galleryInfo: galleryId > 0 ? await this.getGalleryDetail(galleryId) : { galleryId: 0, parentId: 0 },
+      galleryInfo:
+        galleryId > 0
+          ? await this.getGalleryDetail(galleryId)
+          : { galleryId: 0, parentId: 0 },
       galleryPicPage: {
         records: pics.map((p) => ({
           picId: p.pic_id,
@@ -170,7 +222,10 @@ export class AdminGalleryCompatService {
     const allowed: Record<string, string> = { picName: "pic_name" };
     const column = allowed[field];
     if (!column) throw new BadRequestException("不支持的字段");
-    await this.prisma.gallery_pic.update({ where: { pic_id: id }, data: { [column]: val } as any });
+    await this.prisma.gallery_pic.update({
+      where: { pic_id: id },
+      data: { [column]: val } as any,
+    });
     return true;
   }
 

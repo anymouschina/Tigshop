@@ -37,7 +37,12 @@ export class AdminPcNavigationCompatController {
     if (is_show > -1) where.is_show = !!is_show;
 
     const [records, total] = await Promise.all([
-      this.prisma.pc_navigation.findMany({ where, orderBy: { id: "desc" }, skip, take: size }),
+      this.prisma.pc_navigation.findMany({
+        where,
+        orderBy: { id: "desc" },
+        skip,
+        take: size,
+      }),
       this.prisma.pc_navigation.count({ where }),
     ]);
     return { code: 0, message: "success", data: { records, total } };
@@ -47,7 +52,9 @@ export class AdminPcNavigationCompatController {
   @ApiOperation({ summary: "导航详情（兼容）" })
   @Authorities("pcNavigationManage")
   async detail(@Query("id") id: number) {
-    const item = await this.prisma.pc_navigation.findUnique({ where: { id: this.num(id, 0) } });
+    const item = await this.prisma.pc_navigation.findUnique({
+      where: { id: this.num(id, 0) },
+    });
     return { code: 0, message: "success", data: item };
   }
 
@@ -56,7 +63,10 @@ export class AdminPcNavigationCompatController {
   @Authorities("pcNavigationManage")
   async getParentNav(@Query("type") type: number) {
     const t = this.num(type, 0);
-    const list = await this.prisma.pc_navigation.findMany({ where: { parent_id: 0, ...(t ? { type: t } : {}) }, orderBy: { id: "desc" } });
+    const list = await this.prisma.pc_navigation.findMany({
+      where: { parent_id: 0, ...(t ? { type: t } : {}) },
+      orderBy: { id: "desc" },
+    });
     return { code: 0, message: "success", data: list };
   }
 
@@ -105,8 +115,12 @@ export class AdminPcNavigationCompatController {
     if (body.type != null) data.type = this.num(body.type, 0);
     if (body.parent_id != null) data.parent_id = this.num(body.parent_id, 0);
     if (body.icon != null) data.icon = body.icon;
-    if (body.sort_order != null) data.sort_order = !!this.num(body.sort_order, 0);
-    const updated = await this.prisma.pc_navigation.update({ where: { id }, data });
+    if (body.sort_order != null)
+      data.sort_order = !!this.num(body.sort_order, 0);
+    const updated = await this.prisma.pc_navigation.update({
+      where: { id },
+      data,
+    });
     return { code: 0, message: "success", data: updated };
   }
 
@@ -118,7 +132,8 @@ export class AdminPcNavigationCompatController {
     const field = String(body.field || "");
     const val = body.val;
     const allow = ["sort_order", "is_show", "is_blank"];
-    if (!id || allow.indexOf(field) === -1) return { code: 1, message: "#field 错误", data: null };
+    if (!id || allow.indexOf(field) === -1)
+      return { code: 1, message: "#field 错误", data: null };
     const data: any = {};
     if (field === "sort_order") data.sort_order = !!this.num(val, 0);
     if (field === "is_show") data.is_show = !!val;
@@ -139,11 +154,15 @@ export class AdminPcNavigationCompatController {
   @ApiOperation({ summary: "批量（兼容，仅del）" })
   @Authorities("pcNavigationManage")
   async batch(@Body() body: any) {
-    const ids: number[] = (body.ids || []).map((x) => this.num(x, 0)).filter(Boolean);
+    const ids: number[] = (body.ids || [])
+      .map((x) => this.num(x, 0))
+      .filter(Boolean);
     const type: string = body.type || body.act || "";
     if (!ids.length) return { code: 1, message: "未选择项目", data: null };
     if (type === "del" || type === "delete") {
-      await this.prisma.pc_navigation.deleteMany({ where: { id: { in: ids } } });
+      await this.prisma.pc_navigation.deleteMany({
+        where: { id: { in: ids } },
+      });
       return { code: 0, message: "success", data: true };
     }
     return { code: 1, message: "#type 错误", data: null };

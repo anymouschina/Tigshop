@@ -15,7 +15,11 @@ export class AuthorityCompatController {
   @Get("getAllAuthority")
   @ApiOperation({ summary: "全部权限（兼容）" })
   async getAllAuthority(@Query() query?: any) {
-    const adminType = (query?.admin_type || query?.adminType || "admin").toString();
+    const adminType = (
+      query?.admin_type ||
+      query?.adminType ||
+      "admin"
+    ).toString();
     const type = Number(query?.type || 0); // 预留字段，暂不使用
 
     const rows = await this.prisma.authority.findMany({
@@ -84,7 +88,9 @@ export class AuthorityCompatController {
 
     // 递归按 sortOrder 排序
     const sortTree = (list: any[]) => {
-      list.sort((a, b) => a.sortOrder - b.sortOrder || a.authorityId - b.authorityId);
+      list.sort(
+        (a, b) => a.sortOrder - b.sortOrder || a.authorityId - b.authorityId,
+      );
       for (const item of list) {
         if (item.children && item.children.length) sortTree(item.children);
       }
@@ -99,22 +105,51 @@ export class AuthorityCompatController {
   async list(@Query() query: any) {
     const page = Number(query.page) || 1;
     const size = Number(query.size) || 15;
-    const paging = query.paging !== undefined ? query.paging !== "false" && query.paging !== false : true;
+    const paging =
+      query.paging !== undefined
+        ? query.paging !== "false" && query.paging !== false
+        : true;
     const skip = (page - 1) * size;
     const keyword = (query.keyword ?? "").trim();
     const where: any = {};
-    if (keyword) where.OR = [{ authority_name: { contains: keyword } }, { authority_sn: { contains: keyword } }];
+    if (keyword)
+      where.OR = [
+        { authority_name: { contains: keyword } },
+        { authority_sn: { contains: keyword } },
+      ];
 
     if (!paging) {
-      const records = await this.prisma.authority.findMany({ where, orderBy: [{ parent_id: "asc" }, { sort_order: "asc" }, { authority_id: "asc" }] as any });
+      const records = await this.prisma.authority.findMany({
+        where,
+        orderBy: [
+          { parent_id: "asc" },
+          { sort_order: "asc" },
+          { authority_id: "asc" },
+        ] as any,
+      });
       return { code: 0, message: "success", data: records };
     }
 
     const [records, total] = await Promise.all([
-      this.prisma.authority.findMany({ where, skip, take: size, orderBy: [{ parent_id: "asc" }, { sort_order: "asc" }, { authority_id: "asc" }] as any }),
+      this.prisma.authority.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: [
+          { parent_id: "asc" },
+          { sort_order: "asc" },
+          { authority_id: "asc" },
+        ] as any,
+      }),
       this.prisma.authority.count({ where }),
     ]);
-    const data = { records, total, size, current: page, pages: Math.max(1, Math.ceil((total || 0) / size)) };
+    const data = {
+      records,
+      total,
+      size,
+      current: page,
+      pages: Math.max(1, Math.ceil((total || 0) / size)),
+    };
     return { code: 0, message: "success", data };
   }
 
@@ -122,14 +157,18 @@ export class AuthorityCompatController {
   @ApiOperation({ summary: "父权限名称（兼容）" })
   async getAuthorityParentName(@Query("id") id?: string) {
     if (!id) return { code: 0, message: "success", data: "" };
-    const item = await this.prisma.authority.findUnique({ where: { authority_id: Number(id) } });
+    const item = await this.prisma.authority.findUnique({
+      where: { authority_id: Number(id) },
+    });
     return { code: 0, message: "success", data: item?.authority_name ?? "" };
   }
 
   @Get("detail")
   @ApiOperation({ summary: "权限详情（兼容）" })
   async detail(@Query("id") id: string) {
-    const item = await this.prisma.authority.findUnique({ where: { authority_id: Number(id) } });
+    const item = await this.prisma.authority.findUnique({
+      where: { authority_id: Number(id) },
+    });
     return { code: 0, message: "success", data: item };
   }
 
@@ -147,7 +186,10 @@ export class AuthorityCompatController {
     const id = Number(body.id ?? body.authority_id);
     const data: any = this.denormalize(body);
     delete data.authority_id;
-    const updated = await this.prisma.authority.update({ where: { authority_id: id }, data });
+    const updated = await this.prisma.authority.update({
+      where: { authority_id: id },
+      data,
+    });
     return { code: 0, message: "success", data: updated };
   }
 
@@ -165,7 +207,10 @@ export class AuthorityCompatController {
     const id = Number(body.id ?? body.authority_id);
     const field = body.field;
     const value = body.value ?? body.val;
-    await this.prisma.authority.update({ where: { authority_id: id }, data: { [field]: value } });
+    await this.prisma.authority.update({
+      where: { authority_id: id },
+      data: { [field]: value },
+    });
     return { code: 0, message: "success" };
   }
 
@@ -175,15 +220,26 @@ export class AuthorityCompatController {
     const act = String(body.act ?? body.type ?? "").toLowerCase();
     let ids: number[] = [];
     const raw = body.ids;
-    if (Array.isArray(raw)) ids = raw.map((x) => Number(x)).filter(Number.isFinite);
-    else if (typeof raw === "string") ids = raw.split(",").map((s) => Number(s.trim())).filter(Number.isFinite);
+    if (Array.isArray(raw))
+      ids = raw.map((x) => Number(x)).filter(Number.isFinite);
+    else if (typeof raw === "string")
+      ids = raw
+        .split(",")
+        .map((s) => Number(s.trim()))
+        .filter(Number.isFinite);
     else if (typeof raw === "number") ids = [raw];
 
     if (!ids.length) return { code: 0, message: "success", data: [] };
 
     if (act === "del" || act === "delete") {
-      await this.prisma.authority.deleteMany({ where: { authority_id: { in: ids } } });
-      return { code: 0, message: "success", data: ids.map((id) => ({ id, ok: true })) };
+      await this.prisma.authority.deleteMany({
+        where: { authority_id: { in: ids } },
+      });
+      return {
+        code: 0,
+        message: "success",
+        data: ids.map((id) => ({ id, ok: true })),
+      };
     }
 
     if (body.field != null) {
@@ -191,7 +247,9 @@ export class AuthorityCompatController {
       const value = body.value ?? body.val;
       const results: any[] = [];
       for (const id of ids) {
-        await this.prisma.authority.update({ where: { authority_id: id }, data: { [field]: value } }).catch(() => null);
+        await this.prisma.authority
+          .update({ where: { authority_id: id }, data: { [field]: value } })
+          .catch(() => null);
         results.push({ id, ok: true });
       }
       return { code: 0, message: "success", data: results };

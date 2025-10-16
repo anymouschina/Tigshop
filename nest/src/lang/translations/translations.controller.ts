@@ -19,16 +19,17 @@ export class TranslationsController {
   @Post("createTranslations")
   @ApiOperation({ summary: "创建/更新业务翻译（兼容）" })
   async createTranslations(@Body() body: any) {
-    const ok = await this.translationsService.createOrUpdateBusinessTranslations({
-      translationName: body.translationName,
-      translationKey: body.translationKey,
-      dataType: Number(body.dataType),
-      dataId: Number(body.dataId),
-      items: (body.items || []).map((it: any) => ({
-        localeId: Number(it.localeId),
-        translationValue: String(it.translationValue ?? ""),
-      })),
-    });
+    const ok =
+      await this.translationsService.createOrUpdateBusinessTranslations({
+        translationName: body.translationName,
+        translationKey: body.translationKey,
+        dataType: Number(body.dataType),
+        dataId: Number(body.dataId),
+        items: (body.items || []).map((it: any) => ({
+          localeId: Number(it.localeId),
+          translationValue: String(it.translationValue ?? ""),
+        })),
+      });
     return { code: 0, message: "success", data: ok };
   }
 
@@ -69,9 +70,12 @@ export class TranslationsController {
   async list(@Query() query: any) {
     const page = Math.max(1, Number(query.page) || 1);
     const size = Math.max(1, Number(query.size) || 15);
-    const dataType = query.dataType !== undefined && query.dataType !== null && query.dataType !== ""
-      ? Number(query.dataType)
-      : undefined;
+    const dataType =
+      query.dataType !== undefined &&
+      query.dataType !== null &&
+      query.dataType !== ""
+        ? Number(query.dataType)
+        : undefined;
     const localeIds = (query.localeIds ?? "")
       .toString()
       .split(",")
@@ -97,10 +101,7 @@ export class TranslationsController {
   async getLocalesLimit3() {
     const rows = await this.prisma.locales.findMany({
       where: { is_enabled: 1 },
-      orderBy: [
-        { sort: "asc" },
-        { id: "asc" },
-      ],
+      orderBy: [{ sort: "asc" }, { id: "asc" }],
       take: 3,
     });
     return { code: 0, message: "success", data: rows };

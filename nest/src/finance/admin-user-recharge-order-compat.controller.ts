@@ -30,7 +30,17 @@ export class AdminUserRechargeOrderCompatController {
       startTime: q.start_time ?? q.startTime,
       endTime: q.end_time ?? q.endTime,
     });
-    return { code: 0, message: "success", data: { records: result.records, total: result.total, page: result.page, size: result.size, totalPages: result.totalPages } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: result.records,
+        total: result.total,
+        page: result.page,
+        size: result.size,
+        totalPages: result.totalPages,
+      },
+    };
   }
 
   // GET /adminapi/finance/userRechargeOrder/detail?id=
@@ -123,6 +133,15 @@ export class AdminUserRechargeOrderCompatController {
   @ApiOperation({ summary: "充值配置（admin 兼容）" })
   async config() {
     const cfg = await this.service.getConfig();
-    return { code: 0, message: "success", data: { status_config: cfg.statusConfig, payment_type_config: cfg.paymentTypeConfig, min_amount: cfg.minAmount, max_amount: cfg.maxAmount } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        status_config: cfg.statusConfig,
+        payment_type_config: cfg.paymentTypeConfig,
+        min_amount: cfg.minAmount,
+        max_amount: cfg.maxAmount,
+      },
+    };
   }
 }

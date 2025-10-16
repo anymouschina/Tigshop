@@ -73,7 +73,9 @@ export class AdminApiProductInventoryLogCompatController {
       return { code: 400, message: "未选择项目" };
     }
     if (String(body.type) === "del") {
-      await this.svc.batchDeleteProductInventoryLog(body.ids.map((x) => Number(x)));
+      await this.svc.batchDeleteProductInventoryLog(
+        body.ids.map((x) => Number(x)),
+      );
       return { code: 0, message: "success" };
     }
     return { code: 400, message: "#type 错误" };

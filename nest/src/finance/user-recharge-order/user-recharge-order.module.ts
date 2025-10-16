@@ -8,7 +8,10 @@ import { SettingModule } from "src/setting/setting.module";
 
 @Module({
   imports: [RechargeSettingModule, SettingModule],
-  controllers: [UserRechargeOrderController, UserRechargeOrderApiCompatController],
+  controllers: [
+    UserRechargeOrderController,
+    UserRechargeOrderApiCompatController,
+  ],
   providers: [UserRechargeOrderService],
   exports: [UserRechargeOrderService],
 })

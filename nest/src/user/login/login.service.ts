@@ -23,7 +23,7 @@ export class LoginService {
    * 获取客户端类型
    */
   getClientType(req: any): string {
-    return resolveClientType(req) || 'h5';
+    return resolveClientType(req) || "h5";
   }
 
   /**
@@ -269,7 +269,7 @@ export class LoginService {
     let ip = ipv4Match ? ipv4Match[1] : "";
     // 基础校验：段值 0-255
     if (ip) {
-      const ok = ip.split('.').every(seg => {
+      const ok = ip.split(".").every((seg) => {
         const n = Number(seg);
         return n >= 0 && n <= 255;
       });

@@ -57,7 +57,13 @@ export class CommonPcController {
     }
 
     const flattenSecondLevel = (list: any[]) =>
-      list.map((n) => ({ ...n, children: (n.children || []).map((c) => ({ ...c, children: undefined })) }));
+      list.map((n) => ({
+        ...n,
+        children: (n.children || []).map((c) => ({
+          ...c,
+          children: undefined,
+        })),
+      }));
 
     const main_nav = flattenSecondLevel(roots.filter((n) => n.type === 1));
     const top_bar_nav = flattenSecondLevel(roots.filter((n) => n.type === 2));

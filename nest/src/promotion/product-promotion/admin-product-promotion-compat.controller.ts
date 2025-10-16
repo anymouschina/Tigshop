@@ -1,5 +1,16 @@
 // @ts-nocheck
-import { Controller, Get, Post, Put, Delete, Query, Body, Param, UseGuards, Req } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Query,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+} from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,7 +23,10 @@ import { ResponseUtil } from "src/common/utils/response.util";
 @Controller("adminapi/promotion/productPromotion")
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 export class AdminProductPromotionCompatController {
-  constructor(private readonly svc: ProductPromotionService, private readonly panel: PanelService) {}
+  constructor(
+    private readonly svc: ProductPromotionService,
+    private readonly panel: PanelService,
+  ) {}
 
   @Get("list")
   @Authorities("promotionManage")
@@ -126,7 +140,8 @@ export class AdminProductPromotionCompatController {
   @ApiOperation({ summary: "批量操作（兼容 /adminapi）" })
   async batch(@Body() body: any) {
     const { type, ids } = body;
-    if (!Array.isArray(ids) || ids.length === 0) return ResponseUtil.error("未选择项目");
+    if (!Array.isArray(ids) || ids.length === 0)
+      return ResponseUtil.error("未选择项目");
     if (type === "del") {
       await this.svc.batchDeleteProductPromotion(ids.map(Number));
       return ResponseUtil.success();

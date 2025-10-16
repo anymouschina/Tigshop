@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards, Req } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+  Req,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -28,18 +36,28 @@ export class AdminOrderConfigCompatController {
   async detail(@Query("code") code: string, @Req() req: any) {
     const shopId = this.getScopeShopId(req);
     if (code) {
-      const row = await this.prisma.order_config.findFirst({ where: { shop_id: shopId, code } });
+      const row = await this.prisma.order_config.findFirst({
+        where: { shop_id: shopId, code },
+      });
       let data: any = {};
       if (row?.data) {
-        try { data = JSON.parse(row.data); } catch {}
+        try {
+          data = JSON.parse(row.data);
+        } catch {}
       }
       return { code: 0, message: "success", data };
     }
-    const rows = await this.prisma.order_config.findMany({ where: { shop_id: shopId } });
+    const rows = await this.prisma.order_config.findMany({
+      where: { shop_id: shopId },
+    });
     const map: Record<string, any> = {};
     for (const r of rows) {
       if (!r.code) continue;
-      try { map[r.code] = r.data ? JSON.parse(r.data) : {}; } catch { map[r.code] = {}; }
+      try {
+        map[r.code] = r.data ? JSON.parse(r.data) : {};
+      } catch {
+        map[r.code] = {};
+      }
     }
     return { code: 0, message: "success", data: map };
   }
@@ -65,16 +83,24 @@ export class AdminOrderConfigCompatController {
         }
       }
     }
-    if (!upserts.length) return { code: 400, message: "缺少配置数据", data: false };
+    if (!upserts.length)
+      return { code: 400, message: "缺少配置数据", data: false };
 
     await this.prisma.$transaction(async (tx) => {
       for (const it of upserts) {
         const payload = JSON.stringify(it.data ?? {});
-        const existing = await tx.order_config.findFirst({ where: { shop_id: shopId, code: it.code } });
+        const existing = await tx.order_config.findFirst({
+          where: { shop_id: shopId, code: it.code },
+        });
         if (existing) {
-          await tx.order_config.update({ where: { id: existing.id }, data: { data: payload } });
+          await tx.order_config.update({
+            where: { id: existing.id },
+            data: { data: payload },
+          });
         } else {
-          await tx.order_config.create({ data: { shop_id: shopId, code: it.code, data: payload } });
+          await tx.order_config.create({
+            data: { shop_id: shopId, code: it.code, data: payload },
+          });
         }
       }
     });

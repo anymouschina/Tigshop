@@ -157,7 +157,9 @@ export class OrderCheckController {
         for (const seg of storeShippingType) {
           if (!seg) continue;
           if (Array.isArray(seg)) {
-            for (const inner of seg) { if (inner) out.push(inner); }
+            for (const inner of seg) {
+              if (inner) out.push(inner);
+            }
           } else {
             out.push(seg);
           }
@@ -166,24 +168,29 @@ export class OrderCheckController {
       }
       // 对象：常见字段 list / data
       if (Array.isArray((storeShippingType as any).list)) {
-        for (const item of (storeShippingType as any).list) { if (item) out.push(item); }
+        for (const item of (storeShippingType as any).list) {
+          if (item) out.push(item);
+        }
         return out;
       }
       if (Array.isArray((storeShippingType as any).data)) {
-        for (const item of (storeShippingType as any).data) { if (item) out.push(item); }
+        for (const item of (storeShippingType as any).data) {
+          if (item) out.push(item);
+        }
         return out;
       }
       return out;
     };
     const normalizedShipping = buildNormalizedShipping();
 
-    const fallbackSelections = shippingSelections.length > 0
-      ? shippingSelections
-      : normalizedShipping.map((item: any) => ({
-          typeId: item?.typeId ?? item?.shippingTypeId ?? 1,
-          shopId: item?.shopId ?? item?.shop_id ?? 0,
-          typeName: item?.typeName ?? item?.shippingTypeName ?? '普通快递',
-        }));
+    const fallbackSelections =
+      shippingSelections.length > 0
+        ? shippingSelections
+        : normalizedShipping.map((item: any) => ({
+            typeId: item?.typeId ?? item?.shippingTypeId ?? 1,
+            shopId: item?.shopId ?? item?.shop_id ?? 0,
+            typeName: item?.typeName ?? item?.shippingTypeName ?? "普通快递",
+          }));
 
     const cartList = builtCart?.cartList ?? [];
 
@@ -255,7 +262,8 @@ export class OrderCheckController {
 
     // 如果有附加属性就更新购物车（仅当 cartId 与 attrIds 有效时）
     if (params.product_extra && Object.keys(params.product_extra).length > 0) {
-      const rawCartId = params.product_extra.cart_id ?? params.product_extra.cartId;
+      const rawCartId =
+        params.product_extra.cart_id ?? params.product_extra.cartId;
       const cartId = Number(rawCartId);
       const rawAttr =
         params.product_extra.extra_attr_ids ??
@@ -264,16 +272,19 @@ export class OrderCheckController {
 
       let attrIds: number[] = [];
       if (Array.isArray(rawAttr)) {
-        attrIds = rawAttr.map((v: any) => Number(v)).filter((n) => Number.isInteger(n) && n > 0);
-      } else if (typeof rawAttr === 'string' && rawAttr.trim() !== '') {
         attrIds = rawAttr
-          .split(',')
+          .map((v: any) => Number(v))
+          .filter((n) => Number.isInteger(n) && n > 0);
+      } else if (typeof rawAttr === "string" && rawAttr.trim() !== "") {
+        attrIds = rawAttr
+          .split(",")
           .map((s: string) => Number(s.trim()))
           .filter((n) => Number.isInteger(n) && n > 0);
       }
 
       if (Number.isInteger(cartId) && cartId > 0 && attrIds.length > 0) {
-        const extraSkuData = await this.orderCheckService.getProductExtraDetail(attrIds);
+        const extraSkuData =
+          await this.orderCheckService.getProductExtraDetail(attrIds);
         await this.orderCheckService.updateCartExtraData(cartId, extraSkuData);
       }
       // 若仅有堂食信息等其他字段（如 productExtra.dine），不做购物车更新，直接继续后续逻辑
@@ -295,14 +306,19 @@ export class OrderCheckController {
       params.use_coupon_ids,
     );
 
-    const [storeShippingType, availablePaymentType, total, availablePoints, addressList] =
-      await Promise.all([
-        this.orderCheckService.getStoreShippingType(params.flow_type),
-        this.orderCheckService.getAvailablePaymentType(),
-        this.orderCheckService.getTotalFee(builtCart),
-        this.orderCheckService.getOrderAvailablePoints(),
-        this.orderCheckService.getAddressList(userId),
-      ]);
+    const [
+      storeShippingType,
+      availablePaymentType,
+      total,
+      availablePoints,
+      addressList,
+    ] = await Promise.all([
+      this.orderCheckService.getStoreShippingType(params.flow_type),
+      this.orderCheckService.getAvailablePaymentType(),
+      this.orderCheckService.getTotalFee(builtCart),
+      this.orderCheckService.getOrderAvailablePoints(),
+      this.orderCheckService.getAddressList(userId),
+    ]);
 
     const cartList = builtCart?.cartList ?? [];
 
@@ -313,7 +329,8 @@ export class OrderCheckController {
       total,
       availablePoints,
       addressList,
-      deliveryOption: await this.orderCheckService.buildDeliveryOption(cartList),
+      deliveryOption:
+        await this.orderCheckService.buildDeliveryOption(cartList),
     };
 
     return result;
@@ -463,7 +480,8 @@ export class OrderCheckController {
       cartList: normalizedCartList,
       availablePoints: await this.orderCheckService.getOrderAvailablePoints(),
       total: await this.orderCheckService.getTotalFee(builtCartList),
-      deliveryOption: await this.orderCheckService.buildDeliveryOption(normalizedCartList),
+      deliveryOption:
+        await this.orderCheckService.buildDeliveryOption(normalizedCartList),
     };
   }
 
@@ -518,7 +536,9 @@ export class OrderCheckController {
       (req.headers["x-platform"] as string) ||
       (req.headers["user-agent"] as string) ||
       "";
-    const isWechatClient = /miniprogram|micromessenger|wechat/i.test(clientType);
+    const isWechatClient = /miniprogram|micromessenger|wechat/i.test(
+      clientType,
+    );
     if (isWechatClient) {
       await this.orderCheckService.ensureWechatOpenId(userId);
     }
@@ -530,7 +550,9 @@ export class OrderCheckController {
     const usePoint = Number(body.use_point ?? body.usePoint ?? 0);
     const rawUseBalance = body.use_balance ?? body.useBalance ?? 0;
     const useBalance = Number(rawUseBalance) || 0;
-    const useCouponIds = (body.use_coupon_ids ?? body.useCouponIds ?? []) as number[];
+    const useCouponIds = (body.use_coupon_ids ??
+      body.useCouponIds ??
+      []) as number[];
     const buyerNote = String(body.buyer_note ?? body.buyerNote ?? "");
     const invoiceData = (body.invoice_data ?? body.invoiceData ?? []) as any;
     const flowType = Number(body.flow_type ?? body.flowType ?? 1);

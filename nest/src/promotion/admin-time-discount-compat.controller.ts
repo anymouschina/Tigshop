@@ -21,11 +21,15 @@ export class AdminTimeDiscountCompatController {
       keyword: query.keyword || "",
       page: Number(query.page || 1),
       size: Number(query.size || 15),
-      status: query.status === undefined || query.status === "" ? undefined : Number(query.status),
+      status:
+        query.status === undefined || query.status === ""
+          ? undefined
+          : Number(query.status),
       sortField: query.sortField || query.sort_field || "discount_id",
       sortOrder: query.sortOrder || query.sort_order || "desc",
     };
-    const { records, total, page, size, totalPages } = await this.svc.findAll(q);
+    const { records, total, page, size, totalPages } =
+      await this.svc.findAll(q);
     return ResponseUtil.success({ records, total, page, size, totalPages });
   }
 
@@ -68,10 +72,14 @@ export class AdminTimeDiscountCompatController {
     const id = Number(body.id);
     const payload: any = {};
     if (body.name ?? body.Name) payload.name = body.name ?? body.Name;
-    if (body.startTime ?? body.StartTime) payload.startTime = body.startTime ?? body.StartTime;
-    if (body.endTime ?? body.EndTime) payload.endTime = body.endTime ?? body.EndTime;
-    if (body.discount ?? body.Discount) payload.discount = Number(body.discount ?? body.Discount);
-    if (body.status ?? body.Status) payload.status = Number(body.status ?? body.Status);
+    if (body.startTime ?? body.StartTime)
+      payload.startTime = body.startTime ?? body.StartTime;
+    if (body.endTime ?? body.EndTime)
+      payload.endTime = body.endTime ?? body.EndTime;
+    if (body.discount ?? body.Discount)
+      payload.discount = Number(body.discount ?? body.Discount);
+    if (body.status ?? body.Status)
+      payload.status = Number(body.status ?? body.Status);
     const r = await this.svc.update(id, payload);
     return ResponseUtil.success(r);
   }
@@ -89,7 +97,8 @@ export class AdminTimeDiscountCompatController {
   @ApiOperation({ summary: "批量操作（兼容 /adminapi）" })
   async batch(@Body() body: any) {
     const { type, ids } = body;
-    if (!Array.isArray(ids) || ids.length === 0) return ResponseUtil.error("未选择项目");
+    if (!Array.isArray(ids) || ids.length === 0)
+      return ResponseUtil.error("未选择项目");
     if (type === "del") {
       await this.svc.batchDelete(ids.map(Number));
       return ResponseUtil.success();

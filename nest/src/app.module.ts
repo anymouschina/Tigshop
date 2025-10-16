@@ -47,7 +47,7 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { DecorateModule } from "./common/decorate/decorate.module";
 import { StatisticsModule } from "./statistics/statistics.module";
 import { AppController } from "./app.contronller";
-import { ShopContextMiddleware } from './common/shop-context/shop-context.middleware';
+import { ShopContextMiddleware } from "./common/shop-context/shop-context.middleware";
 import { AdminUserCompatController } from "./admin/authority/admin-user-compat.controller";
 import { DecorateDiscreteCompatController } from "./decorate/decorate-discrete-compat.controller";
 import { MerchantApplyCompatController } from "./merchant/merchant-apply-compat.controller";
@@ -97,11 +97,11 @@ import { DualCaseEnrichMiddleware } from "./common/middleware/dual-case-enrich.m
 import { RequestSourceMiddleware } from "./common/middleware/request-source.middleware";
 import { UserFromExtractMiddleware } from "./common/middleware/user-from-extract.middleware";
 // 用户评论兼容路由模块（为避免与 product/comment 同名冲突，用别名导入）
-import { CommentModule as UserCommentModule } from './user/comment/comment.module';
-import { UserAccountRechargeApiCompatController } from './finance/user-account-recharge/user-account-recharge.api-compat.controller';
-import { AdminAftersalesCompatController } from './order/admin-aftersales-compat.controller';
-import { ShopController } from './shop/shop.controller';
-import { ShopTableModule } from './shop-table/shop-table.module';
+import { CommentModule as UserCommentModule } from "./user/comment/comment.module";
+import { UserAccountRechargeApiCompatController } from "./finance/user-account-recharge/user-account-recharge.api-compat.controller";
+import { AdminAftersalesCompatController } from "./order/admin-aftersales-compat.controller";
+import { ShopController } from "./shop/shop.controller";
+import { ShopTableModule } from "./shop-table/shop-table.module";
 
 @Module({
   imports: [
@@ -116,9 +116,9 @@ import { ShopTableModule } from './shop-table/shop-table.module';
     LoginModule,
     AddressModule,
     UserCompanyModule,
-  UserAftersalesModule,
+    UserAftersalesModule,
     FeedbackModule,
-  UserAuthModule,
+    UserAuthModule,
     // ApiModule,
     AuthModule,
     AdminModule,
@@ -133,7 +133,7 @@ import { ShopTableModule } from './shop-table/shop-table.module';
     MsgModule,
     SettingModule,
     FinanceModule,
-  UserOrderInvoiceModule,
+    UserOrderInvoiceModule,
     ContentModule,
     UploadModule,
     NotificationModule,
@@ -152,7 +152,7 @@ import { ShopTableModule } from './shop-table/shop-table.module';
     TranslationsModule,
     PrintModule,
     CategoryModule,
-  ImModule,
+    ImModule,
     UserCommentModule, // 直接引入用户评论模块，确保 /api/user/comment/* 路由注册
     ShopTableModule,
   ],
@@ -162,21 +162,21 @@ import { ShopTableModule } from './shop-table/shop-table.module';
     SearchGuessController,
     // Search apis (getFilter/getProduct)
     SearchController,
-  AppVersionController,
+    AppVersionController,
     AdminUserCompatController,
     DecorateDiscreteCompatController,
     MerchantApplyCompatController,
     MerchantCompatController,
     AdminOrderConfigCompatController,
-  AdminECardGroupCompatController,
-  AdminECardCompatController,
+    AdminECardGroupCompatController,
+    AdminECardCompatController,
     AdminMobileCatNavCompatController,
     AdminDecorateCompatController,
     AdminDecorateShareCompatController,
     AdminDecorateRequestCompatController,
     AdminPcNavigationCompatController,
     AdminPcCatFloorCompatController,
-  AdminMobileDecorateCompatController,
+    AdminMobileDecorateCompatController,
     AdminMemberCompatController,
     AdminSalesmanConfigCompatController,
     AdminSalesmanOverviewCompatController,
@@ -188,7 +188,7 @@ import { ShopTableModule } from './shop-table/shop-table.module';
     AdminSalesmanContentCompatController,
     AdminSalesmanOrderCompatController,
     AdminSalesmanCustomerTransactionCompatController,
-  AdminSalesmanDetailCompatController,
+    AdminSalesmanDetailCompatController,
     AdminArticleCompatController,
     AdminArticleCategoryCompatController,
     AdminShopAccountCompatController,
@@ -198,16 +198,13 @@ import { ShopTableModule } from './shop-table/shop-table.module';
     AdminLocalesRelationCompatController,
     AdminCurrencyCompatController,
     AdminAreaCodeCompatController,
-  // 用户资金与充值/提现综合记录兼容接口
-  UserAccountRechargeApiCompatController,
+    // 用户资金与充值/提现综合记录兼容接口
+    UserAccountRechargeApiCompatController,
     AdminAftersalesCompatController,
     // Front salesman detail
     SalesmanDetailController,
-  // Public shop detail controller (user side)
-  ShopController,
-    
-    
-    
+    // Public shop detail controller (user side)
+    ShopController,
   ],
   providers: [
     {
@@ -235,6 +232,6 @@ export class AppModule implements NestModule {
         DualCaseEnrichMiddleware, // 再补齐 snake_case 与 camelCase 双份键
         ShopContextMiddleware, // 捕获 X-Shop-Id 并建立 AsyncLocalStorage 上下文
       )
-      .forRoutes('*');
+      .forRoutes("*");
   }
 }

@@ -113,56 +113,60 @@ export class OrderCheckService {
     }
     const selectedItems: any[] = [];
     for (const shop of cartList) {
-      for (const ci of (shop.carts || [])) {
+      for (const ci of shop.carts || []) {
         if (this.isCartItemChecked(ci)) selectedItems.push(ci);
       }
     }
     if (!selectedItems.length) {
       return { deliveryType: 3, deliveryProducts: [], pickupProducts: [] };
     }
-    const productIds = Array.from(new Set(selectedItems.map(i => Number(i.productId))).values()).filter(n => n>0);
-    const productRows = productIds.length ? await this.prisma.product.findMany({
-      where: { product_id: { in: productIds } },
-      select: {
-        product_id: true,
-        product_name: true,
-        product_sn: true,
-        product_price: true,
-        market_price: true,
-        shipping_tpl_id: true,
-        product_status: true,
-        product_type: true,
-        category_id: true,
-        brand_id: true,
-        shop_id: true,
-        product_weight: true,
-        product_desc: true,
-        product_brief: true,
-        add_time: true,
-        sort_order: true,
-        is_best: true,
-        is_new: true,
-        is_hot: true,
-        last_update: true,
-        give_integral: true,
-        rank_integral: true,
-        virtual_sales: true,
-        limit_number: true,
-        product_service_ids: true,
-        prepay_price: true,
-        card_group_id: true,
-        virtual_sample: true,
-        paid_content: true,
-        no_shipping: true,
-        fixed_shipping_type: true,
-        fixed_shipping_fee: true,
-        vendor_product_id: true,
-        vendor_id: true,
-      }
-    }) : [];
+    const productIds = Array.from(
+      new Set(selectedItems.map((i) => Number(i.productId))).values(),
+    ).filter((n) => n > 0);
+    const productRows = productIds.length
+      ? await this.prisma.product.findMany({
+          where: { product_id: { in: productIds } },
+          select: {
+            product_id: true,
+            product_name: true,
+            product_sn: true,
+            product_price: true,
+            market_price: true,
+            shipping_tpl_id: true,
+            product_status: true,
+            product_type: true,
+            category_id: true,
+            brand_id: true,
+            shop_id: true,
+            product_weight: true,
+            product_desc: true,
+            product_brief: true,
+            add_time: true,
+            sort_order: true,
+            is_best: true,
+            is_new: true,
+            is_hot: true,
+            last_update: true,
+            give_integral: true,
+            rank_integral: true,
+            virtual_sales: true,
+            limit_number: true,
+            product_service_ids: true,
+            prepay_price: true,
+            card_group_id: true,
+            virtual_sample: true,
+            paid_content: true,
+            no_shipping: true,
+            fixed_shipping_type: true,
+            fixed_shipping_fee: true,
+            vendor_product_id: true,
+            vendor_id: true,
+          },
+        })
+      : [];
     const pMap = new Map<number, any>();
     for (const p of productRows) pMap.set(p.product_id, p);
-    const deliveryProducts = selectedItems.map(it => {
+    const deliveryProducts = selectedItems.map((it) => {
       const p = pMap.get(Number(it.productId)) || {};
       return {
         productId: Number(it.productId),
@@ -170,7 +174,9 @@ export class OrderCheckService {
         productSn: p.product_sn || it.productSn || "",
         productTsn: null,
         productStock: Number(it.stock ?? p.product_stock ?? 0),
-        productPrice: Number(p.product_price ?? it.productPrice ?? it.price ?? 0),
+        productPrice: Number(
+          p.product_price ?? it.productPrice ?? it.price ?? 0,
+        ),
         marketPrice: Number(p.market_price ?? it.marketPrice ?? 0),
         shippingTplId: Number(it.shippingTplId ?? p.shipping_tpl_id ?? 0),
         productStatus: Number(p.product_status ?? it.productStatus ?? 1),
@@ -223,8 +229,12 @@ export class OrderCheckService {
         virtualSample: p.virtual_sample || "",
         paidContent: p.paid_content || "",
         noShipping: Number(p.no_shipping ?? it.noShipping ?? 0),
-        fixedShippingType: Number(p.fixed_shipping_type ?? it.fixedShippingType ?? 2),
-        fixedShippingFee: Number(p.fixed_shipping_fee ?? it.fixedShippingFee ?? 0),
+        fixedShippingType: Number(
+          p.fixed_shipping_type ?? it.fixedShippingType ?? 2,
+        ),
+        fixedShippingFee: Number(
+          p.fixed_shipping_fee ?? it.fixedShippingFee ?? 0,
+        ),
         isShopPickup: 0,
         shopPickupTplId: null,
         vendorProductId: Number(p.vendor_product_id ?? 0) || null,
@@ -252,7 +262,10 @@ export class OrderCheckService {
     });
     const openid = auth?.open_id ?? "";
     if (!openid) {
-      const err: any = new HttpException("openid为空！", HttpStatus.BAD_REQUEST);
+      const err: any = new HttpException(
+        "openid为空！",
+        HttpStatus.BAD_REQUEST,
+      );
       // 附带与 PHP 一致的业务码（5002）供前端识别
       (err as any).code = 5002;
       throw err;
@@ -376,7 +389,9 @@ export class OrderCheckService {
       if (autoCoupons.couponIds.length > 0) {
         useCouponIds = autoCoupons.couponIds;
         this.checkoutParams.use_coupon_ids = [...autoCoupons.couponIds];
-        this.checkoutParams.select_user_coupon_ids = [...autoCoupons.userCouponIds];
+        this.checkoutParams.select_user_coupon_ids = [
+          ...autoCoupons.userCouponIds,
+        ];
       }
     }
 
@@ -409,11 +424,19 @@ export class OrderCheckService {
    * 初始化结算参数
    */
   async initSet(params: Partial<CheckoutParams>) {
-    const normalizedShipping: ShippingSelection[] = Array.isArray(params?.shipping_type)
+    const normalizedShipping: ShippingSelection[] = Array.isArray(
+      params?.shipping_type,
+    )
       ? params.shipping_type.map((item: any) => ({
           shopId: Number(item?.shopId ?? item?.shop_id ?? 0),
-          typeId: Number(item?.typeId ?? item?.shippingTypeId ?? item?.shipping_type_id ?? 1),
-          typeName: item?.typeName ?? item?.shippingTypeName ?? item?.shipping_type_name ?? "",
+          typeId: Number(
+            item?.typeId ?? item?.shippingTypeId ?? item?.shipping_type_id ?? 1,
+          ),
+          typeName:
+            item?.typeName ??
+            item?.shippingTypeName ??
+            item?.shipping_type_name ??
+            "",
         }))
       : [];
 
@@ -525,8 +548,10 @@ export class OrderCheckService {
     )) as any | null;
     let useOffline = false;
     if (off && typeof off === "object") {
-      const v = off.isOpen ?? off.open ?? off.enabled ?? off.enable ?? off.status;
-      if (v !== undefined) useOffline = v === true || v === "1" || Number(v) === 1;
+      const v =
+        off.isOpen ?? off.open ?? off.enabled ?? off.enable ?? off.status;
+      if (v !== undefined)
+        useOffline = v === true || v === "1" || Number(v) === 1;
     }
     if (!useOffline) {
       try {
@@ -579,7 +604,11 @@ export class OrderCheckService {
 
     for (const entry of shippingTypeParam) {
       const shopId = Number(
-        entry?.shopId ?? entry?.shop_id ?? entry?.storeId ?? entry?.store_id ?? 0,
+        entry?.shopId ??
+          entry?.shop_id ??
+          entry?.storeId ??
+          entry?.store_id ??
+          0,
       );
       if (!Number.isFinite(shopId) || shopId <= 0) continue;
 
@@ -613,7 +642,8 @@ export class OrderCheckService {
           const shopId = Number(shop?.shopId ?? 0);
           // 对于 shopId==0 的平台商品，也补齐默认配送方式，避免前端出现缺失导致无法提交
           const already = grouped.has(shopId);
-          const isNoShippingGroup = Number(shop?.noShipping ?? shop?.no_shipping ?? 0) === 1;
+          const isNoShippingGroup =
+            Number(shop?.noShipping ?? shop?.no_shipping ?? 0) === 1;
           // 虚拟/无需物流的店铺如果已有条目则跳过，无则也可以不加；保持原逻辑补一个默认，前端可忽略
           if (!already && !isNoShippingGroup) {
             grouped.set(shopId, {
@@ -668,7 +698,9 @@ export class OrderCheckService {
     // Compute selected coupon deduction based on current selection and cart content
     const couponCalc = await this.calculateSelectedCouponsAmount(shops);
     const couponAmount = this.roundCurrency(couponCalc.totalAmount ?? 0);
-    const discountAmount = this.roundCurrency(totals.discountDiscountAmount ?? 0);
+    const discountAmount = this.roundCurrency(
+      totals.discountDiscountAmount ?? 0,
+    );
     const discountSeckillAmount = this.roundCurrency(
       totals.discountSeckillAmount ?? 0,
     );
@@ -684,8 +716,8 @@ export class OrderCheckService {
     const userId = Number(this.checkoutParams?.user_id ?? 0);
     const shippingFeeResult = await this.calculateShippingFee(shops);
     const shippingFee = shippingFeeResult.total;
-  // 将运费映射直接输出为对象 (shopId -> fee) 以对齐 Java 响应
-  const storeShippingFeeMap: Record<string, number> = {};
+    // 将运费映射直接输出为对象 (shopId -> fee) 以对齐 Java 响应
+    const storeShippingFeeMap: Record<string, number> = {};
 
     for (const [shopId, fee] of shippingFeeResult.storeShippingFee.entries()) {
       const roundedFee = this.roundCurrency(fee);
@@ -694,9 +726,10 @@ export class OrderCheckService {
 
     // 不再构建数组形式，保持对象结构即可（若需要数组可在此补充）
 
-    const availablePoints = userId > 0
-      ? await this.calculateAvailablePoints(productAmount, userId)
-      : 0;
+    const availablePoints =
+      userId > 0
+        ? await this.calculateAvailablePoints(productAmount, userId)
+        : 0;
     const requestedPoints = Math.max(
       this.toNumber(this.checkoutParams?.use_point ?? 0),
       0,
@@ -706,7 +739,12 @@ export class OrderCheckService {
     const pointsAmount = await this.getPointValueAmount(usePoint);
 
     const totalAmountRaw =
-      productAmount + shippingFee + serviceFee - pointsAmount - discountAmount - couponAmount;
+      productAmount +
+      shippingFee +
+      serviceFee -
+      pointsAmount -
+      discountAmount -
+      couponAmount;
     const totalAmount = this.roundCurrency(Math.max(totalAmountRaw, 0));
 
     const requestedBalance = Math.max(
@@ -763,21 +801,37 @@ export class OrderCheckService {
    */
   private async calculateSelectedCouponsAmount(shops: CheckoutShop[]) {
     const userId = Number(this.checkoutParams?.user_id ?? 0);
-    const useCouponIds: number[] = Array.isArray(this.checkoutParams?.use_coupon_ids)
-      ? this.checkoutParams.use_coupon_ids.map((id) => Number(id)).filter((n) => Number.isFinite(n) && n > 0)
+    const useCouponIds: number[] = Array.isArray(
+      this.checkoutParams?.use_coupon_ids,
+    )
+      ? this.checkoutParams.use_coupon_ids
+          .map((id) => Number(id))
+          .filter((n) => Number.isFinite(n) && n > 0)
       : [];
-    const selectUserCouponIds: number[] = Array.isArray(this.checkoutParams?.select_user_coupon_ids)
-      ? this.checkoutParams.select_user_coupon_ids.map((id) => Number(id)).filter((n) => Number.isFinite(n) && n > 0)
+    const selectUserCouponIds: number[] = Array.isArray(
+      this.checkoutParams?.select_user_coupon_ids,
+    )
+      ? this.checkoutParams.select_user_coupon_ids
+          .map((id) => Number(id))
+          .filter((n) => Number.isFinite(n) && n > 0)
       : [];
 
-    if (userId <= 0 || shops.length === 0 || (useCouponIds.length === 0 && selectUserCouponIds.length === 0)) {
+    if (
+      userId <= 0 ||
+      shops.length === 0 ||
+      (useCouponIds.length === 0 && selectUserCouponIds.length === 0)
+    ) {
       return { totalAmount: 0, perShop: new Map<number, number>() };
     }
 
     // 统计每个店铺及全局的商品金额和商品ID清单
     const shopSummary = new Map<
       number,
-      { amount: number; productIds: number[]; productAmountMap: Map<number, number> }
+      {
+        amount: number;
+        productIds: number[];
+        productAmountMap: Map<number, number>;
+      }
     >();
     let totalProductAmount = 0;
 
@@ -817,8 +871,12 @@ export class OrderCheckService {
         start_date: { lte: nowTs },
         end_date: { gte: nowTs },
         OR: [
-          selectUserCouponIds.length > 0 ? { id: { in: selectUserCouponIds } } : undefined,
-          useCouponIds.length > 0 ? { coupon_id: { in: useCouponIds } } : undefined,
+          selectUserCouponIds.length > 0
+            ? { id: { in: selectUserCouponIds } }
+            : undefined,
+          useCouponIds.length > 0
+            ? { coupon_id: { in: useCouponIds } }
+            : undefined,
         ].filter(Boolean) as any,
       },
     });
@@ -858,7 +916,9 @@ export class OrderCheckService {
       const shopId = Number(coupon.shop_id ?? 0);
       const shopInfo = shopSummary.get(shopId);
       const sendRange = Number(coupon.send_range ?? 0);
-      const sendRangeData = this.parseCouponRangeData(coupon.send_range_data ?? []);
+      const sendRangeData = this.parseCouponRangeData(
+        coupon.send_range_data ?? [],
+      );
       const minOrderAmount = this.toNumber(coupon.min_order_amount ?? 0);
 
       // 计算作用范围金额与商品集合
@@ -873,25 +933,39 @@ export class OrderCheckService {
         for (const entry of shopSummary.values()) {
           entry.productIds.forEach((pid) => idsSet.add(pid));
           for (const [pid, sub] of entry.productAmountMap.entries()) {
-            scopeProductAmountMap.set(pid, (scopeProductAmountMap.get(pid) ?? 0) + sub);
+            scopeProductAmountMap.set(
+              pid,
+              (scopeProductAmountMap.get(pid) ?? 0) + sub,
+            );
           }
         }
         scopeProductIds = Array.from(idsSet.values());
       } else {
         scopeAmount = shopInfo?.amount ?? 0;
         scopeProductIds = shopInfo?.productIds ?? [];
-        scopeProductAmountMap = shopInfo?.productAmountMap ?? new Map<number, number>();
+        scopeProductAmountMap =
+          shopInfo?.productAmountMap ?? new Map<number, number>();
       }
 
       // sendRange: 3 指定商品可用，4 排除指定商品
       let applicableAmount = scopeAmount;
       if (sendRange === 3) {
-        const intersection = scopeProductIds.filter((id) => sendRangeData.includes(id));
-        applicableAmount = intersection.reduce((sum, pid) => sum + (scopeProductAmountMap.get(pid) ?? 0), 0);
+        const intersection = scopeProductIds.filter((id) =>
+          sendRangeData.includes(id),
+        );
+        applicableAmount = intersection.reduce(
+          (sum, pid) => sum + (scopeProductAmountMap.get(pid) ?? 0),
+          0,
+        );
       }
       if (sendRange === 4) {
-        const remaining = scopeProductIds.filter((id) => !sendRangeData.includes(id));
-        applicableAmount = remaining.reduce((sum, pid) => sum + (scopeProductAmountMap.get(pid) ?? 0), 0);
+        const remaining = scopeProductIds.filter(
+          (id) => !sendRangeData.includes(id),
+        );
+        applicableAmount = remaining.reduce(
+          (sum, pid) => sum + (scopeProductAmountMap.get(pid) ?? 0),
+          0,
+        );
       }
 
       if (applicableAmount <= 0 || applicableAmount < minOrderAmount) {
@@ -914,7 +988,10 @@ export class OrderCheckService {
       if (deduction > 0) {
         totalAmount += deduction;
         const keyShopId = isGlobal ? 0 : shopId;
-        perShop.set(keyShopId, this.roundCurrency((perShop.get(keyShopId) ?? 0) + deduction));
+        perShop.set(
+          keyShopId,
+          this.roundCurrency((perShop.get(keyShopId) ?? 0) + deduction),
+        );
       }
     }
 
@@ -1122,15 +1199,17 @@ export class OrderCheckService {
 
       const scopeAmount = isGlobal
         ? totalProductAmount
-        : shopInfo?.amount ?? 0;
+        : (shopInfo?.amount ?? 0);
 
       const scopeProductIds = isGlobal
         ? Array.from(
             new Set(
-              Array.from(shopSummary.values()).flatMap((entry) => entry.productIds),
+              Array.from(shopSummary.values()).flatMap(
+                (entry) => entry.productIds,
+              ),
             ),
           )
-        : shopInfo?.productIds ?? [];
+        : (shopInfo?.productIds ?? []);
 
       const scopeProductAmountMap = isGlobal
         ? (() => {
@@ -1142,7 +1221,7 @@ export class OrderCheckService {
             }
             return map;
           })()
-        : shopInfo?.productAmountMap ?? new Map<number, number>();
+        : (shopInfo?.productAmountMap ?? new Map<number, number>());
 
       const minOrderAmount = this.toNumber(coupon.min_order_amount ?? 0);
       const sendRange = Number(coupon.send_range ?? 0);
@@ -1265,7 +1344,9 @@ export class OrderCheckService {
     }
 
     const sortByMoney = (list: any[]) =>
-      list.sort((a, b) => this.toNumber(b.couponMoney) - this.toNumber(a.couponMoney));
+      list.sort(
+        (a, b) => this.toNumber(b.couponMoney) - this.toNumber(a.couponMoney),
+      );
 
     return {
       enableCoupons: sortByMoney(enableCoupons),
@@ -1344,10 +1425,12 @@ export class OrderCheckService {
     // 3) 读取地址（dine 场景不校验地址/手机号）
     const productExtra = (this.checkoutParams?.product_extra ?? {}) as any;
     const isDine = !!(
-      productExtra && typeof productExtra === 'object' && (
-        productExtra.dine === true ||
-        (productExtra.dine && (productExtra.dine.isDine === 1 || Object.keys(productExtra.dine).length > 0))
-      )
+      productExtra &&
+      typeof productExtra === "object" &&
+      (productExtra.dine === true ||
+        (productExtra.dine &&
+          (productExtra.dine.isDine === 1 ||
+            Object.keys(productExtra.dine).length > 0)))
     );
     const addressId = Number(this.checkoutParams?.address_id ?? 0);
     let addr: any = null;
@@ -1375,7 +1458,10 @@ export class OrderCheckService {
       const clientType = this.detectClientType();
       // 透传 product_extra 中的扩展信息（例如堂食 dine 标识）到 order_extension
       const extensionPayload: any = {};
-      if (this.checkoutParams?.product_extra && typeof this.checkoutParams.product_extra === 'object') {
+      if (
+        this.checkoutParams?.product_extra &&
+        typeof this.checkoutParams.product_extra === "object"
+      ) {
         const pe = this.checkoutParams.product_extra as any;
         if (pe.dine) {
           extensionPayload.dine = pe.dine;
@@ -1498,12 +1584,18 @@ export class OrderCheckService {
           if (isGift) {
             // 赠品库存扣减（如果有 giftId 可在此扩展到赠品表，目前仅扣商品库存作为保底）
             if (productId > 0) {
-              const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
+              const prod = await tx.product.findFirst({
+                where: { product_id: productId },
+                select: { product_stock: true },
+              });
               if (prod) {
                 const oldNum = this.toNumber(prod.product_stock ?? 0);
                 const newNum = Math.max(oldNum - quantity, 0);
                 if (newNum !== oldNum) {
-                  await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
+                  await tx.product.updateMany({
+                    where: { product_id: productId },
+                    data: { product_stock: newNum },
+                  });
                   await tx.product_inventory_log.create({
                     data: {
                       product_id: productId,
@@ -1526,27 +1618,41 @@ export class OrderCheckService {
 
           if (skuId > 0) {
             // 减 SKU 库存，同时减商品总库存
-            const sku = await tx.product_sku.findUnique({ where: { sku_id: skuId }, select: { sku_stock: true, product_id: true } });
+            const sku = await tx.product_sku.findUnique({
+              where: { sku_id: skuId },
+              select: { sku_stock: true, product_id: true },
+            });
             if (sku) {
               const oldSkuNum = this.toNumber(sku.sku_stock ?? 0);
               const newSkuNum = Math.max(oldSkuNum - quantity, 0);
               if (newSkuNum !== oldSkuNum) {
-                await tx.product_sku.update({ where: { sku_id: skuId }, data: { sku_stock: newSkuNum } });
+                await tx.product_sku.update({
+                  where: { sku_id: skuId },
+                  data: { sku_stock: newSkuNum },
+                });
               }
               const pId = Number(sku.product_id ?? productId ?? 0);
               if (pId > 0) {
-                const prod = await tx.product.findFirst({ where: { product_id: pId }, select: { product_stock: true } });
+                const prod = await tx.product.findFirst({
+                  where: { product_id: pId },
+                  select: { product_stock: true },
+                });
                 if (prod) {
                   const oldProdNum = this.toNumber(prod.product_stock ?? 0);
                   const newProdNum = Math.max(oldProdNum - quantity, 0);
                   if (newProdNum !== oldProdNum) {
-                    await tx.product.updateMany({ where: { product_id: pId }, data: { product_stock: newProdNum } });
+                    await tx.product.updateMany({
+                      where: { product_id: pId },
+                      data: { product_stock: newProdNum },
+                    });
                   }
                   await tx.product_inventory_log.create({
                     data: {
                       product_id: pId,
                       spec_id: skuId,
-                      number: Math.abs(newSkuNum - oldSkuNum) || Math.min(quantity, oldSkuNum),
+                      number:
+                        Math.abs(newSkuNum - oldSkuNum) ||
+                        Math.min(quantity, oldSkuNum),
                       add_time: decTs,
                       old_number: oldSkuNum,
                       type: false as any,
@@ -1560,12 +1666,18 @@ export class OrderCheckService {
             }
           } else if (productId > 0) {
             // 仅减商品总库存
-            const prod = await tx.product.findFirst({ where: { product_id: productId }, select: { product_stock: true } });
+            const prod = await tx.product.findFirst({
+              where: { product_id: productId },
+              select: { product_stock: true },
+            });
             if (prod) {
               const oldNum = this.toNumber(prod.product_stock ?? 0);
               const newNum = Math.max(oldNum - quantity, 0);
               if (newNum !== oldNum) {
-                await tx.product.updateMany({ where: { product_id: productId }, data: { product_stock: newNum } });
+                await tx.product.updateMany({
+                  where: { product_id: productId },
+                  data: { product_stock: newNum },
+                });
                 await tx.product_inventory_log.create({
                   data: {
                     product_id: productId,
@@ -1586,7 +1698,9 @@ export class OrderCheckService {
       }
 
       // 5.3 标记优惠券已用（若有）
-      const selectedUserCouponIds: number[] = Array.isArray(this.checkoutParams?.select_user_coupon_ids)
+      const selectedUserCouponIds: number[] = Array.isArray(
+        this.checkoutParams?.select_user_coupon_ids,
+      )
         ? this.checkoutParams.select_user_coupon_ids
             .map((id) => Number(id))
             .filter((n) => Number.isFinite(n) && n > 0)
@@ -1615,16 +1729,28 @@ export class OrderCheckService {
 
       // 5.4 扣余额与积分（若有）
       if ((totals.balance ?? 0) > 0) {
-        const user = await tx.user.findUnique({ where: { user_id: userId }, select: { balance: true } });
+        const user = await tx.user.findUnique({
+          where: { user_id: userId },
+          select: { balance: true },
+        });
         const current = this.toNumber(user?.balance ?? 0);
         const next = Math.max(current - this.toNumber(totals.balance, 0), 0);
-        await tx.user.update({ where: { user_id: userId }, data: { balance: next } });
+        await tx.user.update({
+          where: { user_id: userId },
+          data: { balance: next },
+        });
       }
       if ((totals.usePoint ?? 0) > 0) {
-        const user = await tx.user.findUnique({ where: { user_id: userId }, select: { points: true } });
+        const user = await tx.user.findUnique({
+          where: { user_id: userId },
+          select: { points: true },
+        });
         const current = this.toNumber(user?.points ?? 0);
         const next = Math.max(current - this.toNumber(totals.usePoint, 0), 0);
-        await tx.user.update({ where: { user_id: userId }, data: { points: next } });
+        await tx.user.update({
+          where: { user_id: userId },
+          data: { points: next },
+        });
       }
 
       // 5.5 删除勾选的购物车项
@@ -1632,7 +1758,9 @@ export class OrderCheckService {
 
       // 5.6 若未付款金额为 0，则直接标记订单为已支付（对齐 PHP 行为）
       if (Number(totals.unpaidAmount ?? 0) <= 0) {
-        const paidAmount = Number(order.total_amount ?? totals.totalAmount ?? 0);
+        const paidAmount = Number(
+          order.total_amount ?? totals.totalAmount ?? 0,
+        );
         await tx.order.update({
           where: { order_id: order.order_id },
           data: {
@@ -1651,9 +1779,11 @@ export class OrderCheckService {
 
     // 自动按店铺/供应商拆单，使各店铺能看到自己的订单
     try {
-      await this.adminOrderCompatService.splitStoreOrder(Number(result.order_id));
+      await this.adminOrderCompatService.splitStoreOrder(
+        Number(result.order_id),
+      );
     } catch (e) {
-      console.error('splitStoreOrder failed', e?.message);
+      console.error("splitStoreOrder failed", e?.message);
     }
     return {
       order_id: result.order_id,
@@ -1665,8 +1795,10 @@ export class OrderCheckService {
   private detectClientType(): string {
     const req: any = (this as any).request || this.checkoutParams?._req;
     // 复用公共解析
-    const { resolveClientType } = require('../common/utils/../../common/utils/client-type.util');
-    return resolveClientType(req) || 'h5';
+    const {
+      resolveClientType,
+    } = require("../common/utils/../../common/utils/client-type.util");
+    return resolveClientType(req) || "h5";
   }
 
   /**
@@ -1774,7 +1906,10 @@ export class OrderCheckService {
   /**
    * 获取用户所选或默认地址（原始DB记录，用于下单持久化）
    */
-  private async getSelectedOrDefaultAddressRaw(userId: number, addressId?: number) {
+  private async getSelectedOrDefaultAddressRaw(
+    userId: number,
+    addressId?: number,
+  ) {
     if (addressId && addressId > 0) {
       const rec = await this.prisma.user_address.findFirst({
         where: { user_id: userId, address_id: addressId },
@@ -1899,11 +2034,7 @@ export class OrderCheckService {
     }
 
     const raw =
-      item.isChecked ??
-      item.is_checked ??
-      item.checked ??
-      item.selected ??
-      0;
+      item.isChecked ?? item.is_checked ?? item.checked ?? item.selected ?? 0;
 
     if (typeof raw === "boolean") {
       return raw;
@@ -1942,7 +2073,9 @@ export class OrderCheckService {
     return lodashSumBy(carts, (item) => this.toNumber(item?.serviceFee ?? 0));
   }
 
-  private async calculateShippingFee(shops: CheckoutShop[]): Promise<ShippingFeeResult> {
+  private async calculateShippingFee(
+    shops: CheckoutShop[],
+  ): Promise<ShippingFeeResult> {
     // NOTE: 为保持与 PHP 行为一致，整合三层逻辑：
     // 1. 跳过全虚拟 / 全包邮组
     // 2. 固定运费 (fixedShippingFee > 0) 直接叠加
@@ -1956,14 +2089,20 @@ export class OrderCheckService {
     const templateIdSet = new Set<number>();
     const shopSelectedType = new Map<number, number>(); // shopId -> typeId
     // 获取用户提交的 shipping_type 选择（保存在 this.checkoutParams.shipping_type）
-    for (const sel of (this.checkoutParams?.shipping_type || [])) {
+    for (const sel of this.checkoutParams?.shipping_type || []) {
       if (sel && typeof sel.shopId === "number") {
-        shopSelectedType.set(Number(sel.shopId), Number(sel.typeId || sel.type_id || sel.typeID || 0));
+        shopSelectedType.set(
+          Number(sel.shopId),
+          Number(sel.typeId || sel.type_id || sel.typeID || 0),
+        );
       }
     }
 
     // 聚合结构：shopId -> tplId -> { count, weight, freeSkip }
-    const aggregate: Record<number, Record<number, { count: number; weight: number; fee: number }>> = {};
+    const aggregate: Record<
+      number,
+      Record<number, { count: number; weight: number; fee: number }>
+    > = {};
 
     for (const shop of shops) {
       const shopId = Number(shop?.shopId ?? 0);
@@ -1977,16 +2116,22 @@ export class OrderCheckService {
       // 固定运费先加
       const fixed = this.toNumber(shop?.fixedShippingFee ?? 0);
       if (fixed > 0) {
-        perShop.set(shopId, this.roundCurrency((perShop.get(shopId) ?? 0) + fixed));
+        perShop.set(
+          shopId,
+          this.roundCurrency((perShop.get(shopId) ?? 0) + fixed),
+        );
         continue; // 有固定运费时，按当前实现直接覆盖，不再走模板聚合（如需叠加可移除此 continue）
       }
 
       // 模板聚合
-      for (const cartItem of (shop?.carts || [])) {
+      for (const cartItem of shop?.carts || []) {
         const isChecked = this.isCartItemChecked(cartItem);
         if (!isChecked) continue; // 只对选中项计费
-        const freeShipping = Number(cartItem?.freeShipping ?? cartItem?.free_shipping ?? 0) === 1;
-        const tplIdRaw = Number(cartItem?.shippingTplId ?? cartItem?.shipping_tpl_id ?? 0);
+        const freeShipping =
+          Number(cartItem?.freeShipping ?? cartItem?.free_shipping ?? 0) === 1;
+        const tplIdRaw = Number(
+          cartItem?.shippingTplId ?? cartItem?.shipping_tpl_id ?? 0,
+        );
         const tplId = tplIdRaw > 0 ? tplIdRaw : 0; // 0 也允许，用于找默认模板
         templateIdSet.add(tplId);
         if (!aggregate[shopId]) aggregate[shopId] = {};
@@ -1995,10 +2140,13 @@ export class OrderCheckService {
         }
         if (!freeShipping) {
           // 不统计包邮商品
-            const qty = this.toNumber(cartItem?.quantity ?? 0);
-            const weight = this.toNumber(cartItem?.productWeight ?? cartItem?.product_weight ?? 0) * qty;
-            aggregate[shopId][tplId].count += qty;
-            aggregate[shopId][tplId].weight += weight;
+          const qty = this.toNumber(cartItem?.quantity ?? 0);
+          const weight =
+            this.toNumber(
+              cartItem?.productWeight ?? cartItem?.product_weight ?? 0,
+            ) * qty;
+          aggregate[shopId][tplId].count += qty;
+          aggregate[shopId][tplId].weight += weight;
         }
       }
     }
@@ -2007,14 +2155,18 @@ export class OrderCheckService {
     if (Object.keys(aggregate).length === 0) {
       let simpleTotal = 0;
       for (const v of perShop.values()) simpleTotal += v;
-      return { total: this.roundCurrency(simpleTotal), storeShippingFee: perShop };
+      return {
+        total: this.roundCurrency(simpleTotal),
+        storeShippingFee: perShop,
+      };
     }
 
     // 查询所需模板行 shipping_tpl_info（一次性取出）
     // 选中配送方式：shipping_type_id = shopSelectedType[shopId]；若为空则默认 1
     // 这里简化：一次性查询所有相关 tplId 与所有可能 typeId（收集）
     const uniqueTypeIds = new Set<number>();
-    for (const [sid, tid] of shopSelectedType.entries()) uniqueTypeIds.add(tid || 0);
+    for (const [sid, tid] of shopSelectedType.entries())
+      uniqueTypeIds.add(tid || 0);
     if (uniqueTypeIds.size === 0) uniqueTypeIds.add(0);
 
     // 取全部涉及 tpl 的所有 info 行（后续用内存过滤）
@@ -2023,7 +2175,7 @@ export class OrderCheckService {
       ? await (this.prisma as any).$queryRawUnsafe(
           `SELECT id, shipping_type_id, shipping_tpl_id, is_free, is_default, region_data, start_number, start_price, add_number, add_price, pricing_type, free_price
            FROM \`shipping_tpl_info\`
-           WHERE shipping_tpl_id IN (${tplIdsArray.map(() => '?').join(',')})
+           WHERE shipping_tpl_id IN (${tplIdsArray.map(() => "?").join(",")})
            LIMIT 10000`,
           ...tplIdsArray,
         )
@@ -2039,13 +2191,19 @@ export class OrderCheckService {
           select: { province: true, city: true, district: true },
         });
         if (addr) {
-          regionIds = [addr.province, addr.city, addr.district].filter((x) => Number(x) > 0) as number[];
+          regionIds = [addr.province, addr.city, addr.district].filter(
+            (x) => Number(x) > 0,
+          ) as number[];
         }
       }
     } catch {}
 
     const pickRegionMatch = (rows: any[], typeId: number, tplId: number) => {
-      const subset = rows.filter((r) => Number(r.shipping_tpl_id) === tplId && Number(r.shipping_type_id) === typeId);
+      const subset = rows.filter(
+        (r) =>
+          Number(r.shipping_tpl_id) === tplId &&
+          Number(r.shipping_type_id) === typeId,
+      );
       if (!subset.length) return null;
       let fallback: any = null;
       for (const r of subset) {
@@ -2055,9 +2213,16 @@ export class OrderCheckService {
       for (const r of subset) {
         if (!r.region_data) continue;
         try {
-          const parsed = typeof r.region_data === 'string' ? JSON.parse(r.region_data) : r.region_data;
-          const areaRegions: number[] = parsed?.areaRegions || parsed?.area_regions || [];
-          if (Array.isArray(areaRegions) && areaRegions.some((rid) => regionIds.includes(Number(rid)))) {
+          const parsed =
+            typeof r.region_data === "string"
+              ? JSON.parse(r.region_data)
+              : r.region_data;
+          const areaRegions: number[] =
+            parsed?.areaRegions || parsed?.area_regions || [];
+          if (
+            Array.isArray(areaRegions) &&
+            areaRegions.some((rid) => regionIds.includes(Number(rid)))
+          ) {
             return r; // 优先区域匹配
           }
         } catch {}
@@ -2088,7 +2253,11 @@ export class OrderCheckService {
         let fee = 0;
         if (agg.count <= 0 && agg.weight <= 0) {
           fee = 0;
-        } else if (isFree || (this.toNumber((shops as any)?.productAmount ?? 0) >= freePrice && freePrice > 0)) {
+        } else if (
+          isFree ||
+          (this.toNumber((shops as any)?.productAmount ?? 0) >= freePrice &&
+            freePrice > 0)
+        ) {
           fee = 0;
         } else {
           fee = startPrice;
@@ -2109,7 +2278,10 @@ export class OrderCheckService {
           }
         }
         if (fee > 0) {
-          perShop.set(shopId, this.roundCurrency((perShop.get(shopId) ?? 0) + fee));
+          perShop.set(
+            shopId,
+            this.roundCurrency((perShop.get(shopId) ?? 0) + fee),
+          );
         }
       }
     }
@@ -2164,9 +2336,7 @@ export class OrderCheckService {
     const checkedCount = Math.max(
       0,
       Math.round(
-        lodashSumBy(shops, (shop) =>
-          this.sumCartQuantity(shop?.carts ?? []),
-        ),
+        lodashSumBy(shops, (shop) => this.sumCartQuantity(shop?.carts ?? [])),
       ),
     );
 
@@ -2260,9 +2430,12 @@ export class OrderCheckService {
           .filter((part: string) => part.length > 0)
       : [];
 
-    const regionNames = originalRegionNames.filter((name: string) => name && name !== "中国");
+    const regionNames = originalRegionNames.filter(
+      (name: string) => name && name !== "中国",
+    );
     const displayRegionNames = regionNames.filter(
-      (name: string, index: number, arr: string[]) => arr.indexOf(name) === index,
+      (name: string, index: number, arr: string[]) =>
+        arr.indexOf(name) === index,
     );
 
     const isDefault = Number(address.is_default ?? 0) === 1 ? 1 : 0;

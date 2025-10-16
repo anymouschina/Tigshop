@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,7 +20,10 @@ import { PanelService } from "src/panel/panel.service";
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class AdminSalesmanMaterialCategoryCompatController {
-  constructor(private prisma: PrismaService, private panel: PanelService) {}
+  constructor(
+    private prisma: PrismaService,
+    private panel: PanelService,
+  ) {}
 
   private coerceNumber(v: any, dft = 0) {
     const n = Number(v);
@@ -31,7 +42,12 @@ export class AdminSalesmanMaterialCategoryCompatController {
     const where: any = { shop_id: shopId };
     if (keyword) where.category_name = { contains: keyword };
     const [records, total] = await Promise.all([
-      this.prisma.salesman_material_category.findMany({ where, orderBy: { category_id: "desc" }, skip, take: size }),
+      this.prisma.salesman_material_category.findMany({
+        where,
+        orderBy: { category_id: "desc" },
+        skip,
+        take: size,
+      }),
       this.prisma.salesman_material_category.count({ where }),
     ]);
     return { code: 0, message: "success", data: { records, total } };
@@ -41,7 +57,9 @@ export class AdminSalesmanMaterialCategoryCompatController {
   @ApiOperation({ summary: "素材分类详情（兼容）" })
   @Authorities("materialCategoryManage")
   async detail(@Query("id") id: number) {
-    const record = await this.prisma.salesman_material_category.findUnique({ where: { category_id: this.coerceNumber(id, 0) } });
+    const record = await this.prisma.salesman_material_category.findUnique({
+      where: { category_id: this.coerceNumber(id, 0) },
+    });
     return { code: 0, message: "success", data: record };
   }
 
@@ -55,7 +73,10 @@ export class AdminSalesmanMaterialCategoryCompatController {
       sort_order: this.coerceNumber(body.sortOrder ?? 50, 50),
     };
     if (id) {
-      await this.prisma.salesman_material_category.update({ where: { category_id: id }, data });
+      await this.prisma.salesman_material_category.update({
+        where: { category_id: id },
+        data,
+      });
     } else {
       await this.prisma.salesman_material_category.create({ data });
     }
@@ -82,7 +103,9 @@ export class AdminSalesmanMaterialCategoryCompatController {
   @ApiOperation({ summary: "素材分类删除（兼容）" })
   @Authorities("materialCategoryManage")
   async del(@Body("id") id: number) {
-    await this.prisma.salesman_material_category.delete({ where: { category_id: this.coerceNumber(id, 0) } });
+    await this.prisma.salesman_material_category.delete({
+      where: { category_id: this.coerceNumber(id, 0) },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -90,11 +113,15 @@ export class AdminSalesmanMaterialCategoryCompatController {
   @ApiOperation({ summary: "素材分类批量（兼容）" })
   @Authorities("materialCategoryManage")
   async batch(@Body() body: any) {
-    const ids: number[] = (body.ids || []).map((x) => this.coerceNumber(x, 0)).filter(Boolean);
+    const ids: number[] = (body.ids || [])
+      .map((x) => this.coerceNumber(x, 0))
+      .filter(Boolean);
     const type: string = body.type || body.act || "";
     if (!ids.length) return { code: 1, message: "未选择项目", data: null };
     if (type === "del" || type === "delete") {
-      await this.prisma.salesman_material_category.deleteMany({ where: { category_id: { in: ids } } });
+      await this.prisma.salesman_material_category.deleteMany({
+        where: { category_id: { in: ids } },
+      });
       return { code: 0, message: "批量操作执行成功！", data: true };
     }
     return { code: 1, message: "#type 错误", data: null };

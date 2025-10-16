@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,7 +20,10 @@ import { PanelService } from "src/panel/panel.service";
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class AdminMobileDecorateCompatController {
-  constructor(private prisma: PrismaService, private panel: PanelService) {}
+  constructor(
+    private prisma: PrismaService,
+    private panel: PanelService,
+  ) {}
 
   private num(v: any, dft = 0) {
     const n = Number(v);
@@ -38,15 +49,29 @@ export class AdminMobileDecorateCompatController {
   @ApiOperation({ summary: "移动端装修列表（兼容别名）" })
   @Authorities("mobileDecorateManage")
   async list(@Req() req: any, @Query() query: any) {
-    const decorate_type = this.num(query.decorate_type || query.decorateType, 2);
+    const decorate_type = this.num(
+      query.decorate_type || query.decorateType,
+      2,
+    );
     const page = Math.max(1, this.num(query.page, 1));
     const size = Math.max(1, this.num(query.size, 15));
     const skip = (page - 1) * size;
     const keyword = (query.keyword || "").trim();
-    const sortField = (query.sort_field || query.sortField || "decorate_id").toString();
-    const sortOrder = (query.sort_order || query.sortOrder || "desc").toString().toLowerCase() === "asc" ? "asc" : "desc";
+    const sortField = (
+      query.sort_field ||
+      query.sortField ||
+      "decorate_id"
+    ).toString();
+    const sortOrder =
+      (query.sort_order || query.sortOrder || "desc")
+        .toString()
+        .toLowerCase() === "asc"
+        ? "asc"
+        : "desc";
 
-    const { shopId = 0 } = (await this.panel.validateUserAndGetShopId(req)) || { shopId: 0 };
+    const { shopId = 0 } = (await this.panel.validateUserAndGetShopId(req)) || {
+      shopId: 0,
+    };
     const where: any = { decorate_type, shop_id: shopId };
     if (keyword) where.decorate_title = { contains: keyword };
 
@@ -82,12 +107,16 @@ export class AdminMobileDecorateCompatController {
       const decorate_type = this.num(q.decorate_type || q.decorateType, 2);
       const parent_id = this.num(q.parent_id || 0, 0);
       const locale_id = this.num(q.locale_id || 0, 0);
-      const { shopId = 0 } = (await this.panel.validateUserAndGetShopId(req)) || { shopId: 0 };
+      const { shopId = 0 } = (await this.panel.validateUserAndGetShopId(
+        req,
+      )) || { shopId: 0 };
       record = await this.prisma.decorate.findFirst({
         where: { decorate_type, parent_id, locale_id, shop_id: shopId },
       });
     } else {
-      record = await this.prisma.decorate.findUnique({ where: { decorate_id: id } });
+      record = await this.prisma.decorate.findUnique({
+        where: { decorate_id: id },
+      });
     }
     return { code: 0, message: "success", data: record };
   }
@@ -97,10 +126,16 @@ export class AdminMobileDecorateCompatController {
   @ApiOperation({ summary: "获取移动端装修草稿（兼容别名）" })
   @Authorities("mobileDecorateManage")
   async loadDraftData(@Query("id") id: number) {
-    const it = await this.prisma.decorate.findUnique({ where: { decorate_id: this.num(id, 0) } });
+    const it = await this.prisma.decorate.findUnique({
+      where: { decorate_id: this.num(id, 0) },
+    });
     const draft = it?.draft_data || "";
     try {
-      return { code: 0, message: "success", data: draft ? JSON.parse(draft) : [] };
+      return {
+        code: 0,
+        message: "success",
+        data: draft ? JSON.parse(draft) : [],
+      };
     } catch {
       return { code: 0, message: "success", data: draft };
     }
@@ -146,7 +181,9 @@ export class AdminMobileDecorateCompatController {
   @ApiOperation({ summary: "复制移动端装修（兼容别名）" })
   @Authorities("mobileDecorateManage")
   async copy(@Body("id") id: number) {
-    const src = await this.prisma.decorate.findUnique({ where: { decorate_id: this.num(id, 0) } });
+    const src = await this.prisma.decorate.findUnique({
+      where: { decorate_id: this.num(id, 0) },
+    });
     if (!src) return { code: 1, message: "未找到数据", data: null };
     const created = await this.prisma.decorate.create({
       data: {
@@ -170,10 +207,22 @@ export class AdminMobileDecorateCompatController {
   @ApiOperation({ summary: "移动端设置为首页（兼容别名）" })
   @Authorities("mobileDecorateManage")
   async setHome(@Body("id") id: number) {
-    const it = await this.prisma.decorate.findUnique({ where: { decorate_id: this.num(id, 0) } });
+    const it = await this.prisma.decorate.findUnique({
+      where: { decorate_id: this.num(id, 0) },
+    });
     if (!it) return { code: 1, message: "#不存在的模板", data: null };
-    await this.prisma.decorate.updateMany({ where: { decorate_type: it.decorate_type, shop_id: it.shop_id, is_home: 1 }, data: { is_home: 0 } });
-    await this.prisma.decorate.update({ where: { decorate_id: it.decorate_id }, data: { is_home: 1, update_time: Math.floor(Date.now()/1000) } });
+    await this.prisma.decorate.updateMany({
+      where: {
+        decorate_type: it.decorate_type,
+        shop_id: it.shop_id,
+        is_home: 1,
+      },
+      data: { is_home: 0 },
+    });
+    await this.prisma.decorate.update({
+      where: { decorate_id: it.decorate_id },
+      data: { is_home: 1, update_time: Math.floor(Date.now() / 1000) },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -182,7 +231,9 @@ export class AdminMobileDecorateCompatController {
   @ApiOperation({ summary: "新增移动端装修（兼容别名）" })
   @Authorities("mobileDecorateManage")
   async create(@Req() req: any, @Body() body: any) {
-    const { shopId = 0 } = (await this.panel.validateUserAndGetShopId(req)) || { shopId: 0 };
+    const { shopId = 0 } = (await this.panel.validateUserAndGetShopId(req)) || {
+      shopId: 0,
+    };
     const created = await this.prisma.decorate.create({
       data: {
         decorate_title: body.decorate_title ?? body.decorateTitle ?? "",
@@ -206,13 +257,18 @@ export class AdminMobileDecorateCompatController {
   async update(@Body() body: any) {
     const id = this.num(body.id, 0);
     const data: any = {};
-    if (body.decorate_title != null || body.decorateTitle != null) data.decorate_title = body.decorate_title ?? body.decorateTitle;
-    if (body.decorate_type != null || body.decorateType != null) data.decorate_type = this.num(body.decorate_type ?? body.decorateType, 2);
+    if (body.decorate_title != null || body.decorateTitle != null)
+      data.decorate_title = body.decorate_title ?? body.decorateTitle;
+    if (body.decorate_type != null || body.decorateType != null)
+      data.decorate_type = this.num(body.decorate_type ?? body.decorateType, 2);
     if (body.locale_id != null) data.locale_id = this.num(body.locale_id, 0);
     if (body.parent_id != null) data.parent_id = this.num(body.parent_id, 0);
     if (body.data != null) data.data = this.asJsonString(body.data);
     data.update_time = Math.floor(Date.now() / 1000);
-    const updated = await this.prisma.decorate.update({ where: { decorate_id: id }, data });
+    const updated = await this.prisma.decorate.update({
+      where: { decorate_id: id },
+      data,
+    });
     return { code: 0, message: "success", data: updated };
   }
 
@@ -239,7 +295,9 @@ export class AdminMobileDecorateCompatController {
   @ApiOperation({ summary: "删除移动端装修（兼容别名）" })
   @Authorities("mobileDecorateManage")
   async del(@Body("id") id: number) {
-    await this.prisma.decorate.delete({ where: { decorate_id: this.num(id, 0) } });
+    await this.prisma.decorate.delete({
+      where: { decorate_id: this.num(id, 0) },
+    });
     return { code: 0, message: "指定项目已删除", data: true };
   }
 
@@ -248,11 +306,15 @@ export class AdminMobileDecorateCompatController {
   @ApiOperation({ summary: "移动端装修批量操作（兼容，仅del）" })
   @Authorities("mobileDecorateManage")
   async batch(@Body() body: any) {
-    const ids: number[] = (body.ids || []).map((x) => this.num(x, 0)).filter(Boolean);
+    const ids: number[] = (body.ids || [])
+      .map((x) => this.num(x, 0))
+      .filter(Boolean);
     const type: string = body.type || body.act || "";
     if (!ids.length) return { code: 1, message: "未选择项目", data: null };
     if (type === "del" || type === "delete") {
-      await this.prisma.decorate.deleteMany({ where: { decorate_id: { in: ids } } });
+      await this.prisma.decorate.deleteMany({
+        where: { decorate_id: { in: ids } },
+      });
       return { code: 0, message: "批量操作执行成功！", data: true };
     }
     return { code: 1, message: "#type 错误", data: null };

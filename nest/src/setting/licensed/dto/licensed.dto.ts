@@ -94,7 +94,7 @@ export class UpdateLicensedDto {
   @IsString()
   LicenseKey?: string;
 
-   // 兼容：有些前端直接传 license 字段
+  // 兼容：有些前端直接传 license 字段
   @ApiProperty({ description: "授权码(兼容)", required: false })
   @IsOptional()
   @IsString()

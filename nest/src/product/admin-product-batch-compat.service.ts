@@ -8,7 +8,10 @@ type DealRange = 0 | 1 | 2 | 3; // 0: 全部, 1: 分类, 2: 品牌, 3: 商品
 @Injectable()
 export class AdminProductBatchCompatService {
   private readonly logger = new Logger(AdminProductBatchCompatService.name);
-  constructor(private prisma: PrismaService, private panel: PanelService) {}
+  constructor(
+    private prisma: PrismaService,
+    private panel: PanelService,
+  ) {}
 
   // 解析 rangeIds 支持多种格式
   private parseIds(raw: any): number[] {
@@ -25,7 +28,8 @@ export class AdminProductBatchCompatService {
         try {
           const parsed: any = JSON.parse(trimmed);
           if (Array.isArray(parsed)) parsed.forEach(pushId);
-          else if (parsed && Array.isArray(parsed.ids)) parsed.ids.forEach(pushId);
+          else if (parsed && Array.isArray(parsed.ids))
+            parsed.ids.forEach(pushId);
         } catch (_) {
           trimmed.split(",").forEach(pushId);
         }
@@ -42,12 +46,16 @@ export class AdminProductBatchCompatService {
       select: { category_id: true, category_name: true, parent_id: true },
     });
     const map = new Map<number, { name: string; parentId: number }>();
-    for (const c of cats) map.set(c.category_id, { name: c.category_name, parentId: c.parent_id });
+    for (const c of cats)
+      map.set(c.category_id, { name: c.category_name, parentId: c.parent_id });
     return map;
   }
 
   // 递归向上构造分类路径名称 a|b|c
-  private buildCategoryTreeName(catMap: Map<number, { name: string; parentId: number }>, cid?: number) {
+  private buildCategoryTreeName(
+    catMap: Map<number, { name: string; parentId: number }>,
+    cid?: number,
+  ) {
     if (!cid) return "";
     const names: string[] = [];
     let cur = cid;
@@ -64,7 +72,10 @@ export class AdminProductBatchCompatService {
   }
 
   // 展开分类所有子孙（包含自身）
-  private expandCategoryIds(catMap: Map<number, { name: string; parentId: number }>, ids: number[]): number[] {
+  private expandCategoryIds(
+    catMap: Map<number, { name: string; parentId: number }>,
+    ids: number[],
+  ): number[] {
     // 构建 parent -> children 索引
     const children = new Map<number, number[]>();
     for (const [id, c] of catMap.entries()) {
@@ -85,10 +96,16 @@ export class AdminProductBatchCompatService {
 
   // 批量导出，返回 [header[], rows[]]
   async buildExportRows(query: any, adminUserId: number) {
-    const dealRange: DealRange = Number(query.dealRange ?? query.deal_range ?? 0) as DealRange;
-    const rangeIds = this.parseIds(query.rangeIds ?? query.range_ids ?? query.ids ?? []);
+    const dealRange: DealRange = Number(
+      query.dealRange ?? query.deal_range ?? 0,
+    ) as DealRange;
+    const rangeIds = this.parseIds(
+      query.rangeIds ?? query.range_ids ?? query.ids ?? [],
+    );
 
-    const { shopId } = (await this.panel.validateUserAndGetShopId({ user: { userId: adminUserId } })) || { shopId: 0 };
+    const { shopId } = (await this.panel.validateUserAndGetShopId({
+      user: { userId: adminUserId },
+    })) || { shopId: 0 };
 
     const where: any = { is_delete: 0 };
     if (shopId > 0) where.shop_id = shopId;
@@ -123,11 +140,19 @@ export class AdminProductBatchCompatService {
       product_stock: true,
     } as const;
 
-    const products = await this.prisma.product.findMany({ where, select: fields });
+    const products = await this.prisma.product.findMany({
+      where,
+      select: fields,
+    });
     // 预取品牌映射
-    const brandIds = Array.from(new Set(products.map((p) => p.brand_id).filter(Boolean)));
+    const brandIds = Array.from(
+      new Set(products.map((p) => p.brand_id).filter(Boolean)),
+    );
     const brands = brandIds.length
-      ? await this.prisma.brand.findMany({ where: { brand_id: { in: brandIds as any } }, select: { brand_id: true, brand_name: true } })
+      ? await this.prisma.brand.findMany({
+          where: { brand_id: { in: brandIds as any } },
+          select: { brand_id: true, brand_name: true },
+        })
       : [];
     const brandMap = new Map<number, string>();
     for (const b of brands) brandMap.set(b.brand_id, b.brand_name);
@@ -171,16 +196,27 @@ export class AdminProductBatchCompatService {
     return { header, rows };
   }
 
-  private async ensureBrandIdByName(name?: string, isAuto = false): Promise<number> {
+  private async ensureBrandIdByName(
+    name?: string,
+    isAuto = false,
+  ): Promise<number> {
     if (!name) return 0;
-    const ex = await this.prisma.brand.findFirst({ where: { brand_name: name }, select: { brand_id: true } });
+    const ex = await this.prisma.brand.findFirst({
+      where: { brand_name: name },
+      select: { brand_id: true },
+    });
     if (ex) return ex.brand_id;
     if (!isAuto) return 0;
-    const created = await this.prisma.brand.create({ data: { brand_name: name } });
+    const created = await this.prisma.brand.create({
+      data: { brand_name: name },
+    });
     return created.brand_id;
   }
 
-  private async ensureCategoryIdByTree(names: string[], isAuto = false): Promise<number | null> {
+  private async ensureCategoryIdByTree(
+    names: string[],
+    isAuto = false,
+  ): Promise<number | null> {
     if (!names || !names.length) return null;
     // 自上而下寻找/创建
     let parentId = 0;
@@ -188,14 +224,19 @@ export class AdminProductBatchCompatService {
     for (const raw of names) {
       const name = String(raw).trim();
       if (!name) continue;
-      const existed = await this.prisma.category.findFirst({ where: { category_name: name, parent_id: parentId }, select: { category_id: true } });
+      const existed = await this.prisma.category.findFirst({
+        where: { category_name: name, parent_id: parentId },
+        select: { category_id: true },
+      });
       if (existed) {
         currentId = existed.category_id;
         parentId = currentId;
         continue;
       }
       if (!isAuto) return null;
-      const created = await this.prisma.category.create({ data: { category_name: name, parent_id: parentId } });
+      const created = await this.prisma.category.create({
+        data: { category_name: name, parent_id: parentId },
+      });
       currentId = created.category_id;
       parentId = currentId;
     }
@@ -205,8 +246,12 @@ export class AdminProductBatchCompatService {
   private async genUniqueProductSn(prefix = "SN"): Promise<string> {
     // 简单唯一生成，避免冲突
     for (let i = 0; i < 5; i++) {
-      const sn = `${prefix}${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`;
-      const exist = await this.prisma.product.count({ where: { product_sn: sn } });
+      const sn = `${prefix}${Date.now()}${Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0")}`;
+      const exist = await this.prisma.product.count({
+        where: { product_sn: sn },
+      });
       if (!exist) return sn;
       await new Promise((r) => setTimeout(r, 5));
     }
@@ -215,7 +260,8 @@ export class AdminProductBatchCompatService {
   }
 
   async batchUploadFromCsv(fileBuffer: Buffer, body: any, adminUserId: number) {
-    if (!fileBuffer || !fileBuffer.length) throw new BadRequestException("请上传文件");
+    if (!fileBuffer || !fileBuffer.length)
+      throw new BadRequestException("请上传文件");
     const { isAutoCat = 0, isAutoBrand = 0 } = body || {};
     // 惰性加载 csv-parse/sync
     const { parse } = await import("csv-parse/sync");
@@ -228,11 +274,15 @@ export class AdminProductBatchCompatService {
     if (!records.length) return { count: 0, msg: "请上传有数据的文件" };
     // 尝试跳过表头（若第一行包含“商品名称”）
     const maybeHeader = records[0];
-    const headerIsTitle = maybeHeader && maybeHeader[0] && String(maybeHeader[0]).includes("商品名称");
+    const headerIsTitle =
+      maybeHeader &&
+      maybeHeader[0] &&
+      String(maybeHeader[0]).includes("商品名称");
     const rows = headerIsTitle ? records.slice(1) : records;
 
     const userCtx = { user: { userId: adminUserId } } as any;
-    const shopId = (await this.panel.validateUserAndGetShopId(userCtx))?.shopId || 0;
+    const shopId =
+      (await this.panel.validateUserAndGetShopId(userCtx))?.shopId || 0;
     let count = 0;
     let msg = "";
 
@@ -250,25 +300,42 @@ export class AdminProductBatchCompatService {
       let productSn = snRaw;
       if (!productSn) productSn = await this.genUniqueProductSn();
       else {
-        const exists = await this.prisma.product.count({ where: { product_sn: productSn } });
+        const exists = await this.prisma.product.count({
+          where: { product_sn: productSn },
+        });
         if (exists) {
           msg += `LINE ${index} 错误：存在商品编号重复的数据，已忽略此数据\n`;
           continue;
         }
       }
       // 分类处理
-      const names = catPath.split("|").map((s: string) => s.trim()).filter(Boolean);
-      const catId = await this.ensureCategoryIdByTree(names, Number(isAutoCat) === 1);
+      const names = catPath
+        .split("|")
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      const catId = await this.ensureCategoryIdByTree(
+        names,
+        Number(isAutoCat) === 1,
+      );
       if (!catId) {
         msg += `LINE ${index} 错误：存在分类不存在的数据，已忽略此数据\n`;
         continue;
       }
       // 品牌
       const brandName = (row[6] || "").toString().trim();
-      const brandId = await this.ensureBrandIdByName(brandName, Number(isAutoBrand) === 1);
+      const brandId = await this.ensureBrandIdByName(
+        brandName,
+        Number(isAutoBrand) === 1,
+      );
 
       const productPrice = row[3] ? Number(row[3]) : 0;
-      const marketPrice = row[4] ? Number(row[4]) : Number((Number(process.env.MARKET_PRICE_RATE || 1.0) * productPrice).toFixed(2));
+      const marketPrice = row[4]
+        ? Number(row[4])
+        : Number(
+            (
+              Number(process.env.MARKET_PRICE_RATE || 1.0) * productPrice
+            ).toFixed(2),
+          );
 
       const data: any = {
         product_name: name,
@@ -358,22 +425,29 @@ export class AdminProductBatchCompatService {
       }
       // 字段校验
       for (const k of Object.keys(row)) {
-        if (!allow.has(k)) throw new BadRequestException(`LINE ${index} 错误：不支持的字段 ${k}`);
+        if (!allow.has(k))
+          throw new BadRequestException(
+            `LINE ${index} 错误：不支持的字段 ${k}`,
+          );
       }
       const pid = Number(row["product_id"]);
-      if (!pid) throw new BadRequestException(`LINE ${index} 错误：缺少 product_id`);
+      if (!pid)
+        throw new BadRequestException(`LINE ${index} 错误：缺少 product_id`);
       if (row["product_sn"] !== undefined) {
         const sn = String(row["product_sn"]).trim();
-        if (!sn) throw new BadRequestException(`LINE ${index} 错误：商品编号不能为空`);
+        if (!sn)
+          throw new BadRequestException(`LINE ${index} 错误：商品编号不能为空`);
         const dup = await this.prisma.product.findFirst({
           where: { product_sn: sn, product_id: { not: pid } },
           select: { product_id: true },
         });
-        if (dup) throw new BadRequestException(`LINE ${index} 错误：商品编号重复`);
+        if (dup)
+          throw new BadRequestException(`LINE ${index} 错误：商品编号重复`);
       }
       if (row["product_name"] !== undefined) {
         const name = String(row["product_name"]).trim();
-        if (!name) throw new BadRequestException(`LINE ${index} 错误：商品名称不能为空`);
+        if (!name)
+          throw new BadRequestException(`LINE ${index} 错误：商品名称不能为空`);
       }
 
       // 通过原生 SQL 更新（绕过复合主键 where 复杂性）

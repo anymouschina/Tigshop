@@ -1,6 +1,15 @@
 // @ts-nocheck
-import { IsInt, IsOptional, IsString, IsIn, Min, ValidateNested, ArrayMinSize, IsArray } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  IsIn,
+  Min,
+  ValidateNested,
+  ArrayMinSize,
+  IsArray,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 // 2 = DINE_IN, 3 = TAKEOUT (复用 order_type)
 class DineOrderItemDto {

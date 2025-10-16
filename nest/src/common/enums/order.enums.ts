@@ -24,8 +24,12 @@ export enum PayStatus {
 }
 
 // Helpers
-export const isPaid = (s?: number | null) => Number(s) === PayStatus.PAID || Number(s) === PayStatus.PREPAID;
-export const isCanceled = (s?: number | null) => Number(s) === OrderStatus.CANCELED;
-export const isCompleted = (s?: number | null) => Number(s) === OrderStatus.COMPLETED;
-export const isShipped = (s?: number | null) => Number(s) === ShippingStatus.SHIPPED || Number(s) === ShippingStatus.PART_SHIPPED;
-
+export const isPaid = (s?: number | null) =>
+  Number(s) === PayStatus.PAID || Number(s) === PayStatus.PREPAID;
+export const isCanceled = (s?: number | null) =>
+  Number(s) === OrderStatus.CANCELED;
+export const isCompleted = (s?: number | null) =>
+  Number(s) === OrderStatus.COMPLETED;
+export const isShipped = (s?: number | null) =>
+  Number(s) === ShippingStatus.SHIPPED ||
+  Number(s) === ShippingStatus.PART_SHIPPED;

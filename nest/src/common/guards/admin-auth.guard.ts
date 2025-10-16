@@ -21,7 +21,10 @@ export class AdminAuthGuard implements CanActivate {
     if (isPublic) return true;
 
     // 已登录且是管理员
-    if (request.user && (request.user.role === "admin" || request.user.admin === true)) {
+    if (
+      request.user &&
+      (request.user.role === "admin" || request.user.admin === true)
+    ) {
       return true;
     }
 

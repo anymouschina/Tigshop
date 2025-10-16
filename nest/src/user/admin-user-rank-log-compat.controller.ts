@@ -20,7 +20,11 @@ export class AdminUserRankLogCompatController {
     const page = Number(q.page || 1);
     const size = Number(q.size || 15);
     const sortField = (q.sort_field ?? "id").toString();
-    const sortOrder = ((q.sort_order ?? "desc").toString().toLowerCase() === "asc" ? "asc" : "desc") as any;
+    const sortOrder = (
+      (q.sort_order ?? "desc").toString().toLowerCase() === "asc"
+        ? "asc"
+        : "desc"
+    ) as any;
     const keyword = (q.keyword || "").trim();
 
     const where: any = {};
@@ -33,10 +37,25 @@ export class AdminUserRankLogCompatController {
 
     const skip = (page - 1) * size;
     const [rows, total] = await Promise.all([
-      (this.prisma as any).user_rank_log.findMany({ where, skip, take: size, orderBy: { [sortField]: sortOrder } }),
+      (this.prisma as any).user_rank_log.findMany({
+        where,
+        skip,
+        take: size,
+        orderBy: { [sortField]: sortOrder },
+      }),
       (this.prisma as any).user_rank_log.count({ where }),
     ]);
 
-    return { code: 0, message: "success", data: { records: rows, total, size, current: page, pages: Math.ceil(total / size) } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: rows,
+        total,
+        size,
+        current: page,
+        pages: Math.ceil(total / size),
+      },
+    };
   }
 }

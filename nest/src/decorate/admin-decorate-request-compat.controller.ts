@@ -26,7 +26,9 @@ export class AdminDecorateRequestCompatController {
     const size = Math.max(1, this.num(q.size, 10));
     const skip = (page - 1) * size;
     const selectType = this.num(q.product_select_type, 0); // 0:auto 1:manual
-    const ids: number[] = (q.product_ids || []).map((x) => this.num(x, 0)).filter(Boolean);
+    const ids: number[] = (q.product_ids || [])
+      .map((x) => this.num(x, 0))
+      .filter(Boolean);
     const catId = this.num(q.product_category_id, 0);
     const keyword = (q.product_tag || "").trim();
 

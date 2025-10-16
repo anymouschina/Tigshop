@@ -1,5 +1,14 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Req, Logger } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+  Logger,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { CategoryService } from "./category.service";
@@ -32,9 +41,15 @@ export class AdminApiCategoryController {
       sortOrder: n.sort_order,
       isShow: n.is_show,
       categoryPic: n.category_pic,
-      ...(n.children && n.children.length ? { children: n.children.map((c: any) => mapNode(c)) } : {}),
+      ...(n.children && n.children.length
+        ? { children: n.children.map((c: any) => mapNode(c)) }
+        : {}),
     });
-    return { code: 0, message: 'success', data: (tree || []).map((n: any) => mapNode(n)) };
+    return {
+      code: 0,
+      message: "success",
+      data: (tree || []).map((n: any) => mapNode(n)),
+    };
   }
 
   /**
@@ -171,7 +186,11 @@ export class AdminApiCategoryController {
   async create(@Body() body: any) {
     const data = this.mapCamelToSnake(body);
     const created = await this.categoryService.create(data);
-    return { code: 0, message: "success", data: { categoryId: created.category_id } };
+    return {
+      code: 0,
+      message: "success",
+      data: { categoryId: created.category_id },
+    };
   }
 
   /**
@@ -206,7 +225,10 @@ export class AdminApiCategoryController {
       "is_show",
     ]);
     if (numericFields.has(field)) {
-      value = value === '' || value === null || value === undefined ? 0 : Number(value);
+      value =
+        value === "" || value === null || value === undefined
+          ? 0
+          : Number(value);
       if (Number.isNaN(value)) value = 0;
     }
     await this.categoryService.updateField(id, field, value);

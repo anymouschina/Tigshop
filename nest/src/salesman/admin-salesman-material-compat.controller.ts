@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Body, Controller, Get, Post, Query, UseGuards, Request } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+  Request,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,7 +20,10 @@ import { PanelService } from "src/panel/panel.service";
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class AdminSalesmanMaterialCompatController {
-  constructor(private prisma: PrismaService, private panel: PanelService) {}
+  constructor(
+    private prisma: PrismaService,
+    private panel: PanelService,
+  ) {}
 
   private coerceNumber(v: any, dft = 0) {
     const n = Number(v);
@@ -22,7 +33,11 @@ export class AdminSalesmanMaterialCompatController {
   @Get("list")
   @ApiOperation({ summary: "素材列表（兼容）" })
   @Authorities("materialManage")
-  async list(@Query() query: any, @Query("userId") _userId: number | undefined, @Request() req: any) {
+  async list(
+    @Query() query: any,
+    @Query("userId") _userId: number | undefined,
+    @Request() req: any,
+  ) {
     const page = Math.max(1, this.coerceNumber(query.page, 1));
     const size = Math.max(1, this.coerceNumber(query.size, 15));
     const skip = (page - 1) * size;
@@ -33,17 +48,31 @@ export class AdminSalesmanMaterialCompatController {
     if (categoryId) where.category_id = categoryId;
     if (keyword) where.title = { contains: keyword };
     const [records, total] = await Promise.all([
-      this.prisma.salesman_material.findMany({ where, orderBy: { material_id: "desc" }, skip, take: size }),
+      this.prisma.salesman_material.findMany({
+        where,
+        orderBy: { material_id: "desc" },
+        skip,
+        take: size,
+      }),
       this.prisma.salesman_material.count({ where }),
     ]);
     // Attach category name when available
-    const catIds = Array.from(new Set(records.map((r) => r.category_id).filter(Boolean)));
+    const catIds = Array.from(
+      new Set(records.map((r) => r.category_id).filter(Boolean)),
+    );
     let catMap: Record<number, string> = {};
     if (catIds.length) {
-      const cats = await this.prisma.salesman_material_category.findMany({ where: { category_id: { in: catIds } } });
-      catMap = Object.fromEntries(cats.map((c) => [c.category_id, c.category_name]));
+      const cats = await this.prisma.salesman_material_category.findMany({
+        where: { category_id: { in: catIds } },
+      });
+      catMap = Object.fromEntries(
+        cats.map((c) => [c.category_id, c.category_name]),
+      );
     }
-    const out = records.map((r) => ({ ...r, category_name: r.category_id ? catMap[r.category_id] || "" : "" }));
+    const out = records.map((r) => ({
+      ...r,
+      category_name: r.category_id ? catMap[r.category_id] || "" : "",
+    }));
     return { code: 0, message: "success", data: { records: out, total } };
   }
 
@@ -51,7 +80,9 @@ export class AdminSalesmanMaterialCompatController {
   @ApiOperation({ summary: "素材详情（兼容）" })
   @Authorities("materialManage")
   async detail(@Query("id") id: number) {
-    const record = await this.prisma.salesman_material.findUnique({ where: { material_id: this.coerceNumber(id, 0) } });
+    const record = await this.prisma.salesman_material.findUnique({
+      where: { material_id: this.coerceNumber(id, 0) },
+    });
     if (record && record.content && typeof record.content === "string") {
       // content may be long text/html; return as-is
     }
@@ -91,16 +122,37 @@ export class AdminSalesmanMaterialCompatController {
     const data: any = {
       title: body.title ?? undefined,
       cover: body.cover ?? undefined,
-      category_id: body.categoryId !== undefined ? (this.coerceNumber(body.categoryId, 0) || null) : undefined,
+      category_id:
+        body.categoryId !== undefined
+          ? this.coerceNumber(body.categoryId, 0) || null
+          : undefined,
       content: body.content ?? undefined,
-      view_num: body.viewNum !== undefined ? this.coerceNumber(body.viewNum, 0) : undefined,
-      share_num: body.shareNum !== undefined ? this.coerceNumber(body.shareNum, 0) : undefined,
-      like_num: body.likeNum !== undefined ? this.coerceNumber(body.likeNum, 0) : undefined,
-      sort_order: body.sortOrder !== undefined ? this.coerceNumber(body.sortOrder ?? 50, 50) : undefined,
-      is_show: body.isShow !== undefined ? this.coerceNumber(body.isShow ?? 1, 1) : undefined,
+      view_num:
+        body.viewNum !== undefined
+          ? this.coerceNumber(body.viewNum, 0)
+          : undefined,
+      share_num:
+        body.shareNum !== undefined
+          ? this.coerceNumber(body.shareNum, 0)
+          : undefined,
+      like_num:
+        body.likeNum !== undefined
+          ? this.coerceNumber(body.likeNum, 0)
+          : undefined,
+      sort_order:
+        body.sortOrder !== undefined
+          ? this.coerceNumber(body.sortOrder ?? 50, 50)
+          : undefined,
+      is_show:
+        body.isShow !== undefined
+          ? this.coerceNumber(body.isShow ?? 1, 1)
+          : undefined,
       update_time: now,
     };
-    await this.prisma.salesman_material.update({ where: { material_id: id }, data });
+    await this.prisma.salesman_material.update({
+      where: { material_id: id },
+      data,
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -125,10 +177,20 @@ export class AdminSalesmanMaterialCompatController {
       isShow: "is_show",
     };
     const dbField = map[field] || field;
-    data[dbField] = ["view_num", "share_num", "like_num", "sort_order", "is_show", "category_id"].includes(dbField)
+    data[dbField] = [
+      "view_num",
+      "share_num",
+      "like_num",
+      "sort_order",
+      "is_show",
+      "category_id",
+    ].includes(dbField)
       ? this.coerceNumber(value, 0)
       : value;
-    await this.prisma.salesman_material.update({ where: { material_id: id }, data });
+    await this.prisma.salesman_material.update({
+      where: { material_id: id },
+      data,
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -136,7 +198,9 @@ export class AdminSalesmanMaterialCompatController {
   @ApiOperation({ summary: "素材删除（兼容）" })
   @Authorities("materialManage")
   async del(@Body("id") id: number) {
-    await this.prisma.salesman_material.delete({ where: { material_id: this.coerceNumber(id, 0) } });
+    await this.prisma.salesman_material.delete({
+      where: { material_id: this.coerceNumber(id, 0) },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -144,19 +208,29 @@ export class AdminSalesmanMaterialCompatController {
   @ApiOperation({ summary: "素材批量（兼容）" })
   @Authorities("materialManage")
   async batch(@Body() body: any) {
-    const ids: number[] = (body.ids || []).map((x) => this.coerceNumber(x, 0)).filter(Boolean);
+    const ids: number[] = (body.ids || [])
+      .map((x) => this.coerceNumber(x, 0))
+      .filter(Boolean);
     const type: string = body.type || body.act || "";
     if (!ids.length) return { code: 1, message: "未选择项目", data: null };
     if (["del", "delete"].includes(type)) {
-      await this.prisma.salesman_material.deleteMany({ where: { material_id: { in: ids } } });
+      await this.prisma.salesman_material.deleteMany({
+        where: { material_id: { in: ids } },
+      });
       return { code: 0, message: "批量删除成功", data: true };
     }
     if (type === "show" || type === "isShow1") {
-      await this.prisma.salesman_material.updateMany({ where: { material_id: { in: ids } }, data: { is_show: 1 } });
+      await this.prisma.salesman_material.updateMany({
+        where: { material_id: { in: ids } },
+        data: { is_show: 1 },
+      });
       return { code: 0, message: "批量上架成功", data: true };
     }
     if (type === "hide" || type === "isShow0") {
-      await this.prisma.salesman_material.updateMany({ where: { material_id: { in: ids } }, data: { is_show: 0 } });
+      await this.prisma.salesman_material.updateMany({
+        where: { material_id: { in: ids } },
+        data: { is_show: 0 },
+      });
       return { code: 0, message: "批量下架成功", data: true };
     }
     return { code: 1, message: "#type 错误", data: null };

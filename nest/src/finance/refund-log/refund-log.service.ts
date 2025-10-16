@@ -163,10 +163,14 @@ export class RefundLogService {
     // refund_log 表没有 status 字段，跳过状态流转检查
 
     const updateData: any = {};
-    if (data.refund_pay_code !== undefined) updateData.refund_pay_code = data.refund_pay_code;
-    if (data.transaction_id !== undefined) updateData.transaction_id = data.transaction_id;
-    if (data.refund_amount !== undefined) updateData.refund_amount = data.refund_amount;
-    if (data.description !== undefined) updateData.description = data.description;
+    if (data.refund_pay_code !== undefined)
+      updateData.refund_pay_code = data.refund_pay_code;
+    if (data.transaction_id !== undefined)
+      updateData.transaction_id = data.transaction_id;
+    if (data.refund_amount !== undefined)
+      updateData.refund_amount = data.refund_amount;
+    if (data.description !== undefined)
+      updateData.description = data.description;
 
     // 移除id字段，不允许更新ID
     delete (updateData as any).id;

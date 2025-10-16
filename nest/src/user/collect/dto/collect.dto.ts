@@ -108,7 +108,11 @@ export class BatchDeleteCollectDto {
 
 export class CollectProductDto {
   // 兼容前端 camelCase 请求字段 productId
-  @ApiProperty({ description: "商品ID (camelCase 兼容字段)", required: false, example: 347 })
+  @ApiProperty({
+    description: "商品ID (camelCase 兼容字段)",
+    required: false,
+    example: 347,
+  })
   @IsOptional()
   @IsInt({ message: "商品ID必须为整数" })
   productId?: number;

@@ -31,9 +31,7 @@ export class PromotionService {
           : false,
       // is_available 为整型(可空)，默认 1；兼容字符串
       is_available:
-        filter.is_available !== undefined
-          ? Number(filter.is_available)
-          : 1,
+        filter.is_available !== undefined ? Number(filter.is_available) : 1,
       shop_id: filter.shop_id,
     };
 
@@ -120,9 +118,7 @@ export class PromotionService {
             )
           : false,
       is_available:
-        filter.is_available !== undefined
-          ? Number(filter.is_available)
-          : 1,
+        filter.is_available !== undefined ? Number(filter.is_available) : 1,
       shop_id: filter.shop_id,
     };
     if (filter.type) {

@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, Param, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Param,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -69,7 +77,11 @@ export class AdminApiProductGroupController {
   async postAct(@Param("act") act: string, @Body() body: any) {
     if (act === "create" || (act === "save" && !body.id)) {
       const created = await this.service.create(body);
-      return { code: 0, message: "success", data: { productGroupId: created.productGroupId } };
+      return {
+        code: 0,
+        message: "success",
+        data: { productGroupId: created.productGroupId },
+      };
     }
     if (act === "update" || (act === "save" && body.id)) {
       const id = Number(body.id);
@@ -95,7 +107,9 @@ export class AdminApiProductGroupController {
   @Authorities("productGroupManage")
   async batch(@Body() body: any) {
     const type = String(body.type || "");
-    const ids: number[] = Array.isArray(body.ids) ? body.ids.map((x) => Number(x)) : [];
+    const ids: number[] = Array.isArray(body.ids)
+      ? body.ids.map((x) => Number(x))
+      : [];
     if (!ids.length) {
       return { code: 400, message: "未选择项目" };
     }

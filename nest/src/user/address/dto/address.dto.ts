@@ -48,7 +48,11 @@ export class CreateAddressDto {
   @IsInt({ each: true, message: "地区ID必须为整数" })
   @Transform(({ value, obj }) => {
     const candidate =
-      value ?? obj?.regionIds ?? obj?.region_ids ?? obj?.ids ?? obj?.regionIdList;
+      value ??
+      obj?.regionIds ??
+      obj?.region_ids ??
+      obj?.ids ??
+      obj?.regionIdList;
     return normalizeArray(candidate)
       .map((item) => Number(String(item).trim()))
       .filter((n) => Number.isInteger(n));
@@ -95,7 +99,11 @@ export class CreateAddressDto {
   })
   addressTag?: string;
 
-  @ApiProperty({ description: "是否为默认地址（驼峰）", required: false, default: 0 })
+  @ApiProperty({
+    description: "是否为默认地址（驼峰）",
+    required: false,
+    default: 0,
+  })
   @IsOptional()
   @IsEnum({ 0: 0, 1: 1 }, { message: "是否为默认地址格式不正确" })
   @Transform(({ value, obj }) => {
@@ -103,7 +111,8 @@ export class CreateAddressDto {
     if (candidate === true) return 1;
     if (candidate === false) return 0;
     if (candidate === 0 || candidate === 1) return candidate as 0 | 1;
-    if (candidate === "0" || candidate === "1") return Number(candidate) as 0 | 1;
+    if (candidate === "0" || candidate === "1")
+      return Number(candidate) as 0 | 1;
     return 0;
   })
   isDefault?: 0 | 1 = 0;

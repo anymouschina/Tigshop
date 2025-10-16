@@ -189,9 +189,19 @@ export class UserService {
       orderBy: { id: "desc" },
     });
     const rankConfigParsed = rankConfig?.data
-      ? { id: rankConfig.id, code: rankConfig.code, rankType: rankConfig.rank_type, data: safeJson(rankConfig.data) }
+      ? {
+          id: rankConfig.id,
+          code: rankConfig.code,
+          rankType: rankConfig.rank_type,
+          data: safeJson(rankConfig.data),
+        }
       : rankConfig
-        ? { id: rankConfig.id, code: rankConfig.code, rankType: rankConfig.rank_type, data: null }
+        ? {
+            id: rankConfig.id,
+            code: rankConfig.code,
+            rankType: rankConfig.rank_type,
+            data: null,
+          }
         : null;
 
     // 销售员（如果有）
@@ -206,7 +216,9 @@ export class UserService {
     });
 
     // 汇总余额
-    const totalBalance = (Number(user.balance) + Number(user.frozen_balance)).toFixed(2);
+    const totalBalance = (
+      Number(user.balance) + Number(user.frozen_balance)
+    ).toFixed(2);
 
     // 掩码用户名 dimUsername
     const dimUsername = maskUsername(user.username || user.mobile || "");
@@ -214,7 +226,10 @@ export class UserService {
     // 是否绑定微信 isBindWechat（是否存在 authorize_type=2 或 open_id 非空）
     const isBindWechat =
       (await this.databaseService.user_authorize.count({
-        where: { user_id, OR: [{ authorize_type: 2 }, { open_id: { not: "" } }] },
+        where: {
+          user_id,
+          OR: [{ authorize_type: 2 }, { open_id: { not: "" } }],
+        },
       })) > 0;
 
     // 生日格式化
@@ -240,20 +255,24 @@ export class UserService {
       wechatImg: user.wechat_img,
       isCompanyAuth: user.is_company_auth,
       rankName: rank?.rank_name ?? "",
-      minGrowthPoints: rank ? Number(rank.min_growth_points).toFixed(2) : "0.00",
+      minGrowthPoints: rank
+        ? Number(rank.min_growth_points).toFixed(2)
+        : "0.00",
       rankIco: rank?.rank_ico ?? "",
       discount: discountStr,
       rankType: rank?.rank_type ?? 0,
       rankBg: rank?.rank_bg ?? "",
       rankPoint: rank?.rank_point ?? "0",
       freeShipping: rank?.free_shipping ?? 0,
-      rights: rank?.rights ? safeJson(rank.rights) ?? [] : [],
+      rights: rank?.rights ? (safeJson(rank.rights) ?? []) : [],
       rankLevel: rank?.rank_level ?? "",
       rankCardType: rank?.rank_card_type ?? 1,
       rankLogo: rank?.rank_logo ?? "",
       totalBalance,
       coupon,
-      rankExpireTime: user.svip_expire_time ? formatUnixTs(user.svip_expire_time) : "",
+      rankExpireTime: user.svip_expire_time
+        ? formatUnixTs(user.svip_expire_time)
+        : "",
       growth: 0,
       growthPoints: user.growth_points,
       rankConfig: rankConfigParsed,
@@ -265,9 +284,13 @@ export class UserService {
             level: salesman.level ?? 1,
             groupId: salesman.group_id ?? 0,
             pid: salesman.pid ?? 0,
-            addTime: salesman.add_time ? formatUnixTs(Number(salesman.add_time)) : "",
+            addTime: salesman.add_time
+              ? formatUnixTs(Number(salesman.add_time))
+              : "",
             shopId: salesman.shop_id ?? 0,
-            saleAmount: salesman.sale_amount ? String(salesman.sale_amount) : "0.00",
+            saleAmount: salesman.sale_amount
+              ? String(salesman.sale_amount)
+              : "0.00",
           }
         : null,
       showSign: "",
@@ -319,13 +342,13 @@ export class UserService {
           data.birthday = raw;
         } else if (typeof raw === "string") {
           // 仅支持 YYYY-MM-DD / YYYY/MM/DD 简单格式
-            const norm = raw.replace(/\//g, "-");
-            if (/^\d{4}-\d{2}-\d{2}$/.test(norm)) {
-              const d = new Date(norm + "T00:00:00");
-              if (!isNaN(d.getTime())) {
-                data.birthday = d;
-              }
+          const norm = raw.replace(/\//g, "-");
+          if (/^\d{4}-\d{2}-\d{2}$/.test(norm)) {
+            const d = new Date(norm + "T00:00:00");
+            if (!isNaN(d.getTime())) {
+              data.birthday = d;
             }
+          }
         }
         continue;
       }
@@ -515,7 +538,10 @@ export class UserService {
       where: { user_id },
       select: { history_product_ids: true },
     });
-    const historyIds = this.parseHistoryIds(raw?.history_product_ids).slice(0, 20);
+    const historyIds = this.parseHistoryIds(raw?.history_product_ids).slice(
+      0,
+      20,
+    );
     if (historyIds.length === 0) return [];
 
     const products = await this.fetchHistoryProducts(historyIds);
@@ -577,7 +603,7 @@ export class UserService {
 
   /** 将商品行映射为足迹返回结构 */
   private mapHistoryProduct(p: any) {
-    const money = (v: any) => (Number(v || 0)).toFixed(2);
+    const money = (v: any) => Number(v || 0).toFixed(2);
     return {
       categoryId: p.category_id || 0,
       brandId: p.brand_id || 0,
@@ -669,10 +695,10 @@ export class UserService {
         code: 0,
         message: "success",
         data: {
-          picThumb: avatarUrl,              // 缩略图（或原图）
-          picUrl: uploadResult.fileUrl,     // 原图 URL
-          picName: uploadResult.fileName,   // 原始文件名（或唯一名）
-          picId: uploadResult.id || 0,      // 主文件记录ID（若存在）
+          picThumb: avatarUrl, // 缩略图（或原图）
+          picUrl: uploadResult.fileUrl, // 原图 URL
+          picName: uploadResult.fileName, // 原始文件名（或唯一名）
+          picId: uploadResult.id || 0, // 主文件记录ID（若存在）
         },
       };
     } catch (error) {
@@ -748,8 +774,12 @@ export class UserService {
     const skip = (page - 1) * size;
     // 仅允许按 log_id / change_time 排序，避免传无效列
     const allowSortFields = new Set(["log_id", "change_time"]);
-    const sortField = allowSortFields.has(query.sort_field) ? query.sort_field : "log_id";
-    const sortOrderRaw = String(query.sort_order || query.sortOrder || "desc").toLowerCase();
+    const sortField = allowSortFields.has(query.sort_field)
+      ? query.sort_field
+      : "log_id";
+    const sortOrderRaw = String(
+      query.sort_order || query.sortOrder || "desc",
+    ).toLowerCase();
     const sortOrder: any = sortOrderRaw === "asc" ? "asc" : "desc";
 
     const [balanceLogs, total] = await Promise.all([
@@ -772,7 +802,9 @@ export class UserService {
           const e = v.e as number;
           const num = Number(digits) * Math.pow(10, e - digits.length + 1);
           return num.toFixed(2);
-        } catch { return "0.00"; }
+        } catch {
+          return "0.00";
+        }
       }
       return "0.00";
     };
@@ -782,7 +814,12 @@ export class UserService {
       frozen_balance: toMoney(r.frozen_balance),
       new_balance: toMoney(r.new_balance),
       new_frozen_balance: toMoney(r.new_frozen_balance),
-      change_time_format: r.change_time ? new Date(r.change_time * 1000).toISOString().slice(0, 19).replace("T", " ") : "",
+      change_time_format: r.change_time
+        ? new Date(r.change_time * 1000)
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " ")
+        : "",
     }));
 
     return {
@@ -807,10 +844,12 @@ export class UserService {
 
     // 读取等级配置 & 成长配置（暂时占位，后续接入配置表/缓存）
     // 与期望示例字段命名：rankConfig / growConfig
-    const rankConfigRow = await this.databaseService.user_rank_config.findFirst({
-      where: { code: "rank_config" },
-      orderBy: { id: "asc" },
-    }).catch(() => null);
+    const rankConfigRow = await this.databaseService.user_rank_config
+      .findFirst({
+        where: { code: "rank_config" },
+        orderBy: { id: "asc" },
+      })
+      .catch(() => null);
 
     const rankConfig = rankConfigRow
       ? {

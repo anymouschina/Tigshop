@@ -28,16 +28,25 @@ export class CartController {
   async getCartList(@Request() req, @Query() query: Record<string, any> = {}) {
     const userId = resolveRequestUserId(req);
     // 解析 shopId：优先 Header，其次 Query
-    const headerShopIdRaw = (req.headers?.['x-shop-id'] ?? req.headers?.['x-shopid']) as any;
-    const shopIdResolved = Number(headerShopIdRaw ?? query.shopId ?? query.shop_id);
-    const shopId = Number.isFinite(shopIdResolved) && shopIdResolved > 0 ? shopIdResolved : undefined;
+    const headerShopIdRaw = (req.headers?.["x-shop-id"] ??
+      req.headers?.["x-shopid"]) as any;
+    const shopIdResolved = Number(
+      headerShopIdRaw ?? query.shopId ?? query.shop_id,
+    );
+    const shopId =
+      Number.isFinite(shopIdResolved) && shopIdResolved > 0
+        ? shopIdResolved
+        : undefined;
 
     // 解析 isChecked（1/0/true/false）
     const isCheckedRaw = query.isChecked ?? query.is_checked;
     const isChecked =
       isCheckedRaw === undefined
         ? undefined
-        : (String(isCheckedRaw).toLowerCase() === '1' || String(isCheckedRaw).toLowerCase() === 'true' ? 1 : 0);
+        : String(isCheckedRaw).toLowerCase() === "1" ||
+            String(isCheckedRaw).toLowerCase() === "true"
+          ? 1
+          : 0;
 
     return this.cartService.getCart(userId, { shopId, isChecked });
   }
@@ -66,11 +75,7 @@ export class CartController {
       payload.goodsId ??
       payload.goods_id;
     const rawQuantity =
-      payload.quantity ??
-      payload.number ??
-      payload.num ??
-      payload.qty ??
-      1;
+      payload.quantity ?? payload.number ?? payload.num ?? payload.qty ?? 1;
     const rawSkuId =
       payload.skuId ??
       payload.sku_id ??
@@ -84,10 +89,14 @@ export class CartController {
     const sid = Number(rawSkuId ?? 0);
 
     // PHP 端兼容参数
-    const isQuick = payload.isQuick === 1 || payload.is_quick === 1 || payload.isQuick === true;
+    const isQuick =
+      payload.isQuick === 1 ||
+      payload.is_quick === 1 ||
+      payload.isQuick === true;
     const typeRaw = payload.type ?? payload.cartType ?? payload.flowType;
     const typeNum = Number(typeRaw ?? 1);
-    const salesmanId = Number(payload.salesmanId ?? payload.salesman_id ?? 0) || 0;
+    const salesmanId =
+      Number(payload.salesmanId ?? payload.salesman_id ?? 0) || 0;
     const extraAttrIds = payload.extraAttrIds ?? payload.extra_attr_ids;
     // skuItem 目前忽略批量行为，采用第一个或 sid 为准
     const skuItem = Array.isArray(payload.skuItem ?? payload.sku_item)
@@ -98,12 +107,18 @@ export class CartController {
     const finalQty = Number(firstSku?.num ?? firstSku?.quantity ?? qty);
 
     const userId = resolveRequestUserId(req);
-    const result = await this.cartService.addItem(userId, pid, finalQty, finalSkuId, {
-      type: typeNum > 0 ? typeNum : 1,
-      salesmanId,
-      extraAttrIds,
-      isQuick,
-    });
+    const result = await this.cartService.addItem(
+      userId,
+      pid,
+      finalQty,
+      finalSkuId,
+      {
+        type: typeNum > 0 ? typeNum : 1,
+        salesmanId,
+        extraAttrIds,
+        isQuick,
+      },
+    );
     // PHP 返回 { item: true, flow_type }
     return { item: !!result, flow_type: typeNum > 0 ? typeNum : 1 };
   }
@@ -115,7 +130,10 @@ export class CartController {
   @ApiOperation({ summary: "更新购物车商品" })
   async updateItem(@Request() req, @Body() body: Record<string, any>) {
     const mergedPayload =
-      body && typeof body === "object" && body.data && typeof body.data === "object"
+      body &&
+      typeof body === "object" &&
+      body.data &&
+      typeof body.data === "object"
         ? { ...body, ...body.data }
         : body || {};
 
@@ -149,7 +167,7 @@ export class CartController {
       if (!Number.isInteger(quantity) || quantity <= 0) {
         throw new BadRequestException("数量必须为正整数");
       }
-  const userId = resolveRequestUserId(req);
+      const userId = resolveRequestUserId(req);
       return this.cartService.updateQuantity(userId, cartId, quantity);
     }
 
@@ -159,7 +177,7 @@ export class CartController {
           ? selectedRaw === "1" || selectedRaw.toLowerCase() === "true"
           : selectedRaw,
       );
-  const userId = resolveRequestUserId(req);
+      const userId = resolveRequestUserId(req);
       return this.cartService.updateSelected(userId, cartId, selected ? 1 : 0);
     }
 
@@ -180,7 +198,9 @@ export class CartController {
       return [];
     };
 
-    const rawItems = extractArray(body?.data ?? body?.list ?? body?.items ?? body);
+    const rawItems = extractArray(
+      body?.data ?? body?.list ?? body?.items ?? body,
+    );
 
     const deduped = new Map<number, 0 | 1>();
 
@@ -258,10 +278,20 @@ export class CartController {
    */
   @Post("removeItem")
   @ApiOperation({ summary: "删除购物车商品" })
-  async removeItem(@Request() req, @Body() data: any, @Query() query: any = {}) {
+  async removeItem(
+    @Request() req,
+    @Body() data: any,
+    @Query() query: any = {},
+  ) {
     const userId = resolveRequestUserId(req);
     // 兼容多种参数命名：cartId | id | cart_id（Body 或 Query）
-    const raw = data?.cartId ?? data?.id ?? data?.cart_id ?? query?.cartId ?? query?.id ?? query?.cart_id;
+    const raw =
+      data?.cartId ??
+      data?.id ??
+      data?.cart_id ??
+      query?.cartId ??
+      query?.id ??
+      query?.cart_id;
     const cartId = Number(raw);
     if (!Number.isInteger(cartId) || cartId <= 0) {
       return { code: 400, message: "cartId 参数无效", data: null };

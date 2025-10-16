@@ -158,7 +158,9 @@ export class SeckillService {
   }
 
   // 装修用：获取秒杀商品列表（对齐 PHP getSeckillProductList）
-  async getSeckillProductList(params: any): Promise<{ list: any[]; total: number }> {
+  async getSeckillProductList(
+    params: any,
+  ): Promise<{ list: any[]; total: number }> {
     const page = Number(params.page || 1);
     const size = Number(params.size || 15);
     const skip = (page - 1) * size;
@@ -191,7 +193,10 @@ export class SeckillService {
       : [];
 
     // 聚合产品维度统计
-    const productStats = new Map<number, { sales: number; stock: number; sku_id?: number; sku_sn?: string }>();
+    const productStats = new Map<
+      number,
+      { sales: number; stock: number; sku_id?: number; sku_sn?: string }
+    >();
     const seckillByProduct = new Map<number, any>();
     const productIds: number[] = [];
     for (const s of seckills) {
@@ -225,7 +230,12 @@ export class SeckillService {
     const skus = uniqProductIds.length
       ? await this.prisma.product_sku.findMany({
           where: { product_id: { in: uniqProductIds } },
-          select: { sku_id: true, product_id: true, sku_price: true, sku_sn: true },
+          select: {
+            sku_id: true,
+            product_id: true,
+            sku_price: true,
+            sku_sn: true,
+          },
         })
       : [];
     const skuByProduct = new Map<number, any[]>();
@@ -243,7 +253,9 @@ export class SeckillService {
         let sku_sn = "";
         if (st.sku_id) {
           const list = skuByProduct.get(p.product_id) || [];
-          const sku = list.find((x: any) => Number(x.sku_id) === Number(st.sku_id));
+          const sku = list.find(
+            (x: any) => Number(x.sku_id) === Number(st.sku_id),
+          );
           if (sku) {
             market_price = sku.sku_price ?? market_price;
             sku_sn = sku.sku_sn ?? "";

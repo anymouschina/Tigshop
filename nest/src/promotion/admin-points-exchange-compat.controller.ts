@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Req } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -68,7 +76,10 @@ export class AdminPointsExchangeCompatController {
   @Get("detail")
   @Authorities("promotionManage")
   @ApiOperation({ summary: "积分兑换详情（兼容 /adminapi）" })
-  async detail(@Query("id") id?: number, @Query("pointsExchangeId") id2?: number) {
+  async detail(
+    @Query("id") id?: number,
+    @Query("pointsExchangeId") id2?: number,
+  ) {
     const realId = Number(id ?? id2);
     const item = await this.svc.getDetail(realId);
     return ResponseUtil.success(item);

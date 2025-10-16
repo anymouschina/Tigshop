@@ -121,7 +121,7 @@ export class ProductService {
     }
 
     if (categoryId) {
-      if (useShopCategory && (queryDto.shopId !== undefined)) {
+      if (useShopCategory && queryDto.shopId !== undefined) {
         // 店铺分类过滤
         where.shop_category_id = Number(categoryId);
       } else {
@@ -209,7 +209,10 @@ export class ProductService {
       this.prisma.product.count({ where }),
     ]);
 
-    const records = await this.buildProductListResponse(products, normalizedIds);
+    const records = await this.buildProductListResponse(
+      products,
+      normalizedIds,
+    );
     const waitingCheckedCount = await this.getWaitingCheckedCount(queryDto);
 
     return camelCase(
@@ -223,12 +226,15 @@ export class ProductService {
   }
 
   async getProductsPromotion(payload: any) {
-    const productsInput = Array.isArray(payload?.products) ? payload.products : [];
+    const productsInput = Array.isArray(payload?.products)
+      ? payload.products
+      : [];
     if (productsInput.length === 0) {
       return {};
     }
 
-    const promotionFrom = typeof payload?.from === "string" && payload.from ? payload.from : "list";
+    const promotionFrom =
+      typeof payload?.from === "string" && payload.from ? payload.from : "list";
     const shopIdRaw = payload?.shopId ?? payload?.shop_id ?? null;
     let explicitShopId: number | null = null;
     if (shopIdRaw !== null && shopIdRaw !== undefined && shopIdRaw !== "") {
@@ -239,19 +245,24 @@ export class ProductService {
     const normalizedList = productsInput
       .map((item: any) => {
         const source = item ?? {};
-        const productId = Number(source.productId ?? source.product_id ?? 0) || 0;
+        const productId =
+          Number(source.productId ?? source.product_id ?? 0) || 0;
         const skuId = Number(source.skuId ?? source.sku_id ?? 0) || 0;
         const cartId = Number(source.cartId ?? source.cart_id ?? 0) || 0;
         return { source, productId, skuId, cartId };
       })
-      .filter((entry) => entry.productId > 0 || entry.skuId > 0 || entry.cartId > 0);
+      .filter(
+        (entry) => entry.productId > 0 || entry.skuId > 0 || entry.cartId > 0,
+      );
 
     if (normalizedList.length === 0) {
       return {};
     }
 
     const productIds = Array.from(
-      new Set(normalizedList.map((entry) => entry.productId).filter((id) => id > 0)),
+      new Set(
+        normalizedList.map((entry) => entry.productId).filter((id) => id > 0),
+      ),
     );
 
     let productRows: any[] = [];
@@ -314,8 +325,8 @@ export class ProductService {
         explicitShopId !== null
           ? explicitShopId
           : merged.shop_id !== undefined
-          ? Number(merged.shop_id)
-          : dbRow?.shop_id ?? null;
+            ? Number(merged.shop_id)
+            : (dbRow?.shop_id ?? null);
       if (resolvedShopId !== null && resolvedShopId !== undefined) {
         merged.shop_id = Number(resolvedShopId) || 0;
       }
@@ -330,10 +341,16 @@ export class ProductService {
         if (merged.pic_url === undefined && dbRow.pic_url) {
           merged.pic_url = dbRow.pic_url;
         }
-        if (merged.product_price === undefined && dbRow.product_price !== undefined) {
+        if (
+          merged.product_price === undefined &&
+          dbRow.product_price !== undefined
+        ) {
           merged.product_price = this.toMoney(dbRow.product_price);
         }
-        if (merged.market_price === undefined && dbRow.market_price !== undefined) {
+        if (
+          merged.market_price === undefined &&
+          dbRow.market_price !== undefined
+        ) {
           merged.market_price = this.toMoney(dbRow.market_price);
         }
       }
@@ -366,7 +383,8 @@ export class ProductService {
       whereSqlParts.push("shop_id = ?");
       sqlParams.push(explicitShopId);
     }
-    const whereSql = whereSqlParts.length > 0 ? "WHERE " + whereSqlParts.join(" AND ") : "";
+    const whereSql =
+      whereSqlParts.length > 0 ? "WHERE " + whereSqlParts.join(" AND ") : "";
     // PHP 中按 FIELD(type, 1,6,2,3,4,5) 排序；为兼容性改为 CASE 表达式
     const orderSql =
       "ORDER BY CASE `type` WHEN 1 THEN 1 WHEN 6 THEN 2 WHEN 2 THEN 3 WHEN 3 THEN 4 WHEN 4 THEN 5 WHEN 5 THEN 6 ELSE 7 END";
@@ -388,7 +406,10 @@ export class ProductService {
             where: { promotion_id: Number(prom.relation_id) },
           });
           if (pp) {
-            const typeData = this.safeJsonParse(pp.promotion_type_data, [] as any[]);
+            const typeData = this.safeJsonParse(
+              pp.promotion_type_data,
+              [] as any[],
+            );
             // 收集 giftId 并批量查询
             const giftIds = Array.from(
               new Set(
@@ -404,10 +425,18 @@ export class ProductService {
               });
               // 取 product 与 sku 基础信息，拼出与 PHP 近似结构
               const gProductIds = Array.from(
-                new Set(gifts.map((g) => Number(g.product_id)).filter((n) => Number.isFinite(n) && n > 0)),
+                new Set(
+                  gifts
+                    .map((g) => Number(g.product_id))
+                    .filter((n) => Number.isFinite(n) && n > 0),
+                ),
               );
               const gSkuIds = Array.from(
-                new Set(gifts.map((g) => Number(g.sku_id)).filter((n) => Number.isFinite(n) && n > 0)),
+                new Set(
+                  gifts
+                    .map((g) => Number(g.sku_id))
+                    .filter((n) => Number.isFinite(n) && n > 0),
+                ),
               );
               const [giftProducts, giftSkus] = await Promise.all([
                 gProductIds.length > 0
@@ -427,14 +456,21 @@ export class ProductService {
                 gSkuIds.length > 0
                   ? this.prisma.product_sku.findMany({
                       where: { sku_id: { in: gSkuIds } },
-                      select: { sku_id: true, sku_data: true, sku_sn: true, sku_price: true },
+                      select: {
+                        sku_id: true,
+                        sku_data: true,
+                        sku_sn: true,
+                        sku_price: true,
+                      },
                     })
                   : Promise.resolve([]),
               ]);
               const gpMap = new Map<number, any>(
                 giftProducts.map((p: any) => [Number(p.product_id), p]),
               );
-              const gsMap = new Map<number, any>(giftSkus.map((s: any) => [Number(s.sku_id), s]));
+              const gsMap = new Map<number, any>(
+                giftSkus.map((s: any) => [Number(s.sku_id), s]),
+              );
               giftMap = new Map(
                 gifts.map((g) => {
                   const prod = gpMap.get(Number(g.product_id));
@@ -489,7 +525,10 @@ export class ProductService {
       return enriched;
     };
 
-    const checkPromotionAvailable = async (prom: any, item: any): Promise<boolean> => {
+    const checkPromotionAvailable = async (
+      prom: any,
+      item: any,
+    ): Promise<boolean> => {
       // range 判断（3=指定商品；4=指定商品不参与；其它=全场）
       const range = Number(prom.range ?? 0);
       const rangeData = this.safeJsonParse(prom.range_data, [] as any[]);
@@ -520,7 +559,10 @@ export class ProductService {
       const activityInfo: any[] = [];
       for (const prom of promotions) {
         // list 模式下跳过 is_delete=1 的活动
-        if (promotionFrom === "list" && (prom.is_delete === 1 || prom.is_delete === true)) {
+        if (
+          promotionFrom === "list" &&
+          (prom.is_delete === 1 || prom.is_delete === true)
+        ) {
           continue;
         }
         // 条件判断
@@ -541,7 +583,8 @@ export class ProductService {
     // 与 PHP 对齐：list 模式下，只返回有命中活动的商品；否则返回空数组
     if (promotionFrom === "list") {
       orderedList = orderedList.filter(
-        (it: any) => Array.isArray(it.activity_info) && it.activity_info.length > 0,
+        (it: any) =>
+          Array.isArray(it.activity_info) && it.activity_info.length > 0,
       );
     }
     return camelCase(orderedList, false);
@@ -751,7 +794,10 @@ export class ProductService {
     return toNumberArray(val);
   }
 
-  private async buildProductListResponse(products: any[], normalizedIds: number[]) {
+  private async buildProductListResponse(
+    products: any[],
+    normalizedIds: number[],
+  ) {
     if (!products || products.length === 0) {
       return [];
     }
@@ -812,18 +858,27 @@ export class ProductService {
       }
     }
 
-    const seckillMap = new Map<number, { price: number; endTime: number | string }>();
+    const seckillMap = new Map<
+      number,
+      { price: number; endTime: number | string }
+    >();
     for (const row of seckillRows) {
       const pid = Number(row.product_id ?? 0);
       if (!pid) continue;
-      const price = row.seckill_price instanceof Decimal ? Number(row.seckill_price.toString()) : Number(row.seckill_price ?? 0);
+      const price =
+        row.seckill_price instanceof Decimal
+          ? Number(row.seckill_price.toString())
+          : Number(row.seckill_price ?? 0);
       const endTime = row.seckill_end_time ?? "";
       if (!seckillMap.has(pid) || price < seckillMap.get(pid)!.price) {
         seckillMap.set(pid, { price, endTime });
       }
     }
 
-    const shopMap = new Map<number, { shop_id: number; shop_title: string | null }>();
+    const shopMap = new Map<
+      number,
+      { shop_id: number; shop_title: string | null }
+    >();
     for (const shop of shops as any[]) {
       shopMap.set(Number(shop.shop_id), {
         shop_id: Number(shop.shop_id),
@@ -836,13 +891,16 @@ export class ProductService {
       if (plain.product_type !== null && plain.product_type !== undefined) {
         plain.product_type = plain.product_type ? 1 : 0;
       }
-      if (plain.is_promote_activity !== null && plain.is_promote_activity !== undefined) {
+      if (
+        plain.is_promote_activity !== null &&
+        plain.is_promote_activity !== undefined
+      ) {
         plain.is_promote_activity = plain.is_promote_activity ? 1 : 0;
       }
 
       const productId = Number(product.product_id);
-  const basePrice = this.toNumber(product.product_price);
-  const baseMarketPrice = this.toNumber(product.market_price);
+      const basePrice = this.toNumber(product.product_price);
+      const baseMarketPrice = this.toNumber(product.market_price);
       let price = basePrice;
       let marketPrice = baseMarketPrice;
       let isSeckill = 0;
@@ -880,7 +938,9 @@ export class ProductService {
     });
 
     if (normalizedIds.length > 0) {
-      const recordMap = new Map(records.map((item) => [Number(item.product_id), item]));
+      const recordMap = new Map(
+        records.map((item) => [Number(item.product_id), item]),
+      );
       const idSet = new Set(normalizedIds);
       const ordered: any[] = [];
       for (const id of normalizedIds) {
@@ -930,5 +990,4 @@ export class ProductService {
       return def;
     }
   }
-
 }

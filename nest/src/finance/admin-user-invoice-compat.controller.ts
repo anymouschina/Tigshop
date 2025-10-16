@@ -27,7 +27,17 @@ export class AdminUserInvoiceCompatController {
       sortOrder: q.sort_order ?? q.sortOrder ?? "desc",
       userId: q.user_id ? Number(q.user_id) : undefined,
     });
-    return { code: 0, message: "success", data: { records: result.records, total: result.total, page: result.page, size: result.size, totalPages: result.totalPages } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records: result.records,
+        total: result.total,
+        page: result.page,
+        size: result.size,
+        totalPages: result.totalPages,
+      },
+    };
   }
 
   // GET /adminapi/finance/userInvoice/config
@@ -36,7 +46,14 @@ export class AdminUserInvoiceCompatController {
   @ApiOperation({ summary: "用户发票资质配置（admin 兼容）" })
   async config() {
     const cfg = await this.service.getConfig();
-    return { code: 0, message: "success", data: { status_config: cfg.statusConfig, title_type_config: cfg.titleTypeConfig } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        status_config: cfg.statusConfig,
+        title_type_config: cfg.titleTypeConfig,
+      },
+    };
   }
 
   // GET /adminapi/finance/userInvoice/detail?id=

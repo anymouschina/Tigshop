@@ -50,10 +50,10 @@ export class RefundApplyService {
       where.refund_status = status;
     }
 
-  // 排序字段映射：id -> refund_id
-  const sortKey = sort_field === "id" ? "refund_id" : sort_field;
-  const orderBy: any = {};
-  orderBy[sortKey] = sort_order;
+    // 排序字段映射：id -> refund_id
+    const sortKey = sort_field === "id" ? "refund_id" : sort_field;
+    const orderBy: any = {};
+    orderBy[sortKey] = sort_order;
 
     const skip = (page - 1) * size;
 
@@ -107,7 +107,9 @@ export class RefundApplyService {
     }
 
     // 检查订单是否存在（schema 中无 order_amount 字段，使用 paid_amount / total_amount）
-    const order = await this.prisma.order.findUnique({ where: { order_id: Number(data.order_id) } });
+    const order = await this.prisma.order.findUnique({
+      where: { order_id: Number(data.order_id) },
+    });
     if (!order) {
       throw new Error("订单不存在");
     }
@@ -167,9 +169,9 @@ export class RefundApplyService {
     }
 
     // 状态变更检查
-  if (data.status !== undefined && data.status !== refund.refund_status) {
+    if (data.status !== undefined && data.status !== refund.refund_status) {
       // 只有待审核状态可以变为审核通过或已拒绝
-  if (refund.refund_status === 0) {
+      if (refund.refund_status === 0) {
         if (data.status === 1 || data.status === 2) {
           // 允许状态变更
         } else {
@@ -177,7 +179,7 @@ export class RefundApplyService {
         }
       }
       // 只有审核通过状态可以变为已取消
-  else if (refund.refund_status === 1) {
+      else if (refund.refund_status === 1) {
         if (data.status === 3) {
           // 允许状态变更
         } else {
@@ -192,12 +194,13 @@ export class RefundApplyService {
 
     const updateData: any = {};
     if (data.status !== undefined) updateData.refund_status = data.status;
-    if (data.refund_note !== undefined) updateData.refund_note = data.refund_note;
+    if (data.refund_note !== undefined)
+      updateData.refund_note = data.refund_note;
     if (data.payment_voucher !== undefined)
       updateData.payment_voucher = data.payment_voucher;
 
     // 移除id字段，不允许更新ID
-  delete (updateData as any).id;
+    delete (updateData as any).id;
 
     const updatedRefund = await this.prisma.refund_apply.update({
       where: { refund_id: Number(data.id) },

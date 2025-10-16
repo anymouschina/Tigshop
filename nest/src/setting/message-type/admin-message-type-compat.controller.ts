@@ -4,7 +4,10 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
 import { Authorities } from "src/auth/decorators/authority.decorator";
-import { MessageTypeService, MESSAGE_SEND_TYPE_NAMES } from "../message-type.service";
+import {
+  MessageTypeService,
+  MESSAGE_SEND_TYPE_NAMES,
+} from "../message-type.service";
 
 @ApiTags("Admin API - 消息类型(兼容路径)")
 @Controller("adminapi/setting/messageType")

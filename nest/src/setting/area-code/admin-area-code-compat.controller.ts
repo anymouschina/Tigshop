@@ -30,9 +30,24 @@ export class AdminAreaCodeCompatController {
     }
     const [total, records] = await this.prisma.$transaction([
       this.prisma.area_code.count({ where }),
-      this.prisma.area_code.findMany({ where, orderBy: { id: "asc" }, skip, take: size }),
+      this.prisma.area_code.findMany({
+        where,
+        orderBy: { id: "asc" },
+        skip,
+        take: size,
+      }),
     ]);
-    return { code: 0, message: "success", data: { records, total, page, size, totalPages: Math.ceil(total / size) || 1 } };
+    return {
+      code: 0,
+      message: "success",
+      data: {
+        records,
+        total,
+        page,
+        size,
+        totalPages: Math.ceil(total / size) || 1,
+      },
+    };
   }
 
   // 兼容 PHP: GET /adminapi/setting/areaCode/detail?id=1
@@ -55,12 +70,16 @@ export class AdminAreaCodeCompatController {
   async create(@Body() body: any) {
     const code = String(body.code || "").trim();
     const name = String(body.name || "").trim();
-    const is_available = body.is_available !== undefined ? Number(body.is_available) : 1;
-    const is_default = body.is_default !== undefined ? Number(body.is_default) : 0;
+    const is_available =
+      body.is_available !== undefined ? Number(body.is_available) : 1;
+    const is_default =
+      body.is_default !== undefined ? Number(body.is_default) : 0;
     if (!code || !name) {
       return { code: 400, message: "code 与 name 不能为空", data: null };
     }
-    const item = await this.prisma.area_code.create({ data: { code, name, is_available, is_default } });
+    const item = await this.prisma.area_code.create({
+      data: { code, name, is_available, is_default },
+    });
     return { code: 0, message: "success", data: { id: item.id } };
   }
 
@@ -76,8 +95,10 @@ export class AdminAreaCodeCompatController {
     const data: any = {};
     if (body.code !== undefined) data.code = String(body.code).trim();
     if (body.name !== undefined) data.name = String(body.name).trim();
-    if (body.is_available !== undefined) data.is_available = Number(body.is_available);
-    if (body.is_default !== undefined) data.is_default = Number(body.is_default);
+    if (body.is_available !== undefined)
+      data.is_available = Number(body.is_available);
+    if (body.is_default !== undefined)
+      data.is_default = Number(body.is_default);
     await this.prisma.area_code.update({ where: { id }, data });
     return { code: 0, message: "success", data: null };
   }

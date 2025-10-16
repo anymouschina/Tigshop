@@ -4,7 +4,7 @@ import { DecorateService } from "./decorate.service";
 import { UserDecorateService } from "./user-decorate.service";
 
 @Module({
-  controllers: [ UserDecorateController],
+  controllers: [UserDecorateController],
   providers: [DecorateService, UserDecorateService],
   exports: [DecorateService, UserDecorateService],
 })

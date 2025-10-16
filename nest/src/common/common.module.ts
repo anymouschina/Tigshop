@@ -14,7 +14,14 @@ import { CurrencyController } from "./currency/currency.controller";
 
 @Module({
   imports: [ConfigModule, RecommendModule, TipsManageModule, WechatModule],
-  controllers: [LogController, CommonConfigController, ApiCsrfController, CommonPcController, CommonUtilController, CurrencyController],
+  controllers: [
+    LogController,
+    CommonConfigController,
+    ApiCsrfController,
+    CommonPcController,
+    CommonUtilController,
+    CurrencyController,
+  ],
   providers: [CommonConfigService, CommonCsrfService],
 })
 export class CommonModule {}

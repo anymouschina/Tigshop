@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -12,9 +20,15 @@ import { PanelService } from "src/panel/panel.service";
 @UseGuards(AdminJwtAuthGuard, AuthorityGuard)
 @ApiBearerAuth()
 export class AdminSalesmanContentCompatController {
-  constructor(private prisma: PrismaService, private panel: PanelService) {}
+  constructor(
+    private prisma: PrismaService,
+    private panel: PanelService,
+  ) {}
 
-  private coerceNumber(v: any, dft = 0) { const n = Number(v); return Number.isFinite(n) ? n : dft; }
+  private coerceNumber(v: any, dft = 0) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : dft;
+  }
 
   @Get("list")
   @ApiOperation({ summary: "公告列表（兼容）" })
@@ -28,7 +42,12 @@ export class AdminSalesmanContentCompatController {
     const where: any = { shop_id: shopId };
     if (keyword) where.title = { contains: keyword };
     const [records, total] = await Promise.all([
-      this.prisma.salesman_content.findMany({ where, orderBy: { id: "desc" }, skip, take: size }),
+      this.prisma.salesman_content.findMany({
+        where,
+        orderBy: { id: "desc" },
+        skip,
+        take: size,
+      }),
       this.prisma.salesman_content.count({ where }),
     ]);
     return { code: 0, message: "success", data: { records, total } };
@@ -38,7 +57,9 @@ export class AdminSalesmanContentCompatController {
   @ApiOperation({ summary: "公告详情（兼容）" })
   @Authorities("salesmanContentManage")
   async detail(@Query("id") id: number) {
-    const record = await this.prisma.salesman_content.findUnique({ where: { id: this.coerceNumber(id, 0) } });
+    const record = await this.prisma.salesman_content.findUnique({
+      where: { id: this.coerceNumber(id, 0) },
+    });
     return { code: 0, message: "success", data: record };
   }
 
@@ -73,12 +94,22 @@ export class AdminSalesmanContentCompatController {
     const data: any = {
       title: body.title ?? undefined,
       img: body.img ?? undefined,
-      start_time: body.startTime !== undefined ? this.coerceNumber(body.startTime, 0) : undefined,
-      end_time: body.endTime !== undefined ? this.coerceNumber(body.endTime, 0) : undefined,
+      start_time:
+        body.startTime !== undefined
+          ? this.coerceNumber(body.startTime, 0)
+          : undefined,
+      end_time:
+        body.endTime !== undefined
+          ? this.coerceNumber(body.endTime, 0)
+          : undefined,
       describe: body.describe ?? undefined,
-      is_top: body.isTop !== undefined ? this.coerceNumber(body.isTop, 0) : undefined,
+      is_top:
+        body.isTop !== undefined ? this.coerceNumber(body.isTop, 0) : undefined,
       content: body.content ?? undefined,
-      is_available: body.isAvailable !== undefined ? this.coerceNumber(body.isAvailable, 1) : undefined,
+      is_available:
+        body.isAvailable !== undefined
+          ? this.coerceNumber(body.isAvailable, 1)
+          : undefined,
       pics: body.pics ?? undefined,
     };
     await this.prisma.salesman_content.update({ where: { id }, data });
@@ -92,9 +123,21 @@ export class AdminSalesmanContentCompatController {
     const id = this.coerceNumber(body.id, 0);
     const field = String(body.field || "");
     const val = body.value ?? body.val;
-    const map: Record<string, string> = { title: "title", img: "img", startTime: "start_time", endTime: "end_time", describe: "describe", isTop: "is_top", content: "content", isAvailable: "is_available" };
+    const map: Record<string, string> = {
+      title: "title",
+      img: "img",
+      startTime: "start_time",
+      endTime: "end_time",
+      describe: "describe",
+      isTop: "is_top",
+      content: "content",
+      isAvailable: "is_available",
+    };
     const dbField = map[field] || field;
-    await this.prisma.salesman_content.update({ where: { id }, data: { [dbField]: val } });
+    await this.prisma.salesman_content.update({
+      where: { id },
+      data: { [dbField]: val },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -102,7 +145,9 @@ export class AdminSalesmanContentCompatController {
   @ApiOperation({ summary: "公告删除（兼容）" })
   @Authorities("salesmanContentManage")
   async del(@Body("id") id: number) {
-    await this.prisma.salesman_content.delete({ where: { id: this.coerceNumber(id, 0) } });
+    await this.prisma.salesman_content.delete({
+      where: { id: this.coerceNumber(id, 0) },
+    });
     return { code: 0, message: "success", data: true };
   }
 
@@ -110,11 +155,15 @@ export class AdminSalesmanContentCompatController {
   @ApiOperation({ summary: "公告批量（兼容）" })
   @Authorities("salesmanContentManage")
   async batch(@Body() body: any) {
-    const ids: number[] = (body.ids || []).map((x) => this.coerceNumber(x, 0)).filter(Boolean);
+    const ids: number[] = (body.ids || [])
+      .map((x) => this.coerceNumber(x, 0))
+      .filter(Boolean);
     const type: string = body.type || body.act || "";
     if (!ids.length) return { code: 1, message: "未选择项目", data: null };
     if (["del", "delete"].includes(type)) {
-      await this.prisma.salesman_content.deleteMany({ where: { id: { in: ids } } });
+      await this.prisma.salesman_content.deleteMany({
+        where: { id: { in: ids } },
+      });
       return { code: 0, message: "批量删除成功", data: true };
     }
     return { code: 1, message: "#type 错误", data: null };

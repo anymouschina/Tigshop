@@ -1,5 +1,13 @@
 // @ts-nocheck
-import { Controller, Get, Post, Body, Query, UseGuards, Req } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -29,10 +37,14 @@ export class AdminApiProductController {
   @Authorities("productManage")
   async createProduct(@Body() body: any, @Req() req: any) {
     // 店铺隔离：绑定当前管理员店铺
-    const shopId = Number((await this.panel.getUserShopId(req.user?.userId)) || 0) || 0;
+    const shopId =
+      Number((await this.panel.getUserShopId(req.user?.userId)) || 0) || 0;
 
     // 简易 SN 生成（若未提供）
-    const genSn = () => `SN${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`;
+    const genSn = () =>
+      `SN${Date.now()}${Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0")}`;
 
     // 组装商品主表数据（尽量容错，兼容驼峰/下划线）
     const pickNum = (v: any, d = 0) => {
@@ -40,17 +52,24 @@ export class AdminApiProductController {
       const n = Number(v);
       return Number.isFinite(n) ? n : d;
     };
-    const pickStr = (v: any, d = "") => (v === null || v === undefined ? d : String(v));
+    const pickStr = (v: any, d = "") =>
+      v === null || v === undefined ? d : String(v);
 
-    const firstImg = Array.isArray(body.imgList) && body.imgList.length ? body.imgList[0] : null;
-    const productDescArr: Array<{ html?: string; pic?: string; type?: string }> = Array.isArray(body.productDescArr)
-      ? body.productDescArr
-      : [];
+    const firstImg =
+      Array.isArray(body.imgList) && body.imgList.length
+        ? body.imgList[0]
+        : null;
+    const productDescArr: Array<{
+      html?: string;
+      pic?: string;
+      type?: string;
+    }> = Array.isArray(body.productDescArr) ? body.productDescArr : [];
     // 将 productDescArr 合成为 HTML，若条目自带 html 则直接拼接，否则按 pic 渲染 img 标签
     const product_desc = productDescArr
       .map((it) => {
         if (it && typeof it.html === "string" && it.html) return it.html;
-        if (it && typeof it.pic === "string" && it.pic) return `<div class="desc-pic-item"><img src="${it.pic}"></div>`;
+        if (it && typeof it.pic === "string" && it.pic)
+          return `<div class="desc-pic-item"><img src="${it.pic}"></div>`;
         return "";
       })
       .filter(Boolean)
@@ -59,12 +78,16 @@ export class AdminApiProductController {
     // 电子卡券组：取第一个启用项作为绑定 group
     let card_group_id = 0;
     if (Array.isArray(body.eCardList) && body.eCardList.length) {
-      const hit = body.eCardList.find((x: any) => (x?.isUse ?? x?.is_use ?? false) === true);
+      const hit = body.eCardList.find(
+        (x: any) => (x?.isUse ?? x?.is_use ?? false) === true,
+      );
       card_group_id = pickNum(hit?.groupId ?? hit?.group_id ?? 0, 0);
     }
 
-  const product_type_bool = Number(body.productType ?? body.product_type ?? 0) ? true : false;
-  const data: any = {
+    const product_type_bool = Number(body.productType ?? body.product_type ?? 0)
+      ? true
+      : false;
+    const data: any = {
       product_name: pickStr(body.productName ?? body.product_name, ""),
       product_sn: pickStr(body.productSn ?? body.product_sn, "") || genSn(),
       product_tsn: pickStr(body.productTsn ?? body.product_tsn ?? "0", "0"),
@@ -72,21 +95,34 @@ export class AdminApiProductController {
       brand_id: pickNum(body.brandId ?? body.brand_id ?? 0, 0),
       product_price: pickNum(body.productPrice ?? body.product_price ?? 0, 0),
       market_price: pickNum(body.marketPrice ?? body.market_price ?? 0, 0),
-      product_status: pickNum(body.productStatus ?? body.product_status ?? 1, 1),
-  product_type: product_type_bool,
-      shipping_tpl_id: pickNum(body.shippingTplId ?? body.shipping_tpl_id ?? 0, 0),
+      product_status: pickNum(
+        body.productStatus ?? body.product_status ?? 1,
+        1,
+      ),
+      product_type: product_type_bool,
+      shipping_tpl_id: pickNum(
+        body.shippingTplId ?? body.shipping_tpl_id ?? 0,
+        0,
+      ),
       free_shipping: pickNum(body.freeShipping ?? body.free_shipping ?? 0, 0),
       keywords: pickStr(body.keywords ?? body.keyword ?? ""),
       product_brief: pickStr(body.productBrief ?? body.product_brief ?? ""),
       product_desc,
-      product_weight: pickNum(body.productWeight ?? body.product_weight ?? 0, 0),
+      product_weight: pickNum(
+        body.productWeight ?? body.product_weight ?? 0,
+        0,
+      ),
       product_stock: pickNum(body.productStock ?? body.product_stock ?? 0, 0),
-      virtual_sales: (() => { // 初始虚拟销量（PHP 接口 virtual_sales/d）
+      virtual_sales: (() => {
+        // 初始虚拟销量（PHP 接口 virtual_sales/d）
         const v = Number(body.virtualSales ?? body.virtual_sales ?? 0);
         if (!Number.isFinite(v) || v < 0) return 0;
         return Math.floor(v);
       })(),
-      shop_category_id: pickNum(body.shopCategoryId ?? body.shop_category_id ?? 0, 0),
+      shop_category_id: pickNum(
+        body.shopCategoryId ?? body.shop_category_id ?? 0,
+        0,
+      ),
       check_status: pickNum(body.checkStatus ?? body.check_status ?? 1, 1),
       check_reason: pickStr(body.checkReason ?? body.check_reason ?? ""),
       remark: pickStr(body.remark ?? ""),
@@ -94,19 +130,43 @@ export class AdminApiProductController {
       rank_integral: pickNum(body.rankIntegral ?? body.rank_integral ?? -1, -1),
       integral: pickNum(body.integral ?? 0, 0),
       no_shipping: pickNum(body.noShipping ?? body.no_shipping ?? 0, 0),
-      fixed_shipping_type: pickNum(body.fixedShippingType ?? body.fixed_shipping_type ?? 2, 2),
-      fixed_shipping_fee: pickNum(body.fixedShippingFee ?? body.fixed_shipping_fee ?? 0, 0),
+      fixed_shipping_type: pickNum(
+        body.fixedShippingType ?? body.fixed_shipping_type ?? 2,
+        2,
+      ),
+      fixed_shipping_fee: pickNum(
+        body.fixedShippingFee ?? body.fixed_shipping_fee ?? 0,
+        0,
+      ),
       card_group_id,
-      pic_url: pickStr(firstImg?.picUrl ?? firstImg?.pic_url ?? body.picUrl ?? body.pic_url ?? ""),
-      pic_thumb: pickStr(firstImg?.picThumb ?? firstImg?.pic_thumb ?? body.picThumb ?? body.pic_thumb ?? ""),
-      pic_original: pickStr(firstImg?.picOriginal ?? firstImg?.pic_original ?? body.picOriginal ?? body.pic_original ?? ""),
+      pic_url: pickStr(
+        firstImg?.picUrl ??
+          firstImg?.pic_url ??
+          body.picUrl ??
+          body.pic_url ??
+          "",
+      ),
+      pic_thumb: pickStr(
+        firstImg?.picThumb ??
+          firstImg?.pic_thumb ??
+          body.picThumb ??
+          body.pic_thumb ??
+          "",
+      ),
+      pic_original: pickStr(
+        firstImg?.picOriginal ??
+          firstImg?.pic_original ??
+          body.picOriginal ??
+          body.pic_original ??
+          "",
+      ),
       shop_id: shopId,
       add_time: Math.floor(Date.now() / 1000),
       last_update: Math.floor(Date.now() / 1000),
     };
 
-  // === 业务校验 ===
-  // 仅校验：名称必填、售价 > 0、货号唯一（按店铺）。原价 market_price 不作与售价关系校验。
+    // === 业务校验 ===
+    // 仅校验：名称必填、售价 > 0、货号唯一（按店铺）。原价 market_price 不作与售价关系校验。
     if (!data.product_name) {
       return { code: 400, message: "商品名称不能为空", data: null };
     }
@@ -116,7 +176,10 @@ export class AdminApiProductController {
     // 货号唯一（按店铺维度）；若为空已在上方生成随机 SN
     if (data.product_sn) {
       const dup = await this.prisma.product.findFirst({
-        where: { product_sn: data.product_sn, ...(shopId > 0 ? { shop_id: shopId } : {}) },
+        where: {
+          product_sn: data.product_sn,
+          ...(shopId > 0 ? { shop_id: shopId } : {}),
+        },
         select: { product_id: true },
       });
       if (dup) {
@@ -125,8 +188,13 @@ export class AdminApiProductController {
     }
 
     // 服务说明 ID 列表保存为逗号分隔字符串（与现有 detail 取法兼容）
-    if (Array.isArray(body.productServiceIds) && body.productServiceIds.length) {
-      data.product_service_ids = body.productServiceIds.map((x: any) => String(x)).join(",");
+    if (
+      Array.isArray(body.productServiceIds) &&
+      body.productServiceIds.length
+    ) {
+      data.product_service_ids = body.productServiceIds
+        .map((x: any) => String(x))
+        .join(",");
     }
 
     // clamp 库存，避免超出 SMALLINT UNSIGNED (0~65535)
@@ -145,9 +213,15 @@ export class AdminApiProductController {
           data: {
             product_id: created.product_id,
             pic_url: picUrl,
-            pic_thumb: pickStr(img?.picThumb ?? img?.thumb ?? img?.pic_thumb ?? picUrl),
-            pic_large: pickStr(img?.picLarge ?? img?.large ?? img?.pic_large ?? picUrl),
-            pic_original: pickStr(img?.picOriginal ?? img?.original ?? img?.pic_original ?? picUrl),
+            pic_thumb: pickStr(
+              img?.picThumb ?? img?.thumb ?? img?.pic_thumb ?? picUrl,
+            ),
+            pic_large: pickStr(
+              img?.picLarge ?? img?.large ?? img?.pic_large ?? picUrl,
+            ),
+            pic_original: pickStr(
+              img?.picOriginal ?? img?.original ?? img?.pic_original ?? picUrl,
+            ),
             sort_order: sort++,
           },
         });
@@ -162,9 +236,12 @@ export class AdminApiProductController {
         const n = Number(v);
         return Number.isFinite(n) ? n : d;
       };
-      if (Array.isArray(body.attrList.normal)) groups.push({ typeGuess: 0, list: body.attrList.normal });
-      if (Array.isArray(body.attrList.spe)) groups.push({ typeGuess: 1, list: body.attrList.spe });
-      if (Array.isArray(body.attrList.extra)) groups.push({ typeGuess: 2, list: body.attrList.extra });
+      if (Array.isArray(body.attrList.normal))
+        groups.push({ typeGuess: 0, list: body.attrList.normal });
+      if (Array.isArray(body.attrList.spe))
+        groups.push({ typeGuess: 1, list: body.attrList.spe });
+      if (Array.isArray(body.attrList.extra))
+        groups.push({ typeGuess: 2, list: body.attrList.extra });
       const rows: any[] = [];
       for (const g of groups) {
         for (const grp of g.list) {
@@ -200,11 +277,16 @@ export class AdminApiProductController {
       let totalStock = 0;
       for (const item of body.productList) {
         const skuValue = String(item?.skuValue ?? item?.sku_value ?? "");
-        const skuData = item?.skuData ?? (Array.isArray(item?.attrs) ? JSON.stringify(item.attrs) : undefined);
+        const skuData =
+          item?.skuData ??
+          (Array.isArray(item?.attrs) ? JSON.stringify(item.attrs) : undefined);
         const skuSn = item?.skuSn ?? item?.sku_sn ?? "";
         const skuTsn = item?.skuTsn ?? item?.sku_tsn ?? "";
         const skuStock = toNumber(item?.skuStock ?? item?.sku_stock ?? 0, 0);
-        const skuPrice = toNumber(item?.skuPrice ?? item?.sku_price ?? data.product_price ?? 0, 0);
+        const skuPrice = toNumber(
+          item?.skuPrice ?? item?.sku_price ?? data.product_price ?? 0,
+          0,
+        );
         totalStock += skuStock;
         await this.prisma.product_sku.create({
           data: {
@@ -215,18 +297,26 @@ export class AdminApiProductController {
             sku_tsn: String(skuTsn || ""),
             sku_stock: skuStock,
             sku_price: skuPrice,
-            vendor_product_sku_id: item?.vendorProductSkuId ?? item?.vendor_product_sku_id ?? null,
+            vendor_product_sku_id:
+              item?.vendorProductSkuId ?? item?.vendor_product_sku_id ?? null,
           },
         });
       }
       // 汇总库存覆盖主表库存
-  // 总库存 clamp 再写回
-  if (totalStock < 0) totalStock = 0;
-  if (totalStock > 65535) totalStock = 65535;
-  await this.prisma.product.updateMany({ where: { product_id: created.product_id }, data: { product_stock: totalStock } });
+      // 总库存 clamp 再写回
+      if (totalStock < 0) totalStock = 0;
+      if (totalStock > 65535) totalStock = 65535;
+      await this.prisma.product.updateMany({
+        where: { product_id: created.product_id },
+        data: { product_stock: totalStock },
+      });
     }
 
-    return { code: 0, message: "success", data: { productId: created.product_id } };
+    return {
+      code: 0,
+      message: "success",
+      data: { productId: created.product_id },
+    };
   }
 
   /**
@@ -241,10 +331,16 @@ export class AdminApiProductController {
     if (!Number.isFinite(productId) || productId <= 0) {
       return { code: 400, message: "#id 错误", data: null };
     }
-    const shopId = Number((await this.panel.getUserShopId(req.user?.userId)) || 0) || 0;
+    const shopId =
+      Number((await this.panel.getUserShopId(req.user?.userId)) || 0) || 0;
 
     // 店铺隔离：校验归属
-    const existing = await this.prisma.product.findFirst({ where: { product_id: productId, ...(shopId > 0 ? { shop_id: shopId } : {}) } });
+    const existing = await this.prisma.product.findFirst({
+      where: {
+        product_id: productId,
+        ...(shopId > 0 ? { shop_id: shopId } : {}),
+      },
+    });
     if (!existing) return { code: 404, message: "商品不存在", data: null };
 
     const pickNum = (v: any) => {
@@ -252,16 +348,23 @@ export class AdminApiProductController {
       const n = Number(v);
       return Number.isFinite(n) ? n : undefined;
     };
-    const pickStr = (v: any) => (v === null || v === undefined ? undefined : String(v));
+    const pickStr = (v: any) =>
+      v === null || v === undefined ? undefined : String(v);
 
-    const firstImg = Array.isArray(body.imgList) && body.imgList.length ? body.imgList[0] : null;
-    const productDescArr: Array<{ html?: string; pic?: string; type?: string }> = Array.isArray(body.productDescArr)
-      ? body.productDescArr
-      : [];
+    const firstImg =
+      Array.isArray(body.imgList) && body.imgList.length
+        ? body.imgList[0]
+        : null;
+    const productDescArr: Array<{
+      html?: string;
+      pic?: string;
+      type?: string;
+    }> = Array.isArray(body.productDescArr) ? body.productDescArr : [];
     const product_desc = productDescArr
       .map((it) => {
         if (it && typeof it.html === "string" && it.html) return it.html;
-        if (it && typeof it.pic === "string" && it.pic) return `<div class=\"desc-pic-item\"><img src=\"${it.pic}\"></div>`;
+        if (it && typeof it.pic === "string" && it.pic)
+          return `<div class=\"desc-pic-item\"><img src=\"${it.pic}\"></div>`;
         return "";
       })
       .filter(Boolean)
@@ -270,7 +373,9 @@ export class AdminApiProductController {
     // 电子卡券组：取第一个启用项作为绑定 group（若传入）
     let card_group_id_upd: number | undefined = undefined;
     if (Array.isArray(body.eCardList)) {
-      const hit = body.eCardList.find((x: any) => (x?.isUse ?? x?.is_use ?? false) === true);
+      const hit = body.eCardList.find(
+        (x: any) => (x?.isUse ?? x?.is_use ?? false) === true,
+      );
       const n = Number(hit?.groupId ?? hit?.group_id);
       if (Number.isFinite(n)) card_group_id_upd = n;
     }
@@ -283,8 +388,13 @@ export class AdminApiProductController {
       brand_id: pickNum(body.brandId ?? body.brand_id),
       product_price: pickNum(body.productPrice ?? body.product_price),
       market_price: pickNum(body.marketPrice ?? body.market_price),
-  product_status: pickNum(body.productStatus ?? body.product_status),
-  product_type: (body.productType ?? body.product_type) !== undefined ? (Number(body.productType ?? body.product_type) ? true : false) : undefined,
+      product_status: pickNum(body.productStatus ?? body.product_status),
+      product_type:
+        (body.productType ?? body.product_type) !== undefined
+          ? Number(body.productType ?? body.product_type)
+            ? true
+            : false
+          : undefined,
       shipping_tpl_id: pickNum(body.shippingTplId ?? body.shipping_tpl_id),
       free_shipping: pickNum(body.freeShipping ?? body.free_shipping),
       keywords: pickStr(body.keywords ?? body.keyword),
@@ -292,8 +402,10 @@ export class AdminApiProductController {
       product_desc: product_desc || undefined,
       product_weight: pickNum(body.productWeight ?? body.product_weight),
       product_stock: pickNum(body.productStock ?? body.product_stock),
-      virtual_sales: (() => { // 更新虚拟销量（仅平台端允许修改，店铺端忽略）
-        if (body.virtualSales === undefined && body.virtual_sales === undefined) return undefined;
+      virtual_sales: (() => {
+        // 更新虚拟销量（仅平台端允许修改，店铺端忽略）
+        if (body.virtualSales === undefined && body.virtual_sales === undefined)
+          return undefined;
         const v = Number(body.virtualSales ?? body.virtual_sales);
         if (!Number.isFinite(v) || v < 0) return 0;
         return Math.floor(v);
@@ -306,13 +418,17 @@ export class AdminApiProductController {
       rank_integral: pickNum(body.rankIntegral ?? body.rank_integral),
       integral: pickNum(body.integral),
       no_shipping: pickNum(body.noShipping ?? body.no_shipping),
-      fixed_shipping_type: pickNum(body.fixedShippingType ?? body.fixed_shipping_type),
-      fixed_shipping_fee: pickNum(body.fixedShippingFee ?? body.fixed_shipping_fee),
+      fixed_shipping_type: pickNum(
+        body.fixedShippingType ?? body.fixed_shipping_type,
+      ),
+      fixed_shipping_fee: pickNum(
+        body.fixedShippingFee ?? body.fixed_shipping_fee,
+      ),
       last_update: Math.floor(Date.now() / 1000),
     };
 
     // === 更新校验 ===
-  // 若提交了价格则校验（仅限制售价>0，不校验 market_price 与售价关系）
+    // 若提交了价格则校验（仅限制售价>0，不校验 market_price 与售价关系）
     if (data.product_price !== undefined) {
       if (!Number.isFinite(data.product_price) || data.product_price <= 0) {
         return { code: 400, message: "商品价格必须大于0", data: null };
@@ -337,7 +453,8 @@ export class AdminApiProductController {
     }
     // clamp 库存（若提交）
     if (data.product_stock !== undefined) {
-      if (!Number.isFinite(data.product_stock) || data.product_stock < 0) data.product_stock = 0;
+      if (!Number.isFinite(data.product_stock) || data.product_stock < 0)
+        data.product_stock = 0;
       if (data.product_stock > 65535) data.product_stock = 65535;
     }
 
@@ -346,35 +463,61 @@ export class AdminApiProductController {
       delete data.virtual_sales;
     }
 
-    if (card_group_id_upd !== undefined) data.card_group_id = card_group_id_upd || 0;
+    if (card_group_id_upd !== undefined)
+      data.card_group_id = card_group_id_upd || 0;
 
     // 主图字段
-    const pic_url = pickStr(firstImg?.picUrl ?? firstImg?.pic_url ?? body.picUrl ?? body.pic_url);
-    const pic_thumb = pickStr(firstImg?.picThumb ?? firstImg?.pic_thumb ?? body.picThumb ?? body.pic_thumb);
-    const pic_original = pickStr(firstImg?.picOriginal ?? firstImg?.pic_original ?? body.picOriginal ?? body.pic_original);
+    const pic_url = pickStr(
+      firstImg?.picUrl ?? firstImg?.pic_url ?? body.picUrl ?? body.pic_url,
+    );
+    const pic_thumb = pickStr(
+      firstImg?.picThumb ??
+        firstImg?.pic_thumb ??
+        body.picThumb ??
+        body.pic_thumb,
+    );
+    const pic_original = pickStr(
+      firstImg?.picOriginal ??
+        firstImg?.pic_original ??
+        body.picOriginal ??
+        body.pic_original,
+    );
     if (pic_url !== undefined) data.pic_url = pic_url;
     if (pic_thumb !== undefined) data.pic_thumb = pic_thumb;
     if (pic_original !== undefined) data.pic_original = pic_original;
 
     // 服务 ID 列表
     if (Array.isArray(body.productServiceIds)) {
-      data.product_service_ids = body.productServiceIds.map((x: any) => String(x)).join(",");
+      data.product_service_ids = body.productServiceIds
+        .map((x: any) => String(x))
+        .join(",");
     }
 
-    await this.prisma.product.updateMany({ where: { product_id: productId, ...(shopId > 0 ? { shop_id: shopId } : {}) }, data });
+    await this.prisma.product.updateMany({
+      where: {
+        product_id: productId,
+        ...(shopId > 0 ? { shop_id: shopId } : {}),
+      },
+      data,
+    });
 
     // 规格/属性同步：若传入 attrList 则重建 product_attributes
     if (body?.attrList && typeof body.attrList === "object") {
-      await this.prisma.product_attributes.deleteMany({ where: { product_id: productId } });
+      await this.prisma.product_attributes.deleteMany({
+        where: { product_id: productId },
+      });
       const groups: Array<{ typeGuess: number; list: any[] }> = [];
       const toNum = (v: any, d = 0) => {
         if (v === null || v === undefined || v === "") return d;
         const n = Number(v);
         return Number.isFinite(n) ? n : d;
       };
-      if (Array.isArray(body.attrList.normal)) groups.push({ typeGuess: 0, list: body.attrList.normal });
-      if (Array.isArray(body.attrList.spe)) groups.push({ typeGuess: 1, list: body.attrList.spe });
-      if (Array.isArray(body.attrList.extra)) groups.push({ typeGuess: 2, list: body.attrList.extra });
+      if (Array.isArray(body.attrList.normal))
+        groups.push({ typeGuess: 0, list: body.attrList.normal });
+      if (Array.isArray(body.attrList.spe))
+        groups.push({ typeGuess: 1, list: body.attrList.spe });
+      if (Array.isArray(body.attrList.extra))
+        groups.push({ typeGuess: 2, list: body.attrList.extra });
       const rows: any[] = [];
       for (const g of groups) {
         for (const grp of g.list) {
@@ -395,7 +538,8 @@ export class AdminApiProductController {
           }
         }
       }
-      if (rows.length) await this.prisma.product_attributes.createMany({ data: rows });
+      if (rows.length)
+        await this.prisma.product_attributes.createMany({ data: rows });
     }
 
     // SKU 同步：根据 productList 增删改，并回写总库存
@@ -406,7 +550,8 @@ export class AdminApiProductController {
         select: { sku_id: true, sku_value: true },
       });
       const idByValue = new Map<string, number>();
-      for (const r of exists) idByValue.set(String(r.sku_value || ""), r.sku_id);
+      for (const r of exists)
+        idByValue.set(String(r.sku_value || ""), r.sku_id);
       const keepIds: number[] = [];
 
       const toNumber = (v: any, d = 0) => {
@@ -419,15 +564,18 @@ export class AdminApiProductController {
         const rawSkuId = item?.skuId ?? item?.sku_id;
         const skuId = Number(rawSkuId);
         const skuValue = String(item?.skuValue ?? item?.sku_value ?? "");
-        const skuData = item?.skuData ?? (Array.isArray(item?.attrs) ? JSON.stringify(item.attrs) : undefined);
+        const skuData =
+          item?.skuData ??
+          (Array.isArray(item?.attrs) ? JSON.stringify(item.attrs) : undefined);
         const skuSn = item?.skuSn ?? item?.sku_sn ?? "";
         const skuTsn = item?.skuTsn ?? item?.sku_tsn ?? "";
         const skuStock = toNumber(item?.skuStock ?? item?.sku_stock ?? 0, 0);
-  const skuPrice = toNumber(item?.skuPrice ?? item?.sku_price ?? 0, 0);
+        const skuPrice = toNumber(item?.skuPrice ?? item?.sku_price ?? 0, 0);
 
         let targetId: number | null = null;
         if (Number.isFinite(skuId) && skuId > 0) targetId = skuId;
-        else if (skuValue && idByValue.has(skuValue)) targetId = idByValue.get(skuValue)!;
+        else if (skuValue && idByValue.has(skuValue))
+          targetId = idByValue.get(skuValue)!;
 
         if (targetId) {
           await this.prisma.product_sku.update({
@@ -439,7 +587,8 @@ export class AdminApiProductController {
               sku_tsn: String(skuTsn || ""),
               sku_stock: skuStock,
               sku_price: skuPrice,
-              vendor_product_sku_id: item?.vendorProductSkuId ?? item?.vendor_product_sku_id ?? null,
+              vendor_product_sku_id:
+                item?.vendorProductSkuId ?? item?.vendor_product_sku_id ?? null,
             },
           });
           keepIds.push(targetId);
@@ -453,7 +602,8 @@ export class AdminApiProductController {
               sku_tsn: String(skuTsn || ""),
               sku_stock: skuStock,
               sku_price: skuPrice,
-              vendor_product_sku_id: item?.vendorProductSkuId ?? item?.vendor_product_sku_id ?? null,
+              vendor_product_sku_id:
+                item?.vendorProductSkuId ?? item?.vendor_product_sku_id ?? null,
             },
             select: { sku_id: true },
           });
@@ -463,23 +613,35 @@ export class AdminApiProductController {
 
       // 删除未保留的 SKU
       if (exists.length) {
-        const toDelete = exists.map((r) => r.sku_id).filter((id) => !keepIds.includes(id));
+        const toDelete = exists
+          .map((r) => r.sku_id)
+          .filter((id) => !keepIds.includes(id));
         if (toDelete.length) {
-          await this.prisma.product_sku.deleteMany({ where: { product_id: productId, sku_id: { in: toDelete } } });
+          await this.prisma.product_sku.deleteMany({
+            where: { product_id: productId, sku_id: { in: toDelete } },
+          });
         }
       }
 
       // 汇总库存并回写商品总库存
-      const agg = await this.prisma.product_sku.aggregate({ _sum: { sku_stock: true }, where: { product_id: productId } });
-  let totalStock = Number(agg._sum.sku_stock ?? 0) || 0;
-  if (totalStock < 0) totalStock = 0;
-  if (totalStock > 65535) totalStock = 65535; // SMALLINT UNSIGNED 上限
-  await this.prisma.product.updateMany({ where: { product_id: productId }, data: { product_stock: totalStock } });
+      const agg = await this.prisma.product_sku.aggregate({
+        _sum: { sku_stock: true },
+        where: { product_id: productId },
+      });
+      let totalStock = Number(agg._sum.sku_stock ?? 0) || 0;
+      if (totalStock < 0) totalStock = 0;
+      if (totalStock > 65535) totalStock = 65535; // SMALLINT UNSIGNED 上限
+      await this.prisma.product.updateMany({
+        where: { product_id: productId },
+        data: { product_stock: totalStock },
+      });
     }
 
     // 图集：若传入则简单重建
     if (Array.isArray(body.imgList)) {
-      await this.prisma.product_gallery.deleteMany({ where: { product_id: productId } });
+      await this.prisma.product_gallery.deleteMany({
+        where: { product_id: productId },
+      });
       let sort = 1;
       for (const img of body.imgList) {
         const url = img?.picUrl ?? img?.url ?? img?.pic_url;
@@ -488,9 +650,15 @@ export class AdminApiProductController {
           data: {
             product_id: productId,
             pic_url: String(url),
-            pic_thumb: String(img?.picThumb ?? img?.thumb ?? img?.pic_thumb ?? url),
-            pic_large: String(img?.picLarge ?? img?.large ?? img?.pic_large ?? url),
-            pic_original: String(img?.picOriginal ?? img?.original ?? img?.pic_original ?? url),
+            pic_thumb: String(
+              img?.picThumb ?? img?.thumb ?? img?.pic_thumb ?? url,
+            ),
+            pic_large: String(
+              img?.picLarge ?? img?.large ?? img?.pic_large ?? url,
+            ),
+            pic_original: String(
+              img?.picOriginal ?? img?.original ?? img?.pic_original ?? url,
+            ),
             sort_order: sort++,
           },
         });
@@ -506,19 +674,26 @@ export class AdminApiProductController {
   async getList(@Query() query: any, @Req() req: any) {
     // 如果前端未显式传递 shopId 且 searchShop != 1，则按当前管理员已选择的店铺隔离
     try {
-      const searchShopFlag = Number(query.searchShop ?? query.search_shop ?? 0) || 0;
+      const searchShopFlag =
+        Number(query.searchShop ?? query.search_shop ?? 0) || 0;
       const explicitShopId = query.shopId ?? query.shop_id;
-      if ((explicitShopId === undefined || explicitShopId === null || explicitShopId === '' ) && searchShopFlag !== 1) {
-        const currentShopId = Number((await this.panel.getUserShopId(req.user?.userId)) || 0) || 0;
+      if (
+        (explicitShopId === undefined ||
+          explicitShopId === null ||
+          explicitShopId === "") &&
+        searchShopFlag !== 1
+      ) {
+        const currentShopId =
+          Number((await this.panel.getUserShopId(req.user?.userId)) || 0) || 0;
         if (currentShopId > 0) {
           // 写入统一的 shopId 字段（service 内兼容读取 shopId）
-            query.shopId = currentShopId;
+          query.shopId = currentShopId;
         }
       }
     } catch (e) {
       // 失败不影响主流程，只记录到控制台（可后续换 logger）
       // eslint-disable-next-line no-console
-      console.warn('[product.list] attach shopId failed:', e?.message);
+      console.warn("[product.list] attach shopId failed:", e?.message);
     }
     const result = await this.productService.findAll(query);
 
@@ -526,17 +701,25 @@ export class AdminApiProductController {
     const toMoney = toMoneyString;
 
     const baseRecords = Array.isArray(result.records) ? result.records : [];
-    const productIds: number[] = baseRecords.map((r: any) => Number(r.productId || r.product_id)).filter((n) => Number.isFinite(n));
+    const productIds: number[] = baseRecords
+      .map((r: any) => Number(r.productId || r.product_id))
+      .filter((n) => Number.isFinite(n));
 
     // 批量获取 SKU 列表并按商品聚合
     const skuRows = productIds.length
-      ? await this.prisma.product_sku.findMany({ where: { product_id: { in: productIds } }, take: 5000 })
+      ? await this.prisma.product_sku.findMany({
+          where: { product_id: { in: productIds } },
+          take: 5000,
+        })
       : [];
     const skuByPid = new Map<number, any[]>();
     const parseSkuData = (raw: any, sku_value: string): any[] => {
       if (!raw) {
         if (!sku_value) return [];
-        const pairs = String(sku_value).split(/[|、,，]/).map((x) => x.trim()).filter(Boolean);
+        const pairs = String(sku_value)
+          .split(/[|、,，]/)
+          .map((x) => x.trim())
+          .filter(Boolean);
         return pairs
           .map((p) => {
             const [name, value] = p.split(":").map((x) => x?.trim());
@@ -564,7 +747,7 @@ export class AdminApiProductController {
         skuSn: (row as any).sku_sn || "",
         skuStock: Number((row as any).sku_stock ?? 0),
         skuTsn: (row as any).sku_tsn || "",
-  skuPrice: toMoney((row as any).sku_price ?? 0),
+        skuPrice: toMoney((row as any).sku_price ?? 0),
         marketPrice: "0.00",
         costPrice: "0.00",
         vendorProductSkuId: (row as any).vendor_product_sku_id ?? null,
@@ -606,13 +789,29 @@ export class AdminApiProductController {
     for (const p of productRows) productMap.set(p.product_id, p);
 
     // 批量获取店铺信息
-    const shopIds = Array.from(new Set(baseRecords.map((r: any) => Number(r.shopId ?? r.shop_id)).filter((n) => Number.isFinite(n) && n > 0)));
+    const shopIds = Array.from(
+      new Set(
+        baseRecords
+          .map((r: any) => Number(r.shopId ?? r.shop_id))
+          .filter((n) => Number.isFinite(n) && n > 0),
+      ),
+    );
     const shopRows = shopIds.length
-      ? await this.prisma.shop.findMany({ where: { shop_id: { in: shopIds } }, select: { shop_id: true, shop_title: true } })
+      ? await this.prisma.shop.findMany({
+          where: { shop_id: { in: shopIds } },
+          select: { shop_id: true, shop_title: true },
+        })
       : [];
-    const shopMap = new Map<number, { statusText: string; shopId: number; shopTitle: string }>();
+    const shopMap = new Map<
+      number,
+      { statusText: string; shopId: number; shopTitle: string }
+    >();
     for (const s of shopRows as any[]) {
-      shopMap.set(s.shop_id, { statusText: "", shopId: s.shop_id, shopTitle: s.shop_title || "" });
+      shopMap.set(s.shop_id, {
+        statusText: "",
+        shopId: s.shop_id,
+        shopTitle: s.shop_title || "",
+      });
     }
 
     // 组装最终记录
@@ -621,42 +820,67 @@ export class AdminApiProductController {
       const p = productMap.get(productId);
       const picUrlRaw: string = p?.pic_url ?? rec.picUrl ?? rec.pic_url ?? "";
       const picUrl = picUrlRaw;
-      const thumbRaw = p?.pic_thumb ?? rec.picThumb ?? rec.pic_thumb ?? (picUrlRaw ? `${picUrlRaw}?x-oss-process=image/resize,m_pad,h_200,h_200` : "");
+      const thumbRaw =
+        p?.pic_thumb ??
+        rec.picThumb ??
+        rec.pic_thumb ??
+        (picUrlRaw
+          ? `${picUrlRaw}?x-oss-process=image/resize,m_pad,h_200,h_200`
+          : "");
       const thumb = thumbRaw;
       const shopId: number = Number(rec.shopId ?? rec.shop_id ?? 0) || 0;
       return {
         categoryId: rec.categoryId ?? rec.category_id ?? p?.category_id ?? 0,
         brandId: rec.brandId ?? rec.brand_id ?? p?.brand_id ?? 0,
         productTsn: rec.productTsn ?? rec.product_tsn ?? p?.product_tsn ?? null,
-  marketPrice: toMoney(p?.market_price ?? rec.marketPrice ?? rec.market_price ?? 0),
+        marketPrice: toMoney(
+          p?.market_price ?? rec.marketPrice ?? rec.market_price ?? 0,
+        ),
         virtualSales: rec.virtualSales ?? rec.virtual_sales ?? 0,
-        shippingTplId: p?.shipping_tpl_id ?? rec.shippingTplId ?? rec.shipping_tpl_id ?? 0,
-        freeShipping: p?.free_shipping ?? rec.freeShipping ?? rec.free_shipping ?? 0,
+        shippingTplId:
+          p?.shipping_tpl_id ?? rec.shippingTplId ?? rec.shipping_tpl_id ?? 0,
+        freeShipping:
+          p?.free_shipping ?? rec.freeShipping ?? rec.free_shipping ?? 0,
         productId,
         picUrl,
         picThumb: thumb,
-        productName: rec.productName ?? rec.product_name ?? p?.product_name ?? "",
-        checkStatus: rec.checkStatus ?? rec.check_status ?? p?.check_status ?? 1,
-        checkReason: rec.checkReason ?? rec.check_reason ?? p?.check_reason ?? "",
+        productName:
+          rec.productName ?? rec.product_name ?? p?.product_name ?? "",
+        checkStatus:
+          rec.checkStatus ?? rec.check_status ?? p?.check_status ?? 1,
+        checkReason:
+          rec.checkReason ?? rec.check_reason ?? p?.check_reason ?? "",
         shopId,
-        suppliersId: rec.suppliersId ?? rec.suppliers_id ?? p?.suppliers_id ?? null,
-        productType: (rec.productType ?? rec.product_type ?? p?.product_type) ? 1 : 0,
+        suppliersId:
+          rec.suppliersId ?? rec.suppliers_id ?? p?.suppliers_id ?? null,
+        productType:
+          (rec.productType ?? rec.product_type ?? p?.product_type) ? 1 : 0,
         productSn: rec.productSn ?? rec.product_sn ?? p?.product_sn ?? "",
-  productPrice: toMoney(p?.product_price ?? rec.productPrice ?? rec.product_price ?? 0),
-        productStatus: rec.productStatus ?? rec.product_status ?? p?.product_status ?? 1,
+        productPrice: toMoney(
+          p?.product_price ?? rec.productPrice ?? rec.product_price ?? 0,
+        ),
+        productStatus:
+          rec.productStatus ?? rec.product_status ?? p?.product_status ?? 1,
         isBest: rec.isBest ?? rec.is_best ?? p?.is_best ?? 0,
         isNew: rec.isNew ?? rec.is_new ?? p?.is_new ?? 0,
         isHot: rec.isHot ?? rec.is_hot ?? p?.is_hot ?? 0,
-        productStock: rec.productStock ?? rec.product_stock ?? p?.product_stock ?? 0,
+        productStock:
+          rec.productStock ?? rec.product_stock ?? p?.product_stock ?? 0,
         sortOrder: rec.sortOrder ?? rec.sort_order ?? p?.sort_order ?? 100,
-  price: toMoney(p?.product_price ?? rec.productPrice ?? rec.product_price ?? 0),
+        price: toMoney(
+          p?.product_price ?? rec.productPrice ?? rec.product_price ?? 0,
+        ),
         isSeckill: 0,
         seckillEndTime: "",
         productSku: skuByPid.get(productId) || [],
-        shop: shopId > 0 ? shopMap.get(shopId) ?? null : null,
+        shop: shopId > 0 ? (shopMap.get(shopId) ?? null) : null,
       };
     });
-    return { code: 0, message: "success", data: { records, total: result.total || 0 } };
+    return {
+      code: 0,
+      message: "success",
+      data: { records, total: result.total || 0 },
+    };
   }
 
   // 待审核商品数量（adminapi）- 映射前端 product/product/getWaitingCheckedCount
@@ -788,7 +1012,9 @@ export class AdminApiProductController {
       return { code: 400, message: "#id 错误", data: null };
     }
 
-    const product = await this.prisma.product.findFirst({ where: { product_id: productId } });
+    const product = await this.prisma.product.findFirst({
+      where: { product_id: productId },
+    });
     if (!product) {
       return { code: 404, message: "商品不存在", data: null };
     }
@@ -796,9 +1022,16 @@ export class AdminApiProductController {
     const toMoney = (val: any): string => {
       if (val == null) return "0.00";
       try {
-        const str = typeof val === "object" && typeof val.toString === "function" ? val.toString() : String(val);
+        const str =
+          typeof val === "object" && typeof val.toString === "function"
+            ? val.toString()
+            : String(val);
         const n = Number(str);
-        return Number.isFinite(n) ? n.toFixed(2) : (str.includes(".") ? str : `${str}.00`);
+        return Number.isFinite(n)
+          ? n.toFixed(2)
+          : str.includes(".")
+            ? str
+            : `${str}.00`;
       } catch {
         return "0.00";
       }
@@ -806,16 +1039,27 @@ export class AdminApiProductController {
     const toWeight = (val: any): string => {
       if (val == null) return "0.000";
       try {
-        const str = typeof val === "object" && typeof val.toString === "function" ? val.toString() : String(val);
+        const str =
+          typeof val === "object" && typeof val.toString === "function"
+            ? val.toString()
+            : String(val);
         const n = Number(str);
-        return Number.isFinite(n) ? n.toFixed(3) : (str.includes(".") ? str : `${str}.000`);
+        return Number.isFinite(n)
+          ? n.toFixed(3)
+          : str.includes(".")
+            ? str
+            : `${str}.000`;
       } catch {
         return "0.000";
       }
     };
 
     // 图集（保留全域名）
-    const galleryRows = await this.prisma.product_gallery.findMany({ where: { product_id: productId }, orderBy: { sort_order: "asc" }, take: 200 });
+    const galleryRows = await this.prisma.product_gallery.findMany({
+      where: { product_id: productId },
+      orderBy: { sort_order: "asc" },
+      take: 200,
+    });
     const imgList = galleryRows.map((g: any) => ({
       picId: g.pic_id,
       productId: g.product_id,
@@ -829,11 +1073,19 @@ export class AdminApiProductController {
 
     // 关联文章 ID 列表
     const productArticleList = (
-      await this.prisma.product_article.findMany({ where: { goods_id: productId }, select: { article_id: true }, take: 1000 })
+      await this.prisma.product_article.findMany({
+        where: { goods_id: productId },
+        select: { article_id: true },
+        take: 1000,
+      })
     ).map((x) => x.article_id);
 
     // 属性分组：normal(0)/spe(1)/extra(其他) 均按 attrName 分组，形如 { attrName, attrList: [...] }
-    const attrs = await this.prisma.product_attributes.findMany({ where: { product_id: productId }, orderBy: { attributes_id: "asc" }, take: 1000 });
+    const attrs = await this.prisma.product_attributes.findMany({
+      where: { product_id: productId },
+      orderBy: { attributes_id: "asc" },
+      take: 1000,
+    });
     const normalMap = new Map<string, any[]>();
     const speMap = new Map<string, any[]>();
     const extraMap = new Map<string, any[]>();
@@ -861,7 +1113,11 @@ export class AdminApiProductController {
         extraMap.get(key)!.push(item);
       }
     }
-    const groupMapToArr = (m: Map<string, any[]>) => Array.from(m.entries()).map(([attrName, list]) => ({ attrName, attrList: list }));
+    const groupMapToArr = (m: Map<string, any[]>) =>
+      Array.from(m.entries()).map(([attrName, list]) => ({
+        attrName,
+        attrList: list,
+      }));
     const attrList = {
       normal: groupMapToArr(normalMap),
       spe: groupMapToArr(speMap),
@@ -869,7 +1125,11 @@ export class AdminApiProductController {
     };
 
     // SKU 列表
-    const skuRows = await this.prisma.product_sku.findMany({ where: { product_id: productId }, orderBy: { sku_id: "asc" }, take: 2000 });
+    const skuRows = await this.prisma.product_sku.findMany({
+      where: { product_id: productId },
+      orderBy: { sku_id: "asc" },
+      take: 2000,
+    });
     const parseSkuDataDetail = (raw: any, sku_value: string): any => {
       if (!raw) return sku_value || "";
       try {
@@ -894,7 +1154,8 @@ export class AdminApiProductController {
     // 描述与图片数组（保留全域名）
     const productDescRaw = (product as any).product_desc || "";
     const productDesc = String(productDescRaw);
-    const productDescArr: Array<{ type: string; pic: string; html: string }> = [];
+    const productDescArr: Array<{ type: string; pic: string; html: string }> =
+      [];
     const imgRe = /<img\s+[^>]*src=["']([^"']+)["'][^>]*>/gi;
     let m: RegExpExecArray | null;
     while ((m = imgRe.exec(productDescRaw || ""))) {

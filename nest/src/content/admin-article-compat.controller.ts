@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { PrismaService } from "src/prisma/prisma.service";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
@@ -46,11 +39,19 @@ export class AdminArticleCompatController {
     if (query.keyword) {
       where.article_title = { contains: String(query.keyword) };
     }
-    if (query.is_show !== undefined && query.is_show !== null && String(query.is_show) !== "-1") {
+    if (
+      query.is_show !== undefined &&
+      query.is_show !== null &&
+      String(query.is_show) !== "-1"
+    ) {
       const v = Number(query.is_show);
       if (!Number.isNaN(v)) where.is_show = v;
     }
-    if (query.is_hot !== undefined && query.is_hot !== null && String(query.is_hot) !== "-1") {
+    if (
+      query.is_hot !== undefined &&
+      query.is_hot !== null &&
+      String(query.is_hot) !== "-1"
+    ) {
       const v = Number(query.is_hot);
       if (!Number.isNaN(v)) where.is_hot = v;
     }
@@ -60,7 +61,9 @@ export class AdminArticleCompatController {
     }
     if (query.article_ids) {
       const ids = Array.isArray(query.article_ids)
-        ? (query.article_ids as any[]).map((x) => Number(x)).filter((x) => !Number.isNaN(x))
+        ? (query.article_ids as any[])
+            .map((x) => Number(x))
+            .filter((x) => !Number.isNaN(x))
         : String(query.article_ids)
             .split(",")
             .map((x) => Number(x.trim()))
@@ -75,10 +78,14 @@ export class AdminArticleCompatController {
       "is_show",
       "is_hot",
     ]);
-    const sortField = query.sort_field && allowedSortFields.has(query.sort_field)
-      ? query.sort_field
-      : "article_id";
-    const sortOrder = query.sort_order === "asc" || query.sort_order === "ascend" ? "asc" : "desc";
+    const sortField =
+      query.sort_field && allowedSortFields.has(query.sort_field)
+        ? query.sort_field
+        : "article_id";
+    const sortOrder =
+      query.sort_order === "asc" || query.sort_order === "ascend"
+        ? "asc"
+        : "desc";
     const orderBy: any = { [sortField]: sortOrder };
 
     const [records, total] = await Promise.all([
@@ -101,10 +108,14 @@ export class AdminArticleCompatController {
     const id = Number(idParam || 0);
     if (!id) return { code: 400, message: "参数错误", data: null };
 
-    const item = await this.prisma.article.findUnique({ where: { article_id: id } });
+    const item = await this.prisma.article.findUnique({
+      where: { article_id: id },
+    });
     if (!item) return { code: 404, message: "文章不存在", data: null };
 
-    const productLinks = await this.prisma.product_article.findMany({ where: { article_id: id } });
+    const productLinks = await this.prisma.product_article.findMany({
+      where: { article_id: id },
+    });
     const product_ids = productLinks.map((x) => x.goods_id);
     const data = { ...item, product_ids } as any;
     return { code: 0, message: "success", data };
@@ -117,14 +128,16 @@ export class AdminArticleCompatController {
   async create(@Body() body: any) {
     // 映射字段，兼容 PHP 命名
     const now = Math.floor(Date.now() / 1000);
-  const categoryRaw = body.article_category_id ?? body.articleCategoryId;
+    const categoryRaw = body.article_category_id ?? body.articleCategoryId;
     const article_category_id = Array.isArray(categoryRaw)
       ? Number(categoryRaw[0] || 0)
       : Number(categoryRaw || 0);
 
     const data: any = {
       article_title: String((body.article_title ?? body.articleTitle) || ""),
-      article_category_id: Number.isNaN(article_category_id) ? 0 : article_category_id,
+      article_category_id: Number.isNaN(article_category_id)
+        ? 0
+        : article_category_id,
       article_sn: String((body.article_sn ?? body.articleSn) || ""),
       article_thumb: String((body.article_thumb ?? body.articleThumb) || ""),
       article_author: String((body.article_author ?? body.articleAuthor) || ""),
@@ -145,11 +158,16 @@ export class AdminArticleCompatController {
 
     const productArr = (body.product_ids ?? body.productIds) as any;
     const productIds: number[] = Array.isArray(productArr)
-      ? productArr.map((x: any) => Number(x)).filter((x: number) => !Number.isNaN(x))
+      ? productArr
+          .map((x: any) => Number(x))
+          .filter((x: number) => !Number.isNaN(x))
       : [];
     if (productIds.length) {
       await this.prisma.product_article.createMany({
-        data: productIds.map((pid) => ({ goods_id: pid, article_id: created.article_id })),
+        data: productIds.map((pid) => ({
+          goods_id: pid,
+          article_id: created.article_id,
+        })),
         skipDuplicates: true,
       });
     }
@@ -162,17 +180,19 @@ export class AdminArticleCompatController {
   @ApiOperation({ summary: "更新文章（兼容）" })
   @Authorities("articleModifyManage")
   async update(@Body() body: any) {
-  const id = Number(body.id || body.article_id || body.articleId || 0);
+    const id = Number(body.id || body.article_id || body.articleId || 0);
     if (!id) return { code: 400, message: "参数错误", data: null };
 
-  const categoryRaw = body.article_category_id ?? body.articleCategoryId;
+    const categoryRaw = body.article_category_id ?? body.articleCategoryId;
     const article_category_id = Array.isArray(categoryRaw)
       ? Number(categoryRaw[0] || 0)
       : Number(categoryRaw || 0);
 
     const data: any = {
       article_title: body.article_title ?? body.articleTitle,
-      article_category_id: Number.isNaN(article_category_id) ? undefined : article_category_id,
+      article_category_id: Number.isNaN(article_category_id)
+        ? undefined
+        : article_category_id,
       article_sn: body.article_sn ?? body.articleSn,
       article_thumb: body.article_thumb ?? body.articleThumb,
       article_author: body.article_author ?? body.articleAuthor,
@@ -181,8 +201,8 @@ export class AdminArticleCompatController {
         body.article_type !== undefined
           ? Number(body.article_type)
           : body.articleType !== undefined
-          ? Number(body.articleType)
-          : undefined,
+            ? Number(body.articleType)
+            : undefined,
       content: body.content,
       description: body.description,
       keywords: body.keywords,
@@ -190,26 +210,26 @@ export class AdminArticleCompatController {
         body.is_show !== undefined
           ? Number(body.is_show)
           : body.isShow !== undefined
-          ? Number(body.isShow)
-          : undefined,
+            ? Number(body.isShow)
+            : undefined,
       is_hot:
         body.is_hot !== undefined
           ? Number(body.is_hot)
           : body.isHot !== undefined
-          ? Number(body.isHot)
-          : undefined,
+            ? Number(body.isHot)
+            : undefined,
       is_top:
         body.is_top !== undefined
           ? Number(body.is_top)
           : body.isTop !== undefined
-          ? Number(body.isTop)
-          : undefined,
+            ? Number(body.isTop)
+            : undefined,
       click_count:
         body.click_count !== undefined
           ? Number(body.click_count)
           : body.clickCount !== undefined
-          ? Number(body.clickCount)
-          : undefined,
+            ? Number(body.clickCount)
+            : undefined,
       link: body.link,
     };
 
@@ -221,14 +241,19 @@ export class AdminArticleCompatController {
     // 维护关联的 product_article
     const productArr2 = (body.product_ids ?? body.productIds) as any;
     const productIds: number[] = Array.isArray(productArr2)
-      ? productArr2.map((x: any) => Number(x)).filter((x: number) => !Number.isNaN(x))
+      ? productArr2
+          .map((x: any) => Number(x))
+          .filter((x: number) => !Number.isNaN(x))
       : [];
     await this.prisma.$transaction([
       this.prisma.product_article.deleteMany({ where: { article_id: id } }),
       ...(productIds.length
         ? [
             this.prisma.product_article.createMany({
-              data: productIds.map((pid) => ({ goods_id: pid, article_id: id })),
+              data: productIds.map((pid) => ({
+                goods_id: pid,
+                article_id: id,
+              })),
               skipDuplicates: true,
             }),
           ]
@@ -277,7 +302,9 @@ export class AdminArticleCompatController {
     if (!mapped) return { code: 400, message: "#field 错误", data: null };
 
     const numeric = new Set(["is_hot", "is_show"]);
-    const data: any = numeric.has(mapped) ? { [mapped]: Number(val) } : { [mapped]: String(val ?? "") };
+    const data: any = numeric.has(mapped)
+      ? { [mapped]: Number(val) }
+      : { [mapped]: String(val ?? "") };
     await this.prisma.article.update({ where: { article_id: id }, data });
     return { code: 0, message: "success", data: null };
   }
@@ -288,7 +315,9 @@ export class AdminArticleCompatController {
   @Authorities("articleModifyManage")
   async batch(@Body() body: any) {
     const ids: number[] = Array.isArray(body.ids)
-      ? body.ids.map((x: any) => Number(x)).filter((x: number) => !Number.isNaN(x))
+      ? body.ids
+          .map((x: any) => Number(x))
+          .filter((x: number) => !Number.isNaN(x))
       : [];
     const type = String(body.type || "");
     if (!ids.length) return { code: 400, message: "未选择项目", data: null };
@@ -296,8 +325,12 @@ export class AdminArticleCompatController {
     if (["del", "show", "hide", "move_cat"].includes(type)) {
       if (type === "del") {
         await this.prisma.$transaction([
-          this.prisma.product_article.deleteMany({ where: { article_id: { in: ids } } }),
-          this.prisma.article.deleteMany({ where: { article_id: { in: ids } } }),
+          this.prisma.product_article.deleteMany({
+            where: { article_id: { in: ids } },
+          }),
+          this.prisma.article.deleteMany({
+            where: { article_id: { in: ids } },
+          }),
         ]);
       } else if (type === "show" || type === "hide") {
         await this.prisma.article.updateMany({
