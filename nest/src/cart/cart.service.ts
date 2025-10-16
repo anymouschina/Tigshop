@@ -653,18 +653,20 @@ export class CartService {
       throw new BadRequestException("数量必须大于0");
     }
 
-    // 检查库存
+    // 检查库存：优先使用 SKU 库存；若 SKU 库存为空/缺失则回退到商品库存
     let stock = 0;
     if ((cartItem.sku_id ?? 0) > 0) {
-      const sku = await this.prisma.product_sku.findUnique({
-        where: { sku_id: cartItem.sku_id },
-      });
-      stock = sku?.sku_stock || 0;
+      const [sku, product] = await Promise.all([
+        this.prisma.product_sku.findUnique({ where: { sku_id: cartItem.sku_id } }),
+        this.prisma.product.findFirst({ where: { product_id: cartItem.product_id } }),
+      ]);
+      const skuStockNum = toPlainNumber(sku?.sku_stock, -1);
+      stock = skuStockNum >= 0 ? skuStockNum : toPlainNumber(product?.product_stock, 0);
     } else {
       const product = await this.prisma.product.findFirst({
         where: { product_id: cartItem.product_id },
       });
-      stock = product?.product_stock || 0;
+      stock = toPlainNumber(product?.product_stock, 0);
     }
 
     if (quantity > stock) {
@@ -732,7 +734,7 @@ export class CartService {
   async getCart(userId: number): Promise<CartData> {
     const cartRows = await this.prisma.cart.findMany({
       where: { user_id: userId },
-      orderBy: { update_time: "desc" },
+      orderBy: { cart_id: "desc" },
     });
 
     if (cartRows.length === 0) {
