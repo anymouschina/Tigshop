@@ -12,14 +12,15 @@
       <template v-if="decorateType === '1'">
         <styleOneCate :shop-id="shopId" :table-no="tableNo" />
       </template>
-      <template v-if="decorateType === '2'">
-        <styleTwoCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo"  @select-product="refreshCart"/>
-      </template>
+      <view v-if="decorateType === '2'" class="transform-3d">
+        <styleTwoCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo"  @select-product="refreshCart">
+         <DineCartBar :count="displayCount" :amount="displayAmount" @confirm="toConfirm" @showCart="showPopup=true" />
+        </styleTwoCate>
+      </view>
       <template v-if="decorateType === '3'">
         <styleThreeCate :height="cateHeight" :shop-id="shopId" :table-no="tableNo" />
       </template>
       <!-- 底部购物车条组件（使用服务端 totals） -->
-      <DineCartBar :count="displayCount" :amount="displayAmount" @confirm="toConfirm" @showCart="showPopup=true" />
       <DineCartPopup
         :show="showPopup"
         :items="cart"
@@ -224,6 +225,9 @@ function logOnLoad(tag:string,q:any){
 }
 </script>
 <style scoped lang="scss">
+.transform-3d{
+  // perspective: 2000rpx;
+}
 .loading, .error { padding:80rpx; text-align:center; color:#888; }
 .retry { margin-top:20rpx; background:#fff; border:1px solid #ddd; padding:16rpx 40rpx; border-radius:40rpx; }
 /* 移除旧的 .dine-cart-bar 样式，底部由组件提供 */

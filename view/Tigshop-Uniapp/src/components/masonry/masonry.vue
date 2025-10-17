@@ -177,6 +177,7 @@
         </view>
     </view>
     <specification ref="specificationRef" v-model="productId" :type="type" @add-card-succeed="getCallback" @load-end="loadEnd" @close="handleClose" />
+    <slot></slot>
 </template>
 
 <script lang="ts" setup>

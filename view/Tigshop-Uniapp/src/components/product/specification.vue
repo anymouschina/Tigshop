@@ -504,7 +504,7 @@ const promotionList = ref<SkuPromotion[]>([]);
 const isDiscount = ref(0);
 
 const loadSkuPrice = async () => {
-    if (props.type) {
+    if (props.type && props.type !== "dine") {
         firstLoad.value = false;
         emit("loadEnd");
         return;
