@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
 } from "@nestjs/common";
+import * as bcrypt from "bcrypt";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "src/auth/guards/admin-jwt-auth.guard";
 import { AuthorityGuard } from "src/auth/guards/authority.guard";
@@ -314,12 +315,26 @@ export class AdminUserCompatController {
       suppliers_id: dto.suppliersId ? Number(dto.suppliersId) : 0,
       is_using: dto.isUsing != null ? Number(dto.isUsing) : 1,
       add_time: now,
-      password: dto.password || dto.initialPassword || "", // TODO: 后续接入加密
+      // password: 初始化时按注册逻辑加密存储
+      // initial_password: 可选原始记录字段（如需展示初始密码时使用），默认留空
       initial_password: dto.initialPassword || "",
       auth_list: Array.isArray(dto.authList)
         ? JSON.stringify(dto.authList)
         : dto.authList || "",
     };
+    // 密码加密处理（对齐注册逻辑 /user/register 与 PHP 实现）
+    if (dto.password || dto.initialPassword) {
+      const raw = String(dto.password || dto.initialPassword || "");
+      if (
+        dto.pwdConfirm !== undefined &&
+        String(dto.pwdConfirm) !== String(dto.password || dto.initialPassword)
+      ) {
+        return { code: 400, message: "password confirm mismatch", data: null };
+      }
+      data.password = await bcrypt.hash(raw, 10);
+    } else {
+      data.password = ""; // 未传入密码时，置空
+    }
     const created = await this.prisma.admin_user.create({ data });
     return { code: 0, message: "success", data: { adminId: created.admin_id } };
   }
@@ -348,7 +363,14 @@ export class AdminUserCompatController {
         ? JSON.stringify(dto.authList)
         : dto.authList;
     }
-    if (dto.password) data.password = dto.password; // TODO hash
+    // 如果传入密码，校验确认并进行加密
+    if (dto.password) {
+      const raw = String(dto.password);
+      if (dto.pwdConfirm !== undefined && String(dto.pwdConfirm) !== raw) {
+        return { code: 400, message: "password confirm mismatch", data: null };
+      }
+      data.password = await bcrypt.hash(raw, 10);
+    }
     await this.prisma.admin_user.update({ where: { admin_id: id }, data });
     return { code: 0, message: "success", data: true };
   }
@@ -429,7 +451,13 @@ export class AdminUserCompatController {
     ].forEach(([src, dest]) => {
       if (dto[src] !== undefined) data[dest] = dto[src];
     });
-    if (dto.password) data.password = dto.password; // TODO hash
+    if (dto.password) {
+      const raw = String(dto.password);
+      if (dto.pwdConfirm !== undefined && String(dto.pwdConfirm) !== raw) {
+        return { code: 400, message: "password confirm mismatch", data: null };
+      }
+      data.password = await bcrypt.hash(raw, 10);
+    }
     await this.prisma.admin_user.update({ where: { admin_id: id }, data });
     return { code: 0, message: "success", data: true };
   }

@@ -293,7 +293,9 @@ export class OrderService {
     // 批量查询关联数据（使用原始表名，无 Prisma 关系）
     const orderIds = orders.map((o: any) => o.order_id);
     // 用户映射只需父订单的归属用户即可
-    const userIds = Array.from(new Set(parentOrders.map((o: any) => o.user_id)));
+    const userIds = Array.from(
+      new Set(parentOrders.map((o: any) => o.user_id)),
+    );
     const shopIds = Array.from(
       new Set(
         parentOrders

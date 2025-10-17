@@ -84,9 +84,15 @@ export class UserCommentApiCompatController {
     let data: any = null;
     try {
       // 先使用评论服务的解析，可能返回评论或直接返回订单详情
-      const item = await this.commentService.getCommentDetail(idNum, Number(userId));
+      const item = await this.commentService.getCommentDetail(
+        idNum,
+        Number(userId),
+      );
       // 如果已是订单详情（包含 orderId / items 等键），直接返回
-      if (item && ("orderId" in item || (item.items && Array.isArray(item.items)))) {
+      if (
+        item &&
+        ("orderId" in item || (item.items && Array.isArray(item.items)))
+      ) {
         data = item;
       } else if (item && ("order_id" in item || "orderId" in item)) {
         // 若为评论对象，提取其订单ID，再查订单详情
